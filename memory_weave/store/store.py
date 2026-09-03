@@ -108,6 +108,39 @@ class Store:
         if connection is not None:
             connection.close()
             del self._local.connection
+        if hasattr(self._local, "transaction_depth"):
+            del self._local.transaction_depth
+
+    @contextmanager
+    def transaction(self) -> Iterator[sqlite3.Connection]:
+        """Run store operations atomically and nest inner calls with savepoints."""
+
+        connection = self.connection
+        depth = getattr(self._local, "transaction_depth", 0)
+        owns_transaction = depth == 0 and not connection.in_transaction
+        savepoint = f"memory_weave_transaction_{depth}"
+        if owns_transaction:
+            connection.execute("BEGIN")
+        else:
+            connection.execute(f"SAVEPOINT {savepoint}")
+        self._local.transaction_depth = depth + 1
+
+        try:
+            yield connection
+        except BaseException:
+            if owns_transaction:
+                connection.rollback()
+            else:
+                connection.execute(f"ROLLBACK TO SAVEPOINT {savepoint}")
+                connection.execute(f"RELEASE SAVEPOINT {savepoint}")
+            raise
+        else:
+            if owns_transaction:
+                connection.commit()
+            else:
+                connection.execute(f"RELEASE SAVEPOINT {savepoint}")
+        finally:
+            self._local.transaction_depth = depth
 
     def insert_record(self, record: Record) -> None:
         """Persist one canonical memory record."""
@@ -284,7 +317,7 @@ class Store:
     def upsert_fts(self, record_id: str, content: str, subject: str, aliases: str) -> None:
         """Replace one derived FTS5 row."""
 
-        with self._transaction() as connection:
+        with self.transaction() as connection:
             connection.execute("DELETE FROM records_fts WHERE record_id = ?", (record_id,))
             connection.execute(
                 "INSERT INTO records_fts(record_id, content, subject, aliases) VALUES (?, ?, ?, ?)",
@@ -315,7 +348,7 @@ class Store:
         """Record a symmetric conflict relationship."""
 
         timestamp = _dump_datetime(noted_at or now())
-        with self._transaction() as connection:
+        with self.transaction() as connection:
             connection.executemany(
                 "INSERT OR IGNORE INTO record_conflicts(record_id, other_id, noted_at) VALUES (?, ?, ?)",
                 ((first_id, second_id, timestamp), (second_id, first_id, timestamp)),
@@ -445,7 +478,7 @@ class Store:
     def merge_entity(self, source_id: str, destination_id: str) -> None:
         """Merge aliases and record links into the destination entity."""
 
-        with self._transaction() as connection:
+        with self.transaction() as connection:
             connection.execute(
                 "INSERT OR IGNORE INTO entity_aliases(entity_id, alias_norm) "
                 "SELECT ?, alias_norm FROM entity_aliases WHERE entity_id = ?",
@@ -621,18 +654,6 @@ class Store:
             self.connection.backup(destination)
         finally:
             destination.close()
-
-    @contextmanager
-    def _transaction(self) -> Iterator[sqlite3.Connection]:
-        connection = self.connection
-        connection.execute("BEGIN")
-        try:
-            yield connection
-        except BaseException:
-            connection.rollback()
-            raise
-        else:
-            connection.commit()
 
     def _records_from_rows(self, rows: Sequence[sqlite3.Row]) -> list[Record]:
         if not rows:

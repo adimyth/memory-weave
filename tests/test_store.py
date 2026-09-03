@@ -196,6 +196,32 @@ def test_embeddings_and_fts_round_trip_through_store_boundaries(store: Store) ->
     assert [record_id for record_id, _ in store.fts_query("ERR42", limit=10)] == [content_match.id]
 
 
+def test_transaction_is_public_reentrant_and_rolls_back_a_composite_write(store: Store) -> None:
+    record = _record("record-transaction")
+    entity = store.create_entity(kind="person", canonical="Aditya", scope=_USER_SCOPE)
+
+    with store.transaction():
+        store.insert_record(record)
+        store.put_embedding(record.id, "fake", "1", np.array([1.0, 0.0], dtype=np.float32))
+        store.upsert_fts(record.id, record.content, record.subject, "aditya")
+        store.link_record_entity(record.id, entity.id)
+        store.append_event("record.created", "research-agent", record.id, entity.id, {"source": "test"})
+
+    assert store.get_record(record.id).entity_ids == [entity.id]  # type: ignore[union-attr]
+    assert list(store.iter_embeddings("fake", "1"))[0][0] == record.id
+    assert store.fts_query("concise", limit=1)[0][0] == record.id
+    assert store.events_for(record.id)[0]["payload"] == {"source": "test"}
+
+    with pytest.raises(RuntimeError, match="abort"):
+        with store.transaction():
+            store.insert_record(_record("record-rolled-back"))
+            store.upsert_fts("record-rolled-back", "will disappear", "person:aditya/test", "")
+            raise RuntimeError("abort")
+
+    assert store.get_record("record-rolled-back") is None
+    assert store.fts_query("disappear", limit=1) == []
+
+
 def test_conflicts_entities_grants_sessions_events_and_search_log(store: Store) -> None:
     first = _record("record-first")
     second = _record("record-second", subject="person:aditya/timezone")
