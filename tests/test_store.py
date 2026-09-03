@@ -221,6 +221,18 @@ def test_transaction_is_public_reentrant_and_rolls_back_a_composite_write(store:
     assert store.get_record("record-rolled-back") is None
     assert store.fts_query("disappear", limit=1) == []
 
+    with store.transaction():
+        store.insert_record(_record("outer"))
+        with pytest.raises(RuntimeError, match="inner"):
+            with store.transaction():
+                store.insert_record(_record("inner"))
+                raise RuntimeError("inner")
+        store.insert_record(_record("after"))
+
+    assert store.get_record("outer") is not None
+    assert store.get_record("after") is not None
+    assert store.get_record("inner") is None
+
 
 def test_conflicts_entities_grants_sessions_events_and_search_log(store: Store) -> None:
     first = _record("record-first")
