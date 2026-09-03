@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+from memory_weave.config import MemoryWeaveConfig
 from memory_weave.ingest.evidence import session_turn_source_ref, validate_evidence
 from memory_weave.ingest.session import SessionBuffer
 from memory_weave.models import EvidenceSourceKind, Turn
@@ -12,6 +13,7 @@ from memory_weave.store import Store
 
 _NOW = datetime(2026, 9, 4, 12, 0, tzinfo=UTC)
 _SESSION_ID = "session-1"
+_CONFIG = MemoryWeaveConfig()
 
 
 @pytest.fixture
@@ -26,9 +28,11 @@ def store(tmp_path: Path) -> Store:
 @pytest.fixture
 def session_buffer(store: Store) -> SessionBuffer:
     buffer = SessionBuffer(store)
+    buffer.append_turn(Turn(_SESSION_ID, 1, "user", "yes, we can proceed.", _NOW))
     buffer.append_turn(Turn(_SESSION_ID, 3, "assistant", "I think concise answers are best.", _NOW))
     buffer.append_turn(Turn(_SESSION_ID, 5, "tool", "Repository size is 4.2 MB.", _NOW))
     buffer.append_turn(Turn(_SESSION_ID, 7, "user", "Please keep every answer concise.", _NOW))
+    buffer.append_turn(Turn(_SESSION_ID, 9, "user", "“Please keep every answer concise”—thanks.", _NOW))
     return buffer
 
 
@@ -48,6 +52,17 @@ def session_buffer(store: Store) -> SessionBuffer:
         ),
         (
             _SESSION_ID,
+            "yes",
+            "user_statement",
+            None,
+            False,
+            None,
+            None,
+            "agent_inference",
+            "evidence quote is too short",
+        ),
+        (
+            _SESSION_ID,
             "I think concise answers are best.",
             "user_statement",
             None,
@@ -55,7 +70,7 @@ def session_buffer(store: Store) -> SessionBuffer:
             3,
             "assistant",
             "agent_inference",
-            "downgraded from user_statement: quote is from a assistant turn",
+            "downgraded from user_statement: quote is from an assistant turn",
         ),
         (
             _SESSION_ID,
@@ -67,6 +82,17 @@ def session_buffer(store: Store) -> SessionBuffer:
             "tool",
             "tool_result",
             "downgraded from user_statement: quote is from a tool turn",
+        ),
+        (
+            _SESSION_ID,
+            '"Please keep every answer concise"-thanks.',
+            "user_statement",
+            None,
+            True,
+            9,
+            "user",
+            "user_statement",
+            None,
         ),
         (
             _SESSION_ID,
@@ -120,6 +146,7 @@ def test_validate_evidence_applies_the_documented_evidence_rules(
         session_id,
         quote,
         claimed,
+        _CONFIG,
         turn_hint=turn_hint,
     )
 
@@ -143,3 +170,24 @@ def test_session_buffer_invalidates_cached_turns_after_append(store: Store) -> N
     buffer.append_turn(second)
 
     assert buffer.turns(_SESSION_ID) == [first, second]
+
+
+def test_validate_evidence_treats_an_unknown_turn_role_as_inference(store: Store) -> None:
+    store.connection.execute(
+        "INSERT INTO session_turns(session_id, turn, role, content, at) VALUES (?, ?, ?, ?, ?)",
+        (_SESSION_ID, 11, "system", "The deployment completed successfully.", _NOW.isoformat()),
+    )
+
+    evidence = validate_evidence(
+        SessionBuffer(store),
+        _SESSION_ID,
+        "The deployment completed successfully.",
+        "user_statement",
+        _CONFIG,
+    )
+
+    assert evidence.found is True
+    assert evidence.turn == 11
+    assert evidence.role is None
+    assert evidence.source_kind == "agent_inference"
+    assert evidence.note == "unsupported transcript role; treated as agent_inference"

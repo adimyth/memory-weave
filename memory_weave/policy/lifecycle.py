@@ -16,12 +16,11 @@ _INITIAL_CONFIDENCE: dict[SourceKind, float] = {
 }
 
 
-def rank(source: SourceKind | Record, config: MemoryWeaveConfig | None = None) -> int:
+def rank(source: SourceKind | Record, config: MemoryWeaveConfig) -> int:
     """Return a source's configured authority rank."""
 
     source_kind = source.source_kind if isinstance(source, Record) else source
-    resolved_config = config or MemoryWeaveConfig()
-    source_rank = resolved_config.policy.source_rank
+    source_rank = config.policy.source_rank
     return {
         "user_statement": source_rank.user_statement,
         "system": source_rank.system,
@@ -46,37 +45,34 @@ def initial_confidence(source_kind: SourceKind) -> float:
 def initial_expiry(
     source_kind: SourceKind,
     current_time: datetime,
-    config: MemoryWeaveConfig | None = None,
+    config: MemoryWeaveConfig,
 ) -> datetime | None:
     """Return a provisional expiry for inference and no expiry for direct evidence."""
 
     if source_kind != "agent_inference":
         return None
-    resolved_config = config or MemoryWeaveConfig()
-    return current_time + timedelta(days=resolved_config.ingestion.provisional_ttl_days)
+    return current_time + timedelta(days=config.ingestion.provisional_ttl_days)
 
 
-def reinforce(record: Record, current_time: datetime, config: MemoryWeaveConfig | None = None) -> Record:
+def reinforce(record: Record, current_time: datetime, config: MemoryWeaveConfig) -> Record:
     """Apply one supporting observation and promote provisional records when eligible."""
 
-    resolved_config = config or MemoryWeaveConfig()
     record.reinforcements += 1
     record.last_reinforced_at = current_time
     record.confidence = min(0.99, record.confidence + 0.1)
     if record.status == "provisional":
-        record.expires_at = current_time + timedelta(days=resolved_config.ingestion.provisional_ttl_days)
-        if record.reinforcements >= resolved_config.ingestion.reinforcements_to_confirm:
+        record.expires_at = current_time + timedelta(days=config.ingestion.provisional_ttl_days)
+        if record.reinforcements >= config.ingestion.reinforcements_to_confirm:
             record.status = "confirmed"
             record.expires_at = None
     return record
 
 
-def has_authority(new: Record, old: Record, config: MemoryWeaveConfig | None = None) -> bool:
+def has_authority(new: Record, old: Record, config: MemoryWeaveConfig) -> bool:
     """Decide whether a new record can supersede an active record."""
 
-    resolved_config = config or MemoryWeaveConfig()
-    new_rank = rank(new, resolved_config)
-    old_rank = rank(old, resolved_config)
+    new_rank = rank(new, config)
+    old_rank = rank(old, config)
     if new_rank != old_rank:
         return new_rank > old_rank
     if new.event_at != old.event_at:

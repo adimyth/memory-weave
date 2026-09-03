@@ -7,7 +7,10 @@ from memory_weave.store import Store
 
 
 class SessionBuffer:
-    """Read session turns efficiently while keeping writes durable in the store."""
+    """Read session turns efficiently while keeping writes durable in the store.
+
+    Call ``append_turn`` on this buffer, rather than on its store, whenever the cache is in use.
+    """
 
     def __init__(self, store: Store) -> None:
         self._store = store

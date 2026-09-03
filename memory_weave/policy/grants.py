@@ -6,17 +6,15 @@ from memory_weave.models import Scope
 from memory_weave.store import Store
 
 
-def readable_scopes(store: Store, agent_id: str, user_id: str, project_id: str | None) -> list[Scope]:
+def readable_scopes(store: Store, agent_id: str, user_id: str) -> list[Scope]:
     """Return the scopes a principal may read without crossing a user boundary."""
 
-    del project_id
     return _allowed_scopes(store, agent_id, user_id, can_read=True)
 
 
-def writable_scopes(store: Store, agent_id: str, user_id: str, project_id: str | None) -> list[Scope]:
+def writable_scopes(store: Store, agent_id: str, user_id: str) -> list[Scope]:
     """Return the scopes a principal may write without crossing a user boundary."""
 
-    del project_id
     return _allowed_scopes(store, agent_id, user_id, can_read=False)
 
 
