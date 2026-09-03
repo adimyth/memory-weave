@@ -1,0 +1,7 @@
+# <type>[optional scope][!]: <description>
+#
+# Optional body: explain the change and its motivation.
+#
+# Optional footer(s), for example:
+# BREAKING CHANGE: <description>
+# Refs: #123
