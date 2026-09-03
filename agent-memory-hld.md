@@ -1,6 +1,6 @@
 # Agent Memory System: High-Level Design
 
-This document is the companion to `agent-memory-working-notes.md` (research questions) and `agent-memory-lld.md` (implementation detail). It records the current design decisions and why they were made; every deliberately deferred decision names the experiment that will settle it.
+This document is the companion to `agent-memory-research-notes.md` (research and initial design specification) and `agent-memory-lld.md` (implementation detail). It records the current design decisions and why they were made; every deliberately deferred decision names the experiment that will settle it.
 
 ## 1. Goals and non-goals
 
@@ -13,7 +13,7 @@ This document is the companion to `agent-memory-working-notes.md` (research ques
 5. Be model-, provider-, and framework-neutral at the contract level.
 6. Answer a `memory_search` call fast enough that an agent can afford to call it liberally.
 
-### What it will not do in v1
+### What it will not do yet
 
 - No image, audio, or file-content memory. Text only.
 - No multi-tenant hardening, sharding, or distributed storage. Single process, single database file.
@@ -36,9 +36,9 @@ Memory uses SQLite as its source of truth and three ways to find the same durabl
 
 In RAG terms, the store is the canonical document and metadata database. The vector index and FTS index are two derived ways to retrieve candidate record ids quickly. They are part of the same local memory system, but they do not play the same role.
 
-| Component | RAG analogy | v1 design |
+| Component | RAG analogy | Current design |
 | --- | --- | --- |
-| Store | The canonical document store plus metadata database. | SQLite persists records, scopes, provenance, lifecycle state, entity links, events, logs, and each record's embedding blob. It is the source of truth. |
+| Store | The canonical document store plus metadata database. | SQLite persists records, scopes, source data, lifecycle state, entity links, events, logs, and each record's embedding blob. It is the source of truth. |
 | Vector index | The vector-retrieval part of a vector database. | An in-memory matrix and record-id map loaded from SQLite's embedding blobs at startup. It performs exact cosine search and can be rebuilt from the store. |
 | FTS index | A lexical or keyword retriever, similar to BM25 in a hybrid RAG pipeline. | A SQLite FTS5 virtual table containing record content, subject, and entity aliases. SQLite queries it in the same process; it is not a separate search service. |
 
@@ -57,14 +57,14 @@ The source controls the initial status. A direct, evidenced user statement, trus
 
 When an agent calls `memory_search`, the system follows the same sequence every time. Dense, lexical, and entity candidate generation run in parallel inside that one synchronous call; the tool returns only after the pipeline has produced its final results or an empty response.
 
-1. It optionally rewrites the raw retrieval request into a standalone search query. This stage is specified for the demo but disabled by default in v1. When enabled, it receives only the raw query and host-supplied current-turn context, never memory candidates; it logs both the raw and rewritten queries.
+1. It optionally rewrites the raw retrieval request into a standalone search query. This stage is specified for the demo but disabled by default. When enabled, it receives the raw query and host-supplied current-turn context, then logs both the raw and rewritten queries.
 2. It removes records the agent is not allowed to see, records that have expired or been superseded, and records outside any requested type or time window.
 3. It finds candidates in parallel with three methods: dense search for similar meaning, lexical search for matching words and identifiers, and exact entity search for known people, projects, repositories, or organizations.
 4. It combines the three ranked candidate lists with reciprocal-rank fusion, which rewards a record that appears near the top of one or several lists without pretending that cosine and BM25 scores are on the same scale.
 5. It gives episodic records a recency adjustment, then returns no memory at all if every candidate is weak and no exact entity match exists.
 6. It collapses near-duplicates, optionally reranks the survivors, and returns only as much information as fits the context budget. It logs every decision so the result can be explained later.
 
-For v1, dense retrieval uses cosine similarity over `bge-m3` dense embeddings in the in-memory vector matrix. Lexical retrieval uses SQLite FTS5 with BM25 over `content`, `subject`, and entity aliases. Entity retrieval uses exact alias matches within an authorized scope, ordered by recency; it does not do fuzzy entity resolution or automatic entity merges. The optional reranker is `bge-reranker-v2-m3`. It is specified for the demo but disabled by default; the initial budget is an additional 100 ms mean latency for 30 candidates on the target laptop, with actual p50 and p95 measurements replacing that estimate.
+Dense retrieval uses cosine similarity over `bge-m3` dense embeddings in the in-memory vector matrix. Lexical retrieval uses SQLite FTS5 with BM25 over `content`, `subject`, and entity aliases. Entity retrieval uses exact alias matches within an authorized scope, ordered by recency; it does not do fuzzy entity resolution or automatic entity merges. The optional reranker is `bge-reranker-v2-m3`. It is specified for the demo but disabled by default; the initial budget is an additional 100 ms mean latency for 30 candidates on the target laptop, with actual p50 and p95 measurements replacing that estimate.
 
 ## 3. Memory types and how each is treated
 
@@ -73,12 +73,12 @@ The four CoALA categories are used as engineering categories with different rule
 | Type | Stored as | Who can create it | Decays? | Retrieved by | Example |
 | --- | --- | --- | --- | --- |
 | Semantic | A short declarative statement about a subject, plus entity links. | An agent recording an evidenced user statement, a trusted system or tool fact, a session extractor with evidence, or an explicit agent inference. The source and evidence determine its status. | No. Superseded by newer statements about the same subject. Provisional ones expire if never reinforced. | Dense, lexical, and entity. | “The user prefers concise technical answers.” |
-| Episodic | A dated account of what happened, what was decided, and why, with an event time. | The end-of-session extractor, which always writes a session summary and may write notable decisions, or an agent explicitly recording a meaningful event. | Yes. Recency weighting on event time. Never superseded, only appended. | Dense and lexical, with time filters. | “On 3 September, the team chose SQLite for v1 because the system is single-process.” |
-| Procedural | A named, versioned procedure: when it applies, the steps, and known pitfalls. | A human author, or an agent explicitly recording a reusable lesson after a task succeeds or fails. Automatic promotion from episodes is not allowed in v1. | No. Versioned. A new version supersedes the old. | Lexical on name and trigger, dense on description. | “When changing the embedding model, re-embed the store and recalibrate retrieval gates.” |
+| Episodic | A dated account of what happened, what was decided, and why, with an event time. | The end-of-session extractor, which always writes a session summary and may write notable decisions, or an agent explicitly recording a meaningful event. | Yes. Recency weighting on event time. Never superseded, only appended. | Dense and lexical, with time filters. | “On 3 September, the team chose SQLite because the system is single-process.” |
+| Procedural | A named, versioned procedure: when it applies, the steps, and known pitfalls. | A human author, or an agent explicitly recording a reusable lesson after a task succeeds or fails. Automatic promotion from episodes is not allowed in the current design. | No. Versioned. A new version supersedes the old. | Lexical on name and trigger, dense on description. | “When changing the embedding model, re-embed the store and recalibrate retrieval gates.” |
 
-Decision: procedural memory is stored but kept small in v1. Automatic promotion of episodes into procedures is out of scope. The agent can write a procedure explicitly, and the evaluation will test whether it retrieves and follows it.
+Decision: procedural memory is stored but kept small initially. Automatic promotion of episodes into procedures is out of scope. The agent can write a procedure explicitly, and the evaluation will test whether it retrieves and follows it.
 
-Decision: v1 has no hot, always-present durable-memory tier. Semantic facts are durable, but they are still external and tool-retrieved rather than prompt-resident. A bounded user or project profile block is a deferred experiment because it could reduce missed searches but could also create stale context, over-personalization, and a less stable prompt prefix.
+Decision: the current design has no hot, always-present durable-memory tier. Semantic facts are durable, but they are still external and tool-retrieved rather than prompt-resident. A bounded user or project profile block is a deferred experiment because it could reduce missed searches but could also create stale context, over-personalization, and a less stable prompt prefix.
 
 ## 4. The durable record
 
@@ -89,7 +89,7 @@ Every record, regardless of type, carries the same envelope. The content varies 
 | Identity | `id`, `type`, `version` | Identifies the record, its memory category, and its revision in a lineage. | `mem_0142`, `semantic`, version `2` |
 | Content | `content`, `subject` | Holds the text the model may read and a normalized topic used for duplicate and contradiction checks. | Content: “The user prefers concise technical answers.” Subject: “answer-detail preference” |
 | Scope | `scope_kind`, `scope_id` | States who owns the memory. The separate grant table determines which agents may access that scope. | `user`, `user_123` |
-| Provenance | `source_kind`, `source_ref`, `creator_agent_id`, `evidence` | States what supports the record, where that support can be found, and which agent created it. `evidence` is a verbatim source quote. | `user_statement`, `session_456`, `research_agent`, “Please keep answers concise.” |
+| Source and evidence | `source_kind`, `source_ref`, `creator_agent_id`, `evidence` | States what supports the record, where that support can be found, and which agent created it. `evidence` is a verbatim source quote. | `user_statement`, `session_456`, `research_agent`, “Please keep answers concise.” |
 | Time | `created_at`, `event_at`, `expires_at` | Separates when the system stored a record, when the underlying event occurred, and when the record should stop being normally retrievable. | Created 4 September; event 3 September; no expiry for a confirmed preference |
 | Trust | `confidence`, `status` | States how strongly the system should trust the record and whether it is active, provisional, superseded, expired, or deleted. | Confidence `0.95`; status `confirmed` |
 | Lineage | `supersedes_id`, `conflicts_with` | Connects a changed fact to the record it replaces and identifies records that disagree. | Supersedes `mem_0091`, which said the user preferred detailed answers |
@@ -104,7 +104,7 @@ Source kinds are ranked. A record can only supersede a record of equal or lower 
 | 2 | `tool_result` | Observed from a tool output. | confirmed |
 | 1 | `agent_inference` | The agent or extractor concluded it. | provisional |
 
-Lifecycle states: `provisional`, `confirmed`, `superseded`, `expired`, `deleted`. Only `provisional` and `confirmed` are retrievable by default. Superseded and expired records stay in the database for audit and can be requested explicitly. Deleted records are tombstoned; content is removed only when a user asks for deletion.
+Lifecycle states: `provisional`, `confirmed`, `superseded`, `expired`, `deleted`. Only `provisional` and `confirmed` are retrievable by default. Superseded and expired records stay in the database and indexes for audit and historical search. Deleted records become tombstones: the service removes their FTS entries, marks their in-memory vectors dead, and sends physical content and embedding erasure through the controlled deletion path.
 
 ## 5. Scope and access
 
@@ -114,7 +114,7 @@ Scope kinds, from narrowest to broadest: `agent`, `user`, `project`, `org`. A re
 
 Access is a grant table: which agent id may read or write which scope. An agent always has read and write on its own `agent` scope. Everything else must be granted. Every `memory_search` request carries the requesting agent id and the principal user id; the pipeline computes the set of readable scopes before any candidate generation runs. Scope filtering is a hard SQL predicate, never a ranking signal.
 
-Decision: no scope inheritance in v1. A user grant does not imply a project grant. This is more typing and less clever, and it makes the leakage tests trivial to reason about.
+Decision: scopes do not inherit. A user grant does not imply a project grant. This requires an explicit grant for each shared scope and makes leakage tests direct to reason about.
 
 ## 6. Ingestion
 
@@ -122,7 +122,7 @@ Two write paths, and only two.
 
 ### Path A: explicit agent write
 
-The agent calls `memory_write` with a type, content, subject, scope, and source kind. The tool validates scope permission, runs dedup and contradiction checks against the store, sets the initial status from the source kind, embeds the content, and returns the record id. Synchronous. This is how an agent records a decision it just made, a user preference it was just told, or a procedure it just learned.
+The agent calls `memory_write` with a type, content, subject, scope, and source kind. The tool validates scope permission, runs dedup and contradiction checks against the store, sets the initial status from the source kind, embeds the content, and returns the record ID. The agent uses this path for an immediate decision, a stated user preference, or a learned procedure.
 
 The agent cannot claim `user_statement` without an `evidence` quote that the tool can locate in the current session transcript. Without it, the source kind is downgraded to `agent_inference`.
 
@@ -138,7 +138,7 @@ When the host framework signals session end, the extractor reads the full transc
 
 Extraction is asynchronous and has no latency budget. It uses a separate, cheap structured-output model, not the serving model.
 
-Decision: no per-message extraction in v1. It multiplies cost and, more importantly, multiplies the chance a half-formed inference becomes durable. Session-end extraction plus explicit agent writes covers the cases we care about, and the evaluation will show what it misses.
+Decision: extraction runs after a session ends, rather than after each message. Per-message extraction multiplies cost and increases the chance that a half-formed inference becomes durable. Session-end extraction plus explicit agent writes covers the intended cases, and the evaluation will show what it misses.
 
 ### Reinforcement and expiry
 
@@ -181,7 +181,7 @@ The scope filter runs before any candidate generator. Dense, lexical, and entity
 
 ### Decisions that matter
 
-**The agent decides to search; retrieval owns optional query rewriting.** The agent sends a raw retrieval request and may provide entity hints. A query-rewrite stage belongs inside the retrieval pipeline because it is a retrieval concern, not a burden on the serving agent. It is specified behind a feature flag but disabled by default in v1. When enabled, it rewrites from the raw request and the host-supplied current-turn context into a standalone search query. It never sees candidate memories before searching, and both forms of the query are logged. The evaluation compares raw and rewritten queries on follow-up-question cases before we make rewriting a default.
+**The agent decides to search; retrieval owns optional query rewriting.** The agent sends a raw retrieval request and may provide entity hints. A query-rewrite stage belongs inside the retrieval pipeline because it is a retrieval concern, not a burden on the serving agent. It is specified behind a feature flag and disabled by default. When enabled, the retrieval service gives the rewriter the raw request and host-supplied current-turn context, then logs both forms of the query. The evaluation compares raw and rewritten queries on follow-up-question cases before the team makes rewriting a default.
 
 **Fusion by rank, not score.** Cosine similarity, BM25, and recency have incomparable scales. Reciprocal rank fusion avoids calibrating them against each other, and it degrades gracefully when one generator returns nothing.
 
@@ -199,7 +199,7 @@ All durable memory remains external to the prompt prefix. The prefix contains sy
 
 Entities are a modelling layer over records, not a fifth memory type. An entity has a kind (`person`, `project`, `org`, `repo`, `product`, `other`), a canonical name, a scope, and a set of aliases. Records link to entities through a join table.
 
-Decision: entity resolution in v1 is exact alias match within scope, nothing fuzzier. An extractor that mentions "Aditya" links to the `person` entity with that alias in a readable scope, or creates a new provisional entity in the writer's scope if none exists. There is no automatic merge of two entities. Merges are an explicit `memory_revise` operation with an audit event. A false merge is the worst failure the system can have, so it is not automated.
+Decision: entity resolution uses exact alias matches within scope. An extractor that mentions "Aditya" links to the `person` entity with that alias in a readable scope, or creates a new provisional entity in the writer's scope if none exists. There is no automatic merge of two entities. Merges are an explicit `memory_revise` operation with an audit event. A false merge can leak data across users, so the system does not automate it.
 
 ## 9. Components
 
@@ -220,7 +220,7 @@ Decision: entity resolution in v1 is exact alias match within scope, nothing fuz
 
 | Role | Default | Why | Alternative |
 | --- | --- | --- | --- |
-| Embedding | `bge-m3`, dense head only, 1024 dims, run locally | Open, multilingual, strong on short declarative text, no network call in the search path. | `nomic-embed-text-v1.5` for a smaller footprint. Any hosted embedding through the same interface. |
+| Embedding | `bge-m3`, dense head only, 1024 dims, run locally | Open, multilingual, strong on short declarative text, no network call in the search path. | A Nomic Embed Text model for a smaller footprint. Any hosted embedding through the same interface. |
 | Extraction | A small hosted model with reliable structured output (Claude Haiku 4.5 or equivalent) | Extraction runs off the hot path; quality of evidence-grounded output matters more than speed. | A local instruction-tuned model. |
 | Reranker | `bge-reranker-v2-m3`, planned behind a disabled feature flag | Same family as the embedder; small enough to run locally. Its initial budget is an additional 100 ms mean latency for 30 candidates, to be replaced by benchmark data. | None. |
 | Serving | Whatever the host framework uses | The memory layer never calls the serving model. | n/a |
@@ -280,7 +280,7 @@ Every search writes one log row: raw request; rewritten query and rewrite status
 
 ## 15. Decisions deferred to experiments
 
-| Question | Default in v1 | Experiment that settles it |
+| Question | Current default | Experiment that settles it |
 | --- | --- | --- |
 | Does query rewriting help? | Rewrite stage planned but disabled. | Compare raw and rewritten query recall on the follow-up-question cases. |
 | Does the reranker earn its latency? | Off. | Compare final-context precision with and without. |
