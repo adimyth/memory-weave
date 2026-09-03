@@ -1,0 +1,81 @@
+# Byte-compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Packaging and build artifacts
+build/
+dist/
+sdist/
+wheels/
+develop-eggs/
+eggs/
+.eggs/
+*.egg-info/
+*.egg
+MANIFEST
+share/python-wheels/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.python-version
+
+# Tooling caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pytype/
+.pyre/
+.tox/
+.nox/
+.cache/
+.ipynb_checkpoints/
+
+# Test and coverage output
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+nosetests.xml
+*.cover
+.hypothesis/
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.local.yaml
+*.local.yml
+
+# SQLite store, including WAL sidecar files and snapshots
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+snapshots/
+
+# Local data, model caches, and benchmark output
+data/
+models/
+.hf_cache/
+benchmarks/results/
+
+# Editors and IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
