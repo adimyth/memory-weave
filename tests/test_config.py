@@ -78,3 +78,28 @@ def test_load_config_rejects_unknown_top_level_key(tmp_path: Path) -> None:
 
     with pytest.raises(ConfigError, match="root"):
         load_config(config_path)
+
+
+def test_load_config_coerces_numeric_yaml_scalars_from_annotations(tmp_path: Path) -> None:
+    config_path = tmp_path / "memory.yaml"
+    config_path.write_text(
+        "embedding:\n  dims: '768'\nretrieval:\n  per_generator_k: '40'\n  gate:\n    dense_floor: '0.52'\n",
+        encoding="utf-8",
+    )
+
+    config = load_config(config_path)
+
+    assert config.embedding.dims == 768
+    assert isinstance(config.embedding.dims, int)
+    assert config.retrieval.per_generator_k == 40
+    assert isinstance(config.retrieval.per_generator_k, int)
+    assert config.retrieval.gate.dense_floor == 0.52
+    assert isinstance(config.retrieval.gate.dense_floor, float)
+
+
+def test_load_config_rejects_invalid_numeric_yaml_scalars_with_config_error(tmp_path: Path) -> None:
+    config_path = tmp_path / "memory.yaml"
+    config_path.write_text("retrieval:\n  per_generator_k: 40.5\n", encoding="utf-8")
+
+    with pytest.raises(ConfigError, match="retrieval.per_generator_k"):
+        load_config(config_path)

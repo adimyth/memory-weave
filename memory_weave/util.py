@@ -7,17 +7,16 @@ import unicodedata
 from collections.abc import Callable
 from datetime import UTC, datetime
 from time import perf_counter
-from uuid import UUID
 
 from uuid6 import uuid7 as _uuid7
 
 _WHITESPACE_RE = re.compile(r"\s+")
 
 
-def uuid7() -> UUID:
+def uuid7() -> str:
     """Return a time-ordered UUIDv7 identifier."""
 
-    return _uuid7()
+    return str(_uuid7())
 
 
 def now() -> datetime:

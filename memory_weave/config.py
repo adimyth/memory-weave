@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
-from typing import Any
+from types import UnionType
+from typing import Any, cast, get_args, get_origin, get_type_hints
 
 import yaml
 
@@ -161,7 +162,7 @@ def _load_retrieval(raw: object) -> RetrievalConfig:
             rewrite=_load_dataclass(RewriteConfig, values.pop("rewrite", None), "retrieval.rewrite"),
             gate=_load_dataclass(GateConfig, values.pop("gate", None), "retrieval.gate"),
             freshness=_load_dataclass(FreshnessConfig, values.pop("freshness", None), "retrieval.freshness"),
-            **values,
+            **_coerce_dataclass_values(RetrievalConfig, values, "retrieval"),
         )
     except TypeError as exc:
         raise ConfigError(f"Invalid keys or values in retrieval: {exc}") from exc
@@ -172,7 +173,7 @@ def _load_ingestion(raw: object) -> IngestionConfig:
     try:
         return IngestionConfig(
             equivalence=_load_dataclass(EquivalenceConfig, values.pop("equivalence", None), "ingestion.equivalence"),
-            **values,
+            **_coerce_dataclass_values(IngestionConfig, values, "ingestion"),
         )
     except TypeError as exc:
         raise ConfigError(f"Invalid keys or values in ingestion: {exc}") from exc
@@ -183,7 +184,7 @@ def _load_policy(raw: object) -> PolicyConfig:
     try:
         return PolicyConfig(
             source_rank=_load_dataclass(SourceRankConfig, values.pop("source_rank", None), "policy.source_rank"),
-            **values,
+            **_coerce_dataclass_values(PolicyConfig, values, "policy"),
         )
     except TypeError as exc:
         raise ConfigError(f"Invalid keys or values in policy: {exc}") from exc
@@ -191,10 +192,18 @@ def _load_policy(raw: object) -> PolicyConfig:
 
 def _load_dataclass[T](cls: type[T], raw: object, section: str) -> T:
     values = _mapping(raw, section)
+    coerced_values = _coerce_dataclass_values(cls, values, section)
     try:
-        return cls(**values)
+        return cls(**coerced_values)
     except TypeError as exc:
         raise ConfigError(f"Invalid keys or values in {section}: {exc}") from exc
+
+
+def _coerce_dataclass_values[T](cls: type[T], values: Mapping[str, Any], section: str) -> dict[str, Any]:
+    dataclass_fields = {config_field.name for config_field in fields(cast(Any, cls))}
+    _reject_unknown_keys(values, dataclass_fields, section)
+    annotations = get_type_hints(cls)
+    return {name: _coerce_value(value, annotations[name], f"{section}.{name}") for name, value in values.items()}
 
 
 def _mapping(raw: object, section: str) -> dict[str, Any]:
@@ -210,6 +219,47 @@ def _reject_unknown_keys(raw: Mapping[str, Any], allowed: set[str], section: str
     if unknown:
         joined = ", ".join(unknown)
         raise ConfigError(f"Unknown configuration key(s) in {section}: {joined}")
+
+
+def _coerce_value(value: Any, annotation: Any, key: str) -> Any:
+    if value is None:
+        if type(None) in get_args(annotation):
+            return None
+        raise ConfigError(f"Configuration value {key} must not be null.")
+
+    if annotation is str:
+        if isinstance(value, str):
+            return value
+        raise ConfigError(f"Configuration value {key} must be a string.")
+
+    if annotation is bool:
+        if isinstance(value, bool):
+            return value
+        raise ConfigError(f"Configuration value {key} must be a boolean.")
+
+    if annotation is int:
+        if isinstance(value, bool):
+            raise ConfigError(f"Configuration value {key} must be an integer.")
+        if isinstance(value, float) and not value.is_integer():
+            raise ConfigError(f"Configuration value {key} must be an integer.")
+        try:
+            return int(value)
+        except (TypeError, ValueError) as exc:
+            raise ConfigError(f"Configuration value {key} must be an integer.") from exc
+
+    if annotation is float:
+        if isinstance(value, bool):
+            raise ConfigError(f"Configuration value {key} must be a number.")
+        try:
+            return float(value)
+        except (TypeError, ValueError) as exc:
+            raise ConfigError(f"Configuration value {key} must be a number.") from exc
+
+    if get_origin(annotation) in (UnionType,):
+        non_none = next(item for item in get_args(annotation) if item is not type(None))
+        return _coerce_value(value, non_none, key)
+
+    return value
 
 
 def _validate(config: MemoryWeaveConfig) -> None:

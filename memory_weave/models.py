@@ -15,6 +15,7 @@ EntityKind = Literal["person", "project", "org", "repo", "product", "other"]
 EntityStatus = Literal["provisional", "confirmed", "merged", "deleted"]
 EntityRole = Literal["about", "mentions"]
 TurnRole = Literal["user", "assistant", "tool"]
+RewriteStatus = Literal["disabled", "applied", "unchanged", "failed"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -146,7 +147,7 @@ class Candidate:
 class Explanation:
     raw_queries: list[str]
     rewritten_queries: list[str] | None
-    rewrite_status: Literal["disabled", "applied", "unchanged", "failed"]
+    rewrite_status: RewriteStatus
     matched_by: list[Literal["dense", "lexical", "entity"]]
     dense: GeneratorHit | None
     lexical: GeneratorHit | None
@@ -178,7 +179,7 @@ class SearchResponse:
     search_id: str
     raw_queries: list[str]
     rewritten_queries: list[str] | None
-    rewrite_status: Literal["disabled", "applied", "unchanged", "failed"]
+    rewrite_status: RewriteStatus
     results: list[SearchResult]
     empty_reason: str | None
     timings_ms: dict[str, float]

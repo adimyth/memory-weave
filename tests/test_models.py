@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from dataclasses import FrozenInstanceError
 from datetime import UTC, datetime
+
+import pytest
 
 from memory_weave.models import EntityMention, Principal, Scope, SearchRequest, Turn
 
@@ -37,3 +40,18 @@ def test_core_models_preserve_the_framework_neutral_contract() -> None:
     assert principal.project_id == "memory-weave"
     assert request.k == 8
     assert turn.role == "user"
+
+
+def test_principal_and_scope_are_immutable() -> None:
+    scope = Scope(kind="user", id="aditya")
+    principal = Principal(
+        agent_id="research-agent",
+        user_id="aditya",
+        session_id="session-1",
+        project_id="memory-weave",
+    )
+
+    with pytest.raises(FrozenInstanceError):
+        scope.id = "another-user"
+    with pytest.raises(FrozenInstanceError):
+        principal.user_id = "another-user"

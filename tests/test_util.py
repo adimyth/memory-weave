@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from datetime import UTC
+
 import pytest
 
-from memory_weave.util import Timer, normalize_alias, normalize_ws, uuid7
+from memory_weave.util import Timer, normalize_alias, normalize_ws, now, uuid7
 
 
 def test_timer_records_ordered_stage_durations_and_total() -> None:
@@ -32,4 +34,12 @@ def test_normalize_text_helpers() -> None:
 def test_uuid7_values_sort_in_creation_order() -> None:
     values = [uuid7() for _ in range(100)]
 
+    assert all(isinstance(value, str) for value in values)
     assert values == sorted(values)
+
+
+def test_now_returns_a_timezone_aware_utc_timestamp() -> None:
+    timestamp = now()
+
+    assert timestamp.tzinfo is not None
+    assert timestamp.utcoffset() == UTC.utcoffset(timestamp)
