@@ -191,9 +191,19 @@ The scope filter runs before any candidate generator. Dense, lexical, and entity
 
 **Results carry explanations.** Each returned record includes an explanation object containing the raw and, if enabled, rewritten query; the generators that matched it; its rank and score from each generator; fused rank; any freshness adjustment; whether reranking changed its rank; its source kind, status, dates, and entity links; and why it survived the gate, duplicate collapse, and token budget. The response-level explanation also records why a search returned nothing. The agent can reject a record on that basis, and the user can inspect it.
 
-### Prompt policy
+### Prompt policy and the retrieval trigger
 
-All durable memory remains external to the prompt prefix. The prefix contains system instructions, tool definitions, and a short memory-use policy; the agent must still decide when to search. This is the tool-mediated policy described in Section 3, and the evaluation set measures search, no-search, and reject cases directly.
+All durable memory remains external to the prompt prefix. The prefix contains system instructions, tool definitions, and a short memory-use policy. Nothing from the store is ever edited into the prefix.
+
+Who calls `memory_search` is a separate decision from everything above, and it is the weakest point of a purely tool-mediated design: models search reliably when the user points at the past and unreliably when a stored preference should silently shape an answer. The design therefore treats the trigger as an adapter setting with three modes, all running the identical pipeline.
+
+| Mode | Who searches | Status |
+| --- | --- | --- |
+| `tool_only` | The model, through its tool. | The default. Right for task agents whose work signals when memory matters. |
+| `auto` | The host, once per user turn (never on assistant or tool turns), appending any non-empty result as a tool-result message. The search tool is not registered. | An experimental control. |
+| `hybrid` | Both: the host's search once per user turn for the silently relevant cases, and the model's tools for targeted follow-ups. | The production candidate for assistants. |
+
+The reason `auto` and `hybrid` are viable here and pollute elsewhere is the gate. Systems that inject memory on every turn inject top-k unconditionally. A host-issued search in this design passes through the same gate as any other, and the expected result on most turns is nothing. Appending results as messages rather than editing the prefix keeps caching intact. The evaluation measures search, no-search, and reject cases with the model in the loop, plus the injection rate on ordinary turns, and `hybrid` becomes the recommended default only when that rate is acceptably low.
 
 ## 8. Entities
 
@@ -287,6 +297,8 @@ Every search writes one log row: raw request; rewritten query and rewrite status
 | Are the gate floors right? | Calibrated once on the eval set. | Sweep floors against the no-memory cases. |
 | Is per-message extraction worth it? | Session-end only. | Compare recall of mid-session facts against pollution rate. |
 | Should anything be ambient? | Nothing. | Add a bounded user profile block; measure search-miss rate against over-personalization. |
+| Who triggers retrieval? | `tool_only`. | Agent-in-the-loop run comparing `tool_only`, `auto`, and `hybrid` on search rate when evidence existed, false-search rate, injection rate on ordinary turns, and accuracy. |
+| Is the gate strong enough for host-issued searches? | Per-type dense floors, minimum matched terms for lexical-only passes, and a relative floor. | Three-class calibration sweep on the search log; reranker as the gate if the ordinary-turn rate stays too high. |
 | Exact vs approximate vector search? | Exact. | Only revisit above 200K records. |
 
 ## 16. What the evaluation will need from this design

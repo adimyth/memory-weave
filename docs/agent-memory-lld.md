@@ -78,12 +78,14 @@ embedding:
   dims: 1024
   device: auto
   max_chars: 2000
+  query_cache_entries: 4096
 ```
 
 - `version` tags each stored vector. `VectorIndex.load` accepts rows that match the current model and version. Bump it when the model or preprocessing changes, then run `memory-weave reembed`.
 - `dims` is the vector width. It must match the model's output.
 - `device` selects `mps` on Apple silicon, `cuda` when available, and `cpu` otherwise.
 - `max_chars` truncates content before embedding. Stored content is never truncated.
+- `query_cache_entries` bounds the least-recently-used cache of exact query embeddings. Document embeddings never enter this cache. The cap prevents long-running `auto` and `hybrid` adapters from retaining one vector for every user turn.
 
 ### 2.2 Reranker
 
@@ -110,20 +112,33 @@ retrieval:
     model: claude-haiku-4-5-20251001
     max_context_chars: 2000
     timeout_ms: 800
+  trigger:
+    mode: tool_only           # tool_only | auto | hybrid; refer section 14.1
+    auto_k: 4                 # k for host-issued searches in auto and hybrid modes
+    auto_min_query_chars: 12  # host-issued search is skipped for shorter user turns
   per_generator_k: 30
   rrf_k: 60
   default_k: 8
   token_budget: 1500
   dedup_cosine: 0.92
   gate:
-    dense_floor: 0.45
+    dense_floor:
+      semantic: 0.45
+      episodic: 0.40
+      procedural: 0.45
     lexical_min_term_fraction: 0.5
+    lexical_min_matched_terms: 2
+    relative_floor: 0.5
   freshness:
     episodic_half_life_days: 30
     floor: 0.5
 ```
 
 The retriever applies these settings in the order shown. Section 10 defines the pipeline.
+
+- `trigger.mode` decides who calls `memory_search`: the model through its tool (`tool_only`), the host once per user turn (`auto`), or both (`hybrid`); refer section 14.1. The pipeline, the gate, and the log are identical in every mode. Only the caller changes.
+- `trigger.auto_k` caps host-issued searches. It is smaller than `default_k` because nobody asked for those results; they must earn their place.
+- `trigger.auto_min_query_chars` skips the host-issued search when the user turn is shorter than this after whitespace normalization. "ok", "yes", and "do it" are not queries.
 
 - `rewrite.enabled` rewrites the query before searching, using the last user and assistant turns: "what does he prefer?" becomes "Aditya's preferred explanation style"; refer section 10.0. The feature defaults to off because the hosted call sits on the hot path.
 - `rewrite.max_context_chars` caps the combined current-turn context that the adapter sends to the rewrite model. By default, this context is the most recent user turn plus assistant turn. It does not truncate the stored session transcript or the search queries.
@@ -132,13 +147,15 @@ The retriever applies these settings in the order shown. Section 10 defines the 
 - `rrf_k` is the fusion constant. Each list a record appears in adds `1 / (60 + rank)` to its score; refer section 10.3.
 - `freshness.episodic_half_life_days` halves an episodic record's score for every 30 days of event age; refer section 10.4. Semantic and procedural records do not decay.
 - `freshness.floor` is the lowest decay multiplier.
-- `gate.dense_floor` is the lowest cosine a dense-only candidate may have; refer section 10.5. Below it, the candidate is dropped.
-- `gate.lexical_min_term_fraction` is the fraction of query terms a lexical-only candidate must contain. Below it, the candidate is dropped.
+- `gate.dense_floor.<type>` is the lowest cosine a dense-only candidate of that record type may have; refer section 10.5. Episodic summaries are long, so their cosine against a short query runs lower than a short semantic fact's, and one shared floor would under-retrieve episodes while over-retrieving facts.
+- `gate.lexical_min_term_fraction` is the fraction of query terms a lexical-only candidate must contain.
+- `gate.lexical_min_matched_terms` is the smallest number of matched terms a lexical-only candidate needs, unless one matched term is an entity alias or an identifier token. It stops a one-word query such as "deployment" from admitting every record that mentions deployment.
+- `gate.relative_floor` drops survivors whose fused score is below this fraction of the top survivor's score. Entity hits are exempt. When one record is corroborated by several generators, single-signal stragglers are noise relative to it.
 - `dedup_cosine` drops a survivor this similar to a record already kept; refer section 10.6.
 - `default_k` is how many records a search returns when the caller omits `SearchRequest.k`; refer section 10.8.
 - `token_budget` is the token ceiling on the tool result.
 
-The gate keeps a candidate that clears either floor or matches an entity exactly. Recalibrate `dense_floor` and record it with `embedding.version` after an embedder change.
+The gate keeps a candidate that clears an absolute floor or matches an entity exactly, then applies the relative floor. Recalibrate every `dense_floor` value and `relative_floor` and record them with `embedding.version` after an embedder change; section 10.5 describes the three calibration classes.
 
 Budget filling stops at `default_k` or `token_budget`, whichever it reaches first. Long records can leave a response below `k`.
 
@@ -314,6 +331,7 @@ CREATE TABLE search_log (
   agent_id      TEXT NOT NULL,
   user_id       TEXT NOT NULL,
   session_id    TEXT,
+  trigger       TEXT NOT NULL DEFAULT 'tool', -- 'tool' when the model called memory_search, 'auto' when the host did (section 14.1)
   request       TEXT NOT NULL,                -- JSON of the SearchRequest as received (raw queries, filters, k)
   context       TEXT,                         -- host-supplied current-turn context, as passed to the rewriter; NULL when none
   rewrite_status TEXT NOT NULL,               -- 'disabled' | 'applied' | 'unchanged' | 'failed'
@@ -413,7 +431,7 @@ FTS5 cannot apply the scope predicate, so the retriever over-fetches and interse
 | --- | --- |
 | `id` | Entity identifier. |
 | `kind` | `person`, `project`, `org`, `repo`, `product`, or `other`. |
-| `canonical` | Preferred display name. |
+| `canonical` | Preferred display name with leading, trailing, and repeated whitespace collapsed. It preserves accents. |
 | `scope_kind` | Scope that owns the entity. |
 | `scope_id` | Identifier inside that scope. |
 | `status` | `provisional`, `confirmed`, `merged`, or `deleted`. |
@@ -490,6 +508,7 @@ FTS5 cannot apply the scope predicate, so the retriever over-fetches and interse
 | `agent_id` | Requesting agent. |
 | `user_id` | Principal user for the request. |
 | `session_id` | Optional source session. |
+| `trigger` | `tool` when the model issued the search, `auto` when the host issued it after a user turn; refer section 14.1. Added in schema migration 2. |
 | `request` | Original `SearchRequest`, including raw queries and filters. |
 | `context` | Host-supplied context passed to the rewriter. `NULL` when absent. |
 | `rewrite_status` | `disabled`, `applied`, `unchanged`, or `failed`. |
@@ -522,6 +541,7 @@ class Scope:
     kind: Literal["agent", "user", "project", "org"]
     id: str
 
+
 @dataclass
 class Record:
     id: str
@@ -545,6 +565,7 @@ class Record:
     tags: list[str]
     entity_ids: list[str]
 
+
 @dataclass
 class Entity:
     id: str
@@ -553,15 +574,17 @@ class Entity:
     scope: Scope
     status: Literal["provisional", "confirmed", "merged", "deleted"]
     merged_into: str | None
-    aliases: list[str]                        # normalized forms
+    aliases: list[str]  # normalized forms
     created_at: datetime
+
 
 @dataclass(frozen=True)
 class EntityMention:
     kind: Literal["person", "project", "org", "repo", "product", "other"]
-    text: str                                 # as written in the source
+    text: str  # as written in the source
     role: Literal["about", "mentions"]
-    entity_id: str | None = None              # explicit id supplied by the writer; skips alias resolution when set
+    entity_id: str | None = None  # explicit id supplied by the writer; skips alias resolution when set
+
 
 @dataclass(frozen=True)
 class Turn:
@@ -571,25 +594,29 @@ class Turn:
     content: str
     at: datetime
 
+
 @dataclass(frozen=True)
 class ExtractionContext:
     principal: Principal
-    known_entities: list[tuple[str, str, str]]   # (entity_id, kind, canonical) readable by the agent
-    existing_subjects: list[str]                 # active subjects in the agent's writable scopes
+    known_entities: list[tuple[str, str, str]]  # (entity_id, kind, canonical) readable by the agent
+    existing_subjects: list[str]  # active subjects in the agent's writable scopes
     prompt_version: str
+
 
 @dataclass(frozen=True)
 class RewriteResult:
     queries: list[str]
     status: Literal["applied", "unchanged", "failed"]
 
+
 @dataclass(frozen=True)
 class EvidenceCheck:
     found: bool
     turn: int | None
     role: Literal["user", "assistant", "tool"] | None
-    source_kind: Literal["user_statement", "tool_result", "agent_inference"]   # source kind supported by the evidence
-    note: str | None                          # set when the claimed kind was downgraded
+    source_kind: Literal["user_statement", "tool_result", "agent_inference"]  # source kind supported by the evidence
+    note: str | None  # set when the claimed kind was downgraded
+
 
 @dataclass(frozen=True)
 class Principal:
@@ -598,40 +625,45 @@ class Principal:
     session_id: str | None
     project_id: str | None
 
+
 @dataclass(frozen=True)
 class SearchRequest:
-    queries: list[str]                        # 1 to 3, as the agent wrote them (the raw retrieval request)
-    context: str | None                       # host-supplied current-turn context, set by the adapter, never by the agent
+    queries: list[str]  # 1 to 3, as the agent wrote them (the raw retrieval request)
+    context: str | None  # host-supplied current-turn context, set by the adapter, never by the agent
     types: list[str] | None
-    entities: list[str] | None                # alias strings, resolved by the retriever
-    since: datetime | None                    # applies to event_at
+    entities: list[str] | None  # alias strings, resolved by the retriever
+    since: datetime | None  # applies to event_at
     until: datetime | None
     k: int
-    include_history: bool                     # superseded and expired become eligible
+    include_history: bool  # superseded and expired become eligible
+    trigger: Literal["tool", "auto"] = "tool"  # set by the adapter; "auto" for host-issued searches (section 14.1)
+
 
 @dataclass
 class GeneratorHit:
-    rank: int                                 # 1-based rank within that generator's list
-    score: float                              # cosine, bm25, or 0.0 for entity
+    rank: int  # 1-based rank within that generator's list
+    score: float  # cosine, bm25, or 0.0 for entity
+
 
 @dataclass
 class Candidate:
     record_id: str
     dense: GeneratorHit | None
     lexical: GeneratorHit | None
-    lexical_terms: tuple[int, int] | None     # matched_terms, total_terms
+    lexical_terms: tuple[int, int] | None  # matched_terms, total_terms
     entity: GeneratorHit | None
     entity_id: str | None
     rrf_score: float
     fused_rank: int
-    freshness_multiplier: float | None        # set for episodic records only
-    score: float                              # rrf_score * freshness_multiplier
-    gate_reason: str | None                   # why it passed, or why it was dropped
+    freshness_multiplier: float | None  # set for episodic records only
+    score: float  # rrf_score * freshness_multiplier
+    gate_reason: str | None  # why it passed, or why it was dropped
     rerank_score: float | None
     rank_after_rerank: int | None
 
+
 @dataclass
-class Explanation:                            # one per returned record; the HLD's "explanation object"
+class Explanation:  # one per returned record; the HLD's "explanation object"
     raw_queries: list[str]
     rewritten_queries: list[str] | None
     rewrite_status: Literal["disabled", "applied", "unchanged", "failed"]
@@ -642,22 +674,24 @@ class Explanation:                            # one per returned record; the HLD
     entity: GeneratorHit | None
     fused_rank: int
     freshness_multiplier: float | None
-    rerank: tuple[int, int, float] | None     # rank_before, rank_after, score; None when the reranker is disabled
-    gate: str                                 # which floor or match let it through
-    dedup: str                                # "kept" or "kept over <dropped_id> at cosine 0.94"
-    budget: str                               # "fit at position 3 of 8, 412 tokens used"
+    rerank: tuple[int, int, float] | None  # rank_before, rank_after, score; None when the reranker is disabled
+    gate: str  # which floor or match let it through
+    dedup: str  # "kept" or "kept over <dropped_id> at cosine 0.94"
+    budget: str  # "fit at position 3 of 8, 412 tokens used"
     source_kind: str
     status: str
     created_at: datetime
     event_at: datetime
     entity_ids: list[str]
-    summary: str                              # one line, human readable, rendered to the model
+    summary: str  # one line, human readable, rendered to the model
+
 
 @dataclass
 class SearchResult:
     record: Record
     score: float
     explanation: Explanation
+
 
 @dataclass
 class SearchResponse:
@@ -666,7 +700,7 @@ class SearchResponse:
     rewritten_queries: list[str] | None
     rewrite_status: Literal["disabled", "applied", "unchanged", "failed"]
     results: list[SearchResult]
-    empty_reason: str | None                  # set when results is empty; states which floors the best candidate missed
+    empty_reason: str | None  # set when results is empty; states which floors the best candidate missed
     timings_ms: dict[str, float]
 ```
 
@@ -698,7 +732,10 @@ class Embedder(Protocol):
     name: str
     version: str
     dims: int
-    def embed(self, texts: list[str]) -> np.ndarray: ...     # (n, dims) float32, L2-normalized
+    @property
+    def is_loaded(self) -> bool: ...
+    def embed_queries(self, texts: list[str]) -> np.ndarray: ...    # (n, dims) float32, L2-normalized; exact-string query cache
+    def embed_documents(self, texts: list[str]) -> np.ndarray: ...  # (n, dims) float32, L2-normalized; never enters the query cache
 
 class Reranker(Protocol):
     def score(self, query: str, docs: list[str]) -> list[float]: ...
@@ -730,15 +767,16 @@ class CandidateRecord:
     content: str
     subject: str
     source_kind: Literal["user_statement", "tool_result", "agent_inference"]
-    evidence: str                             # verbatim
+    evidence: str  # verbatim
     evidence_turn: int
-    entity_mentions: list[EntityMention]      # (kind, text, role)
+    entity_mentions: list[EntityMention]  # (kind, text, role)
     event_at: datetime | None
     confidence: float
 
+
 @dataclass
 class SessionSummary:
-    content: str                              # 3 to 8 sentences: goal, what happened, decisions, open threads
+    content: str  # 3 to 8 sentences: goal, what happened, decisions, open threads
     decisions: list[str]
     entity_mentions: list[EntityMention]
 ```
@@ -760,9 +798,11 @@ Policy code answers four questions: which scopes a caller may use, how much auth
 
 ```python
 def readable_scopes(store, agent_id, user_id, project_id) -> list[Scope]:
-    scopes = [Scope("agent", agent_id)]                      # implicit
+    scopes = [Scope("agent", agent_id)]  # implicit
     scopes += store.grants_for(agent_id, can_read=True)
-    return [s for s in scopes if s.kind != "user" or s.id == user_id]   # never read another user's scope, even if granted
+    return [
+        s for s in scopes if s.kind != "user" or s.id == user_id
+    ]  # never read another user's scope, even if granted
 ```
 
 The user-scope condition blocks a grant on `user:X` unless the current principal is `X`. Cross-user reads use `org` or `project` scope.
@@ -775,8 +815,12 @@ The user-scope condition blocks a grant on `user:X` unless the current principal
 def initial_status(source_kind) -> str:
     return "provisional" if source_kind == "agent_inference" else "confirmed"
 
+
 def initial_confidence(source_kind) -> float:
-    return {"user_statement": 0.95, "system": 0.9, "tool_result": 0.85, "session_summary": 0.8, "agent_inference": 0.6}[source_kind]
+    return {"user_statement": 0.95, "system": 0.9, "tool_result": 0.85, "session_summary": 0.8, "agent_inference": 0.6}[
+        source_kind
+    ]
+
 
 def initial_expiry(source_kind, now) -> datetime | None:
     return now + timedelta(days=cfg.provisional_ttl_days) if source_kind == "agent_inference" else None
@@ -816,8 +860,8 @@ def has_authority(new, old) -> bool:
     if rank(new) != rank(old):
         return rank(new) > rank(old)
     if new.event_at != old.event_at:
-        return new.event_at > old.event_at                # equal rank: the later event wins, whenever it arrived
-    return new.created_at >= old.created_at               # same event time: the later write wins
+        return new.event_at > old.event_at  # equal rank: the later event wins, whenever it arrived
+    return new.created_at >= old.created_at  # same event time: the later write wins
 ```
 
 | Judge result and authority | Ingestor action |
@@ -868,7 +912,9 @@ def validate_evidence(session_id, quote, claimed: str, turn_hint: int | None = N
         return EvidenceCheck(False, None, None, "agent_inference", "evidence not found in session")
     supported = {"user": "user_statement", "tool": "tool_result", "assistant": "agent_inference"}[hit.role]
     if rank(claimed) > rank(supported):
-        return EvidenceCheck(True, hit.turn, hit.role, supported, f"downgraded from {claimed}: quote is from a {hit.role} turn")
+        return EvidenceCheck(
+            True, hit.turn, hit.role, supported, f"downgraded from {claimed}: quote is from a {hit.role} turn"
+        )
     return EvidenceCheck(True, hit.turn, hit.role, claimed, None)
 ```
 
@@ -889,31 +935,29 @@ The vector index is an in-memory projection of compatible rows in `embeddings`. 
 
 ```python
 class VectorIndex:
-    ids: list[str]
-    pos: dict[str, int]
-    matrix: np.ndarray            # (n, dims) float32, rows L2-normalized
-    live: np.ndarray              # (n,) bool
+    ids: list[str]  # diagnostic snapshot of record IDs
+    pos: dict[str, int]  # diagnostic snapshot of row positions
+    live: np.ndarray  # diagnostic snapshot of liveness flags
 
-    def load(self, store): ...    # read all embeddings for the configured model/version
-    def upsert(self, record_id, vec): ...   # append or overwrite row; grows matrix by doubling
-    def remove(self, record_id): ...        # live[pos] = False
+    def load(self, store): ...  # read all embeddings for the configured model/version
+    def upsert(self, record_id, vec): ...  # append or overwrite a normalized row; grows the live index by doubling
+    def remove(self, record_id): ...  # live[pos] = False
+    def vector_for(self, record_id) -> np.ndarray | None: ...
+    def cosine(self, first_id, second_id) -> float: ...
 
-    def search(self, qvec, allowed: np.ndarray, k) -> list[tuple[str, float]]:
-        scores = self.matrix @ qvec                     # (n,)
-        scores[~(self.live & allowed)] = -inf
-        top = np.argpartition(-scores, k)[:k]
-        top = top[np.argsort(-scores[top])]
-        return [(self.ids[i], float(scores[i])) for i in top if scores[i] > -inf]
+    def search(
+        self, qvec, allowed: np.ndarray, k
+    ) -> list[tuple[str, float]]: ...  # scores the private normalized matrix under the index lock
 ```
 
 | Structure | Holds | Why it exists |
 | --- | --- | --- |
 | `ids` | Record ID for each matrix row. | Converts a selected row back to a record. |
 | `pos` | Matrix row for each record ID. | Builds filters and updates rows without scanning. |
-| `matrix` | One L2-normalized vector per record. | Makes cosine search a matrix multiplication. |
+| Internal matrix | One L2-normalized vector per record. | Makes cosine search a matrix multiplication. It is intentionally not exposed because copying it at 50K records costs about 200 MB. |
 | `live` | Boolean flag for each matrix row. | Hides deleted records without rebuilding the matrix. |
 
-The store returns eligible record IDs after scope, lifecycle, type, and time filtering. The retriever converts them into `allowed`, a boolean mask aligned with the matrix. `search` applies `live & allowed` before it selects the top scores.
+The store returns eligible record IDs after scope, lifecycle, type, and time filtering. The retriever converts them into `allowed`, a boolean mask aligned with the matrix. `search` applies `live & allowed` before it selects the top scores. Retrieval code uses `vector_for` for an isolated record vector and `cosine` for comparisons between indexed records; neither API exposes or copies the full matrix.
 
 For multiple queries, dense search embeds each query and keeps the highest cosine for each record before RRF. At 50K records, a 1,024-dimension `float32` matrix uses about 200 MB. Startup loads those vectors from SQLite in about one second; search uses one matrix multiplication and one partition per query, with a design estimate below 5 ms.
 
@@ -1018,7 +1062,9 @@ def resolve_entities(mentions, scope, principal) -> list[Resolution]:
         if m.entity_id:
             e = store.entity(m.entity_id)
             assert e and e.scope in readable                          # else error "entity_not_readable"
-            out.append(Resolution(m, follow_merges(e), "explicit", [])); continue
+            e = follow_merges(e)
+            assert e.kind == m.kind                                   # else error "entity_kind_mismatch"
+            out.append(Resolution(m, e, "explicit", [])); continue
         norm = normalize(m.text)                                     # lower, collapse ws, strip diacritics
         hits = store.entities_by_alias(norm, kinds=[m.kind], scopes=readable, status in (provisional, confirmed))
         if len(hits) == 1:
@@ -1026,7 +1072,8 @@ def resolve_entities(mentions, scope, principal) -> list[Resolution]:
         elif len(hits) > 1:
             out.append(Resolution(m, None, "ambiguous", [h.id for h in hits]))   # never pick one
         else:
-            e = store.create_entity(kind=m.kind, canonical=m.text, scope=scope, status="provisional")
+            assert scope in writable_scopes(principal)
+            e = store.create_entity(kind=m.kind, canonical=normalize_ws(m.text), scope=scope, status="provisional")
             store.add_alias(e.id, norm); append event entity.created
             out.append(Resolution(m, e, "created", []))
     return out
@@ -1046,9 +1093,9 @@ Ambiguity has different effects for the two link roles.
 | `about` | Stop the explicit write with `entity_ambiguous`. Extraction rejects the candidate and logs the entity IDs. |
 | `mentions` | Write the record without that link and add `ambiguous_mention` to the event. |
 
-The resolver logs each ambiguity as `ambiguous_alias` for evaluation. Repeated ambiguity requires a more specific alias or a manual merge.
+The resolver only returns an ambiguity in `Resolution`; it does not write an event. The ingestor logs each ambiguity as `ambiguous_alias` after its write transaction succeeds or rolls back, so the audit event survives a rejected `about` mention. Repeated ambiguity requires a more specific alias or a manual merge.
 
-An agent with write access to both scopes, or the CLI, performs `memory_revise(entity_id=..., merge_into=...)`. The merge sets `status=merged` and `merged_into`, repoints `record_entities`, and unions aliases. Alias lookup follows `merged_into` to the surviving entity.
+An agent with write access to both scopes, or the CLI, performs `memory_revise(entity_id=..., merge_into=...)`. Both entities must have the same kind. The merge sets `status=merged` and `merged_into`, repoints `record_entities`, and unions aliases. Alias lookup follows `merged_into` to the surviving entity.
 
 The first `about` mention is the primary entity. For a semantic record without an `about` mention, the principal user is the primary entity.
 
@@ -1080,9 +1127,9 @@ def rewrite_stage(req: SearchRequest) -> tuple[list[str], str]:
         return req.queries, "disabled"
     ctx = (req.context or "")[: cfg.retrieval.rewrite.max_context_chars]
     try:
-        out = rewriter.rewrite(req.queries, ctx)                # one structured-output call, timeout_ms
+        out = rewriter.rewrite(req.queries, ctx)  # one structured-output call, timeout_ms
     except (TimeoutError, RewriteError):
-        return req.queries, "failed"                            # raw queries proceed; nothing else changes
+        return req.queries, "failed"  # raw queries proceed; nothing else changes
     return (out.queries, "applied") if out.queries != req.queries else (req.queries, "unchanged")
 ```
 
@@ -1103,62 +1150,95 @@ The handler below runs the stages in the table. It creates `search_id` first, re
 ```python
 def memory_search(principal, req: SearchRequest) -> SearchResponse:
     t = Timer(warm=embedder.is_loaded and vector_index.is_loaded)
-    search_id = uuid7()                                   # generated first; it is the search_log primary key and appears in the response
-    reranked = None                                       # stays None when the reranker is disabled; the log column is NULL
+    search_id = uuid7()  # generated first; it is the search_log primary key and appears in the response
+    reranked = None  # stays None when the reranker is disabled; the log column is NULL
 
-    queries, rewrite_status = rewrite_stage(req)                                          # 10.0
+    queries, rewrite_status = rewrite_stage(req)  # 10.0
     t.mark("rewrite")
 
     scopes = readable_scopes(store, principal.agent_id, principal.user_id, principal.project_id)
     t.mark("scopes")
 
-    eligible = store.eligible_ids(scopes, req.types, req.since, req.until, req.include_history, now)   # SQL, returns set[str]
+    eligible = store.eligible_ids(
+        scopes, req.types, req.since, req.until, req.include_history, now
+    )  # SQL, returns set[str]
     allowed = vector_index.mask(eligible)
     t.mark("filter")
 
-    qvecs = embedder.embed(queries); t.mark("embed")
+    qvecs = embedder.embed_queries(queries)
+    t.mark("embed")
 
     # the three generators are independent and may run concurrently (open item 7); each is timed separately either way
-    dense = {}                                   # record_id -> max cosine
+    dense = {}  # record_id -> max cosine
     for qv in qvecs:
         for rid, cos in vector_index.search(qv, allowed, cfg.per_generator_k):
             dense[rid] = max(dense.get(rid, -1), cos)
     t.mark("dense")
 
-    lexical = lexical_search(queries, eligible, cfg.per_generator_k)         # 10.2
+    lexical = lexical_search(queries, eligible, cfg.per_generator_k)  # 10.2
     t.mark("lexical")
 
     entity_ids = resolve_aliases(req.entities, scopes) + entities_in_queries(queries, scopes)
     entity_hits = store.records_for_entities(entity_ids, eligible, order="event_at desc", limit=cfg.per_generator_k)
     t.mark("entity")
 
-    candidates = rrf([ranked(dense), ranked(lexical), ranked(entity_hits)], k=cfg.rrf_k)   # 10.3, sets rrf_score and fused_rank
+    candidates = rrf(
+        [ranked(dense), ranked(lexical), ranked(entity_hits)], k=cfg.rrf_k
+    )  # 10.3, sets rrf_score and fused_rank
     t.mark("fuse")
 
-    candidates = apply_freshness(candidates, store, now)                                  # 10.4, sets freshness_multiplier and score
+    candidates = apply_freshness(candidates, store, now)  # 10.4, sets freshness_multiplier and score
     t.mark("freshness")
 
-    kept, gated_out = gate(candidates, queries)                                           # 10.5, sets gate_reason
+    kept, gated_out = gate(candidates, queries)  # 10.5, sets gate_reason
     t.mark("gate")
 
-    kept, deduped_out = collapse_duplicates(kept, vector_index, cfg.dedup_cosine)         # 10.6
+    kept, deduped_out = collapse_duplicates(kept, vector_index, cfg.dedup_cosine)  # 10.6
     t.mark("dedup")
 
     if cfg.reranker.enabled:
-        kept, reranked = rerank(kept[:cfg.reranker.candidates], queries)                  # 10.7, scores every query, keeps the max per record
+        kept, reranked = rerank(
+            kept[: cfg.reranker.candidates], queries
+        )  # 10.7, scores every query, keeps the max per record
     t.mark("rerank")
 
-    chosen, budget_out = fill_budget(kept, req.k, cfg.token_budget)                       # 10.8
+    chosen, budget_out = fill_budget(kept, req.k, cfg.token_budget)  # 10.8
     t.mark("budget")
 
-    results, empty_reason = explain(chosen, candidates, req.queries, queries, rewrite_status, gated_out, deduped_out)   # 10.9
+    results, empty_reason = explain(
+        chosen, candidates, req.queries, queries, rewrite_status, gated_out, deduped_out
+    )  # 10.9
     t.mark("explain")
 
-    log_search(principal, req, queries, rewrite_status, scopes, dense, lexical, entity_hits,
-               candidates, gated_out, deduped_out, reranked, budget_out, results, empty_reason, cfg.flags(), t)
+    log_search(
+        principal,
+        req,
+        queries,
+        rewrite_status,
+        scopes,
+        dense,
+        lexical,
+        entity_hits,
+        candidates,
+        gated_out,
+        deduped_out,
+        reranked,
+        budget_out,
+        results,
+        empty_reason,
+        cfg.flags(),
+        t,
+    )
     t.mark("log")
-    return SearchResponse(search_id, req.queries, queries if rewrite_status == "applied" else None,
-                          rewrite_status, results, empty_reason, t.as_dict())
+    return SearchResponse(
+        search_id,
+        req.queries,
+        queries if rewrite_status == "applied" else None,
+        rewrite_status,
+        results,
+        empty_reason,
+        t.as_dict(),
+    )
 ```
 
 ### 10.2 Lexical search
@@ -1200,21 +1280,37 @@ Semantic and procedural records retain their fused score because supersession ha
 
 ### 10.5 Gate
 
-The gate keeps a candidate when one of these signals is strong enough:
+The gate decides whether any candidate is strong enough to reach the agent, and it drops weak candidates even when stronger ones pass. It is the component that makes an empty result common rather than exceptional, and it is what makes host-issued searches (section 14.1) safe. It runs in three steps.
+
+**Step 1, absolute floors, per candidate.** Keep a candidate when any one signal holds:
 
 | Signal | Passing condition |
 | --- | --- |
 | Entity | The candidate came from an exact entity match. |
-| Dense | Cosine is at least `cfg.gate.dense_floor`. |
-| Lexical | At least one term matched and `matched_terms / total_terms` is at least `cfg.gate.lexical_min_term_fraction`. |
+| Dense | Cosine is at least `cfg.gate.dense_floor[record.type]`. Floors are per record type because long episodic summaries score lower against short queries than short semantic facts do. |
+| Lexical | `matched_terms / total_terms` is at least `cfg.gate.lexical_min_term_fraction`, and either `matched_terms` is at least `cfg.gate.lexical_min_matched_terms` or one matched term is an entity alias or an identifier token. |
 
-The gate drops dense-only candidates below the cosine floor and lexical-only candidates below the term-fraction floor. If no candidate survives, the response sets `results` to empty and names the best candidate's missed floors in `empty_reason`, for example `"best dense 0.38 < 0.45; best lexical 1/4 terms; no entity match"`.
+An identifier token contains a digit, underscore, dot, slash, or dash, or mixes case inside the token: `ERR42`, `bge-m3`, `deploy.yml`, `camelCase`. Such tokens are precise enough to pass on their own. A plain word is not, which is why a one-word query such as "deployment" cannot admit every record that mentions deployment.
 
-The dense floor depends on the embedding model. Evaluation sweeps no-memory and desired-retrieval cases, selects the value with the best F1 for "should have returned something," and records it with the embedding version in `config.py`.
+**Step 2, relative floor, across survivors.** Let `top` be the highest fused score among step-1 survivors. Drop any survivor whose fused score is below `cfg.gate.relative_floor * top`, except entity hits. With one survivor this is a no-op. The reason is how RRF behaves: a record near the top of two or three generator lists scores roughly three times a record that appears on one list, so when a corroborated record exists, single-signal stragglers are noise relative to it. When every survivor is single-signal, their scores sit close together, the relative floor keeps most of them, and the absolute floors carry the decision.
+
+**Step 3, the empty decision.** If nothing survives, `results` is empty and `empty_reason` names the best candidate's missed floors, for example `"best dense 0.38 < 0.45 (semantic); best lexical 1/4 terms, 1 matched < 2; no entity match"`. Every dropped candidate carries a `gate_reason` naming the step and floor that dropped it, so the log can be replayed offline with different floors.
+
+**Calibration.** The floors depend on the embedding model and are re-calibrated on every embedder change. Calibration uses three query classes, and the third is the one most systems never test:
+
+| Class | Query | Correct outcome |
+| --- | --- | --- |
+| Evidence present | A question whose answer is in the store. | Return the evidence record. |
+| Evidence absent | A question with no supporting record anywhere in the store. | Return nothing. |
+| Ordinary turn | A conversational turn sampled from a real transcript, with a populated store that does not bear on it. | Return nothing, or at most a record the judge deems useful. |
+
+Because `search_log` keeps every candidate's scores, floor sweeps run offline against logged searches without re-executing them. Pick per-type dense floors and the relative floor that maximize F1 on classes 1 and 2, subject to an injection rate on class 3 below the target the benchmark sets. Record the chosen values with `embedding.version` in `config.py`.
+
+**What the gate does not do.** It judges relevance, not need. A record about the user's coffee habit passes on any coffee query, and whether that is personalization or pollution depends on the task. In `tool_only` mode the model absorbs that judgement by deciding to search. In `auto` and `hybrid` modes, the ordinary-turn class is how it is measured, and the reranker, which is better calibrated than cosine, is the next lever if the class-3 rate is too high.
 
 ### 10.6 Duplicate collapse
 
-Walk candidates in fused order. Compare each candidate vector with vectors already accepted. If cosine is at least `retrieval.dedup_cosine`, drop the later candidate and log `(dropped_id, kept_id, cosine)`. This removes near-duplicates that entered through different scopes or types.
+Walk candidates in fused order. Compare each candidate with records already accepted through `VectorIndex.cosine`, which reads the two private rows under the index lock. If cosine is at least `retrieval.dedup_cosine`, drop the later candidate and log `(dropped_id, kept_id, cosine)`. This removes near-duplicates that entered through different scopes or types without copying the full index matrix.
 
 ### 10.7 Reranker (optional, off by default)
 
@@ -1341,9 +1437,17 @@ The session buffer is the short-term transcript used to verify evidence and to e
 | `on_session_end` | The host explicitly closes the conversation or task. | Marks the session complete and schedules asynchronous extraction. |
 
 ```python
-def on_session_start(principal): store.create_session(...)
-def on_turn(principal, role, content): store.append_turn(...)        # tool turns store the tool result text, not the call
-def on_session_end(principal): store.end_session(...); schedule(extract_session, principal.session_id)
+def on_session_start(principal):
+    store.create_session(...)
+
+
+def on_turn(principal, role, content):
+    store.append_turn(...)  # tool turns store the tool result text, not the call
+
+
+def on_session_end(principal):
+    store.end_session(...)
+    schedule(extract_session, principal.session_id)
 ```
 
 If a framework cannot signal session end reliably, the adapter uses a 30-minute idle timeout. A later turn starts a new session. Every `source_ref` includes the session ID, so a split affects summary quality but does not make evidence point to the wrong transcript.
@@ -1353,6 +1457,12 @@ If a framework cannot signal session end reliably, the adapter uses a 30-minute 
 The adapter adds the following policy to the agent's prompt prefix. Keep the wording short and stable so prompt-prefix caching remains effective.
 
 > You have long-term memory available through tools. Before acting on anything that could depend on the user's preferences, earlier decisions, or previous sessions, call `memory_search` with one to three specific phrases. Do not search for general knowledge or for facts already visible in this conversation. When results come back, check their status, source, and date before relying on them; a provisional or old record may be wrong, and you can ask the user. When the user states a preference, a fact about themselves, or a decision, save it with `memory_write` and quote their words as evidence. Save decisions you make together as episodic records with the reason. Do not save guesses as facts.
+
+In `auto` and `hybrid` modes (section 14.1) the adapter appends one more sentence pair, since the model needs to know that some memory arrives without asking:
+
+> Relevant memories may also appear automatically before you answer, marked as recalled memory. Treat them exactly like search results: check their status, source, and date, and use `memory_search` yourself for anything more specific.
+
+In `auto` mode the sentence about calling `memory_search` is removed, because the tool is not registered.
 
 The policy text is versioned with the extractor prompt. Evaluation records both versions on every run, so a behavior change can be tied to the instructions that produced it.
 
@@ -1373,6 +1483,38 @@ CrewAI produces coarser dialogue than Deep Agents because it exposes step output
 
 Both adapters attach current-turn context to every search, even while rewriting is disabled. That avoids an adapter change when the flag is enabled later. If a framework needs framework-specific state in `records`, change the core contract instead of adding adapter-only fields.
 
+### 14.1 Trigger policy
+
+`retrieval.trigger.mode` decides who calls `memory_search`. The adapter owns this decision. The retrieval pipeline, the gate, the explanations, and the log are the same in every mode; only the caller changes.
+
+| Mode | Who searches | Tools registered for the model | Intended use |
+| --- | --- | --- | --- |
+| `tool_only` | The model, when it decides to. | All five. | The default. Right for task agents whose work signals when memory matters. |
+| `auto` | The host, once per user turn (never on assistant or tool turns). | `memory_get`, `memory_write`, `memory_revise`, `memory_forget`. `memory_search` is not registered. | An experimental control that isolates the host trigger from the model's own searching. |
+| `hybrid` | The host once per user turn, and the model whenever it decides to. | All five. | The production candidate for user-facing assistants, once the gate meets the benchmark's ordinary-turn target. |
+
+`hybrid` is not a blend of two triggers on one search. It is two different searches with different callers. The host's search once per user turn catches the silently relevant cases the model would never think to search for, such as a preference that should shape the answer. The model's own searches cover what the raw user turn cannot surface: a targeted follow-up, a time window, an entity hint, or a `memory_get` to inspect provenance before trusting a record.
+
+**Host-issued search.** Before the model call that follows a new user turn in `auto` or `hybrid` mode, the adapter:
+
+1. Takes the new user turn. If its whitespace-normalized length is below `trigger.auto_min_query_chars`, skips the search and logs an `events` row of kind `trigger.skipped` with the reason.
+2. Builds `SearchRequest(queries=[user turn text], context=<last user and assistant turns>, k=trigger.auto_k, trigger="auto")` with no type, time, or entity filters, and calls the same handler the tool uses. The rewrite stage applies when enabled, and it matters more here than for model-written queries, because a raw user turn is a poor query.
+3. If the response is non-empty, appends it to the conversation as a tool-result-shaped message, rendered with section 10.9's format under the header `recalled memory`. In frameworks that require a tool call to precede a tool result, the adapter appends a synthetic `memory_search` call and its result as a pair. If the response is empty, appends nothing.
+4. Never edits the prompt prefix or any earlier message. Appending keeps provider-side prefix caching intact; the recalled block simply becomes part of the history from that turn on, exactly as a model-issued tool result would.
+
+One host-issued search per user turn, never on assistant or tool turns. The `search_log` row records `trigger = 'auto'`, so every metric in the benchmark can be split by who asked.
+
+**Why the gate is the precondition.** Systems that inject memory on every turn pollute because they inject top-k unconditionally. A host-issued search here is subject to the same three-step gate as any other, and the expected outcome on most turns is empty. The benchmark's ordinary-turn class (section 10.5) measures how often that expectation fails. `hybrid` becomes the recommended default only when that rate is acceptably low and accuracy on the memory-needed cases rises; until then `tool_only` stays the default, which is why it is the initial value.
+
+**Adapter obligations by mode.**
+
+| Concern | Deep Agents | CrewAI |
+| --- | --- | --- |
+| Where the host search runs | A pre-model hook on the agent graph, before each model call that follows a human message. | Before each task starts and before each step that follows new task input. |
+| Appending the recalled block | Append a tool-call and tool-result message pair to the state's message list. | Append the rendered block to the task context passed into the step. |
+| Tool registration | Register all five in `tool_only` and `hybrid`; omit `memory_search` in `auto`. | Same rule, applied to the `BaseTool` wrappers. |
+| Policy text | Section 13's base text, plus the recalled-memory sentences in `auto` and `hybrid`. | Same. |
+
 ## 15. Latency accounting
 
 This budget describes warm `memory_search` on an Apple M-series laptop with two queries, 50K records, and the reranker disabled. It is a design target, not a measured benchmark result.
@@ -1391,7 +1533,7 @@ This budget describes warm `memory_search` on an Apple M-series laptop with two 
 | log                          | 1 to 2 ms                       | One insert with JSON columns.                                                     |
 | total, flags off             | 35 to 65 ms                     |                                                                                   |
 
-With rewriting and reranking off, embedding dominates latency. Keep the model loaded and cache exact-string query embeddings for the process lifetime. A smaller query-side encoder is out of scope.
+With rewriting and reranking off, embedding dominates latency. Keep the model loaded and cache exact-string query embeddings in the bounded LRU defined by `embedding.query_cache_entries`. A smaller query-side encoder is out of scope.
 
 `memory_write` has the same embedding cost plus one small index search and one transaction. It can also pay NLI-judge cost when it finds a possible duplicate or contradiction.
 
@@ -1499,6 +1641,25 @@ Run one parameterized suite through both `memory_write` and session extraction. 
 - Duplicate collapse keeps the higher-ranked record.
 - Budget filling never truncates record content.
 
+#### Gate
+
+- A dense-only episodic candidate at cosine 0.42 passes while a dense-only semantic candidate at 0.42 is dropped, with the per-type floor named in `gate_reason`.
+- A lexical-only candidate matching one plain word is dropped; the same candidate matching one identifier token such as `ERR42` passes; matching two plain words passes.
+- A lexical-only candidate whose single matched term is an entity alias passes.
+- With one corroborated candidate at fused score `s` and a single-signal candidate below `relative_floor * s`, the second is dropped with a step-2 reason; an entity hit at the same score is kept.
+- With a single survivor, the relative floor is a no-op.
+- `empty_reason` names every missed floor for the best candidate, including the record type of the dense floor.
+- Replaying a logged search offline with different floors reproduces the gate decision from the logged candidate scores alone.
+
+#### Trigger
+
+- In `tool_only` mode the adapter never issues a search on its own and registers all five tools.
+- In `auto` mode `memory_search` is not registered; a host search runs once per user turn, never on assistant or tool turns; a user turn shorter than `auto_min_query_chars` logs `trigger.skipped` and issues no search.
+- In `hybrid` mode both the host search and the model's tool search reach the handler, and their `search_log` rows carry `trigger = 'auto'` and `trigger = 'tool'` respectively.
+- A non-empty host search appends exactly one tool-result-shaped message; an empty one appends nothing and still writes a log row.
+- Host-issued searches use `auto_k`, and model-issued searches use the requested or default `k`.
+- The prompt prefix is byte-identical across turns in every mode; the recalled block only ever appears after existing messages.
+
 #### Freshness and rewrite
 
 - Episodic records decay; semantic records do not.
@@ -1539,3 +1700,6 @@ These choices do not block the initial implementation. Each has a safe default a
 | Generator concurrency | Run dense, lexical, and entity generators sequentially. | Measurement shows a thread pool improves latency enough to justify its complexity. |
 | Equivalence-judge floors | Treat `nli-deberta-v3-small` `entail_floor` and `contradict_floor` as starting values. | A labeled set of same, contradictory, and distinct pairs calibrates them, or the judge model changes. |
 | Rank versus event time | Higher source rank beats a later `event_at` in supersession. | Stale-record evaluation, including a recent tool result versus an older user statement on the same subject, shows the policy is harmful. |
+| Trigger mode | `tool_only`. The `auto` and `hybrid` paths are specified in section 14.1 and built in the adapter phases. | The agent-in-the-loop benchmark shows `hybrid` raises accuracy on memory-needed turns while keeping the ordinary-turn injection rate under the target. |
+| Gate floors | Per-type dense floors, two matched terms for lexical-only passes, relative floor 0.5. | The three-class calibration sweep in section 10.5 picks different values, or the reranker proves a better gate for host-issued searches. |
+| `search_log.trigger` column | Added as schema migration 2 when phase 8 first writes the log. | Never; it is required by the benchmark split. |

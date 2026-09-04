@@ -6,7 +6,7 @@ from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 from types import UnionType
-from typing import Any, cast, get_args, get_origin, get_type_hints
+from typing import Any, Literal, cast, get_args, get_origin, get_type_hints
 
 import yaml
 
@@ -27,6 +27,7 @@ class EmbeddingConfig:
     dims: int = 1024
     device: str = "auto"
     max_chars: int = 2000
+    query_cache_entries: int = 4096
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,9 +48,35 @@ class RewriteConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class DenseFloorConfig:
+    """Per-type cosine floors. Long episodic summaries score lower against short queries than short facts do."""
+
+    semantic: float = 0.45
+    episodic: float = 0.40
+    procedural: float = 0.45
+
+
+@dataclass(frozen=True, slots=True)
 class GateConfig:
-    dense_floor: float = 0.45
+    dense_floor: DenseFloorConfig = field(default_factory=DenseFloorConfig)
     lexical_min_term_fraction: float = 0.5
+    # Lexical-only passes need this many matched terms unless one matched term is an identifier or an entity alias.
+    lexical_min_matched_terms: int = 2
+    # Survivors below this fraction of the top fused score are dropped. Entity hits are exempt.
+    relative_floor: float = 0.5
+
+
+TriggerMode = Literal["tool_only", "auto", "hybrid"]
+TRIGGER_MODES: tuple[TriggerMode, ...] = ("tool_only", "auto", "hybrid")
+
+
+@dataclass(frozen=True, slots=True)
+class TriggerConfig:
+    """Who calls memory_search. The retrieval pipeline is identical in every mode; only the caller changes."""
+
+    mode: TriggerMode = "tool_only"
+    auto_k: int = 4  # k for host-issued searches; smaller than default_k because nothing asked for them
+    auto_min_query_chars: int = 12  # host-issued search is skipped for very short user turns such as "ok" or "yes"
 
 
 @dataclass(frozen=True, slots=True)
@@ -61,6 +88,7 @@ class FreshnessConfig:
 @dataclass(frozen=True, slots=True)
 class RetrievalConfig:
     rewrite: RewriteConfig = field(default_factory=RewriteConfig)
+    trigger: TriggerConfig = field(default_factory=TriggerConfig)
     per_generator_k: int = 30
     rrf_k: int = 60
     default_k: int = 8
@@ -116,8 +144,10 @@ class MemoryWeaveConfig:
         return {
             "embedding_model": self.embedding.model,
             "embedding_version": self.embedding.version,
+            "embedding_query_cache_entries": self.embedding.query_cache_entries,
             "rewrite_enabled": self.retrieval.rewrite.enabled,
             "reranker_enabled": self.reranker.enabled,
+            "trigger_mode": self.retrieval.trigger.mode,
             "gate": asdict(self.retrieval.gate),
             "reranker_floor": self.reranker.floor,
         }
@@ -160,12 +190,26 @@ def _load_retrieval(raw: object) -> RetrievalConfig:
     try:
         return RetrievalConfig(
             rewrite=_load_dataclass(RewriteConfig, values.pop("rewrite", None), "retrieval.rewrite"),
-            gate=_load_dataclass(GateConfig, values.pop("gate", None), "retrieval.gate"),
+            trigger=_load_dataclass(TriggerConfig, values.pop("trigger", None), "retrieval.trigger"),
+            gate=_load_gate(values.pop("gate", None)),
             freshness=_load_dataclass(FreshnessConfig, values.pop("freshness", None), "retrieval.freshness"),
             **_coerce_dataclass_values(RetrievalConfig, values, "retrieval"),
         )
     except TypeError as exc:
         raise ConfigError(f"Invalid keys or values in retrieval: {exc}") from exc
+
+
+def _load_gate(raw: object) -> GateConfig:
+    values = _mapping(raw, "retrieval.gate")
+    try:
+        return GateConfig(
+            dense_floor=_load_dataclass(
+                DenseFloorConfig, values.pop("dense_floor", None), "retrieval.gate.dense_floor"
+            ),
+            **_coerce_dataclass_values(GateConfig, values, "retrieval.gate"),
+        )
+    except TypeError as exc:
+        raise ConfigError(f"Invalid keys or values in retrieval.gate: {exc}") from exc
 
 
 def _load_ingestion(raw: object) -> IngestionConfig:
@@ -269,6 +313,8 @@ def _validate(config: MemoryWeaveConfig) -> None:
         raise ConfigError("embedding.dims must be positive.")
     if config.embedding.max_chars <= 0:
         raise ConfigError("embedding.max_chars must be positive.")
+    if config.embedding.query_cache_entries <= 0:
+        raise ConfigError("embedding.query_cache_entries must be positive.")
     if config.reranker.candidates <= 0:
         raise ConfigError("reranker.candidates must be positive.")
     if config.retrieval.per_generator_k <= 0 or config.retrieval.default_k <= 0:
@@ -279,10 +325,21 @@ def _validate(config: MemoryWeaveConfig) -> None:
         raise ConfigError("retrieval.dedup_cosine must be between 0 and 1.")
     if not 0.0 <= config.ingestion.dedup_candidate_cosine <= 1.0:
         raise ConfigError("ingestion.dedup_candidate_cosine must be between 0 and 1.")
-    if not 0.0 <= config.retrieval.gate.dense_floor <= 1.0:
-        raise ConfigError("retrieval.gate.dense_floor must be between 0 and 1.")
+    for memory_type in ("semantic", "episodic", "procedural"):
+        if not 0.0 <= getattr(config.retrieval.gate.dense_floor, memory_type) <= 1.0:
+            raise ConfigError(f"retrieval.gate.dense_floor.{memory_type} must be between 0 and 1.")
     if not 0.0 <= config.retrieval.gate.lexical_min_term_fraction <= 1.0:
         raise ConfigError("retrieval.gate.lexical_min_term_fraction must be between 0 and 1.")
+    if config.retrieval.gate.lexical_min_matched_terms < 1:
+        raise ConfigError("retrieval.gate.lexical_min_matched_terms must be at least 1.")
+    if not 0.0 <= config.retrieval.gate.relative_floor <= 1.0:
+        raise ConfigError("retrieval.gate.relative_floor must be between 0 and 1.")
+    if config.retrieval.trigger.mode not in TRIGGER_MODES:
+        raise ConfigError(f"retrieval.trigger.mode must be one of {', '.join(TRIGGER_MODES)}.")
+    if config.retrieval.trigger.auto_k <= 0:
+        raise ConfigError("retrieval.trigger.auto_k must be positive.")
+    if config.retrieval.trigger.auto_min_query_chars < 0:
+        raise ConfigError("retrieval.trigger.auto_min_query_chars must not be negative.")
     if not 0.0 <= config.retrieval.freshness.floor <= 1.0:
         raise ConfigError("retrieval.freshness.floor must be between 0 and 1.")
     if config.retrieval.freshness.episodic_half_life_days <= 0:
