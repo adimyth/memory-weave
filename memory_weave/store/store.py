@@ -26,7 +26,7 @@ from memory_weave.models import (
     Turn,
     TurnRole,
 )
-from memory_weave.util import now, uuid7
+from memory_weave.util import normalize_vector, now, uuid7
 
 from .migrations import migrate
 
@@ -286,9 +286,10 @@ class Store:
         return {cast(str, row["id"]) for row in rows}
 
     def put_embedding(self, record_id: str, model: str, version: str, vector: np.ndarray) -> None:
-        """Persist one float32 embedding as a SQLite BLOB."""
+        """Persist one normalized float32 embedding as a SQLite BLOB."""
 
-        values = np.ascontiguousarray(np.asarray(vector, dtype=np.float32).reshape(-1))
+        raw_values = np.asarray(vector, dtype=np.float32).reshape(-1)
+        values = normalize_vector(raw_values, raw_values.size)
         self.connection.execute(
             """
             INSERT INTO embeddings(record_id, model, version, dims, vector)
@@ -300,7 +301,7 @@ class Store:
         )
 
     def iter_embeddings(self, model: str, version: str) -> Iterator[tuple[str, np.ndarray]]:
-        """Yield compatible embeddings as detached float32 arrays."""
+        """Yield compatible normalized embeddings as detached float32 arrays."""
 
         rows = self.connection.execute(
             "SELECT record_id, dims, vector FROM embeddings WHERE model = ? AND version = ? ORDER BY record_id",
@@ -313,6 +314,14 @@ class Store:
                     f"Embedding {row['record_id']} has {vector.size} values but declares {row['dims']} dimensions."
                 )
             yield cast(str, row["record_id"]), vector.copy()
+
+    def count_embeddings(self, model: str, version: str) -> int:
+        """Return how many embeddings match one model and version."""
+
+        row = self.connection.execute(
+            "SELECT COUNT(*) AS count FROM embeddings WHERE model = ? AND version = ?", (model, version)
+        ).fetchone()
+        return cast(int, row["count"])
 
     def upsert_fts(self, record_id: str, content: str, subject: str, aliases: str) -> None:
         """Replace one derived FTS5 row."""
@@ -478,10 +487,29 @@ class Store:
     def merge_entity(self, source_id: str, destination_id: str) -> None:
         """Merge aliases and record links into the destination entity."""
 
+        if source_id == destination_id:
+            raise ValueError("An entity cannot be merged into itself.")
+
         with self.transaction() as connection:
             connection.execute(
                 "INSERT OR IGNORE INTO entity_aliases(entity_id, alias_norm) "
                 "SELECT ?, alias_norm FROM entity_aliases WHERE entity_id = ?",
+                (destination_id, source_id),
+            )
+            connection.execute(
+                """
+                UPDATE record_entities AS destination
+                SET role = 'about'
+                WHERE destination.entity_id = ?
+                  AND destination.role = 'mentions'
+                  AND EXISTS (
+                      SELECT 1
+                      FROM record_entities AS source
+                      WHERE source.record_id = destination.record_id
+                        AND source.entity_id = ?
+                        AND source.role = 'about'
+                  )
+                """,
                 (destination_id, source_id),
             )
             connection.execute(

@@ -8,6 +8,7 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from time import perf_counter
 
+import numpy as np
 from uuid6 import uuid7 as _uuid7
 
 _WHITESPACE_RE = re.compile(r"\s+")
@@ -37,6 +38,20 @@ def normalize_alias(value: str) -> str:
     decomposed = unicodedata.normalize("NFKD", value)
     without_diacritics = "".join(char for char in decomposed if not unicodedata.combining(char))
     return normalize_ws(without_diacritics).lower()
+
+
+def normalize_vector(value: np.ndarray, dims: int) -> np.ndarray:
+    """Return one finite, non-zero float32 vector with unit L2 norm."""
+
+    vector = np.asarray(value, dtype=np.float32).reshape(-1)
+    if vector.size != dims:
+        raise ValueError(f"Embedding vector has {vector.size} values, expected {dims}.")
+    if not np.isfinite(vector).all():
+        raise ValueError("Embedding vectors must contain only finite values.")
+    norm = np.linalg.norm(vector)
+    if norm == 0.0:
+        raise ValueError("Embedding vectors must be non-zero.")
+    return np.ascontiguousarray(vector / norm, dtype=np.float32)
 
 
 class Timer:

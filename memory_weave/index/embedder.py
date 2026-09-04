@@ -3,24 +3,34 @@
 from __future__ import annotations
 
 import hashlib
-from collections.abc import Callable
+import threading
+from collections import OrderedDict
+from collections.abc import Callable, Iterable
 from math import sqrt
 from typing import Any, Protocol
 
 import numpy as np
 
 from memory_weave.config import EmbeddingConfig
+from memory_weave.util import normalize_vector
 
 
 class Embedder(Protocol):
-    """Convert texts to L2-normalized float32 vectors."""
+    """Convert queries and documents to L2-normalized float32 vectors."""
 
     name: str
     version: str
     dims: int
 
-    def embed(self, texts: list[str]) -> np.ndarray:
-        """Return one normalized vector for each input text."""
+    @property
+    def is_loaded(self) -> bool:
+        """Return whether the embedder can serve requests without loading a model."""
+
+    def embed_queries(self, texts: list[str]) -> np.ndarray:
+        """Return one normalized vector for each query, using the query cache when available."""
+
+    def embed_documents(self, texts: list[str]) -> np.ndarray:
+        """Return one normalized vector for each document without retaining document vectors in a cache."""
 
 
 class FakeEmbedder:
@@ -34,6 +44,12 @@ class FakeEmbedder:
         self.dims = dims
         self._similarity_overrides: dict[str, tuple[str, float]] = {}
 
+    @property
+    def is_loaded(self) -> bool:
+        """Return true because the fake never loads a model."""
+
+        return True
+
     def set_similarity(self, first: str, second: str, cosine: float) -> None:
         """Make ``second`` have the requested cosine similarity to ``first``."""
 
@@ -45,7 +61,17 @@ class FakeEmbedder:
             raise ValueError("One-dimensional vectors can only have cosine similarity -1 or 1.")
         self._similarity_overrides[second] = (first, cosine)
 
-    def embed(self, texts: list[str]) -> np.ndarray:
+    def embed_queries(self, texts: list[str]) -> np.ndarray:
+        """Return deterministic L2-normalized vectors for query texts."""
+
+        return self._embed(texts)
+
+    def embed_documents(self, texts: list[str]) -> np.ndarray:
+        """Return deterministic L2-normalized vectors for document texts."""
+
+        return self._embed(texts)
+
+    def _embed(self, texts: list[str]) -> np.ndarray:
         """Return deterministic L2-normalized vectors for ``texts``."""
 
         if not texts:
@@ -67,7 +93,7 @@ class FakeEmbedder:
         digest = hashlib.sha256(text.encode("utf-8")).digest()
         seed = int.from_bytes(digest[:8], "big")
         generator = np.random.default_rng(seed)
-        return _normalize_vector(generator.standard_normal(self.dims).astype(np.float32), self.dims)
+        return normalize_vector(generator.standard_normal(self.dims).astype(np.float32), self.dims)
 
     def _perpendicular_vector(self, anchor: str, text: str, anchor_vector: np.ndarray) -> np.ndarray:
         candidate = self._base_vector(f"{anchor}\x00{text}\x00perpendicular")
@@ -76,7 +102,7 @@ class FakeEmbedder:
             candidate = np.zeros(self.dims, dtype=np.float32)
             candidate[int(np.argmin(np.abs(anchor_vector)))] = 1.0
             candidate -= np.dot(candidate, anchor_vector) * anchor_vector
-        return _normalize_vector(candidate, self.dims)
+        return normalize_vector(candidate, self.dims)
 
 
 class BgeM3Embedder:
@@ -87,39 +113,87 @@ class BgeM3Embedder:
         self.version = config.version
         self.dims = config.dims
         self._max_chars = config.max_chars
+        self._query_cache_entries = config.query_cache_entries
         self._model_factory = model_factory or _sentence_transformer_factory(config.model, config.device)
         self._model: Any | None = None
-        self._cache: dict[str, np.ndarray] = {}
+        self._query_cache: OrderedDict[str, np.ndarray] = OrderedDict()
+        self._model_load_lock = threading.Lock()
+        self._inference_lock = threading.Lock()
+        self._query_cache_lock = threading.Lock()
 
     @property
     def is_loaded(self) -> bool:
         """Return whether the SentenceTransformer model has been instantiated."""
 
-        return self._model is not None
+        with self._model_load_lock:
+            return self._model is not None
 
-    def embed(self, texts: list[str]) -> np.ndarray:
-        """Return cached or newly computed dense vectors for exact input strings."""
+    def embed_queries(self, texts: list[str]) -> np.ndarray:
+        """Return cached or newly computed dense vectors for exact query strings."""
 
         if not texts:
             return np.empty((0, self.dims), dtype=np.float32)
-        missing = list(dict.fromkeys(text for text in texts if text not in self._cache))
-        if missing:
-            model = self._load_model()
-            encoded = model.encode(
-                [text[: self._max_chars] for text in missing],
-                convert_to_numpy=True,
-                normalize_embeddings=True,
-                output_value="sentence_embedding",
-                show_progress_bar=False,
-            )
-            vectors = _normalize_matrix(np.asarray(encoded, dtype=np.float32), self.dims, len(missing))
-            self._cache.update(zip(missing, vectors, strict=True))
-        return np.vstack([self._cache[text] for text in texts]).astype(np.float32, copy=False)
+
+        vectors_by_text = self._cached_queries(texts)
+        if len(vectors_by_text) < len(set(texts)):
+            with self._inference_lock:
+                vectors_by_text.update(self._cached_queries(texts))
+                missing = list(dict.fromkeys(text for text in texts if text not in vectors_by_text))
+                if missing:
+                    encoded = self._encode(missing)
+                    vectors_by_text.update(zip(missing, encoded, strict=True))
+                    self._cache_queries(zip(missing, encoded, strict=True))
+        return np.vstack([vectors_by_text[text] for text in texts]).astype(np.float32, copy=False)
+
+    def embed_documents(self, texts: list[str]) -> np.ndarray:
+        """Return newly computed dense vectors for documents without adding them to the query cache."""
+
+        if not texts:
+            return np.empty((0, self.dims), dtype=np.float32)
+
+        with self._inference_lock:
+            return self._encode(texts)
+
+    def _cached_queries(self, texts: list[str]) -> dict[str, np.ndarray]:
+        """Return cached query vectors and refresh their LRU order without holding the inference lock."""
+
+        cached: dict[str, np.ndarray] = {}
+        with self._query_cache_lock:
+            for text in dict.fromkeys(texts):
+                vector = self._query_cache.get(text)
+                if vector is not None:
+                    self._query_cache.move_to_end(text)
+                    cached[text] = vector
+        return cached
+
+    def _cache_queries(self, vectors: Iterable[tuple[str, np.ndarray]]) -> None:
+        """Store newly encoded query vectors and evict least-recently-used entries."""
+
+        with self._query_cache_lock:
+            for text, vector in vectors:
+                self._query_cache[text] = vector
+                self._query_cache.move_to_end(text)
+            while len(self._query_cache) > self._query_cache_entries:
+                self._query_cache.popitem(last=False)
+
+    def _encode(self, texts: list[str]) -> np.ndarray:
+        """Encode one batch while the caller holds the inference lock."""
+
+        model = self._load_model()
+        encoded = model.encode(
+            [text[: self._max_chars] for text in texts],
+            convert_to_numpy=True,
+            normalize_embeddings=True,
+            output_value="sentence_embedding",
+            show_progress_bar=False,
+        )
+        return _normalize_matrix(np.asarray(encoded, dtype=np.float32), self.dims, len(texts))
 
     def _load_model(self) -> Any:
-        if self._model is None:
-            self._model = self._model_factory()
-        return self._model
+        with self._model_load_lock:
+            if self._model is None:
+                self._model = self._model_factory()
+            return self._model
 
 
 def _sentence_transformer_factory(model_name: str, device: str) -> Callable[[], Any]:
@@ -148,15 +222,3 @@ def _normalize_matrix(values: np.ndarray, dims: int, expected_rows: int) -> np.n
     if np.any(norms == 0.0):
         raise ValueError("Embedding vectors must be non-zero.")
     return np.ascontiguousarray(matrix / norms[:, np.newaxis], dtype=np.float32)
-
-
-def _normalize_vector(value: np.ndarray, dims: int) -> np.ndarray:
-    vector = np.asarray(value, dtype=np.float32).reshape(-1)
-    if vector.size != dims:
-        raise ValueError(f"Embedding vector has {vector.size} values, expected {dims}.")
-    if not np.isfinite(vector).all():
-        raise ValueError("Embedding vectors must contain only finite values.")
-    norm = np.linalg.norm(vector)
-    if norm == 0.0:
-        raise ValueError("Embedding vectors must be non-zero.")
-    return np.ascontiguousarray(vector / norm, dtype=np.float32)

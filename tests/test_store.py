@@ -188,9 +188,11 @@ def test_embeddings_and_fts_round_trip_through_store_boundaries(store: Store) ->
     embeddings = list(store.iter_embeddings("fake", "1"))
     matches = store.fts_query("ERR42", limit=10)
 
+    assert store.count_embeddings("fake", "1") == 1
+    assert store.count_embeddings("fake", "different-version") == 0
     assert embeddings[0][0] == content_match.id
     assert embeddings[0][1].dtype == np.float32
-    np.testing.assert_array_equal(embeddings[0][1], np.array([0.5, -0.25], dtype=np.float32))
+    np.testing.assert_allclose(embeddings[0][1], np.array([0.5, -0.25], dtype=np.float32) / np.sqrt(0.3125))
     assert [record_id for record_id, _ in matches] == [alias_match.id, content_match.id]
     store.delete_fts(alias_match.id)
     assert [record_id for record_id, _ in store.fts_query("ERR42", limit=10)] == [content_match.id]
