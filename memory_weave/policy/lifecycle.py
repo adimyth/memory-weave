@@ -51,6 +51,12 @@ def initial_expiry(
 
     if source_kind != "agent_inference":
         return None
+    return provisional_expiry(current_time, config)
+
+
+def provisional_expiry(current_time: datetime, config: MemoryWeaveConfig) -> datetime:
+    """Return the expiry applied to every provisional record."""
+
     return current_time + timedelta(days=config.ingestion.provisional_ttl_days)
 
 
@@ -61,7 +67,7 @@ def reinforce(record: Record, current_time: datetime, config: MemoryWeaveConfig)
     record.last_reinforced_at = current_time
     record.confidence = min(0.99, record.confidence + 0.1)
     if record.status == "provisional":
-        record.expires_at = current_time + timedelta(days=config.ingestion.provisional_ttl_days)
+        record.expires_at = provisional_expiry(current_time, config)
         if record.reinforcements >= config.ingestion.reinforcements_to_confirm:
             record.status = "confirmed"
             record.expires_at = None

@@ -13,18 +13,23 @@ from .entities import (
 )
 from .equivalence import EquivalenceJudge, FakeJudge, NLICrossEncoderJudge
 from .evidence import session_turn_source_ref, validate_evidence
+from .ingestor import EntityAmbiguityCandidate, Ingestor, WriteRequest, WriteResult
 from .session import SessionBuffer
 
 __all__ = [
     "EntityMergeError",
+    "EntityAmbiguityCandidate",
     "EntityNotFoundError",
     "EntityNotReadableError",
     "EntityNotWritableError",
     "EntityResolutionError",
     "EquivalenceJudge",
     "FakeJudge",
+    "Ingestor",
     "NLICrossEncoderJudge",
     "SessionBuffer",
+    "WriteRequest",
+    "WriteResult",
     "aliases_text",
     "follow_merges",
     "merge_entities",

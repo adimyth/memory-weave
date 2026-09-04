@@ -213,16 +213,21 @@ class Store:
         *,
         confidence: float,
         reinforcements: int,
-        last_reinforced_at: datetime,
+        last_reinforced_at: datetime | None,
         expires_at: datetime | None,
         status: RecordStatus,
+        source_kind: SourceKind | None = None,
+        source_ref: str | None = None,
+        evidence: str | None = None,
     ) -> None:
-        """Persist lifecycle fields updated by the policy service during reinforcement."""
+        """Persist lifecycle fields and an optional stronger evidence provenance during reinforcement."""
 
         self.connection.execute(
             """
             UPDATE records
-            SET confidence = ?, reinforcements = ?, last_reinforced_at = ?, expires_at = ?, status = ?
+            SET confidence = ?, reinforcements = ?, last_reinforced_at = ?, expires_at = ?, status = ?,
+                source_kind = COALESCE(?, source_kind), source_ref = COALESCE(?, source_ref),
+                evidence = COALESCE(?, evidence)
             WHERE id = ?
             """,
             (
@@ -231,6 +236,9 @@ class Store:
                 _dump_datetime(last_reinforced_at),
                 _dump_datetime(expires_at),
                 status,
+                source_kind,
+                source_ref,
+                evidence,
                 record_id,
             ),
         )

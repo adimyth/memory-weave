@@ -174,10 +174,10 @@ ingestion:
   extraction_max_candidates: 20
 ```
 
-- `dedup_candidate_cosine` is the similarity threshold for comparing two active records in the same scope and type but with different subjects. At or above this cosine, the ingestor treats the pair as a possible duplicate and asks the equivalence judge whether the claims are the same, contradictory, or distinct. Records with the same subject always go to the judge, regardless of cosine.
+- `dedup_candidate_cosine` is the similarity threshold for comparing two active records in the same scope and type but with different subjects. At or above this cosine, the ingestor treats the pair as a possible duplicate and asks the equivalence judge whether the claims are the same, contradictory, or distinct. Records with the same current-fact subject always go to the judge, regardless of cosine.
 - `equivalence.entail_floor` is the minimum directed entailment score for calling two claims the same. The judge compares the existing claim to the new claim and the new claim to the existing claim; both scores must meet this floor before the ingestor reinforces the existing record.
 - `equivalence.contradict_floor` is the minimum directed contradiction score for recording a conflict. If either direction meets this floor, the ingestor treats the claims as contradictory rather than as a duplicate.
-- `provisional_ttl_days` sets the unsupported lifetime for an `agent_inference` record; refer sections 6.2 and 6.4. Reinforcement extends the expiry date.
+- `provisional_ttl_days` sets the lifetime for every provisional record, including an unsupported inference and a lower-authority conflict; refer sections 6.2 and 6.4. An independent reinforcement extends the expiry date.
 - `reinforcements_to_confirm` sets the reinforcement count that promotes a provisional record to `confirmed`; refer section 6.4.
 - `extraction_max_candidates` caps the candidates from one session extraction; refer section 8.2.
 
@@ -356,11 +356,11 @@ CREATE TABLE search_log (
 
 ### Key relationships
 
-- `subject` is the contradiction key. Format is `<entity_ref>/<attribute>` where `entity_ref` is `<kind>:<canonical>` of the record's primary entity (role `about`) and `attribute` is a lowercase snake_case slug chosen by the writer. Example: `person:aditya/explanation_style`, `project:agentic-memory-system/commit_convention`. Episodic records use `<entity_ref>/-` and never participate in supersession.
+- `subject` is the contradiction key for semantic and procedural records. Its format is `<entity_ref>/<attribute>`, where `entity_ref` is `<kind>:<canonical>` of the record's primary entity (role `about`) and `attribute` is a lowercase snake_case slug chosen by the writer. Examples: `person:aditya/explanation_style` and `project:agentic-memory-system/commit_convention`. The `/-` form has no current-fact attribute: episodic records use it, and the ingestor never applies supersession to it even if a caller uses it on another record type.
 - The ingestor copies entity aliases into each FTS row, so a name query can find records whose content uses a pronoun.
 - SQLite stores embedding vectors as blobs. The process rebuilds its in-memory matrix from those blobs at startup.
 - `events` provides the audit trail. `records` stores the current materialized state. The system uses the log for explanation, not replay.
-- Write-path timing lives in event payloads. `record.created`, `record.reinforced`, and `record.superseded` events carry the stages from section 8.1; `extraction.run` carries the stages from section 8.2. The benchmark reads search timing from `search_log` and write timing from `events`.
+- Write-path events carry the completed stages and list stages still pending when the event is appended; section 8.1 defines the complete `WriteResult` timing contract. `extraction.run` carries the stages from section 8.2. The benchmark reads search timing from `search_log` and complete write timing from `WriteResult` values collected by the harness.
 
 ### 3.1 `records`: the canonical memory row
 
@@ -372,7 +372,7 @@ CREATE TABLE search_log (
 | `type` | `semantic`, `episodic`, or `procedural`. |
 | `version` | Revision number for the record lineage. |
 | `content` | Memory text returned to an agent. |
-| `subject` | Current-fact key. Use `<entity_ref>/<attribute>` or `<entity_ref>/-` when no attribute applies. |
+| `subject` | Current-fact key for semantic and procedural records: `<entity_ref>/<attribute>`. Use `<entity_ref>/-` only when no current-fact attribute applies, normally for an episodic record. |
 | `scope_kind` | Ownership boundary: `agent`, `user`, `project`, or `org`. |
 | `scope_id` | Identifier inside the ownership boundary. |
 | `source_kind` | Evidence class: `user_statement`, `system`, `tool_result`, `session_summary`, or `agent_inference`. |
@@ -529,7 +529,7 @@ FTS5 cannot apply the scope predicate, so the retriever over-fetches and interse
 | `warm` | `1` when the embedder and vector index were already loaded. |
 | `timings_ms` | Per-stage search timing from rewrite through logging. |
 
-Write events carry the timing stages from section 8.1. `extraction.run` events carry the timing stages from section 8.2. The benchmark reads retrieval timing from `search_log` and write timing from `events`.
+Write events carry the completed stages and their `timings_pending` list from section 8.1. The benchmark harness records complete write timings from `WriteResult`; `extraction.run` events carry the stages from section 8.2. The benchmark reads retrieval timing from `search_log`.
 
 ## 4. Core types
 
@@ -836,9 +836,11 @@ def initial_expiry(source_kind, now) -> datetime | None:
 
 The policy assigns `session_summary` its status and expiry rules. The summary references the whole transcript through `source_ref = "session:<id>"`. The extractor writes it as an episodic record with subject `session:<id>/-`; it does not supersede or reinforce another record. The summary describes a dated session. Store a user fact through a separate evidenced candidate.
 
+When the supersession rule stores any source as a provisional conflict, it gives that row the same `provisional_ttl_days` expiry as an inference. A lower-authority conflict is useful for inspection, but it must not remain active forever without independent support.
+
 ### 6.3 Supersession rule
 
-The ingestor runs this rule when a semantic or procedural record shares a scope and subject with an active record. It first asks whether the claims mean the same thing, then checks authority.
+The ingestor runs this rule when a semantic or procedural record with a current-fact subject shares a scope and subject with active records. If more than one active row exists, it chooses the authority incumbent first: highest source rank, then latest `event_at`, then latest `created_at`. It never picks a newer provisional conflict over a higher-authority confirmed record just because the conflict arrived later. It then asks whether the candidate and incumbent mean the same thing, and checks authority when they do not.
 
 ```
 verdict = judge.judge(old.content, new.content)          # "same" | "contradicts" | "distinct"
@@ -874,7 +876,7 @@ Authority compares source rank first, then `event_at`, then `created_at`. A user
 
 A stale, equal-ranked record cannot supersede a newer fact. The ingestor stores it with `status = superseded`, leaves `supersedes_id` empty, and records `superseded_on_arrival_by = old.id` in the event. `include_history` and `memory_get` expose it; default retrieval excludes it. A higher-ranked record supersedes regardless of event time because an explicit user statement outranks a tool observation. The log retains both timestamps for evaluation.
 
-The ingestor does not use cosine similarity as an equivalence verdict. Opposing short preferences such as "prefers concise answers" and "prefers detailed answers" can have nearby embeddings. Cosine proposes pairs for the judge: the ingestor judges same-subject records and judges other subjects at or above `ingestion.dedup_candidate_cosine`. The local NLI cross-encoder runs on at most four pairs per write and costs an estimated 20 to 40 ms per pair on the target laptop.
+The ingestor does not use cosine similarity as an equivalence verdict. Opposing short preferences such as "prefers concise answers" and "prefers detailed answers" can have nearby embeddings. Cosine proposes pairs for the judge: the ingestor judges records with the same current-fact subject and judges other subjects at or above `ingestion.dedup_candidate_cosine`. The local NLI cross-encoder runs on at most four pairs per write and costs an estimated 20 to 40 ms per pair on the target laptop.
 
 The retriever excludes superseded records, so a lower-ranked contradiction never hides a confirmed fact, but it is kept and surfaced in `memory_get` so an agent can ask the user.
 
@@ -892,7 +894,7 @@ def reinforce(record, now):
             record.expires_at = None
 ```
 
-Reinforcement records a later observation of the same claim. It adds `0.1` confidence up to `0.99`, refreshes provisional expiry, and promotes a provisional record after `reinforcements_to_confirm` observations.
+Reinforcement records an independent later observation of the same claim. The source reference must differ from the record's original reference and every prior reinforcing reference; replaying the same transcript turn records an audit event but does not increase the count. A counted observation adds `0.1` confidence up to `0.99`, refreshes provisional expiry, and promotes a provisional record after `reinforcements_to_confirm` observations. A higher-ranked observation, such as a user statement supporting an inference, also replaces the record's stored `source_kind`, `source_ref`, and evidence with the stronger provenance. The reinforcement event retains the incoming evidence and source reference either way.
 
 ### 6.5 Expiry
 
@@ -925,7 +927,8 @@ The helper normalizes whitespace, then looks for the complete quote in one trans
 | User turn | `user_statement` | Keep the claim. |
 | Tool turn | `tool_result` | Downgrade and record the note. |
 | Assistant turn | `agent_inference` | Downgrade and record the note. |
-| No matching turn or no session | `agent_inference` | Store no `source_ref`. |
+| No matching turn or no session | `agent_inference` | Store no `source_ref` and record why validation failed. |
+| No evidence supplied | `agent_inference` | Store no `source_ref`, use `evidence = NULL`, and add the `evidence not provided` note. |
 
 The caller may choose a lower source kind than the evidence supports. The helper returns the matched turn so the caller can write `source_ref = "session:<id><turn:n>"`. The host writes `system` records through a separate API.
 
@@ -980,7 +983,7 @@ Use this path when the agent has one memory worth saving and can provide the sup
 2. **Choose and authorize the scope.** The requested scope wins. If the request omits it, the handler uses `Scope("agent", principal.agent_id)`. The scope must appear in `writable_scopes(principal)` or the handler returns `scope_not_writable`.
 3. **Validate evidence.** `validate_evidence` checks the quote against the current session, assigns the supported `source_kind`, and returns the matching turn. The handler stores that turn as `source_ref = "session:<session_id><turn:n>"`. The tool rejects `session_summary`, and the host reserves `system` for its separate API.
 4. **Resolve entities.** The handler resolves each entity mention in the requested scope. An ambiguous `about` entity stops the write and returns `entity_ambiguous` with candidate entity IDs. An ambiguous `mentions` entity drops that link and adds a note.
-5. **Set the subject.** The request supplies the subject for a semantic or procedural record. When it does not, the handler uses `<primary_entity_ref>/-`.
+5. **Set the subject.** A semantic or procedural record must supply `<entity_ref>/<attribute>`. The handler returns `invalid_subject` when that key is omitted. An episodic record may omit the subject; the handler then uses `<primary_entity_ref>/-`. The `/-` form is never a supersession key.
 6. **Embed the content.** The embedder produces one normalized vector for the record content.
 7. **Check for an existing memory.** For semantic and procedural records, the handler checks active records with the same scope and subject and applies the supersession rule in section 6.3. For all record types, it searches up to three active records with the same scope and type on different subjects. A nearby record at or above `ingestion.dedup_candidate_cosine` goes to the equivalence judge. A `same` verdict reinforces the existing record instead of inserting a new one.
 8. **Write one transaction.** The handler writes the record, embedding, FTS row, entity links, and audit event, then updates the in-memory vector index.
@@ -992,14 +995,20 @@ Use this path when the agent has one memory worth saving and can provide the sup
 | --- | --- |
 | `created` | The handler stored a new active memory. |
 | `reinforced` | The candidate matched an existing memory, so the handler increased its reinforcement count instead. |
+| `already_reinforced` | The candidate used evidence that the record already counted, so the handler kept the record unchanged and recorded the duplicate observation. |
 | `superseded:<old_id>` | The new record replaced the active record for the same subject. |
+| `superseded_on_arrival:<old_id>` | The candidate has the same rank as a newer active fact, so the handler stores it as history without making it active. |
 | `conflict:<old_id>` | The handler stored a lower-authority contradiction as provisional and linked both records as conflicts. |
 | `scope_not_writable` | The caller cannot write to the requested scope. |
 | `entity_ambiguous` | The handler could not safely identify the record's primary entity. |
+| `invalid_source_kind` | The caller attempted to write a host- or extractor-owned source kind. |
+| `invalid_subject` | A semantic or procedural request omitted its current-fact subject. |
+
+When a request has no evidence, the handler writes it as an `agent_inference` with no source reference and returns the `evidence not provided` note. The record remains provisional and expires unless later, independent evidence supports it.
 
 The handler estimates 25 ms for one warm MPS embedding, under 5 ms for one or two index searches, and under 5 ms for the database transaction.
 
-The response and the audit event record these timing stages: `permission`, `evidence`, `entities`, `embed`, `dedup_search`, `judge`, `supersession`, `index_update`, `transaction`, `event_log`, and `total`. `judge` measures the NLI cross-encoder from section 6.3. The handler and retriever use the same `Timer`, so the benchmark reads both timing formats the same way.
+The response records the complete timing sequence: `permission`, `evidence`, `entities`, `embed`, `dedup_search`, `judge`, `supersession`, `persistence`, `event_log`, `transaction`, `index_update`, and `total`. `persistence` covers record, embedding, FTS, entity-link, and conflict writes. `event_log` measures the append-only audit insertion, `transaction` measures the SQLite commit after the transaction context exits, and `index_update` measures the post-commit in-memory vector update. The event cannot include its own insertion, commit, or index-update duration, so its payload records the completed stages and names the remaining stages in `timings_pending`. Benchmarks use the returned `WriteResult` timings for complete write latency. `judge` measures the NLI cross-encoder from section 6.3.
 
 ### 8.2 Session extraction
 
@@ -1097,7 +1106,7 @@ The resolver only returns an ambiguity in `Resolution`; it does not write an eve
 
 An agent with write access to both scopes, or the CLI, performs `memory_revise(entity_id=..., merge_into=...)`. Both entities must have the same kind. The merge sets `status=merged` and `merged_into`, repoints `record_entities`, and unions aliases. Alias lookup follows `merged_into` to the surviving entity.
 
-The first `about` mention is the primary entity. For a semantic record without an `about` mention, the principal user is the primary entity.
+The first `about` mention is the primary entity. When an episodic record has no `about` mention and omits its subject, the handler uses the principal user as the primary entity for its `/-` subject.
 
 ## 10. Retrieval pipeline
 
@@ -1595,6 +1604,7 @@ The unit suite tests storage and policy with these fakes. The integration suite 
 Run one parameterized suite through both `memory_write` and session extraction. It verifies that:
 
 - A missing quote downgrades the candidate to `agent_inference`.
+- A write with no evidence stores an expiring inference with no `source_ref` and the `evidence not provided` note.
 - A claimed `user_statement` backed by an assistant turn downgrades with a note.
 - A tool turn supports `tool_result` but not `user_statement`.
 - A caller may claim a lower source kind than the supporting turn allows.
@@ -1603,12 +1613,17 @@ Run one parameterized suite through both `memory_write` and session extraction. 
 #### Explicit writes and lifecycle
 
 - A duplicate judged `same` reinforces the original instead of inserting a new record.
-- The second reinforcement confirms a provisional record.
+- Repeated evidence from the same source reference does not count as an independent reinforcement.
+- The second independent reinforcement confirms a provisional record.
+- A higher-ranked independent observation upgrades the stored evidence provenance.
 - The tool rejects `session_summary` and `system` as `source_kind` values.
+- The tool rejects a semantic or procedural write that omits its subject.
 - A higher-rank new fact supersedes an old fact regardless of event time.
+- When a subject has a later provisional conflict, the authority incumbent still receives the next supersession decision.
 - An equal-rank fact with a later `event_at` supersedes the old fact.
 - An equal-rank fact with an earlier `event_at` is stored as superseded on arrival and is absent from default retrieval.
 - A lower-rank contradiction becomes provisional and has conflict rows in both directions.
+- A provisional conflict has a `provisional_ttl_days` expiry.
 - An episodic record never supersedes another record.
 - Two opposing preferences above the dedup cosine floor receive the `contradicts` verdict, not `same`.
 
