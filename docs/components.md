@@ -1,8 +1,35 @@
 # Agent Memory System Components
 
-This guide explains the proposed components with concrete examples. The [high-level design](agent-memory-hld.md) defines the architecture; the [low-level design](agent-memory-lld.md) defines the data model and contracts.
+This guide explains the runtime components with concrete examples. Read the component map first to see how a search or write moves through the system. The [high-level design](agent-memory-hld.md) defines the architecture; the [low-level design](agent-memory-lld.md) defines the schemas and implementation contracts.
 
-## 1. Memory record
+## 1. System component map
+
+Memory Weave has one canonical store and three retrieval channels. The vector index and FTS5 index are derived search structures, not separate sources of truth.
+
+```text
+Agent framework
+  -> Adapter -> tool handler -> policy and session buffer
+  -> Ingestor -> SQLite store -> FTS5 index, entity links, vector index
+  -> Retriever -> dense search + lexical FTS5 search + entity search -> RRF -> tool result
+```
+
+| Component | Owns | Reads | Writes or returns |
+| --- | --- | --- | --- |
+| Framework adapter | Framework integration and current-run identity. | Framework run state and current turns. | Derives `Principal`, records session hooks, registers tools, and adds search context. |
+| Tool handlers | Framework-neutral entry points for the five memory tools. | Validated tool input and `Principal`. | Calls the policy, ingestor, or retriever and returns tool-safe results. |
+| Policy service | Scope access, source authority, lifecycle, and evidence rules. | Grants, principal, source kind, record state, and session turns. | Eligible scopes, write decisions, statuses, and evidence checks. |
+| Session buffer and extractor | The transcript needed for evidence and durable session memory. | User, assistant, and tool-result turns. | Numbered turns, extracted candidates, and one session summary. |
+| Ingestor | The write path and current-fact decisions. | A tool request or extractor candidate, policy results, entities, and nearby records. | A new, reinforced, superseding, conflicting, or rejected record. |
+| SQLite store | Canonical records, entities, grants, sessions, events, and logs. | Queries from all runtime services. | Transactional durable state and eligible record IDs. |
+| FTS5 lexical index | Exact-word and identifier retrieval. | `content`, `subject`, and linked entity aliases from a record. | BM25-ranked lexical candidate IDs, term-match counts, and scores. |
+| Vector index | Semantic similarity retrieval in process memory. | Compatible embedding rows and an eligibility mask. | Cosine-ranked dense candidate IDs and scores. |
+| Entity resolver | Exact, scope-aware entity and alias lookup. | Entity mentions, aliases, grants, and scopes. | Entity IDs and entity-ranked candidate records, or an ambiguity error. |
+| Retriever | The search pipeline and result explanation. | Search request, eligible IDs, three candidate channels, and configuration. | Fused, gated, deduplicated, budgeted results plus `search_log`. |
+| Audit and search log | Why the system changed or returned a result. | Ingestor and retriever decisions and timers. | Append-only events and one complete search trace per request. |
+
+The store owns the durable record and entity state. The ingestor updates the store, FTS5 row, entity links, and vector index as one write operation. At search time, the retriever applies the same eligible-ID set to dense, lexical, and entity channels before RRF combines their rankings.
+
+## 2. Memory record
 
 A memory record is one durable item an agent may retrieve in a later session. Its metadata tells the retrieval service whether the caller may access it, whether it remains current, and why the service can trust it.
 
@@ -38,7 +65,7 @@ tags: ["communication"]
 | When does it apply? | `created_at`, `event_at`, `expires_at` |
 | What is its current state? | `confidence`, `status`, `supersedes_id`, `reinforcements`, `last_reinforced_at` |
 
-## 2. Memory type and lifecycle
+## 3. Memory type and lifecycle
 
 | Type | Use it for | Example |
 | --- | --- | --- |
@@ -56,7 +83,7 @@ tags: ["communication"]
 
 Semantic and procedural records describe current knowledge. Episodic records preserve history and carry `event_at`, so the retriever can reduce the rank of old episodes for a non-time-bounded query.
 
-## 3. Scope
+## 4. Scope
 
 Scope is the ownership boundary on a memory record. It answers: “Where does this memory belong?”
 
@@ -78,7 +105,7 @@ subject: project:agentic-memory-system/commit_convention
 
 The same text in `user:aditya` scope would represent a personal preference, rather than a rule that project contributors must follow.
 
-## 4. Principal, grants, and enforcement
+## 5. Principal, grants, and enforcement
 
 A principal identifies the caller of a memory tool.
 
@@ -111,7 +138,7 @@ The service enforces grants and scopes before it ranks records:
 
 A grant for `user:aditya` is valid only when the current principal is `user:aditya`. Project and organization scope support deliberate sharing across users.
 
-## 5. Source and evidence
+## 6. Source and evidence
 
 Source identifies where a memory came from. Evidence preserves the supporting material.
 
@@ -131,7 +158,7 @@ creator_agent_id: implementation-agent
 
 An agent inference expires after the provisional time-to-live unless later evidence reinforces it.
 
-## 6. Current-fact keys, conflicts, supersession, and reinforcement
+## 7. Current-fact keys, conflicts, supersession, and reinforcement
 
 `subject` identifies the current claim a non-episodic record represents. It uses the format `<entity>/<attribute>`.
 
@@ -171,7 +198,7 @@ Reinforcement means later evidence supports the same memory. The service increme
 
 Episodic records never supersede one another. “Vector-only retrieval missed exact error messages on Tuesday” and “FTS improved error lookup on Friday” describe separate events worth retaining.
 
-## 7. Entities, aliases, and record links
+## 8. Entities, aliases, and record links
 
 An entity represents a named subject such as a person, project, repository, product, or organization. An alias gives that entity alternate names.
 
@@ -201,7 +228,7 @@ If an agent searches for `memory system`, alias lookup resolves that phrase to `
 
 The service creates a provisional entity for an unknown name. It leaves an ambiguous name unmerged for review, rather than guessing that two similarly named things are the same entity.
 
-## 8. Embeddings and the vector index
+## 9. Embeddings and the vector index
 
 An embedding is a numeric representation of a record’s meaning. BGE-M3 produces a 1,024-number vector for each record.
 
@@ -230,9 +257,20 @@ For a search, the embedder turns the query into a vector. The index calculates c
 
 SQLite remains the durable source of truth. The RAM index is a rebuildable search accelerator.
 
-## 9. Full-text search (FTS)
+## 10. Full-text search (FTS)
 
-SQLite FTS5 builds a word index over `content`, `subject`, and entity `aliases`.
+FTS5 is the lexical retrieval component. It is a SQLite virtual table called `records_fts`, not a separate search service. It answers queries where exact terms matter more than semantic similarity: error text, identifiers, commands, attribute names, and entity aliases.
+
+| Indexed field | Source | Why FTS indexes it |
+| --- | --- | --- |
+| `record_id` | The canonical memory record ID. | Maps an FTS match back to the record. FTS does not tokenize this field. |
+| `content` | `records.content`. | Finds exact words and phrases in the memory text. |
+| `subject` | `records.subject`. | Finds attribute keys such as `project:agentic-memory-system/commit_convention`. |
+| `aliases` | Linked entity aliases, joined into one string at write time. | Lets a name query find a record even when its content uses a pronoun or a canonical name. |
+
+The ingestor creates or replaces the FTS row in the same transaction that writes a memory record and its entity links. `memory_forget` removes the FTS row because deleted records must not appear in lexical results. FTS5 remains rebuildable from canonical records and entity links.
+
+SQLite FTS5 builds an inverted word index over `content`, `subject`, and entity `aliases`.
 
 ```text
 Query: "OAuth refresh failure"
@@ -243,9 +281,19 @@ Matches:
 - aliases: "auth", "OAuth service"
 ```
 
-FTS ranks literal-word matches with BM25. It works well for identifiers, error messages, commands, and names. Vector search works well when the query uses different wording from the memory.
+The lexical generator runs these steps for each search query:
 
-## 10. Retrieval channels and ranking
+1. It tokenizes the query with FTS5's `unicode61` rules.
+2. It removes configured stopwords but keeps identifiers and proper nouns.
+3. It joins the remaining terms with `OR` and runs `bm25(records_fts, 0.0, 1.0, 2.0, 3.0)`. The leading `0.0` skips the unindexed `record_id` column. The remaining weights favor `aliases` over `subject`, and `subject` over `content`.
+4. It fetches `3 × per_generator_k` rows, then intersects them with the eligible record IDs from the policy filter. FTS5 cannot enforce scope, lifecycle, or time conditions itself.
+5. It returns each surviving record ID with its BM25 rank, score, matched-term count, and total-query-term count.
+
+FTS ranks literal-word matches with BM25. It complements vector search, which works better when the query paraphrases a memory rather than repeating its terms.
+
+The alias text is denormalized into each FTS row. When an alias changes or two entities merge, the ingestor must rewrite every affected row so lexical search does not use stale alias text.
+
+## 11. Retrieval channels and ranking
 
 The retrieval service runs three candidate generators after it applies scope, grant, lifecycle, type, and time filters.
 
@@ -298,7 +346,7 @@ gate: passed dense threshold
 
 The service writes this reasoning and per-stage timings to `search_log` for inspection and evaluation.
 
-## 11. Query rewriting
+## 12. Query rewriting
 
 The serving agent does not rewrite its own query. It sends a raw request to `memory_search`.
 
@@ -314,7 +362,7 @@ When rewriting is enabled, the framework adapter adds the latest user and assist
 
 The initial configuration keeps rewriting off because the model call adds 300 to 800 ms to the retrieval path. The service uses the raw query if the call times out or fails, then records `rewrite_status: failed` in `search_log`.
 
-## 12. Ingestion, sessions, and audit trail
+## 13. Ingestion, sessions, and audit trail
 
 An agent can call `memory_write` during a session. The request checks writable scope and evidence, resolves entity links, checks duplicates and conflicts, creates an embedding, writes SQLite rows, updates indexes, and writes an audit event. The agent waits for that tool result.
 
@@ -322,7 +370,7 @@ The adapter stores user, assistant, and tool turns in `session_turns`. The extra
 
 The append-only `events` table records memory changes. `search_log` records retrieval decisions. Together, those tables show who changed a memory, which source supported it, and why retrieval returned or rejected it.
 
-## 13. Memory tools and framework adapters
+## 14. Memory tools and framework adapters
 
 | Tool | Agent action |
 | --- | --- |

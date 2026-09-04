@@ -79,3 +79,7 @@ benchmarks/results/
 .DS_Store
 Thumbs.db
 
+# Additional Files
+implementation-plan.md
+docs/current-landscape.md
+docs/benchmark-plan.md

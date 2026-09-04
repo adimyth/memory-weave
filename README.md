@@ -181,10 +181,10 @@ This section will explain the package layout, the SQLite schema and indexes, mem
 
 These documents define the design:
 
-- [Research notes and initial design specification](agent-memory-research-notes.md)
-- [Component guide with examples](COMPONENTS.md)
-- [High-level design](agent-memory-hld.md)
-- [Low-level design](agent-memory-lld.md)
+- [Research notes and initial design specification](docs/agent-memory-research-notes.md)
+- [Component guide with examples](docs/components.md)
+- [High-level design](docs/agent-memory-hld.md)
+- [Low-level design](docs/agent-memory-lld.md)
 
 The repository uses [Conventional Commits](https://www.conventionalcommits.org/) for commit messages. After cloning, enable the repository's commit-message hook with `git config core.hooksPath .githooks`.
 
