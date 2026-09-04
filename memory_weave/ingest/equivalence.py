@@ -1,0 +1,101 @@
+"""NLI-backed equivalence decisions for candidate memory records."""
+
+from __future__ import annotations
+
+from collections.abc import Callable, Mapping
+from typing import Any, Literal, Protocol
+
+import numpy as np
+
+from memory_weave.config import EquivalenceConfig
+
+EquivalenceVerdict = Literal["same", "contradicts", "distinct"]
+
+# cross-encoder/nli-deberta-v3-small exposes [contradiction, entailment, neutral].
+_CONTRADICTION_LABEL = 0
+_ENTAILMENT_LABEL = 1
+_NLI_LABEL_COUNT = 3
+_VERDICTS: frozenset[EquivalenceVerdict] = frozenset({"same", "contradicts", "distinct"})
+
+
+class EquivalenceJudge(Protocol):
+    """Classify the relationship between two memory claims."""
+
+    def judge(self, first: str, second: str) -> EquivalenceVerdict:
+        """Return whether claims are the same, contradictory, or distinct."""
+
+
+class FakeJudge:
+    """Return configured pair verdicts and use ``distinct`` for every other pair."""
+
+    def __init__(self, verdicts: Mapping[tuple[str, str], EquivalenceVerdict] | None = None) -> None:
+        self._verdicts: dict[frozenset[str], EquivalenceVerdict] = {}
+        for (first, second), verdict in (verdicts or {}).items():
+            self.set_verdict(first, second, verdict)
+
+    def set_verdict(self, first: str, second: str, verdict: EquivalenceVerdict) -> None:
+        """Set a symmetric verdict for one pair of claims."""
+
+        if verdict not in _VERDICTS:
+            raise ValueError(f"Unsupported equivalence verdict: {verdict}")
+        self._verdicts[frozenset((first, second))] = verdict
+
+    def judge(self, first: str, second: str) -> EquivalenceVerdict:
+        """Return the configured symmetric verdict or ``distinct`` by default."""
+
+        return self._verdicts.get(frozenset((first, second)), "distinct")
+
+
+class NLICrossEncoderJudge:
+    """Judge claim equivalence with a lazily loaded NLI cross-encoder."""
+
+    def __init__(self, config: EquivalenceConfig, *, model_factory: Callable[[], Any] | None = None) -> None:
+        self._entail_floor = config.entail_floor
+        self._contradict_floor = config.contradict_floor
+        self._model_factory = model_factory or _cross_encoder_factory(config.model)
+        self._model: Any | None = None
+
+    @property
+    def is_loaded(self) -> bool:
+        """Return whether the local cross-encoder has been instantiated."""
+
+        return self._model is not None
+
+    def judge(self, first: str, second: str) -> EquivalenceVerdict:
+        """Score both claim directions and apply the configured NLI floors."""
+
+        scores = np.asarray(
+            self._load_model().predict(
+                [[first, second], [second, first]],
+                apply_softmax=True,
+                convert_to_numpy=True,
+                show_progress_bar=False,
+            ),
+            dtype=np.float32,
+        )
+        if scores.shape != (2, _NLI_LABEL_COUNT):
+            raise ValueError(f"NLI model returned shape {scores.shape}, expected (2, {_NLI_LABEL_COUNT}).")
+        if not np.isfinite(scores).all():
+            raise ValueError("NLI model scores must contain only finite values.")
+        if np.all(scores[:, _ENTAILMENT_LABEL] >= self._entail_floor):
+            return "same"
+        if np.any(scores[:, _CONTRADICTION_LABEL] >= self._contradict_floor):
+            return "contradicts"
+        return "distinct"
+
+    def _load_model(self) -> Any:
+        if self._model is None:
+            self._model = self._model_factory()
+        return self._model
+
+
+def _cross_encoder_factory(model_name: str) -> Callable[[], Any]:
+    def load() -> Any:
+        try:
+            from sentence_transformers import CrossEncoder  # type: ignore[import-not-found]
+        except ImportError as exc:
+            message = "NLI judging requires sentence-transformers. Install it with: uv sync --extra local-models"
+            raise RuntimeError(message) from exc
+        return CrossEncoder(model_name)
+
+    return load
