@@ -347,7 +347,7 @@ class Store:
         self.connection.execute("DELETE FROM records_fts WHERE record_id = ?", (record_id,))
 
     def fts_query(self, match_expr: str, limit: int) -> list[tuple[str, float]]:
-        """Return BM25-ranked lexical matches using the LLD column weights."""
+        """Return BM25 matches; callers must provide a sanitized FTS5 match expression."""
 
         rows = self.connection.execute(
             """
@@ -360,6 +360,25 @@ class Store:
             (match_expr, limit),
         ).fetchall()
         return [(cast(str, row["record_id"]), cast(float, row["score"])) for row in rows]
+
+    def fts_rows(self, record_ids: Sequence[str]) -> dict[str, tuple[str, str, str]]:
+        """Return the indexed content, subject, and alias text for the requested FTS rows."""
+
+        if not record_ids:
+            return {}
+        placeholders = _placeholders(len(record_ids))
+        rows = self.connection.execute(
+            f"SELECT record_id, content, subject, aliases FROM records_fts WHERE record_id IN ({placeholders})",
+            tuple(record_ids),
+        ).fetchall()
+        return {
+            cast(str, row["record_id"]): (
+                cast(str, row["content"]),
+                cast(str, row["subject"]),
+                cast(str, row["aliases"]),
+            )
+            for row in rows
+        }
 
     def add_conflict(self, first_id: str, second_id: str, noted_at: datetime | None = None) -> None:
         """Record a symmetric conflict relationship."""
@@ -473,24 +492,39 @@ class Store:
     def records_for_entities(self, entity_ids: Sequence[str], eligible: set[str], limit: int) -> list[tuple[str, str]]:
         """Return eligible record and entity IDs in event-time order."""
 
-        if not entity_ids or not eligible:
+        if limit <= 0 or not entity_ids or not eligible:
             return []
-        placeholders = _placeholders(len(entity_ids))
-        rows = self.connection.execute(
-            f"""
-            SELECT re.record_id, re.entity_id
-            FROM record_entities AS re
-            JOIN records AS r ON r.id = re.record_id
-            WHERE re.entity_id IN ({placeholders})
-            ORDER BY r.event_at DESC, r.id DESC
-            """,
-            tuple(entity_ids),
-        ).fetchall()
-        return [
-            (cast(str, row["record_id"]), cast(str, row["entity_id"]))
-            for row in rows
-            if cast(str, row["record_id"]) in eligible
-        ][:limit]
+        remaining_parameters = 900 - len(entity_ids) - 1
+        if remaining_parameters <= 0:
+            raise ValueError("Too many entity IDs for one entity retrieval query.")
+
+        entity_placeholders = _placeholders(len(entity_ids))
+        rows_by_record: dict[str, tuple[str, str]] = {}
+        eligible_ids = sorted(eligible)
+        for start in range(0, len(eligible_ids), remaining_parameters):
+            batch = eligible_ids[start : start + remaining_parameters]
+            eligible_placeholders = _placeholders(len(batch))
+            rows = self.connection.execute(
+                f"""
+                SELECT re.record_id, re.entity_id, r.event_at
+                FROM record_entities AS re
+                JOIN records AS r ON r.id = re.record_id
+                WHERE re.entity_id IN ({entity_placeholders})
+                  AND re.record_id IN ({eligible_placeholders})
+                ORDER BY r.event_at DESC, r.id DESC, re.entity_id ASC
+                LIMIT ?
+                """,
+                (*entity_ids, *batch, limit),
+            ).fetchall()
+            for row in rows:
+                record_id = cast(str, row["record_id"])
+                candidate = (cast(str, row["entity_id"]), cast(str, row["event_at"]))
+                previous = rows_by_record.get(record_id)
+                if previous is None or candidate[0] < previous[0]:
+                    rows_by_record[record_id] = candidate
+
+        ordered = sorted(rows_by_record.items(), key=lambda item: (item[1][1], item[0]), reverse=True)
+        return [(record_id, entity_id) for record_id, (entity_id, _) in ordered[:limit]]
 
     def merge_entity(self, source_id: str, destination_id: str) -> None:
         """Merge aliases and record links into the destination entity."""
