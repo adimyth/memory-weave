@@ -33,6 +33,14 @@ class EntityMergeError(EntityResolutionError):
     """Raised when an entity merge is invalid or its chain is corrupt."""
 
 
+class PrincipalEntityAmbiguousError(EntityResolutionError):
+    """Raised when more than one person entity in a user scope carries the principal alias."""
+
+    def __init__(self, candidates: list[str]) -> None:
+        super().__init__("The principal user alias resolves to more than one person entity.")
+        self.candidates = candidates
+
+
 MergeActor = Principal | Literal["admin"]
 
 
@@ -135,6 +143,47 @@ def aliases_text(store: Store, entity_ids: Iterable[str]) -> str:
         for alias in entity.aliases:
             aliases.setdefault(alias, None)
     return " ".join(aliases)
+
+
+def primary_entity_for(principal: Principal, scope: Scope, store: Store) -> Entity:
+    """Resolve or create the principal's person entity in that principal's user scope."""
+
+    if scope.kind != "user" or scope.id != principal.user_id:
+        raise EntityResolutionError("A principal user entity can only be created in that user's scope.")
+    return ensure_principal_entity(principal.user_id, store, actor=principal.agent_id)
+
+
+def ensure_principal_entity(user_id: str, store: Store, *, actor: str) -> Entity:
+    """Return the person entity that stands for ``user_id`` in its own user scope, creating it if absent."""
+
+    scope = Scope(kind="user", id=user_id)
+    alias = normalize_alias(user_id)
+    matches = store.entities_by_alias(
+        alias,
+        kinds=["person"],
+        scopes=[scope],
+        statuses=_ACTIVE_ENTITY_STATUSES,
+    )
+    if len(matches) == 1:
+        return matches[0]
+    if matches:
+        raise PrincipalEntityAmbiguousError([entity.id for entity in matches])
+    with store.transaction():
+        entity = store.create_entity(kind="person", canonical=user_id, scope=scope)
+        store.add_alias(entity.id, alias)
+        store.append_event(
+            "entity.created",
+            actor,
+            None,
+            entity.id,
+            {
+                "alias": alias,
+                "canonical": entity.canonical,
+                "kind": entity.kind,
+                "scope": {"id": scope.id, "kind": scope.kind},
+            },
+        )
+        return entity
 
 
 def _create_entity_resolution(

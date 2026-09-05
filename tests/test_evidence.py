@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from memory_weave.config import MemoryWeaveConfig
+from memory_weave.config import EvidenceConfig, IngestionConfig, MemoryWeaveConfig
 from memory_weave.ingest.evidence import session_turn_source_ref, validate_evidence
 from memory_weave.ingest.session import SessionBuffer
 from memory_weave.models import EvidenceSourceKind, Turn
@@ -191,3 +191,12 @@ def test_validate_evidence_treats_an_unknown_turn_role_as_inference(store: Store
     assert evidence.role is None
     assert evidence.source_kind == "agent_inference"
     assert evidence.note == "unsupported transcript role; treated as agent_inference"
+
+
+def test_validate_evidence_reads_its_minimum_length_from_config(session_buffer: SessionBuffer) -> None:
+    config = MemoryWeaveConfig(ingestion=IngestionConfig(evidence=EvidenceConfig(min_characters=100, min_words=2)))
+
+    evidence = validate_evidence(session_buffer, _SESSION_ID, "yes, we", "user_statement", config)
+
+    assert evidence.found is True
+    assert evidence.source_kind == "user_statement"

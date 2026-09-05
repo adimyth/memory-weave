@@ -25,12 +25,21 @@ class EquivalenceJudge(Protocol):
     def judge(self, first: str, second: str) -> EquivalenceVerdict:
         """Return whether claims are the same, contradictory, or distinct."""
 
+    def entails(self, premise: str, hypothesis: str) -> float:
+        """Return how strongly one statement supports another statement."""
+
 
 class FakeJudge:
-    """Return configured pair verdicts and use ``distinct`` for every other pair."""
+    """Return configured verdicts and entailment scores for deterministic tests."""
 
-    def __init__(self, verdicts: Mapping[tuple[str, str], EquivalenceVerdict] | None = None) -> None:
+    def __init__(
+        self,
+        verdicts: Mapping[tuple[str, str], EquivalenceVerdict] | None = None,
+        entailments: Mapping[tuple[str, str], float] | None = None,
+    ) -> None:
         self._verdicts: dict[frozenset[str], EquivalenceVerdict] = {}
+        self._entailments = dict(entailments or {})
+        self.entail_calls: list[tuple[str, str]] = []
         for (first, second), verdict in (verdicts or {}).items():
             self.set_verdict(first, second, verdict)
 
@@ -45,6 +54,19 @@ class FakeJudge:
         """Return the configured symmetric verdict or ``distinct`` by default."""
 
         return self._verdicts.get(frozenset((first, second)), "distinct")
+
+    def set_entailment(self, premise: str, hypothesis: str, score: float) -> None:
+        """Set one directed entailment score for a test."""
+
+        if not 0.0 <= score <= 1.0:
+            raise ValueError("Entailment scores must be between 0 and 1.")
+        self._entailments[(premise, hypothesis)] = score
+
+    def entails(self, premise: str, hypothesis: str) -> float:
+        """Return a configured score and otherwise treat the supplied evidence as supporting the claim."""
+
+        self.entail_calls.append((premise, hypothesis))
+        return self._entailments.get((premise, hypothesis), 1.0)
 
 
 class NLICrossEncoderJudge:
@@ -70,15 +92,7 @@ class NLICrossEncoderJudge:
     def judge(self, first: str, second: str) -> EquivalenceVerdict:
         """Score both claim directions and apply the configured NLI floors."""
 
-        model = self._load_model()
-        with self._inference_lock:
-            predicted = model.predict(
-                [[first, second], [second, first]],
-                apply_softmax=True,
-                convert_to_numpy=True,
-                show_progress_bar=False,
-            )
-        scores = np.asarray(predicted, dtype=np.float32)
+        scores = self._predict([[first, second], [second, first]])
         if scores.shape != (2, _NLI_LABEL_COUNT):
             raise ValueError(f"NLI model returned shape {scores.shape}, expected (2, {_NLI_LABEL_COUNT}).")
         if not np.isfinite(scores).all():
@@ -88,6 +102,23 @@ class NLICrossEncoderJudge:
         if np.any(scores[:, self._contradiction_label] >= self._contradict_floor):
             return "contradicts"
         return "distinct"
+
+    def entails(self, premise: str, hypothesis: str) -> float:
+        """Return the NLI entailment probability for a directed evidence-to-claim comparison."""
+
+        scores = self._predict([[premise, hypothesis]])
+        if scores.shape != (1, _NLI_LABEL_COUNT):
+            raise ValueError(f"NLI model returned shape {scores.shape}, expected (1, {_NLI_LABEL_COUNT}).")
+        return float(scores[0, self._entailment_label])
+
+    def _predict(self, pairs: list[list[str]]) -> np.ndarray:
+        model = self._load_model()
+        with self._inference_lock:
+            predicted = model.predict(pairs, apply_softmax=True, convert_to_numpy=True, show_progress_bar=False)
+        scores = np.asarray(predicted, dtype=np.float32)
+        if not np.isfinite(scores).all():
+            raise ValueError("NLI model scores must contain only finite values.")
+        return scores
 
     def _load_model(self) -> Any:
         with self._model_load_lock:

@@ -58,8 +58,8 @@ def _record(record_id: str, source_kind: SourceKind, **overrides: object) -> Rec
     return Record(**values)  # type: ignore[arg-type]
 
 
-def test_grants_keep_own_agent_scope_and_never_cross_user_boundaries(store: Store) -> None:
-    own_agent_scope = Scope(kind="agent", id=_AGENT_ID)
+def test_grants_add_to_the_implicit_agent_and_user_private_scope(store: Store) -> None:
+    own_agent_scope = Scope(kind="agent", id=f"{_AGENT_ID}/{_USER_ID}")
     own_user_scope = Scope(kind="user", id=_USER_ID)
     another_user_scope = Scope(kind="user", id="someone-else")
     project_scope = Scope(kind="project", id="memory-weave")
@@ -86,10 +86,20 @@ def test_project_grant_does_not_create_user_scope_access(store: Store) -> None:
     store.set_grant(_AGENT_ID, project_scope, can_read=True, can_write=True)
 
     assert readable_scopes(store, _AGENT_ID, _USER_ID) == [
-        Scope(kind="agent", id=_AGENT_ID),
+        Scope(kind="agent", id=f"{_AGENT_ID}/{_USER_ID}"),
         project_scope,
     ]
     assert user_scope not in writable_scopes(store, _AGENT_ID, _USER_ID)
+
+
+def test_a_granted_private_scope_is_visible_only_to_its_encoded_user(store: Store) -> None:
+    private_scope = Scope(kind="agent", id="agent-a/user-u")
+    store.set_grant("agent-b", private_scope, can_read=True, can_write=True)
+
+    assert private_scope in readable_scopes(store, "agent-b", "user-u")
+    assert private_scope in writable_scopes(store, "agent-b", "user-u")
+    assert private_scope not in readable_scopes(store, "agent-b", "user-v")
+    assert private_scope not in writable_scopes(store, "agent-b", "user-v")
 
 
 @pytest.mark.parametrize(

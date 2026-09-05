@@ -24,6 +24,7 @@ class VectorIndex:
         self._matrix = np.empty((0, self.dims), dtype=np.float32)
         self._live = np.empty(0, dtype=np.bool_)
         self._is_loaded = False
+        self._loaded_version = -1
         self._lock = threading.RLock()
 
     @property
@@ -54,10 +55,18 @@ class VectorIndex:
         with self._lock:
             return self._is_loaded
 
+    @property
+    def loaded_version(self) -> int:
+        """Return the durable records version represented by this projection, or -1 before loading."""
+
+        with self._lock:
+            return self._loaded_version
+
     def load(self, store: Store) -> None:
         """Rebuild the index from embeddings matching this index's model and version."""
 
         with self._lock:
+            source_version = store.records_version()
             self._reset()
             self._allocate(store.count_embeddings(self.model, self.version))
             try:
@@ -72,6 +81,31 @@ class VectorIndex:
                 self._reset()
                 raise
             self._is_loaded = True
+            self._loaded_version = source_version
+
+    def refresh(self, store: Store, incremental_reload_max: int) -> str:
+        """Apply another process's durable index changes, or rebuild when the delta is too large."""
+
+        if incremental_reload_max <= 0:
+            raise ValueError("incremental_reload_max must be positive.")
+        with self._lock:
+            if not self._is_loaded:
+                self.load(store)
+                return "loaded"
+            source_version = store.records_version()
+            if source_version == self._loaded_version:
+                return "unchanged"
+            changes = store.index_changes_since(self._loaded_version, self.model, self.version)
+            if len(changes) > incremental_reload_max:
+                self.load(store)
+                return "reloaded"
+            for record_id, status, vector in changes:
+                if status == "deleted" or vector is None:
+                    self.remove(record_id)
+                else:
+                    self.upsert(record_id, vector)
+            self._loaded_version = source_version
+            return "delta"
 
     def upsert(self, record_id: str, vector: np.ndarray) -> None:
         """Append or replace one normalized vector and mark its row live."""
@@ -114,26 +148,18 @@ class VectorIndex:
             return float(np.dot(self._matrix[first_position], self._matrix[second_position]))
 
     def mask(self, eligible_ids: set[str]) -> np.ndarray:
-        """Return an eligibility mask aligned with the populated matrix rows."""
+        """Return an eligibility mask from eligible-position lookups instead of an index-wide Python scan."""
 
         with self._lock:
-            return np.fromiter(
-                (record_id in eligible_ids for record_id in self._ids), dtype=np.bool_, count=len(self._ids)
-            )
+            return self._eligible_mask(eligible_ids)
 
-    def search(self, query_vector: np.ndarray, allowed: np.ndarray, k: int) -> list[tuple[str, float]]:
-        """Return the best live and allowed record IDs with their exact cosine scores."""
+    def search(self, query_vector: np.ndarray, eligible_ids: set[str], k: int) -> list[tuple[str, float]]:
+        """Return the best live eligible record IDs with their exact cosine scores."""
 
         with self._lock:
             if k <= 0 or not self._ids:
                 return []
-            allowed_mask = np.asarray(allowed, dtype=np.bool_)
-            if allowed_mask.ndim != 1 or allowed_mask.size > len(self._ids):
-                raise ValueError("Allowed mask must have at most one boolean value for each indexed record.")
-            if allowed_mask.size < len(self._ids):
-                extended_mask = np.zeros(len(self._ids), dtype=np.bool_)
-                extended_mask[: allowed_mask.size] = allowed_mask
-                allowed_mask = extended_mask
+            allowed_mask = self._eligible_mask(eligible_ids)
             active = self._live[: len(self._ids)] & allowed_mask
             count = int(active.sum())
             if count == 0:
@@ -146,12 +172,22 @@ class VectorIndex:
             ordered = top[np.argsort(-scores[top], kind="stable")]
             return [(self._ids[position], float(scores[position])) for position in ordered]
 
+    def _eligible_mask(self, eligible_ids: set[str]) -> np.ndarray:
+        """Build one position-aligned eligibility mask while holding the index lock."""
+
+        mask = np.zeros(len(self._ids), dtype=np.bool_)
+        positions = [self._pos[record_id] for record_id in eligible_ids if record_id in self._pos]
+        if positions:
+            mask[np.asarray(positions, dtype=np.intp)] = True
+        return mask
+
     def _reset(self) -> None:
         self._ids.clear()
         self._pos.clear()
         self._matrix = np.empty((0, self.dims), dtype=np.float32)
         self._live = np.empty(0, dtype=np.bool_)
         self._is_loaded = False
+        self._loaded_version = -1
 
     def _append(self, record_id: str, normalized: np.ndarray) -> None:
         """Append one already-normalized vector while holding the index lock."""

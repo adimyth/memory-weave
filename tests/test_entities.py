@@ -18,12 +18,13 @@ from memory_weave.ingest.entities import (
 )
 from memory_weave.models import EntityMention, Principal, Record, Scope
 from memory_weave.store import Store
+from memory_weave.util import render_subject
 
 _NOW = datetime(2026, 9, 4, 12, 0, tzinfo=UTC)
 _AGENT_ID = "research-agent"
 _USER_ID = "aditya"
 _PRINCIPAL = Principal(agent_id=_AGENT_ID, user_id=_USER_ID, session_id="session-1", project_id="memory-weave")
-_AGENT_SCOPE = Scope(kind="agent", id=_AGENT_ID)
+_AGENT_SCOPE = Scope(kind="agent", id=f"{_AGENT_ID}/{_USER_ID}")
 _PROJECT_SCOPE = Scope(kind="project", id="memory-weave")
 
 
@@ -235,7 +236,11 @@ def test_merge_entities_unions_aliases_repoints_links_and_keeps_the_primary_role
     store.add_alias(source.id, "memory weave")
     store.add_alias(destination.id, "memory weave core")
     record = _record("record-1")
+    record.subject_entity_id = source.id
+    record.attribute = "architecture"
+    record.subject = render_subject(source.id, record.attribute)
     store.insert_record(record)
+    store.upsert_fts(record.id, record.content, record.subject, "memory weave")
     store.link_record_entity(record.id, source.id, role="about")
     store.link_record_entity(record.id, destination.id, role="mentions")
 
@@ -247,6 +252,12 @@ def test_merge_entities_unions_aliases_repoints_links_and_keeps_the_primary_role
     assert stored_source.merged_into == destination.id
     assert merged.aliases == ["memory weave", "memory weave core"]
     assert store.records_for_entities([destination.id], {record.id}, limit=10) == [(record.id, destination.id)]
+    rewritten = store.get_record(record.id)
+    assert rewritten is not None
+    assert rewritten.subject_entity_id == destination.id
+    assert rewritten.subject == f"{destination.id}/architecture"
+    assert store.active_by_subject(_AGENT_SCOPE, destination.id, "architecture") == [rewritten]
+    assert store.fts_rows([record.id])[record.id][1] == f"{destination.id}/architecture"
     role = store.connection.execute(
         "SELECT role FROM record_entities WHERE record_id = ? AND entity_id = ?",
         (record.id, destination.id),

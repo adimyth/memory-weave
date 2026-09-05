@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime
 from typing import cast
 
@@ -38,9 +38,9 @@ from memory_weave.policy import (
     writable_scopes,
 )
 from memory_weave.store import Store
-from memory_weave.util import Timer, normalize_alias, now, uuid7
+from memory_weave.util import Timer, normalize_attribute, now, render_subject, uuid7
 
-from .entities import aliases_text, resolve_entities
+from .entities import PrincipalEntityAmbiguousError, aliases_text, primary_entity_for, resolve_entities
 from .equivalence import EquivalenceJudge
 from .evidence import session_turn_source_ref, validate_evidence
 from .session import SessionBuffer
@@ -69,7 +69,7 @@ class WriteRequest:
     content: str
     source_kind: SourceKind
     evidence: str | None
-    subject: str | None = None
+    attribute: str | None = None
     scope: Scope | None = None
     event_at: datetime | None = None
     entities: list[EntityMention] = field(default_factory=list)
@@ -106,6 +106,24 @@ class _EntityAmbiguous(Exception):
         super().__init__("An about-role entity alias is ambiguous.")
         self.candidates = candidates
         self.mentions = mentions
+
+
+class _InvalidSubject(Exception):
+    """Carry a subject-contract failure out of a rolled-back write transaction."""
+
+    def __init__(self, note: str) -> None:
+        super().__init__(note)
+        self.note = note
+
+
+@dataclass(frozen=True, slots=True)
+class _WriteDecision:
+    """Hold one deduplication decision and the audit facts it produced."""
+
+    outcome: str
+    existing: Record | None
+    dedup_kind: str | None
+    extra: dict[str, object]
 
 
 @dataclass(frozen=True, slots=True)
@@ -153,7 +171,7 @@ class Ingestor:
 
         timer = Timer(warm=self._embedder.is_loaded and self._vector_index.is_loaded)
         current_time = self._current_time()
-        scope = request.scope or Scope(kind="agent", id=principal.agent_id)
+        scope = request.scope or Scope(kind="user", id=principal.user_id)
         if scope not in writable_scopes(self._store, principal.agent_id, principal.user_id):
             timer.mark("permission")
             return self._result(None, None, "scope_not_writable", None, timer)
@@ -168,16 +186,16 @@ class Ingestor:
                 timer,
             )
 
-        if request.type in ("semantic", "procedural") and not (request.subject or "").strip():
+        if request.type in ("semantic", "procedural") and not (request.attribute or "").strip():
             return self._result(
                 None,
                 None,
                 "invalid_subject",
-                f"{request.type} records require a subject with an attribute.",
+                f"{request.type} records require an attribute.",
                 timer,
             )
 
-        evidence = self._validate_evidence(principal, request, timer)
+        evidence, entailment_score = self._validate_evidence(principal, request, timer)
         source_kind = evidence.source_kind
         source_ref = (
             session_turn_source_ref(principal.session_id, evidence.turn)
@@ -201,8 +219,14 @@ class Ingestor:
                     dict.fromkeys(resolution.entity.id for resolution in resolutions if resolution.entity is not None)
                 )
                 entity_roles = _entity_roles(resolutions)
+                primary, attribute = self._subject_for(request, resolutions, principal, scope)
+                if primary is not None:
+                    entity_ids = list(dict.fromkeys([*entity_ids, primary.id]))
+                    entity_roles[primary.id] = "about"
+                    record.subject_entity_id = primary.id
+                    record.attribute = attribute
+                    record.subject = render_subject(primary.id, attribute)
                 record.entity_ids = entity_ids
-                record.subject = self._subject_for(request, resolutions, principal)
                 timer.mark("entities")
 
                 vector = self._embedder.embed_documents([record.content])[0]
@@ -210,9 +234,19 @@ class Ingestor:
 
                 outcome = self._decide_outcome(record, vector, current_time, timer)
                 note = _combine_notes(evidence.note, _ambiguous_mentions_note(ambiguous))
-                persisted = self._persist_outcome(record, vector, outcome, note, entity_roles, timer)
+                persisted = self._persist_outcome(
+                    record,
+                    vector,
+                    outcome,
+                    note,
+                    entity_roles,
+                    entailment_score,
+                    timer,
+                )
         except _EntityAmbiguous as ambiguity:
             return self._record_ambiguity(principal, ambiguity, timer)
+        except _InvalidSubject as invalid:
+            return self._result(None, None, "invalid_subject", invalid.note, timer)
 
         assert persisted is not None
         timer.mark("transaction")
@@ -227,7 +261,9 @@ class Ingestor:
             timer,
         )
 
-    def _validate_evidence(self, principal: Principal, request: WriteRequest, timer: Timer) -> EvidenceCheck:
+    def _validate_evidence(
+        self, principal: Principal, request: WriteRequest, timer: Timer
+    ) -> tuple[EvidenceCheck, float | None]:
         if request.evidence is None:
             evidence = EvidenceCheck(False, None, None, "agent_inference", "evidence not provided")
         else:
@@ -240,8 +276,20 @@ class Ingestor:
                 self._config,
                 turn_hint=request.evidence_turn,
             )
+        entailment_score: float | None = None
+        direct_claim = evidence.source_kind in ("user_statement", "tool_result")
+        if evidence.found and direct_claim and request.evidence is not None:
+            entailment_score = self._judge.entails(request.evidence, request.content)
+            if not 0.0 <= entailment_score <= 1.0:
+                raise ValueError("Evidence entailment scores must be between 0 and 1.")
+            if entailment_score < self._config.ingestion.evidence.entail_floor:
+                evidence = replace(
+                    evidence,
+                    source_kind="agent_inference",
+                    note=_combine_notes(evidence.note, "evidence does not support claim"),
+                )
         timer.mark("evidence")
-        return evidence
+        return evidence, entailment_score
 
     def _new_record(
         self,
@@ -258,7 +306,9 @@ class Ingestor:
             type=request.type,
             version=1,
             content=request.content,
-            subject=request.subject or "",
+            subject="",
+            subject_entity_id=None,
+            attribute=None,
             scope=scope,
             source_kind=source_kind,
             source_ref=source_ref,
@@ -281,9 +331,8 @@ class Ingestor:
         request: WriteRequest,
         resolutions: list[Resolution],
         principal: Principal,
-    ) -> str:
-        if request.subject is not None:
-            return request.subject
+        scope: Scope,
+    ) -> tuple[Entity | None, str | None]:
         primary = next(
             (
                 resolution.entity
@@ -292,9 +341,25 @@ class Ingestor:
             ),
             None,
         )
-        if primary is None:
-            return f"person:{normalize_alias(principal.user_id)}/-"
-        return _entity_subject(primary)
+        if request.type in ("semantic", "procedural"):
+            if primary is None:
+                if scope.kind != "user" or scope.id != principal.user_id:
+                    raise _InvalidSubject("about entity required")
+                primary = self._principal_entity(principal, scope)
+            attribute = normalize_attribute(request.attribute or "")
+            if not attribute:
+                raise _InvalidSubject("attribute normalizes to nothing")
+            return primary, attribute
+        if primary is None and scope.kind == "user" and scope.id == principal.user_id:
+            primary = self._principal_entity(principal, scope)
+        return primary, "-" if primary is not None else None
+
+    def _principal_entity(self, principal: Principal, scope: Scope) -> Entity:
+        try:
+            return primary_entity_for(principal, scope, self._store)
+        except PrincipalEntityAmbiguousError as ambiguity:
+            mention = EntityMention(kind="person", text=principal.user_id, role="about")
+            raise _EntityAmbiguous(sorted(ambiguity.candidates), [mention]) from ambiguity
 
     def _decide_outcome(
         self,
@@ -302,38 +367,85 @@ class Ingestor:
         vector: np.ndarray,
         current_time: datetime,
         timer: Timer,
-    ) -> tuple[str, Record | None, str | None]:
-        same_subject = (
-            [
-                existing
-                for existing in self._store.active_by_subject(record.scope, record.subject)
-                if existing.type == record.type
-            ]
-            if _is_current_fact(record)
-            else []
-        )
+    ) -> _WriteDecision:
         self._ensure_index_loaded()
-        neighbours = self._nearby_records(record, vector, same_subject, current_time)
+        attribute_records, scan_truncated = self._attribute_records(record, vector)
+        neighbours = self._nearby_records(record, vector, {existing.id for existing in attribute_records}, current_time)
         timer.mark("dedup_search")
+        extra: dict[str, object] = {"attribute_scan_truncated": True} if scan_truncated else {}
 
-        if same_subject:
-            existing = max(same_subject, key=lambda candidate: _authority_key(candidate, self._config))
-            verdict = self._judge.judge(existing.content, record.content)
+        # Judge every scanned record first. The same-attribute authority incumbent then receives the
+        # supersession decision before any reinforcement, so a "same" verdict against a provisional
+        # sibling can never leave a contradicted incumbent active.
+        verdicts = [(existing, self._judge.judge(existing.content, record.content)) for existing in attribute_records]
+        same_attribute = [existing for existing, _ in verdicts if existing.attribute == record.attribute]
+
+        if same_attribute:
+            incumbent = max(same_attribute, key=lambda candidate: _authority_key(candidate, self._config))
+            incumbent_verdict = next(verdict for existing, verdict in verdicts if existing is incumbent)
             timer.mark("judge")
-            if verdict == "same":
+            if incumbent_verdict == "same":
                 timer.mark("supersession")
-                return "reinforced", existing, "same_subject"
-            return self._supersession_outcome(record, existing, current_time, timer)
+                return _WriteDecision("reinforced", incumbent, "same_subject", extra)
+            outcome, _, _ = self._supersession_outcome(record, incumbent, current_time, timer)
+            if outcome == "superseded":
+                subsumed = [
+                    existing.id
+                    for existing, verdict in verdicts
+                    if existing is not incumbent and existing.attribute == record.attribute and verdict == "same"
+                ]
+                if subsumed:
+                    extra["also_superseded"] = subsumed
+            return _WriteDecision(outcome, incumbent, "same_subject", extra)
+
+        aliased_same = [existing for existing, verdict in verdicts if verdict == "same"]
+        if aliased_same:
+            existing = max(aliased_same, key=lambda candidate: _authority_key(candidate, self._config))
+            extra["attribute_aliased_from"] = record.attribute or ""
+            timer.mark("judge")
+            timer.mark("supersession")
+            return _WriteDecision("reinforced", existing, "attribute", extra)
+
+        contradictions = [existing for existing, verdict in verdicts if verdict == "contradicts"]
+        if contradictions:
+            existing = max(contradictions, key=lambda candidate: _authority_key(candidate, self._config))
+            timer.mark("judge")
+            extra["attribute_aliased_from"] = record.attribute or ""
+            record.attribute = existing.attribute
+            record.subject = render_subject(record.subject_entity_id, record.attribute)
+            outcome, incumbent, _ = self._supersession_outcome(record, existing, current_time, timer)
+            return _WriteDecision(outcome, incumbent, "attribute", extra)
 
         for neighbour in neighbours:
             verdict = self._judge.judge(neighbour.content, record.content)
             if verdict == "same":
                 timer.mark("judge")
                 timer.mark("supersession")
-                return "reinforced", neighbour, "nearby_subject"
+                return _WriteDecision("reinforced", neighbour, "nearby_subject", extra)
         timer.mark("judge")
         timer.mark("supersession")
-        return "created", None, None
+        return _WriteDecision("created", None, None, extra)
+
+    def _attribute_records(self, record: Record, vector: np.ndarray) -> tuple[list[Record], bool]:
+        if not _is_current_fact(record):
+            return [], False
+        assert record.subject_entity_id is not None
+        assert record.attribute is not None
+        # The store returns reinforced-first order; the cap is applied to that order so a recently
+        # reinforced attribute is never excluded by cosine. Cosine only orders the records kept.
+        records = self._store.active_for_entity(record.scope, record.subject_entity_id, record.type)
+        same_subject = [existing for existing in records if existing.attribute == record.attribute]
+        incumbent = max(same_subject, key=lambda candidate: _authority_key(candidate, self._config), default=None)
+        others = [existing for existing in records if existing is not incumbent]
+        limit = self._config.ingestion.max_entity_attributes
+        kept = others[: max(limit - (1 if incumbent is not None else 0), 0)]
+        ordered = sorted(kept, key=lambda existing: (-self._attribute_cosine(existing, vector), existing.id))
+        scan = ([incumbent] if incumbent is not None else []) + ordered
+        return scan, len(records) > limit
+
+    def _attribute_cosine(self, record: Record, vector: np.ndarray) -> float:
+        existing_vector = self._vector_index.vector_for(record.id)
+        return float(np.dot(vector, existing_vector)) if existing_vector is not None else float("-inf")
 
     def _supersession_outcome(
         self,
@@ -363,7 +475,7 @@ class Ingestor:
         self,
         record: Record,
         vector: np.ndarray,
-        same_subject: list[Record],
+        excluded: set[str],
         current_time: datetime,
     ) -> list[Record]:
         eligible = self._store.eligible_ids(
@@ -374,8 +486,8 @@ class Ingestor:
             False,
             current_time,
         )
-        eligible.difference_update(existing.id for existing in same_subject)
-        hits = self._vector_index.search(vector, self._vector_index.mask(eligible), 3)
+        eligible.difference_update(excluded)
+        hits = self._vector_index.search(vector, eligible, 3)
         nearby_ids = [
             record_id for record_id, cosine in hits if cosine >= self._config.ingestion.dedup_candidate_cosine
         ]
@@ -385,12 +497,15 @@ class Ingestor:
         self,
         record: Record,
         vector: np.ndarray,
-        decision: tuple[str, Record | None, str | None],
+        decision: _WriteDecision,
         note: str | None,
         entity_roles: dict[str, EntityRole],
+        entailment_score: float | None,
         timer: Timer,
     ) -> _PersistedOutcome:
-        outcome, existing, dedup_kind = decision
+        outcome = decision.outcome
+        existing = decision.existing
+        dedup_kind = decision.dedup_kind
         if outcome == "reinforced":
             assert existing is not None
             counted = self._is_new_reinforcement(existing, record.source_ref)
@@ -427,11 +542,13 @@ class Ingestor:
                 timer=timer,
                 extra={
                     "dedup_kind": dedup_kind,
+                    "evidence_entailment_score": entailment_score,
                     "provenance_promoted": promoted,
                     "reinforcement_counted": counted,
                     "reinforcing_evidence": record.evidence,
                     "reinforcing_source_kind": record.source_kind,
                     "reinforcing_source_ref": record.source_ref,
+                    **decision.extra,
                 },
             )
             self._store.append_event("record.reinforced", record.creator_agent_id, reinforced.id, None, payload)
@@ -448,6 +565,8 @@ class Ingestor:
         if outcome == "superseded":
             assert existing is not None
             self._store.update_status(existing.id, "superseded")
+            for subsumed_id in cast(list[str], decision.extra.get("also_superseded", [])):
+                self._store.update_status(subsumed_id, "superseded")
         self._store.insert_record(record)
         self._store.put_embedding(record.id, self._embedder.name, self._embedder.version, vector)
         self._store.upsert_fts(record.id, record.content, record.subject, aliases_text(self._store, record.entity_ids))
@@ -457,7 +576,11 @@ class Ingestor:
             assert existing is not None
             self._store.add_conflict(record.id, existing.id, record.created_at)
         timer.mark("persistence")
-        extra = _outcome_event_fields(outcome, existing)
+        extra = {
+            "evidence_entailment_score": entailment_score,
+            **_outcome_event_fields(outcome, existing),
+            **decision.extra,
+        }
         payload = self._event_payload(record=record, outcome=outcome, note=note, timer=timer, extra=extra)
         self._store.append_event(_event_kind(outcome), record.creator_agent_id, record.id, None, payload)
         timer.mark("event_log")
@@ -533,6 +656,8 @@ class Ingestor:
             "source_ref": record.source_ref,
             "source_kind": record.source_kind,
             "subject": record.subject,
+            "subject_entity_id": record.subject_entity_id,
+            "attribute": record.attribute,
             "timings_ms": timings,
             "timings_pending": [stage for stage in _WRITE_STAGES if stage not in timings],
             **extra,
@@ -561,12 +686,12 @@ class Ingestor:
         return self._complete_timings(timer)
 
 
-def _entity_subject(entity: Entity) -> str:
-    return f"{entity.kind}:{normalize_alias(entity.canonical)}/-"
-
-
 def _is_current_fact(record: Record) -> bool:
-    return record.type in ("semantic", "procedural") and not record.subject.endswith("/-")
+    return (
+        record.type in ("semantic", "procedural")
+        and record.subject_entity_id is not None
+        and record.attribute not in (None, "-")
+    )
 
 
 def _authority_key(record: Record, config: MemoryWeaveConfig) -> tuple[int, datetime, datetime, str]:

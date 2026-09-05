@@ -9,6 +9,7 @@ from datetime import UTC, datetime, timedelta
 from memory_weave.index.embedder import FakeEmbedder
 from memory_weave.models import MemoryType, Record, Scope
 from memory_weave.store import Store
+from memory_weave.util import render_subject
 
 _FIXTURE_START = datetime(2026, 1, 1, tzinfo=UTC)
 
@@ -53,17 +54,13 @@ def build_store(
             record_id = f"fixture-{seed}-record-{index:06d}"
             content = f"Fixture memory {index} records ERR{index:05d} for project {scope_index}."
             entity = entities[scope_index]
-            subject = (
-                f"project:fixture-{seed}-{scope_index}/setting_{index}"
-                if memory_type != "episodic"
-                else f"project:fixture-{seed}-{scope_index}/-"
-            )
+            attribute = f"setting_{index}" if memory_type != "episodic" else "-"
             record = Record(
                 id=record_id,
                 type=memory_type,
                 version=1,
                 content=content,
-                subject=subject,
+                subject=render_subject(entity.id, attribute),
                 scope=scope,
                 source_kind="user_statement",
                 source_ref=None,
@@ -79,6 +76,8 @@ def build_store(
                 last_reinforced_at=None,
                 tags=[],
                 entity_ids=[entity.id],
+                subject_entity_id=entity.id,
+                attribute=attribute,
             )
             store.insert_record(record)
             store.put_embedding(record.id, embedder.name, embedder.version, embedder.embed_documents([content])[0])

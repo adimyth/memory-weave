@@ -25,6 +25,15 @@ def test_fake_judge_uses_symmetric_configured_verdicts_and_a_distinct_default() 
     assert judge.judge("Aditya likes short replies.", "Aditya prefers concise answers.") == "same"
     assert judge.judge("Aditya prefers detailed answers.", "Aditya prefers concise answers.") == "contradicts"
     assert judge.judge("Aditya prefers concise answers.", "Aditya lives in Bangalore.") == "distinct"
+    assert judge.entails("Keep answers concise.", "The user prefers concise answers.") == 1.0
+
+
+def test_nli_judge_scores_directed_evidence_entailment() -> None:
+    model = _StubCrossEncoder(np.array([[0.02, 0.86, 0.12]], dtype=np.float32))
+    judge = NLICrossEncoderJudge(EquivalenceConfig(), model_factory=lambda: model)
+
+    assert judge.entails("Keep answers concise.", "The user prefers concise answers.") == pytest.approx(0.86)
+    assert model.calls == [[["Keep answers concise.", "The user prefers concise answers."]]]
 
 
 @pytest.mark.parametrize(

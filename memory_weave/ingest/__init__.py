@@ -9,6 +9,7 @@ from .entities import (
     aliases_text,
     follow_merges,
     merge_entities,
+    primary_entity_for,
     resolve_entities,
 )
 from .equivalence import EquivalenceJudge, FakeJudge, NLICrossEncoderJudge
@@ -33,6 +34,7 @@ __all__ = [
     "aliases_text",
     "follow_merges",
     "merge_entities",
+    "primary_entity_for",
     "resolve_entities",
     "session_turn_source_ref",
     "validate_evidence",

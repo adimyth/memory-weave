@@ -16,6 +16,15 @@ EntityStatus = Literal["provisional", "confirmed", "merged", "deleted"]
 EntityRole = Literal["about", "mentions"]
 TurnRole = Literal["user", "assistant", "tool"]
 RewriteStatus = Literal["disabled", "applied", "unchanged", "failed"]
+SearchTrigger = Literal["tool", "auto"]
+PRIVATE_SCOPE_SEPARATOR = "/"
+
+
+def validate_private_scope_component(value: str, name: str) -> None:
+    """Reject a private-scope component that would make the encoded pair ambiguous."""
+
+    if PRIVATE_SCOPE_SEPARATOR in value:
+        raise ValueError(f"{name} must not contain {PRIVATE_SCOPE_SEPARATOR!r}.")
 
 
 @dataclass(frozen=True, slots=True)
@@ -46,6 +55,8 @@ class Record:
     last_reinforced_at: datetime | None
     tags: list[str]
     entity_ids: list[str]
+    subject_entity_id: str | None = None
+    attribute: str | None = None
 
 
 @dataclass(slots=True)
@@ -84,6 +95,10 @@ class Principal:
     session_id: str | None
     project_id: str | None
 
+    def __post_init__(self) -> None:
+        validate_private_scope_component(self.agent_id, "agent_id")
+        validate_private_scope_component(self.user_id, "user_id")
+
 
 @dataclass(frozen=True, slots=True)
 class ExtractionContext:
@@ -118,6 +133,7 @@ class SearchRequest:
     until: datetime | None
     k: int
     include_history: bool
+    trigger: SearchTrigger = "tool"
 
 
 @dataclass(frozen=True, slots=True)
@@ -126,12 +142,35 @@ class GeneratorHit:
     score: float
 
 
+@dataclass(frozen=True, slots=True)
+class LexicalTerm:
+    """One query term that matched an indexed record."""
+
+    value: str
+    is_identifier: bool
+    is_entity_alias: bool
+
+
+@dataclass(frozen=True, slots=True)
+class LexicalMatch:
+    """The terms matched for the single query that gave a record its strongest lexical coverage."""
+
+    terms: tuple[LexicalTerm, ...]
+    total_terms: int
+
+    @property
+    def fraction(self) -> float:
+        """Return the matched share of the query terms used for this lexical hit."""
+
+        return len(self.terms) / self.total_terms if self.total_terms else 0.0
+
+
 @dataclass(slots=True)
 class Candidate:
     record_id: str
     dense: GeneratorHit | None
     lexical: GeneratorHit | None
-    lexical_terms: tuple[int, int] | None
+    lexical_terms: LexicalMatch | None
     entity: GeneratorHit | None
     entity_id: str | None
     rrf_score: float
@@ -151,7 +190,7 @@ class Explanation:
     matched_by: list[Literal["dense", "lexical", "entity"]]
     dense: GeneratorHit | None
     lexical: GeneratorHit | None
-    lexical_terms: tuple[int, int] | None
+    lexical_terms: LexicalMatch | None
     entity: GeneratorHit | None
     fused_rank: int
     freshness_multiplier: float | None
@@ -164,6 +203,7 @@ class Explanation:
     created_at: datetime
     event_at: datetime
     entity_ids: list[str]
+    conflicts_with: list[str]
     summary: str
 
 
@@ -189,7 +229,7 @@ class SearchResponse:
 class CandidateRecord:
     type: MemoryType
     content: str
-    subject: str
+    attribute: str | None
     source_kind: EvidenceSourceKind
     evidence: str
     evidence_turn: int

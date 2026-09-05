@@ -4,7 +4,7 @@ import os
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from pathlib import Path
-from threading import Event, Lock
+from threading import Event, Lock, Thread
 from time import perf_counter, sleep
 from typing import Any
 
@@ -183,14 +183,13 @@ def test_vector_index_loads_store_vectors_and_applies_masks_updates_and_removals
     assert not hasattr(index, "matrix")
     np.testing.assert_array_equal(index.vector_for("record-a"), vectors["record-a"])
     assert index.cosine("record-a", "record-b") == pytest.approx(0.8)
-    assert index.search(np.array([1.0, 0.0, 0.0], dtype=np.float32), index.mask(set(vectors)), 3) == [
+    assert index.search(np.array([1.0, 0.0, 0.0], dtype=np.float32), set(vectors), 3) == [
         ("record-a", 1.0),
         ("record-b", pytest.approx(0.8)),
         ("record-c", 0.0),
     ]
 
-    allowed = index.mask({"record-a", "record-c"})
-    assert [record_id for record_id, _ in index.search(np.array([1.0, 0.0, 0.0]), allowed, 3)] == [
+    assert [record_id for record_id, _ in index.search(np.array([1.0, 0.0, 0.0]), {"record-a", "record-c"}, 3)] == [
         "record-a",
         "record-c",
     ]
@@ -202,8 +201,7 @@ def test_vector_index_loads_store_vectors_and_applies_masks_updates_and_removals
 
     index.remove("record-b")
     assert "record-b" not in [
-        record_id
-        for record_id, _ in index.search(np.array([0.0, 1.0, 0.0], dtype=np.float32), index.mask(set(vectors)), 3)
+        record_id for record_id, _ in index.search(np.array([0.0, 1.0, 0.0], dtype=np.float32), set(vectors), 3)
     ]
 
 
@@ -220,13 +218,69 @@ def test_vector_index_load_rejects_an_embedding_with_unexpected_dimensions(store
     assert index.is_loaded is False
 
 
-def test_vector_index_excludes_rows_added_after_the_allowed_mask_was_built() -> None:
+def test_vector_index_excludes_rows_added_after_eligibility_is_chosen() -> None:
     index = VectorIndex(_EMBEDDING_CONFIG)
     index.upsert("existing", np.array([1.0, 0.0, 0.0], dtype=np.float32))
-    allowed = index.mask({"existing"})
     index.upsert("new", np.array([1.0, 0.0, 0.0], dtype=np.float32))
 
-    assert index.search(np.array([1.0, 0.0, 0.0], dtype=np.float32), allowed, 2) == [("existing", 1.0)]
+    assert index.search(np.array([1.0, 0.0, 0.0], dtype=np.float32), {"existing"}, 2) == [("existing", 1.0)]
+
+
+def test_vector_index_mask_marks_only_the_requested_record_positions() -> None:
+    index = VectorIndex(_EMBEDDING_CONFIG)
+    index.upsert("third", np.array([1.0, 0.0, 0.0], dtype=np.float32))
+    index.upsert("first", np.array([0.0, 1.0, 0.0], dtype=np.float32))
+    index.upsert("second", np.array([0.0, 0.0, 1.0], dtype=np.float32))
+
+    mask = index.mask({"first", "second"})
+
+    assert index.pos == {"third": 0, "first": 1, "second": 2}
+    assert mask.tolist() == [False, True, True]
+
+
+def test_vector_search_keeps_eligibility_positions_stable_while_a_reload_waits(
+    monkeypatch: pytest.MonkeyPatch, store: Store
+) -> None:
+    eligible = _record("z-eligible")
+    foreign = _record("a-foreign")
+    for record, vector in (
+        (eligible, np.array([0.0, 1.0, 0.0], dtype=np.float32)),
+        (foreign, np.array([1.0, 0.0, 0.0], dtype=np.float32)),
+    ):
+        store.insert_record(record)
+        store.put_embedding(record.id, _EMBEDDING_CONFIG.model, _EMBEDDING_CONFIG.version, vector)
+
+    index = VectorIndex(_EMBEDDING_CONFIG)
+    # Deliberately use a different order than ``load`` so an old mask would select the foreign row after reload.
+    index.upsert(eligible.id, np.array([0.0, 1.0, 0.0], dtype=np.float32))
+    index.upsert(foreign.id, np.array([1.0, 0.0, 0.0], dtype=np.float32))
+    selection_started = Event()
+    continue_search = Event()
+    reload_finished = Event()
+    original_mask = index._eligible_mask
+
+    def paused_mask(eligible_ids: set[str]) -> np.ndarray:
+        mask = original_mask(eligible_ids)
+        selection_started.set()
+        assert continue_search.wait(timeout=1)
+        return mask
+
+    monkeypatch.setattr(index, "_eligible_mask", paused_mask)
+    results: list[tuple[str, float]] = []
+    search_thread = Thread(
+        target=lambda: results.extend(index.search(np.array([1.0, 0.0, 0.0], dtype=np.float32), {eligible.id}, 1))
+    )
+    reload_thread = Thread(target=lambda: (index.load(store), reload_finished.set()))
+    search_thread.start()
+    assert selection_started.wait(timeout=1)
+    reload_thread.start()
+    assert not reload_finished.wait(timeout=0.05)
+    continue_search.set()
+    search_thread.join(timeout=1)
+    reload_thread.join(timeout=1)
+
+    assert results == [(eligible.id, 0.0)]
+    assert reload_finished.is_set()
 
 
 def test_vector_index_returns_single_vector_copies_and_reports_unknown_records() -> None:
@@ -245,6 +299,31 @@ def test_vector_index_returns_single_vector_copies_and_reports_unknown_records()
         index.cosine("first", "missing")
 
 
+def test_vector_index_refreshes_another_processes_embedding_and_status_changes(tmp_path: Path) -> None:
+    path = tmp_path / "shared.sqlite"
+    reader = Store(path)
+    writer = Store(path)
+    _ = reader.connection
+    index = VectorIndex(_EMBEDDING_CONFIG)
+    index.load(reader)
+    record = _record("shared")
+    writer.insert_record(record)
+    writer.put_embedding(record.id, _EMBEDDING_CONFIG.model, _EMBEDDING_CONFIG.version, np.array([1.0, 0.0, 0.0]))
+
+    assert index.refresh(reader, incremental_reload_max=10) == "delta"
+    assert index.search(np.array([1.0, 0.0, 0.0]), {record.id}, 1) == [(record.id, 1.0)]
+
+    writer.put_embedding(record.id, "other-model", "1", np.array([1.0, 0.0, 0.0]))
+    assert index.refresh(reader, incremental_reload_max=10) == "delta"
+    assert index.search(np.array([1.0, 0.0, 0.0]), {record.id}, 1) == []
+
+    writer.update_status(record.id, "deleted")
+    assert index.refresh(reader, incremental_reload_max=10) == "delta"
+    assert index.search(np.array([1.0, 0.0, 0.0]), {record.id}, 1) == []
+    reader.close()
+    writer.close()
+
+
 @pytest.mark.slow
 @pytest.mark.skipif(
     os.environ.get("MEMORY_WEAVE_RUN_SLOW") != "1",
@@ -259,10 +338,10 @@ def test_vector_index_searches_fifty_thousand_vectors_under_ten_milliseconds() -
     for position, vector in enumerate(vectors):
         index.upsert(f"record-{position}", vector)
 
-    allowed = np.ones(len(index.ids), dtype=np.bool_)
-    index.search(vectors[0], allowed, 30)
+    eligible = set(index.ids)
+    index.search(vectors[0], eligible, 30)
     started_at = perf_counter()
-    results = index.search(vectors[0], allowed, 30)
+    results = index.search(vectors[0], eligible, 30)
     elapsed = perf_counter() - started_at
 
     assert len(results) == 30

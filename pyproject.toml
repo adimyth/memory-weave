@@ -10,6 +10,9 @@ dependencies = [
   "uuid6>=2024.7.10",
 ]
 
+[project.scripts]
+memory-weave = "memory_weave.cli:main"
+
 [project.optional-dependencies]
 local-models = [
   "sentence-transformers>=3.0",

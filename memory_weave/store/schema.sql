@@ -3,7 +3,9 @@ CREATE TABLE records (
   type            TEXT NOT NULL CHECK (type IN ('semantic','episodic','procedural')),
   version         INTEGER NOT NULL DEFAULT 1,
   content         TEXT NOT NULL,
-  subject         TEXT NOT NULL,
+  subject         TEXT NOT NULL,              -- derived display value: <subject_entity_id>/<attribute>
+  subject_entity_id TEXT REFERENCES entities(id),
+  attribute       TEXT,
   scope_kind      TEXT NOT NULL CHECK (scope_kind IN ('agent','user','project','org')),
   scope_id        TEXT NOT NULL,
   source_kind     TEXT NOT NULL CHECK (source_kind IN ('user_statement','system','tool_result','session_summary','agent_inference')),
@@ -18,11 +20,20 @@ CREATE TABLE records (
   supersedes_id   TEXT REFERENCES records(id),
   reinforcements  INTEGER NOT NULL DEFAULT 0,
   last_reinforced_at TEXT,
+  index_version   INTEGER NOT NULL DEFAULT 0,
   tags            TEXT NOT NULL DEFAULT '[]'
 );
 CREATE INDEX records_scope ON records(scope_kind, scope_id, status);
-CREATE INDEX records_subject ON records(scope_kind, scope_id, subject, status);
+CREATE INDEX records_subject ON records(scope_kind, scope_id, subject_entity_id, attribute, status);
 CREATE INDEX records_event ON records(type, event_at);
+CREATE INDEX records_index_version ON records(index_version);
+
+CREATE TABLE migration_issues (
+  migration_version INTEGER NOT NULL,
+  record_id   TEXT NOT NULL REFERENCES records(id),
+  issue       TEXT NOT NULL,
+  PRIMARY KEY (migration_version, record_id)
+);
 
 CREATE TABLE record_conflicts (
   record_id   TEXT NOT NULL REFERENCES records(id),
@@ -36,8 +47,16 @@ CREATE TABLE embeddings (
   model       TEXT NOT NULL,
   version     TEXT NOT NULL,
   dims        INTEGER NOT NULL,
-  vector      BLOB NOT NULL
+  vector      BLOB NOT NULL,
+  index_version INTEGER NOT NULL DEFAULT 0
 );
+CREATE INDEX embeddings_index_version ON embeddings(index_version);
+
+CREATE TABLE store_meta (
+  key           TEXT PRIMARY KEY,
+  value         INTEGER NOT NULL
+);
+INSERT INTO store_meta(key, value) VALUES ('records_version', 0);
 
 CREATE VIRTUAL TABLE records_fts USING fts5(
   record_id UNINDEXED,
@@ -89,7 +108,8 @@ CREATE TABLE sessions (
   project_id  TEXT,
   started_at  TEXT NOT NULL,
   ended_at    TEXT,
-  extracted_at TEXT
+  extracted_at TEXT,
+  extraction_started_at TEXT
 );
 
 CREATE TABLE session_turns (
@@ -117,6 +137,7 @@ CREATE TABLE search_log (
   agent_id      TEXT NOT NULL,
   user_id       TEXT NOT NULL,
   session_id    TEXT,
+  trigger       TEXT NOT NULL DEFAULT 'tool',
   request       TEXT NOT NULL,
   context       TEXT,
   rewrite_status TEXT NOT NULL,
@@ -130,6 +151,7 @@ CREATE TABLE search_log (
   gated_out     TEXT NOT NULL,
   deduped_out   TEXT NOT NULL,
   reranked      TEXT,
+  reranked_out  TEXT NOT NULL DEFAULT '[]',
   budget_out    TEXT NOT NULL,
   returned      TEXT NOT NULL,
   explanations  TEXT NOT NULL,

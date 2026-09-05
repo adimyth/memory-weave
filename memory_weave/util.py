@@ -40,6 +40,22 @@ def normalize_alias(value: str) -> str:
     return normalize_ws(without_diacritics).lower()
 
 
+def normalize_attribute(value: str) -> str:
+    """Return a lowercase snake-case attribute hint, ignoring any supplied entity portion."""
+
+    attribute_hint = value.rsplit("/", 1)[-1]
+    tokens = re.findall(r"[a-z0-9]+", normalize_alias(attribute_hint))
+    return "_".join(tokens)
+
+
+def render_subject(subject_entity_id: str | None, attribute: str | None) -> str:
+    """Render the display-only subject string from structured subject fields."""
+
+    if subject_entity_id is None:
+        return ""
+    return f"{subject_entity_id}/{attribute or '-'}"
+
+
 def normalize_vector(value: np.ndarray, dims: int) -> np.ndarray:
     """Return one finite, non-zero float32 vector with unit L2 norm."""
 

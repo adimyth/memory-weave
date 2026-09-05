@@ -39,6 +39,7 @@ def test_core_models_preserve_the_framework_neutral_contract() -> None:
     assert mention.entity_id is None
     assert principal.project_id == "memory-weave"
     assert request.k == 8
+    assert request.trigger == "tool"
     assert turn.role == "user"
 
 
@@ -55,3 +56,10 @@ def test_principal_and_scope_are_immutable() -> None:
         scope.id = "another-user"
     with pytest.raises(FrozenInstanceError):
         principal.user_id = "another-user"
+
+
+def test_principal_rejects_private_scope_delimiter_collisions() -> None:
+    with pytest.raises(ValueError, match="agent_id"):
+        Principal(agent_id="a/b", user_id="c", session_id=None, project_id=None)
+    with pytest.raises(ValueError, match="user_id"):
+        Principal(agent_id="a", user_id="b/c", session_id=None, project_id=None)

@@ -39,10 +39,10 @@ In RAG terms, the store is the canonical document and metadata database. The vec
 | Component | RAG analogy | Current design |
 | --- | --- | --- |
 | Store | The canonical document store plus metadata database. | SQLite persists records, scopes, source data, lifecycle state, entity links, events, logs, and each record's embedding blob. It is the source of truth. |
-| Vector index | The vector-retrieval part of a vector database. | An in-memory matrix and record-id map loaded from SQLite's embedding blobs at startup. It performs exact cosine search and can be rebuilt from the store. |
+| Vector index | The vector-retrieval part of a vector database. | An in-memory matrix and record-id map loaded from SQLite's embedding blobs. It performs exact cosine search, applies a durable cross-process delta before each search, and can be rebuilt from the store. |
 | FTS index | A lexical or keyword retriever, similar to BM25 in a hybrid RAG pipeline. | A SQLite FTS5 virtual table containing record content, subject, and entity aliases. SQLite queries it in the same process; it is not a separate search service. |
 
-On a write, the system persists the record and embedding in SQLite, updates FTS5 and entity links, then updates the in-memory vector matrix. On startup, it rebuilds that matrix from the stored embeddings.
+On a write, the system persists the record and embedding in SQLite, updates FTS5 and entity links, then updates the in-memory vector matrix. SQLite increments a durable records version in the same transaction, so another process refreshes its own matrix before its next search. On startup, a process rebuilds its matrix from the stored embeddings.
 
 ### How memory enters the store
 
@@ -55,11 +55,11 @@ The source controls the initial status. A direct, evidenced user statement, trus
 
 ### How memory is recalled
 
-When an agent calls `memory_search`, the system follows the same sequence every time. Dense, lexical, and entity candidate generation run in parallel inside that one synchronous call; the tool returns only after the pipeline has produced its final results or an empty response.
+When an agent calls `memory_search`, the system follows the same sequence every time. Dense, lexical, and entity candidate generation run sequentially inside that one synchronous call; the tool returns only after the pipeline has produced its final results or an empty response. A later benchmark may justify concurrent generators.
 
 1. It optionally rewrites the raw retrieval request into a standalone search query. This stage is specified for the demo but disabled by default. When enabled, it receives the raw query and host-supplied current-turn context, then logs both the raw and rewritten queries.
 2. It removes records the agent is not allowed to see, records that have expired or been superseded, and records outside any requested type or time window.
-3. It finds candidates in parallel with three methods: dense search for similar meaning, lexical search for matching words and identifiers, and exact entity search for known people, projects, repositories, or organizations.
+3. It finds candidates with three methods in order: dense search for similar meaning, lexical search for matching words and identifiers, and exact entity search for known people, projects, repositories, or organizations.
 4. It combines the three ranked candidate lists with reciprocal-rank fusion, which rewards a record that appears near the top of one or several lists without pretending that cosine and BM25 scores are on the same scale.
 5. It gives episodic records a recency adjustment, then returns no memory at all if every candidate is weak and no exact entity match exists.
 6. It collapses near-duplicates, optionally reranks the survivors, and returns only as much information as fits the context budget. It logs every decision so the result can be explained later.
@@ -87,11 +87,11 @@ Every record, regardless of type, carries the same envelope. The content varies 
 | Field group | Fields | Meaning | Example |
 | --- | --- | --- |
 | Identity | `id`, `type`, `version` | Identifies the record, its memory category, and its revision in a lineage. | `mem_0142`, `semantic`, version `2` |
-| Content | `content`, `subject` | Holds the text the model may read and a normalized topic used for duplicate and contradiction checks. | Content: “The user prefers concise technical answers.” Subject: “answer-detail preference” |
+| Content | `content`, `subject_entity_id`, `attribute`, `subject` | Holds the text the model may read and its system-owned current-fact identity. `subject` is derived from the entity ID and normalized attribute. | Content: “The user prefers concise technical answers.” Attribute: `answer_style` |
 | Scope | `scope_kind`, `scope_id` | States who owns the memory. The separate grant table determines which agents may access that scope. | `user`, `user_123` |
 | Source and evidence | `source_kind`, `source_ref`, `creator_agent_id`, `evidence` | States what supports the record, where that support can be found, and which agent created it. `evidence` is a verbatim source quote. | `user_statement`, `session_456`, `research_agent`, “Please keep answers concise.” |
 | Time | `created_at`, `event_at`, `expires_at` | Separates when the system stored a record, when the underlying event occurred, and when the record should stop being normally retrievable. | Created 4 September; event 3 September; no expiry for a confirmed preference |
-| Trust | `confidence`, `status` | States how strongly the system should trust the record and whether it is active, provisional, superseded, expired, or deleted. | Confidence `0.95`; status `confirmed` |
+| Trust | `confidence`, `status` | States the stored lifecycle confidence and whether the record is active, provisional, superseded, expired, or deleted. Current retrieval does not rank on confidence. | Confidence `0.95`; status `confirmed` |
 | Lineage | `supersedes_id`, `conflicts_with` | Connects a changed fact to the record it replaces and identifies records that disagree. | Supersedes `mem_0091`, which said the user preferred detailed answers |
 | Links | entity links, tags | Supplies explicit handles for exact identity matching and useful filtering. | Linked to the `person:user_123` entity; tag `communication-preference` |
 
@@ -102,6 +102,7 @@ Source kinds are ranked. A record can only supersede a record of equal or lower 
 | 4 | `user_statement` | The user said it explicitly. | confirmed |
 | 3 | `system` | Injected by the host application from an authoritative store. | confirmed |
 | 2 | `tool_result` | Observed from a tool output. | confirmed |
+| 2 | `session_summary` | The end-of-session summary of a completed transcript. | confirmed |
 | 1 | `agent_inference` | The agent or extractor concluded it. | provisional |
 
 Lifecycle states: `provisional`, `confirmed`, `superseded`, `expired`, `deleted`. Only `provisional` and `confirmed` are retrievable by default. Superseded and expired records stay in the database and indexes for audit and historical search. Deleted records become tombstones: the service removes their FTS entries, marks their in-memory vectors dead, and sends physical content and embedding erasure through the controlled deletion path.
@@ -110,9 +111,9 @@ Lifecycle states: `provisional`, `confirmed`, `superseded`, `expired`, `deleted`
 
 Scope answers "whose memory is this". Access answers "which agent may see it". They are separate.
 
-Scope kinds, from narrowest to broadest: `agent`, `user`, `project`, `org`. A record has exactly one scope.
+Agents are principals that act for users. A record has one ownership scope: `agent`, `user`, `project`, or `org`.
 
-Access is a grant table: which agent id may read or write which scope. An agent always has read and write on its own `agent` scope. Everything else must be granted. Every `memory_search` request carries the requesting agent id and the principal user id; the pipeline computes the set of readable scopes before any candidate generation runs. Scope filtering is a hard SQL predicate, never a ranking signal.
+Access is a grant table: which agent ID may read or write which scope. The only implicit scope is `agent:<agent_id>/<user_id>`, which is private to one agent-user pair. Agent and user IDs cannot contain `/`, so no two principal pairs share that encoded scope. A plain `agent:<agent_id>` scope and all user, project, and organization scopes require a host-provisioned grant. The host refuses grants on private agent scopes, and policy ignores any direct-store private-scope grant whose user suffix differs from the current principal. The default write target is `user:<user_id>`, so the host must grant each permitted agent access before it starts a session. Every `memory_search` request carries the requesting agent ID and principal user ID; the pipeline computes readable scopes before candidate generation. Scope filtering is a hard SQL predicate, never a ranking signal.
 
 Decision: scopes do not inherit. A user grant does not imply a project grant. This requires an explicit grant for each shared scope and makes leakage tests direct to reason about.
 
@@ -122,9 +123,9 @@ Two write paths, and only two.
 
 ### Path A: explicit agent write
 
-The agent calls `memory_write` with a type, content, subject, scope, and source kind. The tool validates scope permission, runs dedup and contradiction checks against the store, sets the initial status from the source kind, embeds the content, and returns the record ID. The agent uses this path for an immediate decision, a stated user preference, or a learned procedure.
+The agent calls `memory_write` with a type, content, attribute, optional scope, source kind, and entity mentions. The service resolves the primary `about` entity and derives the subject from its ID and the normalized attribute. In the principal's user scope, it resolves or creates the principal's person entity when a semantic or procedural write lacks an `about` mention. Other scopes require an `about` mention. The tool validates scope permission, runs dedup and contradiction checks against the store, sets the initial status from the source kind, embeds the content, and returns the record ID.
 
-The agent cannot claim `user_statement` without an `evidence` quote that the tool can locate in the current session transcript. Without it, the source kind is downgraded to `agent_inference`.
+The agent cannot claim `user_statement` without an `evidence` quote that the tool can locate in the current session transcript. For direct user and tool claims, the service also checks that the quote entails the stored content. A missing, unsupported, or non-entailing quote downgrades the source kind to `agent_inference`.
 
 ### Path B: session extraction
 
@@ -177,7 +178,7 @@ flowchart TD
     log --> response["Return results or an empty response"]
 ```
 
-The scope filter runs before any candidate generator. Dense, lexical, and entity search run in parallel inside the same synchronous tool call, with up to 30 candidates each. The gate can return nothing; the reranker is optional and disabled by default; the final context budget is 1,500 tokens.
+The scope filter runs before any candidate generator. Dense, lexical, and entity search run sequentially inside the same synchronous tool call, with up to 30 candidates each. The gate can return nothing; the reranker is optional and disabled by default; the final context budget is 1,500 tokens. Generator concurrency remains a benchmark-gated decision.
 
 ### Decisions that matter
 
@@ -209,7 +210,7 @@ The reason `auto` and `hybrid` are viable here and pollute elsewhere is the gate
 
 Entities are a modelling layer over records, not a fifth memory type. An entity has a kind (`person`, `project`, `org`, `repo`, `product`, `other`), a canonical name, a scope, and a set of aliases. Records link to entities through a join table.
 
-Decision: entity resolution uses exact alias matches within scope. An extractor that mentions "Aditya" links to the `person` entity with that alias in a readable scope, or creates a new provisional entity in the writer's scope if none exists. There is no automatic merge of two entities. Merges are an explicit `memory_revise` operation with an audit event. A false merge can leak data across users, so the system does not automate it.
+Decision: entity resolution uses exact alias matches within scope. An extractor that mentions "Aditya" links to the `person` entity with that alias in a readable scope, or creates a new provisional entity in the writer's scope if none exists. There is no automatic merge of two entities. Merges are an explicit `memory_revise` operation with an audit event. A merge repoints record links and `subject_entity_id`, then rewrites the derived `subject` and FTS subject text in the same transaction. A false merge can leak data across users, so the system does not automate it.
 
 ## 9. Components
 

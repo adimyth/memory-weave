@@ -26,11 +26,14 @@ from memory_weave.models import (
     Turn,
     TurnRole,
 )
-from memory_weave.util import normalize_vector, now, uuid7
+from memory_weave.util import normalize_alias, normalize_vector, now, render_subject, uuid7
 
-from .migrations import migrate
+from .migrations import MigrationIssuesError, MigrationResult, migrate
 
 _ACTIVE_STATUSES: tuple[RecordStatus, ...] = ("provisional", "confirmed")
+# Keep every alias lookup far below SQLite's historical 999 bound-parameter limit once scopes are added.
+_ALIAS_LOOKUP_BATCH = 400
+_SQLITE_SAFE_BINDINGS = 900
 _HISTORY_STATUSES: tuple[RecordStatus, ...] = (*_ACTIVE_STATUSES, "superseded", "expired")
 _SEARCH_LOG_JSON_COLUMNS = frozenset(
     {
@@ -45,6 +48,7 @@ _SEARCH_LOG_JSON_COLUMNS = frozenset(
         "gated_out",
         "deduped_out",
         "reranked",
+        "reranked_out",
         "budget_out",
         "returned",
         "explanations",
@@ -58,6 +62,7 @@ _SEARCH_LOG_COLUMNS = (
     "agent_id",
     "user_id",
     "session_id",
+    "trigger",
     "request",
     "context",
     "rewrite_status",
@@ -71,6 +76,7 @@ _SEARCH_LOG_COLUMNS = (
     "gated_out",
     "deduped_out",
     "reranked",
+    "reranked_out",
     "budget_out",
     "returned",
     "explanations",
@@ -83,9 +89,10 @@ _SEARCH_LOG_COLUMNS = (
 class Store:
     """Own SQLite connections and expose persistence without policy or ranking decisions."""
 
-    def __init__(self, path: str | Path) -> None:
+    def __init__(self, path: str | Path, *, allow_migration_issues: bool = False) -> None:
         self._path = str(path)
         self._local = threading.local()
+        self._allow_migration_issues = allow_migration_issues
 
     @property
     def connection(self) -> sqlite3.Connection:
@@ -97,9 +104,56 @@ class Store:
             connection.row_factory = sqlite3.Row
             connection.execute("PRAGMA foreign_keys = ON")
             connection.execute("PRAGMA journal_mode = WAL")
-            migrate(connection)
+            result = migrate(connection)
+            if result.unmapped_subject_records and not self._allow_migration_issues:
+                connection.close()
+                raise MigrationIssuesError(result.unmapped_subject_records)
+            self._local.migration_result = result
             self._local.connection = connection
         return cast(sqlite3.Connection, connection)
+
+    def migration_issues(self) -> list[tuple[str, str]]:
+        """Return unresolved migration issues as (record_id, issue) pairs."""
+
+        rows = self.connection.execute(
+            """
+            SELECT issues.record_id, issues.issue
+            FROM migration_issues AS issues
+            JOIN records ON records.id = issues.record_id
+            WHERE records.subject_entity_id IS NULL OR records.attribute IS NULL
+            ORDER BY issues.record_id
+            """
+        ).fetchall()
+        return [(cast(str, row["record_id"]), cast(str, row["issue"])) for row in rows]
+
+    def expire_migration_issues(self, actor: str) -> list[str]:
+        """Expire every unmapped legacy record so it leaves default retrieval, and clear its issue row."""
+
+        expired: list[str] = []
+        with self.transaction() as connection:
+            for record_id, issue in self.migration_issues():
+                index_version = self._bump_records_version(connection)
+                connection.execute(
+                    "UPDATE records SET status = 'expired', index_version = ? WHERE id = ?",
+                    (index_version, record_id),
+                )
+                connection.execute("DELETE FROM migration_issues WHERE record_id = ?", (record_id,))
+                self.append_event(
+                    "record.status",
+                    actor,
+                    record_id,
+                    None,
+                    {"status": "expired", "reason": f"migration issue: {issue}"},
+                )
+                expired.append(record_id)
+        return expired
+
+    @property
+    def migration_result(self) -> MigrationResult:
+        """Return conditions reported by migrations on this thread's connection."""
+
+        _ = self.connection
+        return cast(MigrationResult, self._local.migration_result)
 
     def close(self) -> None:
         """Close the current thread's connection, if it was opened."""
@@ -110,6 +164,8 @@ class Store:
             del self._local.connection
         if hasattr(self._local, "transaction_depth"):
             del self._local.transaction_depth
+        if hasattr(self._local, "migration_result"):
+            del self._local.migration_result
 
     @contextmanager
     def transaction(self) -> Iterator[sqlite3.Connection]:
@@ -145,37 +201,42 @@ class Store:
     def insert_record(self, record: Record) -> None:
         """Persist one canonical memory record."""
 
-        self.connection.execute(
-            """
-            INSERT INTO records(
-                id, type, version, content, subject, scope_kind, scope_id, source_kind, source_ref,
-                creator_agent_id, evidence, created_at, event_at, expires_at, confidence, status,
-                supersedes_id, reinforcements, last_reinforced_at, tags
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                record.id,
-                record.type,
-                record.version,
-                record.content,
-                record.subject,
-                record.scope.kind,
-                record.scope.id,
-                record.source_kind,
-                record.source_ref,
-                record.creator_agent_id,
-                record.evidence,
-                _dump_datetime(record.created_at),
-                _dump_datetime(record.event_at),
-                _dump_datetime(record.expires_at),
-                record.confidence,
-                record.status,
-                record.supersedes_id,
-                record.reinforcements,
-                _dump_datetime(record.last_reinforced_at),
-                _dump_json(record.tags),
-            ),
-        )
+        with self.transaction() as connection:
+            index_version = self._bump_records_version(connection)
+            connection.execute(
+                """
+                INSERT INTO records(
+                    id, type, version, content, subject, scope_kind, scope_id, source_kind, source_ref,
+                    creator_agent_id, evidence, created_at, event_at, expires_at, confidence, status,
+                    supersedes_id, reinforcements, last_reinforced_at, index_version, tags, subject_entity_id, attribute
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    record.id,
+                    record.type,
+                    record.version,
+                    record.content,
+                    record.subject,
+                    record.scope.kind,
+                    record.scope.id,
+                    record.source_kind,
+                    record.source_ref,
+                    record.creator_agent_id,
+                    record.evidence,
+                    _dump_datetime(record.created_at),
+                    _dump_datetime(record.event_at),
+                    _dump_datetime(record.expires_at),
+                    record.confidence,
+                    record.status,
+                    record.supersedes_id,
+                    record.reinforcements,
+                    _dump_datetime(record.last_reinforced_at),
+                    index_version,
+                    _dump_json(record.tags),
+                    record.subject_entity_id,
+                    record.attribute,
+                ),
+            )
 
     def get_record(self, record_id: str) -> Record | None:
         """Return one record with its linked entity IDs."""
@@ -200,12 +261,21 @@ class Store:
     def update_status(self, record_id: str, status: RecordStatus) -> None:
         """Set a record lifecycle status."""
 
-        self.connection.execute("UPDATE records SET status = ? WHERE id = ?", (status, record_id))
+        with self.transaction() as connection:
+            index_version = self._bump_records_version(connection)
+            connection.execute(
+                "UPDATE records SET status = ?, index_version = ? WHERE id = ?", (status, index_version, record_id)
+            )
 
     def set_supersedes(self, record_id: str, supersedes_id: str | None) -> None:
         """Set the record this row replaces."""
 
-        self.connection.execute("UPDATE records SET supersedes_id = ? WHERE id = ?", (supersedes_id, record_id))
+        with self.transaction() as connection:
+            index_version = self._bump_records_version(connection)
+            connection.execute(
+                "UPDATE records SET supersedes_id = ?, index_version = ? WHERE id = ?",
+                (supersedes_id, index_version, record_id),
+            )
 
     def reinforce_fields(
         self,
@@ -222,37 +292,55 @@ class Store:
     ) -> None:
         """Persist lifecycle fields and an optional stronger evidence provenance during reinforcement."""
 
-        self.connection.execute(
-            """
-            UPDATE records
-            SET confidence = ?, reinforcements = ?, last_reinforced_at = ?, expires_at = ?, status = ?,
-                source_kind = COALESCE(?, source_kind), source_ref = COALESCE(?, source_ref),
-                evidence = COALESCE(?, evidence)
-            WHERE id = ?
-            """,
-            (
-                confidence,
-                reinforcements,
-                _dump_datetime(last_reinforced_at),
-                _dump_datetime(expires_at),
-                status,
-                source_kind,
-                source_ref,
-                evidence,
-                record_id,
-            ),
-        )
+        with self.transaction() as connection:
+            index_version = self._bump_records_version(connection)
+            connection.execute(
+                """
+                UPDATE records
+                SET confidence = ?, reinforcements = ?, last_reinforced_at = ?, expires_at = ?, status = ?,
+                    source_kind = COALESCE(?, source_kind), source_ref = COALESCE(?, source_ref),
+                    evidence = COALESCE(?, evidence), index_version = ?
+                WHERE id = ?
+                """,
+                (
+                    confidence,
+                    reinforcements,
+                    _dump_datetime(last_reinforced_at),
+                    _dump_datetime(expires_at),
+                    status,
+                    source_kind,
+                    source_ref,
+                    evidence,
+                    index_version,
+                    record_id,
+                ),
+            )
 
-    def active_by_subject(self, scope: Scope, subject: str) -> list[Record]:
-        """Return active records for one scope and current-fact subject."""
+    def active_by_subject(self, scope: Scope, subject_entity_id: str, attribute: str) -> list[Record]:
+        """Return active records for one scope and structured current-fact subject."""
 
         rows = self.connection.execute(
             """
             SELECT * FROM records
-            WHERE scope_kind = ? AND scope_id = ? AND subject = ? AND status IN (?, ?)
+            WHERE scope_kind = ? AND scope_id = ? AND subject_entity_id = ? AND attribute = ?
+              AND status IN (?, ?)
             ORDER BY event_at DESC, created_at DESC, id DESC
             """,
-            (scope.kind, scope.id, subject, *_ACTIVE_STATUSES),
+            (scope.kind, scope.id, subject_entity_id, attribute, *_ACTIVE_STATUSES),
+        ).fetchall()
+        return self._records_from_rows(rows)
+
+    def active_for_entity(self, scope: Scope, entity_id: str, memory_type: MemoryType) -> list[Record]:
+        """Return active current facts for one entity, prioritizing recently reinforced attributes."""
+
+        rows = self.connection.execute(
+            """
+            SELECT * FROM records
+            WHERE scope_kind = ? AND scope_id = ? AND subject_entity_id = ? AND type = ?
+              AND attribute IS NOT NULL AND attribute != '-' AND status IN (?, ?)
+            ORDER BY COALESCE(last_reinforced_at, created_at) DESC, event_at DESC, created_at DESC, id DESC
+            """,
+            (scope.kind, scope.id, entity_id, memory_type, *_ACTIVE_STATUSES),
         ).fetchall()
         return self._records_from_rows(rows)
 
@@ -298,15 +386,17 @@ class Store:
 
         raw_values = np.asarray(vector, dtype=np.float32).reshape(-1)
         values = normalize_vector(raw_values, raw_values.size)
-        self.connection.execute(
-            """
-            INSERT INTO embeddings(record_id, model, version, dims, vector)
-            VALUES (?, ?, ?, ?, ?)
-            ON CONFLICT(record_id) DO UPDATE SET model = excluded.model, version = excluded.version,
-                dims = excluded.dims, vector = excluded.vector
-            """,
-            (record_id, model, version, values.size, values.tobytes()),
-        )
+        with self.transaction() as connection:
+            index_version = self._bump_records_version(connection)
+            connection.execute(
+                """
+                INSERT INTO embeddings(record_id, model, version, dims, vector, index_version)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT(record_id) DO UPDATE SET model = excluded.model, version = excluded.version,
+                    dims = excluded.dims, vector = excluded.vector, index_version = excluded.index_version
+                """,
+                (record_id, model, version, values.size, values.tobytes(), index_version),
+            )
 
     def iter_embeddings(self, model: str, version: str) -> Iterator[tuple[str, np.ndarray]]:
         """Yield compatible normalized embeddings as detached float32 arrays."""
@@ -331,6 +421,46 @@ class Store:
         ).fetchone()
         return cast(int, row["count"])
 
+    def records_version(self) -> int:
+        """Return the monotonic version changed by record and embedding writes."""
+
+        row = self.connection.execute("SELECT value FROM store_meta WHERE key = 'records_version'").fetchone()
+        if row is None:
+            raise RuntimeError("store_meta is missing the records_version row.")
+        return cast(int, row["value"])
+
+    def index_changes_since(
+        self, index_version: int, model: str, embedding_version: str
+    ) -> list[tuple[str, RecordStatus, np.ndarray | None]]:
+        """Return records whose vector or lifecycle changed after one index projection version."""
+
+        rows = self.connection.execute(
+            """
+            WITH changed_ids AS (
+                SELECT id AS record_id FROM records WHERE index_version > ?
+                UNION
+                SELECT record_id FROM embeddings WHERE index_version > ?
+            )
+            SELECT records.id, records.status, embeddings.dims, embeddings.vector
+            FROM changed_ids
+            JOIN records ON records.id = changed_ids.record_id
+            LEFT JOIN embeddings ON embeddings.record_id = records.id
+              AND embeddings.model = ? AND embeddings.version = ?
+            ORDER BY records.id
+            """,
+            (index_version, index_version, model, embedding_version),
+        ).fetchall()
+        changes: list[tuple[str, RecordStatus, np.ndarray | None]] = []
+        for row in rows:
+            raw = cast(bytes | None, row["vector"])
+            vector = None if raw is None else np.frombuffer(raw, dtype=np.float32).copy()
+            if vector is not None and vector.size != cast(int, row["dims"]):
+                raise ValueError(
+                    f"Embedding {row['id']} has {vector.size} values but declares {row['dims']} dimensions."
+                )
+            changes.append((cast(str, row["id"]), cast(RecordStatus, row["status"]), vector))
+        return changes
+
     def upsert_fts(self, record_id: str, content: str, subject: str, aliases: str) -> None:
         """Replace one derived FTS5 row."""
 
@@ -346,19 +476,44 @@ class Store:
 
         self.connection.execute("DELETE FROM records_fts WHERE record_id = ?", (record_id,))
 
-    def fts_query(self, match_expr: str, limit: int) -> list[tuple[str, float]]:
-        """Return BM25 matches; callers must provide a sanitized FTS5 match expression."""
+    def fts_query(self, match_expr: str, limit: int, eligible: set[str] | None = None) -> list[tuple[str, float]]:
+        """Return sanitized FTS5 matches, applying an optional eligibility set before the limit."""
 
-        rows = self.connection.execute(
-            """
-            SELECT record_id, bm25(records_fts, 0.0, 1.0, 2.0, 3.0) AS score
-            FROM records_fts
-            WHERE records_fts MATCH ?
-            ORDER BY score
-            LIMIT ?
-            """,
-            (match_expr, limit),
-        ).fetchall()
+        if limit <= 0 or eligible == set():
+            return []
+        if eligible is None:
+            rows = self.connection.execute(
+                """
+                SELECT record_id, bm25(records_fts, 0.0, 1.0, 2.0, 3.0) AS score
+                FROM records_fts
+                WHERE records_fts MATCH ?
+                ORDER BY score
+                LIMIT ?
+                """,
+                (match_expr, limit),
+            ).fetchall()
+        else:
+            with self.transaction() as connection:
+                connection.execute(
+                    "CREATE TEMP TABLE IF NOT EXISTS memory_weave_eligible_fts (record_id TEXT PRIMARY KEY)"
+                )
+                connection.execute("DELETE FROM memory_weave_eligible_fts")
+                connection.executemany(
+                    "INSERT INTO memory_weave_eligible_fts(record_id) VALUES (?)",
+                    ((record_id,) for record_id in eligible),
+                )
+                rows = connection.execute(
+                    """
+                    SELECT records_fts.record_id, bm25(records_fts, 0.0, 1.0, 2.0, 3.0) AS score
+                    FROM records_fts
+                    JOIN memory_weave_eligible_fts AS eligible ON eligible.record_id = records_fts.record_id
+                    WHERE records_fts MATCH ?
+                    ORDER BY score
+                    LIMIT ?
+                    """,
+                    (match_expr, limit),
+                ).fetchall()
+                connection.execute("DELETE FROM memory_weave_eligible_fts")
         return [(cast(str, row["record_id"]), cast(float, row["score"])) for row in rows]
 
     def fts_rows(self, record_ids: Sequence[str]) -> dict[str, tuple[str, str, str]]:
@@ -478,6 +633,71 @@ class Store:
         rows = self.connection.execute(" ".join(query), tuple(parameters)).fetchall()
         return [self._entity_from_row(row) for row in rows]
 
+    def entities_by_aliases(
+        self,
+        aliases: Sequence[str],
+        *,
+        kinds: Sequence[EntityKind] | None = None,
+        scopes: Sequence[Scope] | None = None,
+        statuses: Sequence[EntityStatus] | None = None,
+    ) -> dict[str, list[Entity]]:
+        """Find entities for multiple exact aliases with one database query."""
+
+        if not aliases or scopes == []:
+            return {}
+        distinct_aliases = list(dict.fromkeys(aliases))
+        filter_bindings = len(kinds or ()) + 2 * len(scopes or ()) + len(statuses or ())
+        batch_size = min(_ALIAS_LOOKUP_BATCH, max(1, _SQLITE_SAFE_BINDINGS - filter_bindings))
+        if len(distinct_aliases) > batch_size:
+            batched: dict[str, list[Entity]] = {}
+            for start in range(0, len(distinct_aliases), batch_size):
+                batched.update(
+                    self.entities_by_aliases(
+                        distinct_aliases[start : start + batch_size],
+                        kinds=kinds,
+                        scopes=scopes,
+                        statuses=statuses,
+                    )
+                )
+            return batched
+        aliases = distinct_aliases
+        query = [
+            "SELECT a.alias_norm AS lookup_alias, e.id, e.kind, e.canonical, e.scope_kind, e.scope_id,",
+            "e.status, e.merged_into, e.created_at, GROUP_CONCAT(all_aliases.alias_norm) AS aliases",
+            "FROM entity_aliases AS a",
+            "JOIN entities AS e ON e.id = a.entity_id",
+            "JOIN entity_aliases AS all_aliases ON all_aliases.entity_id = e.id",
+            f"WHERE a.alias_norm IN ({_placeholders(len(aliases))})",
+        ]
+        parameters: list[object] = list(aliases)
+        if kinds:
+            query.append(f"AND e.kind IN ({_placeholders(len(kinds))})")
+            parameters.extend(kinds)
+        if scopes is not None:
+            scope_predicates = " OR ".join("(e.scope_kind = ? AND e.scope_id = ?)" for _ in scopes)
+            query.append(f"AND ({scope_predicates})")
+            parameters.extend(part for scope in scopes for part in (scope.kind, scope.id))
+        if statuses:
+            query.append(f"AND e.status IN ({_placeholders(len(statuses))})")
+            parameters.extend(statuses)
+        query.append("GROUP BY a.alias_norm, e.id ORDER BY a.alias_norm, e.id")
+        rows = self.connection.execute(" ".join(query), tuple(parameters)).fetchall()
+        result: dict[str, list[Entity]] = {}
+        for row in rows:
+            alias = cast(str, row["lookup_alias"])
+            entity = Entity(
+                id=cast(str, row["id"]),
+                kind=cast(EntityKind, row["kind"]),
+                canonical=cast(str, row["canonical"]),
+                scope=Scope(kind=cast(Any, row["scope_kind"]), id=cast(str, row["scope_id"])),
+                status=cast(EntityStatus, row["status"]),
+                merged_into=cast(str | None, row["merged_into"]),
+                aliases=sorted(cast(str, row["aliases"]).split(",")),
+                created_at=_load_datetime(cast(str, row["created_at"])),
+            )
+            result.setdefault(alias, []).append(entity)
+        return result
+
     def link_record_entity(self, record_id: str, entity_id: str, role: EntityRole = "about") -> None:
         """Create or update a record-to-entity link."""
 
@@ -494,37 +714,39 @@ class Store:
 
         if limit <= 0 or not entity_ids or not eligible:
             return []
-        remaining_parameters = 900 - len(entity_ids) - 1
-        if remaining_parameters <= 0:
-            raise ValueError("Too many entity IDs for one entity retrieval query.")
-
-        entity_placeholders = _placeholders(len(entity_ids))
-        rows_by_record: dict[str, tuple[str, str]] = {}
-        eligible_ids = sorted(eligible)
-        for start in range(0, len(eligible_ids), remaining_parameters):
-            batch = eligible_ids[start : start + remaining_parameters]
-            eligible_placeholders = _placeholders(len(batch))
-            rows = self.connection.execute(
-                f"""
-                SELECT re.record_id, re.entity_id, r.event_at
+        with self.transaction() as connection:
+            connection.execute(
+                "CREATE TEMP TABLE IF NOT EXISTS memory_weave_eligible_entities (record_id TEXT PRIMARY KEY)"
+            )
+            connection.execute(
+                "CREATE TEMP TABLE IF NOT EXISTS memory_weave_entity_candidates (entity_id TEXT PRIMARY KEY)"
+            )
+            connection.execute("DELETE FROM memory_weave_eligible_entities")
+            connection.execute("DELETE FROM memory_weave_entity_candidates")
+            connection.executemany(
+                "INSERT INTO memory_weave_eligible_entities(record_id) VALUES (?)",
+                ((record_id,) for record_id in eligible),
+            )
+            connection.executemany(
+                "INSERT INTO memory_weave_entity_candidates(entity_id) VALUES (?)",
+                ((entity_id,) for entity_id in entity_ids),
+            )
+            rows = connection.execute(
+                """
+                SELECT re.record_id, MIN(re.entity_id) AS entity_id, MAX(r.event_at) AS event_at
                 FROM record_entities AS re
                 JOIN records AS r ON r.id = re.record_id
-                WHERE re.entity_id IN ({entity_placeholders})
-                  AND re.record_id IN ({eligible_placeholders})
-                ORDER BY r.event_at DESC, r.id DESC, re.entity_id ASC
+                JOIN memory_weave_eligible_entities AS eligible ON eligible.record_id = re.record_id
+                JOIN memory_weave_entity_candidates AS candidates ON candidates.entity_id = re.entity_id
+                GROUP BY re.record_id
+                ORDER BY event_at DESC, re.record_id DESC, entity_id ASC
                 LIMIT ?
                 """,
-                (*entity_ids, *batch, limit),
+                (limit,),
             ).fetchall()
-            for row in rows:
-                record_id = cast(str, row["record_id"])
-                candidate = (cast(str, row["entity_id"]), cast(str, row["event_at"]))
-                previous = rows_by_record.get(record_id)
-                if previous is None or candidate[0] < previous[0]:
-                    rows_by_record[record_id] = candidate
-
-        ordered = sorted(rows_by_record.items(), key=lambda item: (item[1][1], item[0]), reverse=True)
-        return [(record_id, entity_id) for record_id, (entity_id, _) in ordered[:limit]]
+            connection.execute("DELETE FROM memory_weave_eligible_entities")
+            connection.execute("DELETE FROM memory_weave_entity_candidates")
+        return [(cast(str, row["record_id"]), cast(str, row["entity_id"])) for row in rows]
 
     def merge_entity(self, source_id: str, destination_id: str) -> None:
         """Merge aliases and record links into the destination entity."""
@@ -562,8 +784,61 @@ class Store:
                 (destination_id, source_id),
             )
             connection.execute("DELETE FROM record_entities WHERE entity_id = ?", (source_id,))
+            subject_rows = connection.execute(
+                "SELECT id, attribute FROM records WHERE subject_entity_id = ?", (source_id,)
+            ).fetchall()
+            index_version = self._bump_records_version(connection) if subject_rows else None
+            for row in subject_rows:
+                record_id = cast(str, row["id"])
+                subject = render_subject(destination_id, cast(str | None, row["attribute"]))
+                connection.execute(
+                    "UPDATE records SET subject_entity_id = ?, subject = ?, index_version = ? WHERE id = ?",
+                    (destination_id, subject, index_version, record_id),
+                )
+                connection.execute("UPDATE records_fts SET subject = ? WHERE record_id = ?", (subject, record_id))
             connection.execute(
                 "UPDATE entities SET status = 'merged', merged_into = ? WHERE id = ?", (destination_id, source_id)
+            )
+            self._rebuild_fts_aliases_for_entity(connection, destination_id)
+
+    def aliases_text_for(self, entity_ids: Sequence[str]) -> str:
+        """Return the space-joined normalized canonical names and aliases of the given entities."""
+
+        if not entity_ids:
+            return ""
+        placeholders = _placeholders(len(entity_ids))
+        rows = self.connection.execute(
+            f"""
+            SELECT e.id, e.canonical, a.alias_norm
+            FROM entities AS e
+            LEFT JOIN entity_aliases AS a ON a.entity_id = e.id
+            WHERE e.id IN ({placeholders})
+            ORDER BY e.id, a.alias_norm
+            """,
+            tuple(entity_ids),
+        ).fetchall()
+        aliases: dict[str, None] = {}
+        for row in rows:
+            aliases.setdefault(normalize_alias(cast(str, row["canonical"])), None)
+            alias = cast(str | None, row["alias_norm"])
+            if alias:
+                aliases.setdefault(alias, None)
+        return " ".join(aliases)
+
+    def _rebuild_fts_aliases_for_entity(self, connection: sqlite3.Connection, entity_id: str) -> None:
+        record_rows = connection.execute(
+            "SELECT DISTINCT record_id FROM record_entities WHERE entity_id = ?", (entity_id,)
+        ).fetchall()
+        for record_row in record_rows:
+            record_id = cast(str, record_row["record_id"])
+            linked = [
+                cast(str, row["entity_id"])
+                for row in connection.execute(
+                    "SELECT entity_id FROM record_entities WHERE record_id = ? ORDER BY entity_id", (record_id,)
+                ).fetchall()
+            ]
+            connection.execute(
+                "UPDATE records_fts SET aliases = ? WHERE record_id = ?", (self.aliases_text_for(linked), record_id)
             )
 
     def grants_for(self, agent_id: str, *, can_read: bool = False, can_write: bool = False) -> list[Scope]:
@@ -589,6 +864,14 @@ class Store:
                 can_read = excluded.can_read, can_write = excluded.can_write
             """,
             (agent_id, scope.kind, scope.id, int(can_read), int(can_write)),
+        )
+
+    def revoke_grant(self, agent_id: str, scope: Scope) -> None:
+        """Remove one explicit grant without affecting the implicit private scope."""
+
+        self.connection.execute(
+            "DELETE FROM grants WHERE agent_id = ? AND scope_kind = ? AND scope_id = ?",
+            (agent_id, scope.kind, scope.id),
         )
 
     def create_session(
@@ -725,6 +1008,14 @@ class Store:
         finally:
             destination.close()
 
+    @staticmethod
+    def _bump_records_version(connection: sqlite3.Connection) -> int:
+        connection.execute("UPDATE store_meta SET value = value + 1 WHERE key = 'records_version'")
+        row = connection.execute("SELECT value FROM store_meta WHERE key = 'records_version'").fetchone()
+        if row is None:
+            raise RuntimeError("store_meta is missing the records_version row.")
+        return cast(int, row["value"])
+
     def _records_from_rows(self, rows: Sequence[sqlite3.Row]) -> list[Record]:
         if not rows:
             return []
@@ -746,6 +1037,8 @@ class Store:
             version=cast(int, row["version"]),
             content=cast(str, row["content"]),
             subject=cast(str, row["subject"]),
+            subject_entity_id=cast(str | None, row["subject_entity_id"]),
+            attribute=cast(str | None, row["attribute"]),
             scope=Scope(kind=cast(Any, row["scope_kind"]), id=cast(str, row["scope_id"])),
             source_kind=cast(SourceKind, row["source_kind"]),
             source_ref=cast(str | None, row["source_ref"]),

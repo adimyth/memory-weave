@@ -20,11 +20,11 @@ You need a place for a user's preference, a project convention, or the outcome o
 | Tool-mediated access | Agents use `memory_search`, `memory_get`, `memory_write`, `memory_revise`, and `memory_forget`. Memory enters the conversation after a tool call or a host-issued search that uses the same handler. |
 | Stable prompt prefix | Integrators keep the base prompt stable for provider-side caching. An agent calls a memory tool and receives the result as a tool message. |
 | Isolation | The retriever applies scope, principal identity, grants, lifecycle state, expiration, and record type as filters before ranking. An ineligible record stays out of the result. |
-| Source and evidence | A stored record includes its source, creator, timestamps, confidence, and a supporting transcript or tool quote. A user statement and an inference are different source kinds. |
+| Source and evidence | A stored record includes its source, creator, timestamps, confidence, and a supporting transcript or tool quote. A direct user or tool claim must be supported by that quote. |
 | Lifecycle | A record is provisional, confirmed, superseded, expired, or forgotten. A revision stores the reason. |
 | Explainable retrieval | A result includes matched terms or entity, contributing channels, score components, and final rank. |
 | Entity linking | The service links records through entity aliases. It leaves an ambiguous name unmerged for review. |
-| Model and framework | The storage contract and tool schemas do not depend on one provider or framework. Adapters target Deep Agents and CrewAI. |
+| Model and framework | The storage contract and tool schemas do not depend on one provider or framework. Framework adapters are planned; none is included yet. |
 | Background work | An agent waits for `memory_write` to finish. Session extraction runs after the session, off the message path. |
 
 ## 4. Ingestion
@@ -86,7 +86,7 @@ Per-message extraction is out. It would charge every turn and store guesses from
 
 ## 5. Retrieval
 
-An agent starts retrieval by calling `memory_search`. The base prompt does not contain stored memories. The service finds records that caller may read, then runs dense, lexical, and entity generators in parallel. The relevance gate can return an empty list.
+An agent starts retrieval by calling `memory_search`. The base prompt does not contain stored memories. The service finds records that caller may read, then runs dense, lexical, and entity generators sequentially. The relevance gate can return an empty list. The benchmark must justify adding generator concurrency.
 
 ### 5.1 Access control and candidate generation
 
@@ -101,7 +101,7 @@ flowchart TD
     Rewrite -- No, default --> SearchQuery
     Rewrite -- Yes --> Rewritten[Rewrite query for retrieval] --> SearchQuery
 
-    subgraph Candidates[Parallel candidate generators over eligible records]
+    subgraph Candidates[Sequential candidate generators over eligible records]
         DenseQuery[Embed retrieval query with BGE-M3]
         DenseSearch[Exact cosine search over in-process vector matrix]
         LexicalSearch[FTS5 BM25 lexical search]
@@ -212,7 +212,7 @@ In each of these, something is returned on every search. Here, an empty result i
 
 ## 7. Integration
 
-Not in this README yet: installation, persistence setup, tool registration, and examples for a standalone agent, Deep Agents, and CrewAI.
+Not in this README yet: installation, persistence setup, tool registration, and framework-adapter examples.
 
 ## 8. Tunables
 

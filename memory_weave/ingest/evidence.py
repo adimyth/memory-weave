@@ -16,8 +16,6 @@ _SUPPORTED_SOURCE: dict[TurnRole, EvidenceSourceKind] = {
     "tool": "tool_result",
     "assistant": "agent_inference",
 }
-_MINIMUM_EVIDENCE_WORDS = 3
-_MINIMUM_EVIDENCE_CHARACTERS = 15
 _EVIDENCE_FOLD = str.maketrans(
     {
         "‘": "'",
@@ -50,7 +48,7 @@ def validate_evidence(
     """Find a complete quote in one turn and limit its claimed source authority."""
 
     normalized_quote = _normalize_evidence_quote(quote)
-    if not _is_substantive_quote(normalized_quote):
+    if not _is_substantive_quote(normalized_quote, config):
         return EvidenceCheck(False, None, None, "agent_inference", "evidence quote is too short")
     turns = session_buffer.turns(session_id)
     candidates = _matching_turns(turns, turn_hint)
@@ -93,5 +91,6 @@ def _normalize_evidence_quote(value: str) -> str:
     return normalize_ws(unicodedata.normalize("NFKC", value).translate(_EVIDENCE_FOLD))
 
 
-def _is_substantive_quote(value: str) -> bool:
-    return len(value) >= _MINIMUM_EVIDENCE_CHARACTERS or len(value.split()) >= _MINIMUM_EVIDENCE_WORDS
+def _is_substantive_quote(value: str, config: MemoryWeaveConfig) -> bool:
+    evidence_config = config.ingestion.evidence
+    return len(value) >= evidence_config.min_characters or len(value.split()) >= evidence_config.min_words

@@ -14,14 +14,20 @@ def test_load_config_uses_lld_defaults() -> None:
     assert config.embedding.model == "BAAI/bge-m3"
     assert config.embedding.dims == 1024
     assert config.embedding.query_cache_entries == 4096
+    assert config.embedding.incremental_reload_max == 512
     assert config.reranker.enabled is False
     assert config.retrieval.gate.dense_floor.semantic == 0.45
     assert config.retrieval.trigger.mode == "tool_only"
     assert config.policy.source_rank.user_statement == 4
+    assert config.ingestion.evidence.min_characters == 15
+    assert config.ingestion.evidence.min_words == 3
+    assert config.ingestion.evidence.entail_floor == 0.70
+    assert config.ingestion.max_entity_attributes == 64
     assert config.flags() == {
         "embedding_model": "BAAI/bge-m3",
         "embedding_version": "1",
         "embedding_query_cache_entries": 4096,
+        "embedding_incremental_reload_max": 512,
         "rewrite_enabled": False,
         "reranker_enabled": False,
         "trigger_mode": "tool_only",
@@ -30,6 +36,13 @@ def test_load_config_uses_lld_defaults() -> None:
             "lexical_min_term_fraction": 0.5,
             "lexical_min_matched_terms": 2,
             "relative_floor": 0.5,
+            "auto": {
+                "dense_floor": {"semantic": 0.55, "episodic": 0.50, "procedural": 0.55},
+                "lexical_min_term_fraction": 0.6,
+                "lexical_min_matched_terms": 2,
+                "relative_floor": 0.6,
+                "exclude_source_kinds": ["session_summary"],
+            },
         },
         "reranker_floor": None,
     }
@@ -55,6 +68,10 @@ def test_load_config_accepts_every_trigger_mode_and_rejects_unknown_ones(tmp_pat
 
     config_path.write_text("embedding:\n  query_cache_entries: 0\n", encoding="utf-8")
     with pytest.raises(ConfigError, match="query_cache_entries"):
+        load_config(config_path)
+
+    config_path.write_text("retrieval:\n  gate:\n    auto:\n      exclude_source_kinds: [unknown]\n", encoding="utf-8")
+    with pytest.raises(ConfigError, match="exclude_source_kinds"):
         load_config(config_path)
 
 
@@ -137,4 +154,18 @@ def test_load_config_rejects_invalid_numeric_yaml_scalars_with_config_error(tmp_
     config_path.write_text("retrieval:\n  per_generator_k: 40.5\n", encoding="utf-8")
 
     with pytest.raises(ConfigError, match="retrieval.per_generator_k"):
+        load_config(config_path)
+
+
+def test_load_config_validates_evidence_and_attribute_scan_limits(tmp_path: Path) -> None:
+    config_path = tmp_path / "memory.yaml"
+    config_path.write_text("ingestion:\n  evidence:\n    min_words: 2\n  max_entity_attributes: 3\n", encoding="utf-8")
+
+    config = load_config(config_path)
+
+    assert config.ingestion.evidence.min_words == 2
+    assert config.ingestion.max_entity_attributes == 3
+
+    config_path.write_text("ingestion:\n  evidence:\n    entail_floor: 1.1\n", encoding="utf-8")
+    with pytest.raises(ConfigError, match="evidence.entail_floor"):
         load_config(config_path)

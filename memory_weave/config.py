@@ -10,6 +10,8 @@ from typing import Any, Literal, cast, get_args, get_origin, get_type_hints
 
 import yaml
 
+from memory_weave.models import SourceKind
+
 
 class ConfigError(ValueError):
     """Raised when a Memory Weave configuration is invalid."""
@@ -28,6 +30,7 @@ class EmbeddingConfig:
     device: str = "auto"
     max_chars: int = 2000
     query_cache_entries: int = 4096
+    incremental_reload_max: int = 512
 
 
 @dataclass(frozen=True, slots=True)
@@ -64,6 +67,20 @@ class GateConfig:
     lexical_min_matched_terms: int = 2
     # Survivors below this fraction of the top fused score are dropped. Entity hits are exempt.
     relative_floor: float = 0.5
+    auto: AutoGateConfig = field(default_factory=lambda: AutoGateConfig())
+
+
+@dataclass(frozen=True, slots=True)
+class AutoGateConfig:
+    """Stricter gate settings used only for a host-issued retrieval request."""
+
+    dense_floor: DenseFloorConfig = field(
+        default_factory=lambda: DenseFloorConfig(semantic=0.55, episodic=0.50, procedural=0.55)
+    )
+    lexical_min_term_fraction: float = 0.6
+    lexical_min_matched_terms: int = 2
+    relative_floor: float = 0.6
+    exclude_source_kinds: list[SourceKind] = field(default_factory=lambda: ["session_summary"])
 
 
 TriggerMode = Literal["tool_only", "auto", "hybrid"]
@@ -90,6 +107,7 @@ class RetrievalConfig:
     rewrite: RewriteConfig = field(default_factory=RewriteConfig)
     trigger: TriggerConfig = field(default_factory=TriggerConfig)
     per_generator_k: int = 30
+    max_alias_tokens: int = 4  # longest n-gram of query text tried as an entity alias
     rrf_k: int = 60
     default_k: int = 8
     token_budget: int = 1500
@@ -106,11 +124,22 @@ class EquivalenceConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class EvidenceConfig:
+    """Minimum evidence length and entailment score required for a direct claim."""
+
+    min_characters: int = 15
+    min_words: int = 3
+    entail_floor: float = 0.70
+
+
+@dataclass(frozen=True, slots=True)
 class IngestionConfig:
     dedup_candidate_cosine: float = 0.85
     equivalence: EquivalenceConfig = field(default_factory=EquivalenceConfig)
+    evidence: EvidenceConfig = field(default_factory=EvidenceConfig)
     provisional_ttl_days: int = 30
     reinforcements_to_confirm: int = 2
+    max_entity_attributes: int = 64
     extraction_model: str = "claude-haiku-4-5-20251001"
     extraction_max_candidates: int = 20
 
@@ -145,6 +174,7 @@ class MemoryWeaveConfig:
             "embedding_model": self.embedding.model,
             "embedding_version": self.embedding.version,
             "embedding_query_cache_entries": self.embedding.query_cache_entries,
+            "embedding_incremental_reload_max": self.embedding.incremental_reload_max,
             "rewrite_enabled": self.retrieval.rewrite.enabled,
             "reranker_enabled": self.reranker.enabled,
             "trigger_mode": self.retrieval.trigger.mode,
@@ -206,10 +236,26 @@ def _load_gate(raw: object) -> GateConfig:
             dense_floor=_load_dataclass(
                 DenseFloorConfig, values.pop("dense_floor", None), "retrieval.gate.dense_floor"
             ),
+            auto=_load_auto_gate(values.pop("auto", None)),
             **_coerce_dataclass_values(GateConfig, values, "retrieval.gate"),
         )
     except TypeError as exc:
         raise ConfigError(f"Invalid keys or values in retrieval.gate: {exc}") from exc
+
+
+def _load_auto_gate(raw: object) -> AutoGateConfig:
+    if raw is None:
+        return AutoGateConfig()
+    values = _mapping(raw, "retrieval.gate.auto")
+    try:
+        return AutoGateConfig(
+            dense_floor=_load_dataclass(
+                DenseFloorConfig, values.pop("dense_floor", None), "retrieval.gate.auto.dense_floor"
+            ),
+            **_coerce_dataclass_values(AutoGateConfig, values, "retrieval.gate.auto"),
+        )
+    except TypeError as exc:
+        raise ConfigError(f"Invalid keys or values in retrieval.gate.auto: {exc}") from exc
 
 
 def _load_ingestion(raw: object) -> IngestionConfig:
@@ -217,6 +263,7 @@ def _load_ingestion(raw: object) -> IngestionConfig:
     try:
         return IngestionConfig(
             equivalence=_load_dataclass(EquivalenceConfig, values.pop("equivalence", None), "ingestion.equivalence"),
+            evidence=_load_dataclass(EvidenceConfig, values.pop("evidence", None), "ingestion.evidence"),
             **_coerce_dataclass_values(IngestionConfig, values, "ingestion"),
         )
     except TypeError as exc:
@@ -315,8 +362,12 @@ def _validate(config: MemoryWeaveConfig) -> None:
         raise ConfigError("embedding.max_chars must be positive.")
     if config.embedding.query_cache_entries <= 0:
         raise ConfigError("embedding.query_cache_entries must be positive.")
+    if config.embedding.incremental_reload_max <= 0:
+        raise ConfigError("embedding.incremental_reload_max must be positive.")
     if config.reranker.candidates <= 0:
         raise ConfigError("reranker.candidates must be positive.")
+    if config.retrieval.max_alias_tokens <= 0:
+        raise ConfigError("retrieval.max_alias_tokens must be positive.")
     if config.retrieval.per_generator_k <= 0 or config.retrieval.default_k <= 0:
         raise ConfigError("retrieval candidate limits must be positive.")
     if config.retrieval.rrf_k <= 0 or config.retrieval.token_budget <= 0:
@@ -325,15 +376,16 @@ def _validate(config: MemoryWeaveConfig) -> None:
         raise ConfigError("retrieval.dedup_cosine must be between 0 and 1.")
     if not 0.0 <= config.ingestion.dedup_candidate_cosine <= 1.0:
         raise ConfigError("ingestion.dedup_candidate_cosine must be between 0 and 1.")
-    for memory_type in ("semantic", "episodic", "procedural"):
-        if not 0.0 <= getattr(config.retrieval.gate.dense_floor, memory_type) <= 1.0:
-            raise ConfigError(f"retrieval.gate.dense_floor.{memory_type} must be between 0 and 1.")
-    if not 0.0 <= config.retrieval.gate.lexical_min_term_fraction <= 1.0:
-        raise ConfigError("retrieval.gate.lexical_min_term_fraction must be between 0 and 1.")
-    if config.retrieval.gate.lexical_min_matched_terms < 1:
-        raise ConfigError("retrieval.gate.lexical_min_matched_terms must be at least 1.")
-    if not 0.0 <= config.retrieval.gate.relative_floor <= 1.0:
-        raise ConfigError("retrieval.gate.relative_floor must be between 0 and 1.")
+    _validate_gate(config.retrieval.gate, "retrieval.gate")
+    _validate_gate(config.retrieval.gate.auto, "retrieval.gate.auto")
+    invalid_source_kinds = sorted(
+        set(config.retrieval.gate.auto.exclude_source_kinds)
+        - {"user_statement", "system", "tool_result", "session_summary", "agent_inference"}
+    )
+    if invalid_source_kinds:
+        raise ConfigError(
+            "retrieval.gate.auto.exclude_source_kinds contains invalid source kinds: " + ", ".join(invalid_source_kinds)
+        )
     if config.retrieval.trigger.mode not in TRIGGER_MODES:
         raise ConfigError(f"retrieval.trigger.mode must be one of {', '.join(TRIGGER_MODES)}.")
     if config.retrieval.trigger.auto_k <= 0:
@@ -352,3 +404,23 @@ def _validate(config: MemoryWeaveConfig) -> None:
         raise ConfigError("ingestion.equivalence.entail_floor must be between 0 and 1.")
     if not 0.0 <= config.ingestion.equivalence.contradict_floor <= 1.0:
         raise ConfigError("ingestion.equivalence.contradict_floor must be between 0 and 1.")
+    if config.ingestion.evidence.min_characters <= 0:
+        raise ConfigError("ingestion.evidence.min_characters must be positive.")
+    if config.ingestion.evidence.min_words <= 0:
+        raise ConfigError("ingestion.evidence.min_words must be positive.")
+    if not 0.0 <= config.ingestion.evidence.entail_floor <= 1.0:
+        raise ConfigError("ingestion.evidence.entail_floor must be between 0 and 1.")
+    if config.ingestion.max_entity_attributes <= 0:
+        raise ConfigError("ingestion.max_entity_attributes must be positive.")
+
+
+def _validate_gate(config: GateConfig | AutoGateConfig, key: str) -> None:
+    for memory_type in ("semantic", "episodic", "procedural"):
+        if not 0.0 <= getattr(config.dense_floor, memory_type) <= 1.0:
+            raise ConfigError(f"{key}.dense_floor.{memory_type} must be between 0 and 1.")
+    if not 0.0 <= config.lexical_min_term_fraction <= 1.0:
+        raise ConfigError(f"{key}.lexical_min_term_fraction must be between 0 and 1.")
+    if config.lexical_min_matched_terms < 1:
+        raise ConfigError(f"{key}.lexical_min_matched_terms must be at least 1.")
+    if not 0.0 <= config.relative_floor <= 1.0:
+        raise ConfigError(f"{key}.relative_floor must be between 0 and 1.")

@@ -22,7 +22,7 @@ Agent framework
 | Ingestor | The write path and current-fact decisions. | A tool request or extractor candidate, policy results, entities, and nearby records. | A new, reinforced, superseding, conflicting, or rejected record. |
 | SQLite store | Canonical records, entities, grants, sessions, events, and logs. | Queries from all runtime services. | Transactional durable state and eligible record IDs. |
 | FTS5 lexical index | Exact-word and identifier retrieval. | `content`, `subject`, and linked entity aliases from a record. | BM25-ranked lexical candidate IDs, term-match counts, and scores. |
-| Vector index | Semantic similarity retrieval in process memory. | Compatible embedding rows and an eligibility mask. | Cosine-ranked dense candidate IDs and scores. |
+| Vector index | Semantic similarity retrieval in process memory. | Compatible embedding rows and an eligible record-ID set. | Cosine-ranked dense candidate IDs and scores. |
 | Entity resolver | Exact, scope-aware entity and alias lookup. | Entity mentions, aliases, grants, and scopes. | Entity IDs and entity-ranked candidate records, or an ambiguity error. |
 | Retriever | The search pipeline and result explanation. | Search request, eligible IDs, three candidate channels, and configuration. | Fused, gated, deduplicated, budgeted results plus `search_log`. |
 | Audit and search log | Why the system changed or returned a result. | Ingestor and retriever decisions and timers. | Append-only events and one complete search trace per request. |
@@ -38,7 +38,9 @@ id: mem_01J9K4D0S6H2V8P3X7M5Q1R9T
 type: semantic
 version: 1
 content: "Aditya prefers concise technical explanations."
-subject: person:aditya/explanation_style
+subject_entity_id: ent_person_aditya
+attribute: explanation_style
+subject: ent_person_aditya/explanation_style
 scope_kind: user
 scope_id: aditya
 source_kind: user_statement
@@ -59,7 +61,7 @@ tags: ["communication"]
 | Question | Fields that answer it |
 | --- | --- |
 | What does the memory say? | `content`, `type`, `tags` |
-| Which current claim does it represent? | `subject` |
+| Which current claim does it represent? | `subject_entity_id` and `attribute`; `subject` is their derived display and FTS value. |
 | Which bucket owns it? | `scope_kind`, `scope_id` |
 | Who supplied it, and what supports it? | `source_kind`, `source_ref`, `creator_agent_id`, `evidence` |
 | When does it apply? | `created_at`, `event_at`, `expires_at` |
@@ -89,7 +91,7 @@ Scope is the ownership boundary on a memory record. It answers: “Where does th
 
 | Scope | Example | Use it for |
 | --- | --- | --- |
-| Agent | `agent:researcher` | Working knowledge for one agent. |
+| Agent | `agent:researcher/aditya` | Private working knowledge for one agent-user pair. A plain `agent:researcher` scope requires a grant. |
 | User | `user:aditya` | Preferences and facts about one user. |
 | Project | `project:agentic-memory-system` | Shared decisions, conventions, and findings for one project. |
 | Organization | `org:acme` | Knowledge shared across an organization. |
@@ -100,7 +102,9 @@ For example, a commit convention belongs in project scope:
 content: "Commit messages follow Conventional Commits."
 scope_kind: project
 scope_id: agentic-memory-system
-subject: project:agentic-memory-system/commit_convention
+subject_entity_id: ent_project_agentic_memory_system
+attribute: commit_convention
+subject: ent_project_agentic_memory_system/commit_convention
 ```
 
 The same text in `user:aditya` scope would represent a personal preference, rather than a rule that project contributors must follow.
@@ -131,9 +135,9 @@ The agent may search project memory but cannot change it. Scope describes owners
 The service enforces grants and scopes before it ranks records:
 
 1. The framework adapter derives the principal from the current agent run.
-2. The policy service resolves the agent’s readable or writable scopes. Its own `agent` scope has implicit read and write access; other scopes require a grant.
+2. The policy service resolves the agent’s readable or writable scopes. The implicit scope is `agent:<agent_id>/<user_id>`, private to that principal pair. Agent and user IDs cannot contain `/`, which keeps that encoded scope unique. User, project, organization, and plain agent scopes require an explicit grant from the host. The host refuses grants on private agent scopes, and policy ignores a direct-store private grant when its encoded user does not match the current principal.
 3. `memory_search` runs an indexed SQL filter for readable scopes, lifecycle state, expiry, type, and time range. It produces the eligible record IDs.
-4. Dense search receives an `allowed` mask for those IDs. FTS and entity search intersect their hits with the same eligible IDs. No candidate generator can return an out-of-scope record.
+4. Dense search receives those IDs and builds its position mask while holding the index lock. FTS and entity search intersect their hits with the same eligible IDs. The retriever also drops any fused candidate outside that set. No candidate generator can return an out-of-scope record.
 5. `memory_write` checks that the requested scope appears in the caller’s writable scopes before it creates a record. A failed check returns `scope_not_writable`.
 
 A grant for `user:aditya` is valid only when the current principal is `user:aditya`. Project and organization scope support deliberate sharing across users.
@@ -154,30 +158,37 @@ creator_agent_id: implementation-agent
 | `user_statement` | 4 | 0.95 | Confirmed |
 | `system` | 3 | 0.90 | Confirmed |
 | `tool_result` | 2 | 0.85 | Confirmed |
+| `session_summary` | 2 | 0.80 | Confirmed |
 | `agent_inference` | 1 | 0.60 | Provisional |
 
-An agent inference expires after the provisional time-to-live unless later evidence reinforces it.
+An agent inference expires after the provisional time-to-live unless later evidence reinforces it. `confidence` records lifecycle state, but current retrieval does not use it to rank, gate, or render a result.
+
+A user or tool claim needs two checks. Its evidence must appear verbatim in the cited turn, and the evidence must entail the stored content at or above `ingestion.evidence.entail_floor`. A failed entailment check downgrades the claim to `agent_inference` and records the score and note in the audit event.
 
 ## 7. Current-fact keys, conflicts, supersession, and reinforcement
 
-`subject` identifies the current claim a non-episodic record represents. It uses the format `<entity>/<attribute>`.
+`subject_entity_id` and `attribute` identify the current claim a non-episodic record represents. `subject` is the derived form `<entity_id>/<attribute>`, used for display and FTS indexing.
 
 ```text
-person:aditya/explanation_style
-project:agentic-memory-system/commit_convention
+ent_person_aditya/explanation_style
+ent_project_agentic_memory_system/commit_convention
 ```
 
 Consider these records in the same user scope:
 
 ```text
 Old record
-subject: person:aditya/explanation_style
+subject_entity_id: ent_person_aditya
+attribute: explanation_style
+subject: ent_person_aditya/explanation_style
 content: "Aditya prefers concise technical explanations."
 source_kind: user_statement
 status: confirmed
 
 New candidate
-subject: person:aditya/explanation_style
+subject_entity_id: ent_person_aditya
+attribute: explanation_style
+subject: ent_person_aditya/explanation_style
 content: "Aditya prefers detailed architecture explanations."
 source_kind: agent_inference
 ```
@@ -195,6 +206,8 @@ Supersession preserves the previous fact for audit and historical inspection. No
 In the example above, the final state is unambiguous: the user statement has source rank 4, and the agent inference has source rank 1. The old record remains `confirmed` and appears in default search. The candidate remains `provisional`, receives a conflict link to the old record, and remains visible through `memory_get` for inspection. It expires after the provisional time-to-live unless later evidence reinforces or confirms it.
 
 Reinforcement means later evidence supports the same memory. The service increments `reinforcements`, raises confidence up to `0.99`, refreshes the provisional expiry date, and confirms a provisional record after the configured number of reinforcements.
+
+The service also scans active records about the same entity for equivalent attribute names. If a candidate labelled `answer_style` contradicts an existing `explanation_style` record, the judge treats those labels as one current fact. The authoritative survivor keeps the existing attribute, and the audit event records `attribute_aliased_from: answer_style`. The scan is capped by `ingestion.max_entity_attributes`; the event records `attribute_scan_truncated` if it reaches that cap.
 
 Episodic records never supersede one another. “Vector-only retrieval missed exact error messages on Tuesday” and “FTS improved error lookup on Friday” describe separate events worth retaining.
 
@@ -265,7 +278,7 @@ FTS5 is the lexical retrieval component. It is a SQLite virtual table called `re
 | --- | --- | --- |
 | `record_id` | The canonical memory record ID. | Maps an FTS match back to the record. FTS does not tokenize this field. |
 | `content` | `records.content`. | Finds exact words and phrases in the memory text. |
-| `subject` | `records.subject`. | Finds attribute keys such as `project:agentic-memory-system/commit_convention`. |
+| `subject` | Derived `records.subject`. | Finds attribute keys such as `ent_project_agentic_memory_system/commit_convention`. |
 | `aliases` | Linked entity aliases, joined into one string at write time. | Lets a name query find a record even when its content uses a pronoun or a canonical name. |
 
 The ingestor creates or replaces the FTS row in the same transaction that writes a memory record and its entity links. `memory_forget` removes the FTS row because deleted records must not appear in lexical results. FTS5 remains rebuildable from canonical records and entity links.
@@ -277,17 +290,17 @@ Query: "OAuth refresh failure"
 
 Matches:
 - content: "The OAuth refresh token expired after one hour."
-- subject: "product:auth-service/oauth_refresh"
+- subject: "ent_product_auth_service/oauth_refresh"
 - aliases: "auth", "OAuth service"
 ```
 
 The lexical generator runs these steps for each search query:
 
-1. It tokenizes the query with FTS5's `unicode61` rules.
-2. It removes configured stopwords but keeps identifiers and proper nouns.
+1. It detects identifiers from raw whitespace tokens, then tokenizes with FTS5's `unicode61` rules.
+2. It removes a frequency-based English stopword list and terms shorter than two characters, but keeps identifiers and proper nouns.
 3. It joins the remaining terms with `OR` and runs `bm25(records_fts, 0.0, 1.0, 2.0, 3.0)`. The leading `0.0` skips the unindexed `record_id` column. The remaining weights favor `aliases` over `subject`, and `subject` over `content`.
-4. It fetches `3 × per_generator_k` rows, then intersects them with the eligible record IDs from the policy filter. FTS5 cannot enforce scope, lifecycle, or time conditions itself.
-5. It returns each surviving record ID with its BM25 rank, score, matched-term count, and total-query-term count.
+4. It joins FTS5 to a temporary table of eligible record IDs before applying `per_generator_k`, so inaccessible high-ranking rows cannot crowd out results.
+5. It returns each record's BM25 rank and score, plus the exact matched terms from the query that gives it the best coverage. Each term says whether it is an identifier or an entity alias.
 
 FTS ranks literal-word matches with BM25. It complements vector search, which works better when the query paraphrases a memory rather than repeating its terms.
 
@@ -381,3 +394,16 @@ The append-only `events` table records memory changes. `search_log` records retr
 | `memory_forget` | Mark a memory deleted with a reason. |
 
 An adapter integrates those tools with an agent framework. It registers the tool schemas, derives the principal, records session hooks, and attaches current-turn context to each search. The memory contract remains independent of the agent framework and model provider.
+
+## 15. Prompts and instructions
+
+Two runtime components turn transcript text into a decision by calling a hosted model: session extraction and query rewriting. Each needs a natural-language prompt that tells the model how to reason, plus a schema that tells it how to answer. Neither prompt exists in the codebase yet.
+
+| Component | Config that names the model | Code location once implemented | Status |
+| --- | --- | --- | --- |
+| Session extraction | `ingestion.extraction_model` | `ingest/extractor.py`, `StructuredLLMExtractor` | The `Extractor` protocol and its output dataclasses (`ExtractionContext`, `CandidateRecord`, `SessionSummary`) are specified in `models.py`. The implementation and its prompt are not yet written; only `FakeExtractor` exists for tests. |
+| Query rewriting | `retrieval.rewrite.model` | `retrieve/rewrite.py`, `HostedLLMQueryRewriter` | Only `NoRewriter` exists today; it returns queries unchanged and never calls a model. The hosted implementation and its prompt are not yet written. |
+
+`ExtractionContext.prompt_version` already anticipates a versioned prompt: it exists so a later change to the extraction prompt can be tracked on the `extraction.run` event the same way an embedding-model change is tracked by `embeddings.version`, rather than silently changing behavior.
+
+When these are implemented, the instructions belong next to the code that uses them, not in `config.yaml`. The YAML config holds thresholds and model *names*, values a calibration pass would sweep. Prompt text is reasoning guidance, not a tunable, so it belongs as a module-level constant in `ingest/extractor.py` and `retrieve/rewrite.py` respectively, or a small `ingest/prompts.py` if it grows past one string.

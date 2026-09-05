@@ -1,6 +1,6 @@
 """Deterministic access, authority, and lifecycle rules."""
 
-from .grants import readable_scopes, writable_scopes
+from .grants import private_scope, readable_scopes, writable_scopes
 from .lifecycle import (
     has_authority,
     initial_confidence,
@@ -17,6 +17,7 @@ __all__ = [
     "initial_expiry",
     "initial_status",
     "provisional_expiry",
+    "private_scope",
     "rank",
     "readable_scopes",
     "reinforce",
