@@ -1539,6 +1539,8 @@ Input: `{"id": string, "content"?: string, "action": "confirm" | "supersede" | "
 
 Each action appends an event with the reason. Entity merge uses the same tool with a separate argument shape: `{"entity_id", "merge_into", "reason"}`.
 
+A direct `supersede` is a manual replacement, not evidence. The handler stores the new row as a provisional `agent_inference`, gives it the normal provisional expiry, and records `manual_revision: true` with the supplied reason. It never copies the replaced record's source kind or evidence into changed content. The agent should use `memory_write` when it has a current-session quote that supports the new claim.
+
 ### `memory_forget`
 
 Input: `{"id": string, "reason": string}`.

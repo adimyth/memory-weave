@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from datetime import datetime
-from typing import cast
+from typing import Literal, cast
 
 import numpy as np
 
@@ -260,6 +260,110 @@ class Ingestor:
             persisted.note,
             timer,
         )
+
+    def revise(
+        self,
+        principal: Principal,
+        record_id: str,
+        action: Literal["confirm", "supersede", "expire"],
+        reason: str,
+        *,
+        content: str | None = None,
+    ) -> WriteResult:
+        """Apply a user-authorized lifecycle revision after checking the principal can write the record scope."""
+
+        timer = Timer(warm=self._embedder.is_loaded and self._vector_index.is_loaded)
+        existing = self._store.get_record(record_id)
+        if existing is None:
+            return self._result(None, None, "not_found", None, timer)
+        if existing.scope not in writable_scopes(self._store, principal.agent_id, principal.user_id):
+            return self._result(None, None, "scope_not_writable", None, timer)
+        timer.mark("permission")
+        current_time = self._current_time()
+
+        if action == "confirm":
+            return self._revise_status(existing, "confirmed", "record.confirmed", reason, principal, timer)
+        if action == "expire":
+            return self._revise_status(existing, "expired", "record.expired", reason, principal, timer)
+        if content is None or not content.strip():
+            return self._result(None, None, "invalid_input", "supersede requires content", timer)
+
+        revision = Record(
+            id=uuid7(),
+            type=existing.type,
+            version=existing.version + 1,
+            content=content,
+            subject=existing.subject,
+            subject_entity_id=existing.subject_entity_id,
+            attribute=existing.attribute,
+            scope=existing.scope,
+            source_kind="agent_inference",
+            source_ref=None,
+            creator_agent_id=principal.agent_id,
+            evidence=None,
+            created_at=current_time,
+            event_at=current_time,
+            expires_at=provisional_expiry(current_time, self._config),
+            confidence=initial_confidence("agent_inference"),
+            status="provisional",
+            supersedes_id=existing.id,
+            reinforcements=0,
+            last_reinforced_at=None,
+            tags=list(existing.tags),
+            entity_ids=list(existing.entity_ids),
+        )
+        vector = self._embedder.embed_documents([revision.content])[0]
+        timer.mark("embed")
+        with self._store.transaction():
+            self._store.update_status(existing.id, "superseded")
+            self._store.insert_record(revision)
+            self._store.put_embedding(revision.id, self._embedder.name, self._embedder.version, vector)
+            self._store.upsert_fts(
+                revision.id,
+                revision.content,
+                revision.subject,
+                aliases_text(self._store, revision.entity_ids),
+            )
+            for entity_id in revision.entity_ids:
+                role: EntityRole = "about" if entity_id == revision.subject_entity_id else "mentions"
+                self._store.link_record_entity(revision.id, entity_id, role)
+            self._store.append_event(
+                "record.superseded",
+                principal.agent_id,
+                revision.id,
+                None,
+                {
+                    "manual_revision": True,
+                    "reason": reason,
+                    "source_kind": revision.source_kind,
+                    "supersedes_id": existing.id,
+                },
+            )
+        timer.mark("persistence")
+        timer.mark("event_log")
+        timer.mark("transaction")
+        self._vector_index.upsert(revision.id, vector)
+        timer.mark("index_update")
+        return self._result(revision.id, revision.status, "superseded", None, timer)
+
+    def _revise_status(
+        self,
+        record: Record,
+        status: RecordStatus,
+        event_kind: str,
+        reason: str,
+        principal: Principal,
+        timer: Timer,
+    ) -> WriteResult:
+        """Persist one direct lifecycle transition and its audit event."""
+
+        with self._store.transaction():
+            self._store.update_status(record.id, status)
+            self._store.append_event(event_kind, principal.agent_id, record.id, None, {"reason": reason})
+        timer.mark("persistence")
+        timer.mark("event_log")
+        timer.mark("transaction")
+        return self._result(record.id, status, status, None, timer)
 
     def _validate_evidence(
         self, principal: Principal, request: WriteRequest, timer: Timer

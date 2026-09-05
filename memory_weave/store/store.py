@@ -258,6 +258,14 @@ class Store:
         records_by_id = {record.id: record for record in self._records_from_rows(rows)}
         return [records_by_id[record_id] for record_id in record_ids if record_id in records_by_id]
 
+    def records_superseded_by(self, record_id: str) -> list[Record]:
+        """Return direct lineage successors in a deterministic order."""
+
+        rows = self.connection.execute(
+            "SELECT * FROM records WHERE supersedes_id = ? ORDER BY event_at, created_at, id", (record_id,)
+        ).fetchall()
+        return self._records_from_rows(rows)
+
     def update_status(self, record_id: str, status: RecordStatus) -> None:
         """Set a record lifecycle status."""
 
