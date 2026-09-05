@@ -25,6 +25,7 @@ class VectorIndex:
         self._live = np.empty(0, dtype=np.bool_)
         self._is_loaded = False
         self._loaded_version = -1
+        self._applied_versions: dict[str, int] = {}
         self._lock = threading.RLock()
 
     @property
@@ -95,23 +96,33 @@ class VectorIndex:
             source_version = store.records_version()
             if source_version == self._loaded_version:
                 return "unchanged"
-            changes = store.index_changes_since(self._loaded_version, self.model, self.version)
+            changes = [
+                change
+                for change in store.index_changes_since(self._loaded_version, self.model, self.version)
+                if self._applied_versions.get(change[0]) != change[3]
+            ]
+            if not changes:
+                # Every change since the loaded version was written by this process and is already indexed.
+                self._loaded_version = source_version
+                return "current"
             if len(changes) > incremental_reload_max:
                 self.load(store)
                 return "reloaded"
-            for record_id, status, vector in changes:
+            for record_id, status, vector, change_version in changes:
                 if status == "deleted" or vector is None:
-                    self.remove(record_id)
+                    self.remove(record_id, index_version=change_version)
                 else:
-                    self.upsert(record_id, vector)
+                    self.upsert(record_id, vector, index_version=change_version)
             self._loaded_version = source_version
             return "delta"
 
-    def upsert(self, record_id: str, vector: np.ndarray) -> None:
-        """Append or replace one normalized vector and mark its row live."""
+    def upsert(self, record_id: str, vector: np.ndarray, *, index_version: int | None = None) -> None:
+        """Append or replace one normalized vector, recording the durable version it represents."""
 
         normalized = normalize_vector(vector, self.dims)
         with self._lock:
+            if index_version is not None:
+                self._applied_versions[record_id] = index_version
             existing = self._pos.get(record_id)
             if existing is not None:
                 self._matrix[existing] = normalized
@@ -119,10 +130,12 @@ class VectorIndex:
                 return
             self._append(record_id, normalized)
 
-    def remove(self, record_id: str) -> None:
+    def remove(self, record_id: str, *, index_version: int | None = None) -> None:
         """Hide a record without compacting the matrix or changing its position."""
 
         with self._lock:
+            if index_version is not None:
+                self._applied_versions[record_id] = index_version
             position = self._pos.get(record_id)
             if position is not None:
                 self._live[position] = False
@@ -184,6 +197,7 @@ class VectorIndex:
     def _reset(self) -> None:
         self._ids.clear()
         self._pos.clear()
+        self._applied_versions.clear()
         self._matrix = np.empty((0, self.dims), dtype=np.float32)
         self._live = np.empty(0, dtype=np.bool_)
         self._is_loaded = False

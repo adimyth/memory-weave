@@ -125,6 +125,8 @@ def test_handlers_write_get_revise_and_forget_a_memory(
             "id": record_id,
             "action": "supersede",
             "content": "The user prefers concise answers.",
+            "source_kind": "user_statement",
+            "evidence": "I prefer concise technical explanations.",
             "reason": "user correction",
         },
     )
@@ -141,7 +143,11 @@ def test_handlers_write_get_revise_and_forget_a_memory(
 
     assert forgotten == {"ok": True, "record_id": record_id, "status": "deleted", "outcome": "forgotten"}
     assert searched["results"] == []
-    assert tombstone["records"][0]["record"]["status"] == "deleted"  # type: ignore[index]
+    tombstoned = tombstone["records"][0]["record"]  # type: ignore[index]
+    assert tombstoned["status"] == "deleted"  # type: ignore[index]
+    assert tombstoned["tombstone"] is True  # type: ignore[index]
+    assert tombstoned["content"] is None  # type: ignore[index]
+    assert tombstoned["evidence"] is None  # type: ignore[index]
     assert store.fts_query('"technical"', limit=10) == []
 
 
@@ -177,7 +183,8 @@ def test_write_with_an_unreadable_entity_returns_a_structured_error(
     response = tool_handlers.memory_write(_PRINCIPAL, payload)
 
     assert response["ok"] is False
-    assert response["error"]["code"] == "invalid_input"  # type: ignore[index]
+    assert response["error"]["code"] == "not_found"  # type: ignore[index]
+    assert hidden_entity.id not in str(response["error"])
 
 
 def test_revise_can_merge_entities_with_the_principal_write_authority(
@@ -286,3 +293,209 @@ def _explanation(summary: str) -> Explanation:
         conflicts_with=[],
         summary=summary,
     )
+
+
+def _foreign_record(store: Store, embedder: FakeEmbedder) -> Record:
+    """Store one record in another user's scope that the test principal can never reach."""
+
+    foreign = Record(
+        id="foreign-record",
+        type="semantic",
+        version=1,
+        content="The other user prefers detailed answers.",
+        subject="foreign-entity/explanation_style",
+        subject_entity_id=None,
+        attribute="explanation_style",
+        scope=Scope(kind="user", id="other-user"),
+        source_kind="user_statement",
+        source_ref=None,
+        creator_agent_id="other-agent",
+        evidence=None,
+        created_at=_NOW,
+        event_at=_NOW,
+        expires_at=None,
+        confidence=0.95,
+        status="confirmed",
+        supersedes_id=None,
+        reinforcements=0,
+        last_reinforced_at=None,
+        tags=[],
+        entity_ids=[],
+    )
+    store.insert_record(foreign)
+    store.put_embedding(foreign.id, embedder.name, embedder.version, embedder.embed_documents([foreign.content])[0])
+    return foreign
+
+
+def test_get_revise_and_forget_treat_a_foreign_record_as_absent(
+    handlers: tuple[ToolHandlers, FakeEmbedder], store: Store
+) -> None:
+    tool_handlers, embedder = handlers
+    foreign = _foreign_record(store, embedder)
+
+    fetched = tool_handlers.memory_get(_PRINCIPAL, {"ids": [foreign.id]})
+    revised = tool_handlers.memory_revise(_PRINCIPAL, {"id": foreign.id, "action": "confirm", "reason": "review"})
+    forgotten = tool_handlers.memory_forget(_PRINCIPAL, {"id": foreign.id, "reason": "cleanup"})
+    missing = tool_handlers.memory_get(_PRINCIPAL, {"ids": ["never-existed"]})
+
+    for response in (fetched, revised, forgotten):
+        assert response["ok"] is False
+        assert response["error"]["code"] == "not_found"  # type: ignore[index]
+        assert foreign.content not in str(response)
+    assert missing["error"]["message"].replace("never-existed", "X") == (  # type: ignore[index]
+        fetched["error"]["message"].replace(foreign.id, "X")  # type: ignore[index]
+    )
+    assert store.get_record(foreign.id).status == "confirmed"  # type: ignore[union-attr]
+
+
+def test_forget_requires_write_access_even_when_the_record_is_readable(
+    handlers: tuple[ToolHandlers, FakeEmbedder], store: Store
+) -> None:
+    tool_handlers, _ = handlers
+    written = tool_handlers.memory_write(_PRINCIPAL, _write_payload())
+    record_id = written["record_id"]
+    assert isinstance(record_id, str)
+    reader = Principal("read-only-agent", _USER, _SESSION, None)
+    store.set_grant(reader.agent_id, _USER_SCOPE, can_read=True, can_write=False)
+
+    response = tool_handlers.memory_forget(reader, {"id": record_id, "reason": "not mine to remove"})
+
+    assert response["error"]["code"] == "scope_not_writable"  # type: ignore[index]
+    assert store.get_record(record_id).status == "confirmed"  # type: ignore[union-attr]
+
+
+def test_a_forgotten_or_superseded_record_cannot_be_revised(
+    handlers: tuple[ToolHandlers, FakeEmbedder], store: Store
+) -> None:
+    tool_handlers, _ = handlers
+    written = tool_handlers.memory_write(_PRINCIPAL, _write_payload())
+    record_id = written["record_id"]
+    assert isinstance(record_id, str)
+    assert tool_handlers.memory_forget(_PRINCIPAL, {"id": record_id, "reason": "user request"})["ok"] is True
+
+    resurrect = tool_handlers.memory_revise(
+        _PRINCIPAL,
+        {
+            "id": record_id,
+            "action": "supersede",
+            "content": "The user prefers detailed answers.",
+            "source_kind": "user_statement",
+            "evidence": "I prefer concise technical explanations.",
+            "reason": "resurrection attempt",
+        },
+    )
+    confirmed = tool_handlers.memory_revise(_PRINCIPAL, {"id": record_id, "action": "confirm", "reason": "attempt"})
+
+    for response in (resurrect, confirmed):
+        assert response["ok"] is False
+        assert response["error"]["code"] == "invalid_input"  # type: ignore[index]
+    assert store.get_record(record_id).status == "deleted"  # type: ignore[union-attr]
+    assert store.connection.execute("SELECT COUNT(*) FROM records").fetchone()[0] == 1
+
+
+def test_confirm_clears_a_provisional_expiry(handlers: tuple[ToolHandlers, FakeEmbedder], store: Store) -> None:
+    tool_handlers, _ = handlers
+    payload = _write_payload("The user seems to prefer concise answers.")
+    payload["source_kind"] = "agent_inference"
+    del payload["evidence"]
+    written = tool_handlers.memory_write(_PRINCIPAL, payload)
+    record_id = written["record_id"]
+    assert isinstance(record_id, str)
+    assert store.get_record(record_id).expires_at is not None  # type: ignore[union-attr]
+
+    response = tool_handlers.memory_revise(_PRINCIPAL, {"id": record_id, "action": "confirm", "reason": "user agreed"})
+
+    assert response["ok"] is True
+    confirmed = store.get_record(record_id)
+    assert confirmed is not None
+    assert confirmed.status == "confirmed"
+    assert confirmed.expires_at is None
+
+
+def test_supersede_requires_authority_and_keeps_evidence_provenance_and_roles(
+    handlers: tuple[ToolHandlers, FakeEmbedder], store: Store
+) -> None:
+    tool_handlers, _ = handlers
+    written = tool_handlers.memory_write(_PRINCIPAL, _write_payload())
+    record_id = written["record_id"]
+    assert isinstance(record_id, str)
+
+    guessed = tool_handlers.memory_revise(
+        _PRINCIPAL,
+        {
+            "id": record_id,
+            "action": "supersede",
+            "content": "The user prefers detailed answers.",
+            "reason": "a guess",
+        },
+    )
+
+    assert guessed["ok"] is False
+    assert guessed["error"]["code"] == "invalid_input"  # type: ignore[index]
+    assert store.get_record(record_id).status == "confirmed"  # type: ignore[union-attr]
+
+    evidenced = tool_handlers.memory_revise(
+        _PRINCIPAL,
+        {
+            "id": record_id,
+            "action": "supersede",
+            "content": "The user prefers concise answers.",
+            "source_kind": "user_statement",
+            "evidence": "I prefer concise technical explanations.",
+            "reason": "user correction",
+        },
+    )
+
+    assert evidenced["ok"] is True
+    revision_id = evidenced["record_id"]
+    assert isinstance(revision_id, str)
+    revision = store.get_record(revision_id)
+    original = store.get_record(record_id)
+    assert revision is not None and original is not None
+    assert revision.source_kind == "user_statement"
+    assert revision.status == "confirmed"
+    assert revision.expires_at is None
+    assert revision.source_ref == f"session:{_SESSION}<turn:1>"
+    assert store.record_entity_roles(revision.id) == store.record_entity_roles(record_id)
+    assert original.status == "superseded"
+
+
+def test_tool_input_rejects_non_object_payloads_and_blank_text() -> None:
+    for payload in (None, ["queries"], [{"queries": ["x"]}], "queries"):
+        with pytest.raises(ToolInputError, match="must be a JSON object"):
+            validate_tool_input("memory_search", payload)  # type: ignore[arg-type]
+    with pytest.raises(ToolInputError, match="must not be blank"):
+        validate_tool_input(
+            "memory_write",
+            {"type": "semantic", "content": "   ", "attribute": "editor", "source_kind": "agent_inference"},
+        )
+
+
+def test_memory_revise_schema_declares_every_property_it_accepts() -> None:
+    schema = TOOL_SCHEMAS["memory_revise"]["input_schema"]
+    declared = set(schema["properties"])  # type: ignore[index, arg-type]
+    assert schema["additionalProperties"] is False  # type: ignore[index]
+    for branch in schema["oneOf"]:  # type: ignore[index]
+        # A key required by a branch must be declared at the top level, or additionalProperties rejects it.
+        assert set(branch["required"]) <= declared
+    assert {"id", "action", "content", "reason", "entity_id", "merge_into"} <= declared
+    assert validate_tool_input("memory_revise", {"entity_id": "a", "merge_into": "b", "reason": "same person"})
+    with pytest.raises(ToolInputError):
+        validate_tool_input("memory_revise", {"id": "m", "action": "confirm", "reason": "r", "entity_id": "e"})
+
+
+def test_get_omits_entities_the_caller_cannot_read(handlers: tuple[ToolHandlers, FakeEmbedder], store: Store) -> None:
+    tool_handlers, _ = handlers
+    written = tool_handlers.memory_write(_PRINCIPAL, _write_payload())
+    record_id = written["record_id"]
+    assert isinstance(record_id, str)
+    foreign_entity = store.create_entity(
+        kind="project", canonical="Other Project", scope=Scope(kind="project", id="secret"), entity_id="secret-project"
+    )
+    store.link_record_entity(record_id, foreign_entity.id, "mentions")
+
+    fetched = tool_handlers.memory_get(_PRINCIPAL, {"ids": [record_id]})
+
+    entity_ids = [entity["id"] for entity in fetched["records"][0]["record"]["entities"]]  # type: ignore[index]
+    assert foreign_entity.id not in entity_ids
+    assert "Other Project" not in str(fetched)

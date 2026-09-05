@@ -1055,6 +1055,8 @@ The store increments `store_meta.records_version` in the same transaction as eve
 
 The store returns eligible record IDs after scope, lifecycle, type, and time filtering. `VectorIndex.search` converts only those IDs into matrix positions, so selection cost grows with the caller's eligible set rather than every indexed ID. It builds that position mask and runs `live & allowed` under one index-lock hold. A concurrent refresh therefore cannot move a row between filtering and matrix multiplication. The retriever also rejects any fused candidate outside `eligible` before it loads records or writes a log. Retrieval code uses `vector_for` for an isolated record vector and `cosine` for comparisons between indexed records; neither API exposes or copies the full matrix.
 
+`upsert` and `remove` accept the durable `index_version` the write committed, and the index remembers it per record. `refresh` drops changes whose recorded version it already applied, so a process never re-applies or reloads its own writes: when every change since the loaded version came from this process, refresh advances the version and reports `current`. Only genuinely new changes count toward `embedding.incremental_reload_max`, so a burst of local writes cannot force a full rebuild of an already-current index on the hot path.
+
 For multiple queries, dense search embeds each query and keeps the highest cosine for each record before RRF. At 50K records, a 1,024-dimension `float32` matrix uses about 200 MB. Startup loads those vectors from SQLite in about one second; search uses one matrix multiplication and one partition per query, with a design estimate below 5 ms.
 
 ## 8. Ingestion
@@ -1427,6 +1429,8 @@ Because `search_log` keeps every candidate's scores, floor sweeps run offline ag
 
 **What the gate does not do.** It judges relevance, not need. A record about the user's coffee habit passes on any coffee query, and whether that is personalization or pollution depends on the task. In `tool_only` mode the model absorbs that judgement by deciding to search. In `auto` and `hybrid` modes, the ordinary-turn class is how it is measured, and the reranker, which is better calibrated than cosine, is the next lever if the class-3 rate is too high.
 
+A returned provisional record that has an eligible conflicting counterpart is paired with it, and the pair is admitted or rejected by the budget as a unit so the caller never sees one half. The counterpart keeps its own rank when it already ranks above the provisional record: moving a stronger record down to sit beside a weaker one would demote it and, under a small `k`, drop the best match from the response. Only a counterpart that ranks below the provisional record is pulled forward, and a counterpart already in the candidate list contributes its real generator evidence rather than a synthetic entry.
+
 ### 10.6 Duplicate collapse
 
 Walk candidates in fused order. Compare each candidate with records already accepted through `VectorIndex.cosine`, which reads the two private rows under the index lock. If cosine is at least `retrieval.dedup_cosine`, drop the later candidate and log `(dropped_id, kept_id, cosine)`. This removes near-duplicates that entered through different scopes or types without copying the full index matrix.
@@ -1474,6 +1478,10 @@ The memory layer exposes five framework-neutral tools. They use plain JSON Schem
 | `memory_write` | A current-session fact, preference, decision, or procedure should affect future work. | A new, reinforced, superseding, or conflicting memory. | Evidence must come from the current session. |
 | `memory_revise` | A known record needs confirmation, replacement, or expiry. | An updated lifecycle state and audit event. | The caller needs write access to the record scope. |
 | `memory_forget` | A user asks to remove a known memory from normal use. | A tombstone and audit event. | Durable content erasure remains an admin operation. |
+
+An operation on a record or entity the caller cannot read answers exactly as it does for an id that never existed. `memory_get`, `memory_revise`, and `memory_forget` return `not_found` with the same message shape, and entity errors collapse missing, unreadable, and unwritable ids into one `not_found`. Authorization is therefore checked before any validation whose message would describe the target, so no error text confirms that a foreign id exists or reveals its kind, status, or merge target.
+
+Every handler rejects a payload that is not a JSON object with the structured `invalid_input` error rather than raising, and rejects blank `content` or `evidence` so a whitespace-only memory cannot be created.
 
 The agent should use search before work that may depend on prior context. It should use write only for information that changes a future action. Every handler derives the `Principal` from the adapter; tool input never supplies an agent identity.
 
@@ -1531,21 +1539,28 @@ When an `about` entity is ambiguous, the error returns the candidate IDs, kinds,
 
 ### `memory_revise`
 
-Input: `{"id": string, "content"?: string, "action": "confirm" | "supersede" | "expire", "reason": string}`.
+Input: `{"id": string, "action": "confirm" | "supersede" | "expire", "reason": string, "content"?: string, "source_kind"?: "user_statement" | "tool_result" | "agent_inference", "evidence"?: string, "evidence_turn"?: integer}`.
 
 - `supersede` requires `content` and creates a new record with `supersedes_id`.
 - `confirm` promotes a provisional record to `confirmed`; the principal must have write access to its scope.
 - `expire` sets the record status to `expired`.
+- `content`, `source_kind`, `evidence`, and `evidence_turn` are valid only with `supersede`.
+
+Every action requires the target to be `provisional` or `confirmed`. A `superseded`, `expired`, or `deleted` record is history: revising it would fork lineage or return content the user asked to forget, so the handler answers `invalid_input` and changes nothing.
+
+`confirm` clears any provisional expiry along with the status change, because a confirmed record that keeps a provisional `expires_at` silently leaves retrieval when that date passes.
+
+A `supersede` runs the same evidence path as `memory_write`: `validate_evidence` locates the quote in the current session, the entailment check applies to a direct claim, and the resulting source kind sets the revision's status, confidence, and expiry. The revision then has to satisfy the section 6.3 authority rule against the record it replaces, so an unevidenced `agent_inference` cannot displace a `user_statement`; that attempt returns `invalid_input` naming the two source kinds. The revision inherits the replaced record's subject, attribute, tags, entity links, and their stored roles, and its event records `manual_revision: true` with the reason, the evidence note, and the entailment score.
 
 Each action appends an event with the reason. Entity merge uses the same tool with a separate argument shape: `{"entity_id", "merge_into", "reason"}`.
 
-A direct `supersede` is a manual replacement, not evidence. The handler stores the new row as a provisional `agent_inference`, gives it the normal provisional expiry, and records `manual_revision: true` with the supplied reason. It never copies the replaced record's source kind or evidence into changed content. The agent should use `memory_write` when it has a current-session quote that supports the new claim.
+The published JSON Schema declares every property of both shapes at the top level and selects between them with `oneOf`, because `additionalProperties: false` cannot see inside a `oneOf` branch. A schema that declared properties only inside the branches would reject every call under a conforming validator while an in-process check still passed.
 
 ### `memory_forget`
 
 Input: `{"id": string, "reason": string}`.
 
-The handler sets the record to `deleted`, retains a tombstone, removes its FTS row, and marks its in-memory vector dead. Durable content and its embedding remain until a controlled erase removes them. Content erasure is an admin CLI operation (`memory-weave erase <id>`), not an agent tool: a person must control that irreversible step.
+The handler sets the record to `deleted`, retains a tombstone, removes its FTS row, and marks its in-memory vector dead. Durable content and its embedding remain in the database until a controlled erase removes them, but no tool returns them: `memory_get` on a forgotten record answers with the audit shape only, carrying `tombstone: true` and `null` for `content`, `evidence`, and `source_ref`. Content erasure is an admin CLI operation (`memory-weave erase <id>`), not an agent tool: a person must control that irreversible step.
 
 ## 12. Session buffer and ingestion hooks
 
@@ -1821,6 +1836,18 @@ Run one parameterized suite through both `memory_write` and session extraction. 
 - The rewriter receives only queries and context, never candidates. Assert this from the fake's captured arguments.
 - With no context, the rewriter runs on the raw queries alone.
 
+#### Tool surface
+
+- `memory_get`, `memory_revise`, and `memory_forget` answer a foreign-scope id exactly as they answer an id that never existed, and leak no content.
+- A readable but unwritable record cannot be forgotten.
+- A forgotten record's `memory_get` payload carries `tombstone: true` and no content, evidence, or source reference.
+- A forgotten, superseded, or expired record cannot be confirmed, expired, or superseded.
+- `confirm` clears a provisional expiry.
+- An unevidenced `agent_inference` supersede of a `user_statement` is rejected; the same call with a session quote succeeds, keeps the stronger provenance, and preserves the replaced record's entity link roles.
+- A payload that is not a JSON object, and blank `content` or `evidence`, return `invalid_input`.
+- Every key required by a `memory_revise` schema branch is declared in the top-level `properties`.
+- `memory_get` omits entity links the caller cannot read.
+
 #### Reranking, explanations, and logs
 
 - Enabling a reranker without a floor is a configuration error.
@@ -1829,6 +1856,8 @@ Run one parameterized suite through both `memory_write` and session extraction. 
 - An empty response has an `empty_reason` that names the missed floors.
 - One `search_log` row reconstructs every retrieval stage, including rewrite status, freshness multipliers, and records omitted by the budget.
 - Every write event includes `timings_ms` for every named stage.
+- A refresh after an in-process write reports `current` and re-applies nothing; a refresh after another process's write still reports `delta`.
+- An authority counterpart that outranks its provisional conflict keeps its own position and survives `k = 1`.
 
 ### 17.5 Latency and integration tests
 

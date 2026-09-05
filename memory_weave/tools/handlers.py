@@ -9,6 +9,8 @@ from typing import Any, Literal, cast
 from memory_weave.index.vector import VectorIndex
 from memory_weave.ingest import (
     EntityMergeError,
+    EntityNotFoundError,
+    EntityNotReadableError,
     EntityNotWritableError,
     EntityResolutionError,
     Ingestor,
@@ -119,6 +121,8 @@ class ToolHandlers:
             return _error("invalid_input", str(error))
         try:
             result = self._ingestor.write(principal, request)
+        except (EntityNotFoundError, EntityNotReadableError):
+            return _error("not_found", "A requested entity was not found.")
         except EntityNotWritableError:
             return _error("scope_not_writable", "The principal cannot write the entity scope.")
         except EntityResolutionError as error:
@@ -149,8 +153,10 @@ class ToolHandlers:
                 entity = merge_entities(
                     cast(str, parsed["entity_id"]), cast(str, parsed["merge_into"]), principal, reason, self._store
                 )
-            except EntityNotWritableError:
-                return _error("scope_not_writable", "The principal cannot write both entity scopes.")
+            except (EntityNotFoundError, EntityNotReadableError, EntityNotWritableError):
+                # One answer for missing, unreadable, and unwritable entities, so an error never
+                # confirms that a foreign entity id exists.
+                return _error("not_found", "One or both entities were not found.")
             except (EntityMergeError, EntityResolutionError) as error:
                 return _error("invalid_input", str(error))
             return {"ok": True, "entity": _entity_payload(entity), "outcome": "merged"}
@@ -165,8 +171,11 @@ class ToolHandlers:
             cast(Any, parsed["action"]),
             reason,
             content=cast(str | None, parsed.get("content")),
+            source_kind=cast(Any, parsed.get("source_kind", "agent_inference")),
+            evidence=cast(str | None, parsed.get("evidence")),
+            evidence_turn=cast(int | None, parsed.get("evidence_turn")),
         )
-        if result.outcome in {"not_found", "scope_not_writable", "invalid_input"}:
+        if result.outcome in {"not_found", "scope_not_writable", "invalid_input", "invalid_source_kind"}:
             return _error(result.outcome, result.note)
         return {"ok": True, "record_id": result.record_id, "status": result.status, "outcome": result.outcome}
 
@@ -189,7 +198,7 @@ class ToolHandlers:
             self._store.append_event(
                 "record.deleted", principal.agent_id, record.id, None, {"reason": parsed["reason"]}
             )
-        self._vector_index.remove(record.id)
+        self._vector_index.remove(record.id, index_version=self._store.record_index_version(record.id))
         return {"ok": True, "record_id": record.id, "status": "deleted", "outcome": "forgotten"}
 
     def _validated(self, tool_name: str, payload: Mapping[str, object]) -> Mapping[str, object] | dict[str, object]:
@@ -208,17 +217,18 @@ class ToolHandlers:
     def _get_payload(self, principal: Principal, record: Record) -> dict[str, object]:
         ancestors = self._ancestors(principal, record)
         successors = self._successors(principal, record)
+        scopes = readable_scopes(self._store, principal.agent_id, principal.user_id)
         conflicts = [
-            _record_payload(conflict, self._store)
+            _record_payload(conflict, self._store, scopes)
             for conflict_id in self._store.conflicts_for(record.id)
             if (conflict := self._readable_record(principal, conflict_id)) is not None
         ]
         return {
-            "record": _record_payload(record, self._store),
+            "record": _record_payload(record, self._store, scopes),
             "conflicts": conflicts,
             "lineage": {
-                "ancestors": [_record_payload(item, self._store) for item in ancestors],
-                "successors": [_record_payload(item, self._store) for item in successors],
+                "ancestors": [_record_payload(item, self._store, scopes) for item in ancestors],
+                "successors": [_record_payload(item, self._store, scopes) for item in successors],
             },
             "events": self._store.events_for(record.id),
         }
@@ -286,20 +296,26 @@ def _error(code: str, message: str | None, **details: object) -> dict[str, objec
     return {"ok": False, "error": {"code": code, "message": message, **details}}
 
 
-def _record_payload(record: Record, store: Store | None = None) -> dict[str, object]:
+def _record_payload(
+    record: Record, store: Store | None = None, scopes: Sequence[Scope] | None = None
+) -> dict[str, object]:
+    # A forgotten record keeps its audit shape but never returns the text the user asked to remove;
+    # durable erasure of that text stays an admin operation.
+    forgotten = record.status == "deleted"
     payload: dict[str, object] = {
         "id": record.id,
         "type": record.type,
         "version": record.version,
-        "content": record.content,
+        "content": None if forgotten else record.content,
+        "tombstone": forgotten,
         "subject": record.subject,
         "subject_entity_id": record.subject_entity_id,
         "attribute": record.attribute,
         "scope": {"kind": record.scope.kind, "id": record.scope.id},
         "source_kind": record.source_kind,
-        "source_ref": record.source_ref,
+        "source_ref": None if forgotten else record.source_ref,
         "creator_agent_id": record.creator_agent_id,
-        "evidence": record.evidence,
+        "evidence": None if forgotten else record.evidence,
         "created_at": record.created_at.isoformat(),
         "event_at": record.event_at.isoformat(),
         "expires_at": record.expires_at.isoformat() if record.expires_at is not None else None,
@@ -315,7 +331,7 @@ def _record_payload(record: Record, store: Store | None = None) -> dict[str, obj
         payload["entities"] = [
             _entity_payload(entity)
             for entity_id in record.entity_ids
-            if (entity := store.get_entity(entity_id)) is not None
+            if (entity := store.get_entity(entity_id)) is not None and (scopes is None or entity.scope in scopes)
         ]
     return payload
 

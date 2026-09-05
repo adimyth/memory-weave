@@ -280,9 +280,10 @@ def test_a_lower_authority_provisional_conflict_is_not_presented_as_the_authorit
     _store_record(store, embedder, lower)
     store.add_conflict(higher.id, lower.id, _NOW)
 
-    response = _retriever(store, embedder).search(_PRINCIPAL, _request(query, k=1))
+    response = _retriever(store, embedder).search(_PRINCIPAL, _request(query, k=2))
 
     assert [result.record.id for result in response.results] == [higher.id, lower.id]
+    assert response.results[0].explanation.gate != "included as authority counterpart for a provisional conflict"
 
 
 def test_conflict_explanations_do_not_reveal_records_outside_the_caller_scope(store: Store) -> None:
@@ -480,3 +481,25 @@ def test_search_log_records_time_filters_and_each_reranker_outcome(store: Store)
         "reranker candidate limit",
         "reranker floor",
     }
+
+
+def test_a_higher_ranked_authority_keeps_its_own_position_and_is_not_demoted(store: Store) -> None:
+    query = "preferred editor"
+    embedder = FakeEmbedder(dims=_EMBEDDING.dims)
+    authority = _record("authority", "Aditya uses Vim as the preferred editor.")
+    bystander = _record("bystander", "Aditya keeps editor settings in dotfiles.")
+    provisional = _record("provisional", "Aditya uses Emacs as the preferred editor.", status="provisional")
+    embedder.set_similarity(query, authority.content, 0.90)
+    embedder.set_similarity(query, bystander.content, 0.80)
+    embedder.set_similarity(query, provisional.content, 0.70)
+    for record in (authority, bystander, provisional):
+        _store_record(store, embedder, record)
+    store.add_conflict(authority.id, provisional.id, _NOW)
+
+    top = _retriever(store, embedder).search(_PRINCIPAL, _request(query, k=1))
+    pair = _retriever(store, embedder).search(_PRINCIPAL, _request(query, k=3))
+
+    assert [result.record.id for result in top.results] == [authority.id]
+    assert top.results[0].explanation.dense is not None
+    assert [result.record.id for result in pair.results] == [authority.id, bystander.id, provisional.id]
+    assert pair.results[0].explanation.gate != "included as authority counterpart for a provisional conflict"

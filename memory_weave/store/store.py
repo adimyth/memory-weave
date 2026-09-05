@@ -258,6 +258,14 @@ class Store:
         records_by_id = {record.id: record for record in self._records_from_rows(rows)}
         return [records_by_id[record_id] for record_id in record_ids if record_id in records_by_id]
 
+    def record_entity_roles(self, record_id: str) -> dict[str, EntityRole]:
+        """Return the stored link role for every entity attached to one record."""
+
+        rows = self.connection.execute(
+            "SELECT entity_id, role FROM record_entities WHERE record_id = ? ORDER BY entity_id", (record_id,)
+        ).fetchall()
+        return {cast(str, row["entity_id"]): cast(EntityRole, row["role"]) for row in rows}
+
     def records_superseded_by(self, record_id: str) -> list[Record]:
         """Return direct lineage successors in a deterministic order."""
 
@@ -437,9 +445,22 @@ class Store:
             raise RuntimeError("store_meta is missing the records_version row.")
         return cast(int, row["value"])
 
+    def record_index_version(self, record_id: str) -> int:
+        """Return the highest index version a record's own row or embedding carries."""
+
+        row = self.connection.execute(
+            """
+            SELECT MAX(records.index_version, COALESCE(embeddings.index_version, 0)) AS version
+            FROM records LEFT JOIN embeddings ON embeddings.record_id = records.id
+            WHERE records.id = ?
+            """,
+            (record_id,),
+        ).fetchone()
+        return 0 if row is None else cast(int, row["version"])
+
     def index_changes_since(
         self, index_version: int, model: str, embedding_version: str
-    ) -> list[tuple[str, RecordStatus, np.ndarray | None]]:
+    ) -> list[tuple[str, RecordStatus, np.ndarray | None, int]]:
         """Return records whose vector or lifecycle changed after one index projection version."""
 
         rows = self.connection.execute(
@@ -449,7 +470,8 @@ class Store:
                 UNION
                 SELECT record_id FROM embeddings WHERE index_version > ?
             )
-            SELECT records.id, records.status, embeddings.dims, embeddings.vector
+            SELECT records.id, records.status, embeddings.dims, embeddings.vector,
+                   MAX(records.index_version, COALESCE(embeddings.index_version, 0)) AS change_version
             FROM changed_ids
             JOIN records ON records.id = changed_ids.record_id
             LEFT JOIN embeddings ON embeddings.record_id = records.id
@@ -458,7 +480,7 @@ class Store:
             """,
             (index_version, index_version, model, embedding_version),
         ).fetchall()
-        changes: list[tuple[str, RecordStatus, np.ndarray | None]] = []
+        changes: list[tuple[str, RecordStatus, np.ndarray | None, int]] = []
         for row in rows:
             raw = cast(bytes | None, row["vector"])
             vector = None if raw is None else np.frombuffer(raw, dtype=np.float32).copy()
@@ -466,7 +488,14 @@ class Store:
                 raise ValueError(
                     f"Embedding {row['id']} has {vector.size} values but declares {row['dims']} dimensions."
                 )
-            changes.append((cast(str, row["id"]), cast(RecordStatus, row["status"]), vector))
+            changes.append(
+                (
+                    cast(str, row["id"]),
+                    cast(RecordStatus, row["status"]),
+                    vector,
+                    cast(int, row["change_version"]),
+                )
+            )
         return changes
 
     def upsert_fts(self, record_id: str, content: str, subject: str, aliases: str) -> None:

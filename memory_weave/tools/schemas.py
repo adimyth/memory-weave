@@ -87,23 +87,36 @@ TOOL_SCHEMAS: dict[str, dict[str, object]] = {
         "input_schema": {
             "type": "object",
             "additionalProperties": False,
+            # Every property is declared here because `additionalProperties: false` cannot see into `oneOf`
+            # branches; the branches then select one shape by requiring and forbidding the right keys.
+            "properties": {
+                "id": {"type": "string", "minLength": 1},
+                "action": {"type": "string", "enum": ["confirm", "supersede", "expire"]},
+                "content": {"type": "string", "minLength": 1, "maxLength": 1000},
+                "source_kind": {"type": "string", "enum": ["user_statement", "tool_result", "agent_inference"]},
+                "evidence": {"type": "string", "minLength": 1},
+                "evidence_turn": {"type": "integer", "minimum": 1},
+                "reason": {"type": "string", "minLength": 1},
+                "entity_id": {"type": "string", "minLength": 1},
+                "merge_into": {"type": "string", "minLength": 1},
+            },
             "oneOf": [
                 {
-                    "properties": {
-                        "id": {"type": "string", "minLength": 1},
-                        "action": {"type": "string", "enum": ["confirm", "supersede", "expire"]},
-                        "content": {"type": "string", "minLength": 1, "maxLength": 1000},
-                        "reason": {"type": "string", "minLength": 1},
-                    },
                     "required": ["id", "action", "reason"],
+                    "not": {"anyOf": [{"required": ["entity_id"]}, {"required": ["merge_into"]}]},
                 },
                 {
-                    "properties": {
-                        "entity_id": {"type": "string", "minLength": 1},
-                        "merge_into": {"type": "string", "minLength": 1},
-                        "reason": {"type": "string", "minLength": 1},
-                    },
                     "required": ["entity_id", "merge_into", "reason"],
+                    "not": {
+                        "anyOf": [
+                            {"required": ["id"]},
+                            {"required": ["action"]},
+                            {"required": ["content"]},
+                            {"required": ["source_kind"]},
+                            {"required": ["evidence"]},
+                            {"required": ["evidence_turn"]},
+                        ]
+                    },
                 },
             ],
         },
@@ -139,6 +152,8 @@ def validate_tool_input(tool_name: str, payload: Mapping[str, object]) -> dict[s
 
     if tool_name not in TOOL_SCHEMAS:
         raise ToolInputError(f"Unknown tool: {tool_name}.")
+    if not isinstance(payload, Mapping):
+        raise ToolInputError(f"{tool_name} input must be a JSON object.")
     if tool_name == "memory_revise":
         _validate_revise(payload)
     else:
@@ -149,7 +164,17 @@ def validate_tool_input(tool_name: str, payload: Mapping[str, object]) -> dict[s
 
 
 def _validate_revise(payload: Mapping[str, object]) -> None:
-    expected = {"id", "action", "content", "reason", "entity_id", "merge_into"}
+    expected = {
+        "id",
+        "action",
+        "content",
+        "source_kind",
+        "evidence",
+        "evidence_turn",
+        "reason",
+        "entity_id",
+        "merge_into",
+    }
     _reject_unknown_keys(payload, expected, "memory_revise")
     if "entity_id" in payload or "merge_into" in payload:
         _require_keys(payload, {"entity_id", "merge_into", "reason"}, "memory_revise entity merge")
@@ -162,10 +187,18 @@ def _validate_revise(payload: Mapping[str, object]) -> None:
     action = payload["action"]
     if action not in {"confirm", "supersede", "expire"}:
         raise ToolInputError("memory_revise.action must be confirm, supersede, or expire.")
+    supersede_only = {"content", "source_kind", "evidence", "evidence_turn"} & set(payload)
     if action == "supersede":
         _require_strings(payload, ("content",), "memory_revise supersede")
-    elif "content" in payload:
-        raise ToolInputError("memory_revise.content is only valid with action supersede.")
+        if payload.get("source_kind") == "user_statement" and "evidence" not in payload:
+            raise ToolInputError("memory_revise.evidence is required for user_statement.")
+    elif supersede_only:
+        fields = ", ".join(sorted(supersede_only))
+        raise ToolInputError(f"memory_revise fields are only valid with action supersede: {fields}.")
+    schema = cast(dict[str, object], TOOL_SCHEMAS["memory_revise"]["input_schema"])
+    properties = cast(Mapping[str, Mapping[str, object]], schema["properties"])
+    for key, value in payload.items():
+        _validate_value(value, properties[key], f"memory_revise.{key}")
 
 
 def _validate_object(payload: Mapping[str, object], schema: Mapping[str, object], path: str) -> None:
@@ -224,6 +257,12 @@ def _validate_value(value: object, schema: Mapping[str, object], path: str) -> N
 def _validate_semantics(tool_name: str, payload: Mapping[str, object]) -> None:
     if tool_name == "memory_write" and payload.get("source_kind") == "user_statement" and "evidence" not in payload:
         raise ToolInputError("memory_write.evidence is required for user_statement.")
+    content = payload.get("content")
+    if isinstance(content, str) and not content.strip():
+        raise ToolInputError(f"{tool_name}.content must not be blank.")
+    evidence = payload.get("evidence")
+    if isinstance(evidence, str) and not evidence.strip():
+        raise ToolInputError(f"{tool_name}.evidence must not be blank.")
     if tool_name == "memory_write" and payload.get("type") in {"semantic", "procedural"} and "attribute" not in payload:
         raise ToolInputError("memory_write.attribute is required for semantic and procedural memories.")
 

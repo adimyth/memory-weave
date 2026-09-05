@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field, replace
 from datetime import datetime
 from typing import Literal, cast
@@ -46,6 +46,7 @@ from .evidence import session_turn_source_ref, validate_evidence
 from .session import SessionBuffer
 
 _TOOL_SOURCE_KINDS: frozenset[SourceKind] = frozenset({"user_statement", "tool_result", "agent_inference"})
+_REVISABLE_STATUSES: frozenset[RecordStatus] = frozenset({"provisional", "confirmed"})
 _WRITE_STAGES = (
     "permission",
     "evidence",
@@ -251,7 +252,11 @@ class Ingestor:
         assert persisted is not None
         timer.mark("transaction")
         if persisted.index_record_id is not None and persisted.index_vector is not None:
-            self._vector_index.upsert(persisted.index_record_id, persisted.index_vector)
+            self._vector_index.upsert(
+                persisted.index_record_id,
+                persisted.index_vector,
+                index_version=self._store.record_index_version(persisted.index_record_id),
+            )
         timer.mark("index_update")
         return self._result(
             persisted.record_id,
@@ -269,8 +274,11 @@ class Ingestor:
         reason: str,
         *,
         content: str | None = None,
+        source_kind: SourceKind = "agent_inference",
+        evidence: str | None = None,
+        evidence_turn: int | None = None,
     ) -> WriteResult:
-        """Apply a user-authorized lifecycle revision after checking the principal can write the record scope."""
+        """Apply a user-authorized lifecycle revision after checking scope, status, and supersession authority."""
 
         timer = Timer(warm=self._embedder.is_loaded and self._vector_index.is_loaded)
         existing = self._store.get_record(record_id)
@@ -278,6 +286,12 @@ class Ingestor:
             return self._result(None, None, "not_found", None, timer)
         if existing.scope not in writable_scopes(self._store, principal.agent_id, principal.user_id):
             return self._result(None, None, "scope_not_writable", None, timer)
+        if existing.status not in _REVISABLE_STATUSES:
+            # A superseded, expired, or forgotten record is history: revising it would fork lineage
+            # or resurrect content the user asked to remove.
+            return self._result(
+                None, None, "invalid_input", f"a {existing.status} record cannot be revised", timer
+            )
         timer.mark("permission")
         current_time = self._current_time()
 
@@ -287,64 +301,86 @@ class Ingestor:
             return self._revise_status(existing, "expired", "record.expired", reason, principal, timer)
         if content is None or not content.strip():
             return self._result(None, None, "invalid_input", "supersede requires content", timer)
+        if source_kind not in _TOOL_SOURCE_KINDS:
+            return self._result(
+                None, None, "invalid_source_kind", f"{source_kind} is reserved for the host or extractor.", timer
+            )
 
-        revision = Record(
-            id=uuid7(),
+        request = WriteRequest(
             type=existing.type,
-            version=existing.version + 1,
             content=content,
-            subject=existing.subject,
-            subject_entity_id=existing.subject_entity_id,
+            source_kind=source_kind,
+            evidence=evidence,
             attribute=existing.attribute,
             scope=existing.scope,
-            source_kind="agent_inference",
-            source_ref=None,
-            creator_agent_id=principal.agent_id,
-            evidence=None,
-            created_at=current_time,
-            event_at=current_time,
-            expires_at=provisional_expiry(current_time, self._config),
-            confidence=initial_confidence("agent_inference"),
-            status="provisional",
-            supersedes_id=existing.id,
-            reinforcements=0,
-            last_reinforced_at=None,
-            tags=list(existing.tags),
-            entity_ids=list(existing.entity_ids),
+            evidence_turn=evidence_turn,
         )
+        check, entailment_score = self._validate_evidence(principal, request, timer)
+        revision = self._new_record(
+            request, principal, existing.scope, check.source_kind, self._source_ref(principal, check), check,
+            current_time,
+        )
+        revision.version = existing.version + 1
+        revision.subject = existing.subject
+        revision.subject_entity_id = existing.subject_entity_id
+        revision.attribute = existing.attribute
+        revision.tags = list(existing.tags)
+        revision.entity_ids = list(existing.entity_ids)
+        revision.supersedes_id = existing.id
+        if not has_authority(revision, existing, self._config):
+            # LLD 6.3: a record may only supersede an equal or lower source rank.
+            return self._result(
+                None,
+                None,
+                "invalid_input",
+                f"a {revision.source_kind} revision cannot supersede a {existing.source_kind} record; "
+                "supply evidence from this session",
+                timer,
+            )
+
         vector = self._embedder.embed_documents([revision.content])[0]
         timer.mark("embed")
+        roles = self._store.record_entity_roles(existing.id)
         with self._store.transaction():
             self._store.update_status(existing.id, "superseded")
-            self._store.insert_record(revision)
-            self._store.put_embedding(revision.id, self._embedder.name, self._embedder.version, vector)
-            self._store.upsert_fts(
-                revision.id,
-                revision.content,
-                revision.subject,
-                aliases_text(self._store, revision.entity_ids),
-            )
-            for entity_id in revision.entity_ids:
-                role: EntityRole = "about" if entity_id == revision.subject_entity_id else "mentions"
-                self._store.link_record_entity(revision.id, entity_id, role)
+            self._persist_new_record(revision, vector, roles)
             self._store.append_event(
                 "record.superseded",
                 principal.agent_id,
                 revision.id,
                 None,
                 {
+                    "evidence_entailment_score": entailment_score,
+                    "evidence_note": check.note,
                     "manual_revision": True,
                     "reason": reason,
                     "source_kind": revision.source_kind,
+                    "source_ref": revision.source_ref,
                     "supersedes_id": existing.id,
                 },
             )
         timer.mark("persistence")
         timer.mark("event_log")
         timer.mark("transaction")
-        self._vector_index.upsert(revision.id, vector)
+        self._vector_index.upsert(
+            revision.id, vector, index_version=self._store.record_index_version(revision.id)
+        )
         timer.mark("index_update")
-        return self._result(revision.id, revision.status, "superseded", None, timer)
+        return self._result(revision.id, revision.status, "superseded", check.note, timer)
+
+    def _persist_new_record(self, record: Record, vector: np.ndarray, roles: Mapping[str, EntityRole]) -> None:
+        """Write one record with its embedding, lexical row, and entity links inside the caller's transaction."""
+
+        self._store.insert_record(record)
+        self._store.put_embedding(record.id, self._embedder.name, self._embedder.version, vector)
+        self._store.upsert_fts(record.id, record.content, record.subject, aliases_text(self._store, record.entity_ids))
+        for entity_id in record.entity_ids:
+            self._store.link_record_entity(record.id, entity_id, roles.get(entity_id, "mentions"))
+
+    def _source_ref(self, principal: Principal, check: EvidenceCheck) -> str | None:
+        if not check.found or principal.session_id is None or check.turn is None:
+            return None
+        return session_turn_source_ref(principal.session_id, check.turn)
 
     def _revise_status(
         self,
@@ -357,8 +393,19 @@ class Ingestor:
     ) -> WriteResult:
         """Persist one direct lifecycle transition and its audit event."""
 
+        # A confirmed record is no longer provisional, so it must not keep a provisional expiry.
+        expires_at = None if status == "confirmed" else record.expires_at
         with self._store.transaction():
             self._store.update_status(record.id, status)
+            if status == "confirmed" and record.expires_at is not None:
+                self._store.reinforce_fields(
+                    record.id,
+                    confidence=record.confidence,
+                    reinforcements=record.reinforcements,
+                    last_reinforced_at=record.last_reinforced_at,
+                    expires_at=expires_at,
+                    status=status,
+                )
             self._store.append_event(event_kind, principal.agent_id, record.id, None, {"reason": reason})
         timer.mark("persistence")
         timer.mark("event_log")
@@ -671,11 +718,7 @@ class Ingestor:
             self._store.update_status(existing.id, "superseded")
             for subsumed_id in cast(list[str], decision.extra.get("also_superseded", [])):
                 self._store.update_status(subsumed_id, "superseded")
-        self._store.insert_record(record)
-        self._store.put_embedding(record.id, self._embedder.name, self._embedder.version, vector)
-        self._store.upsert_fts(record.id, record.content, record.subject, aliases_text(self._store, record.entity_ids))
-        for entity_id in record.entity_ids:
-            self._store.link_record_entity(record.id, entity_id, entity_roles[entity_id])
+        self._persist_new_record(record, vector, entity_roles)
         if outcome == "conflict":
             assert existing is not None
             self._store.add_conflict(record.id, existing.id, record.created_at)

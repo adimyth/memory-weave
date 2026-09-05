@@ -124,7 +124,7 @@ def test_resolve_entities_returns_ambiguity_without_creating_or_selecting_an_ent
 def test_explicit_entity_id_must_be_readable(store: Store) -> None:
     private = store.create_entity(kind="person", canonical="Someone Else", scope=Scope(kind="user", id="someone-else"))
 
-    with pytest.raises(EntityNotReadableError, match="entity_not_readable"):
+    with pytest.raises(EntityNotReadableError, match="entity_not_found"):
         resolve_entities(
             [EntityMention(kind="person", text="ignored", role="about", entity_id=private.id)],
             _AGENT_SCOPE,

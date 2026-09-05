@@ -11,6 +11,8 @@ from memory_weave.store import Store
 from memory_weave.util import normalize_alias, normalize_ws
 
 _ACTIVE_ENTITY_STATUSES: tuple[EntityStatus, ...] = ("provisional", "confirmed")
+# One message for a missing entity and for an unreadable one, so an error never reveals that an id exists.
+_ENTITY_NOT_FOUND = 'entity_not_found'
 
 
 class EntityResolutionError(ValueError):
@@ -111,8 +113,10 @@ def merge_entities(
         raise EntityMergeError("An entity cannot be merged into itself.")
 
     with store.transaction():
+        # Authorization runs before any check whose message would describe an entity the actor cannot write.
         source = _entity_or_error(source_id, store)
         destination = follow_merges(_entity_or_error(destination_id, store), store)
+        _require_merge_access(actor, source.scope, destination.scope, store)
         if source.status == "merged":
             raise EntityMergeError(f"Entity {source.id} is already merged into {source.merged_into}.")
         if source.kind != destination.kind:
@@ -121,7 +125,6 @@ def merge_entities(
             raise EntityMergeError("Deleted entities cannot participate in a merge.")
         if source.id == destination.id:
             raise EntityMergeError("An entity cannot be merged into itself.")
-        _require_merge_access(actor, source.scope, destination.scope, store)
         store.merge_entity(source.id, destination.id)
         store.append_event(
             "entity.merged",
@@ -218,14 +221,14 @@ def _create_entity_resolution(
 def _readable_entity(entity_id: str, readable: Sequence[Scope], store: Store) -> Entity:
     entity = _entity_or_error(entity_id, store)
     if entity.scope not in readable:
-        raise EntityNotReadableError(f"entity_not_readable: {entity_id}")
+        raise EntityNotReadableError(_ENTITY_NOT_FOUND)
     return entity
 
 
 def _entity_or_error(entity_id: str, store: Store) -> Entity:
     entity = store.get_entity(entity_id)
     if entity is None:
-        raise EntityNotFoundError(f"Entity does not exist: {entity_id}")
+        raise EntityNotFoundError(_ENTITY_NOT_FOUND)
     return entity
 
 

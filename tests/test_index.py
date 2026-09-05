@@ -437,3 +437,46 @@ class _ObservedCacheEmbedder(BgeM3Embedder):
             if self._cache_checks == 3:
                 self.second_cache_miss.set()
         return cached
+
+
+def test_refresh_skips_changes_this_process_already_applied(tmp_path: Path) -> None:
+    """An in-process write must not make the next search re-apply or reload rows the index already holds."""
+
+    config = EmbeddingConfig(model="fake-embedder", version="1", dims=8)
+    store = Store(tmp_path / "memory.sqlite")
+    embedder = FakeEmbedder(dims=config.dims)
+    index = VectorIndex(config)
+    index.load(store)
+    assert index.refresh(store, 512) == "unchanged"
+
+    record = _record("local-record")
+    vector = embedder.embed_documents([record.content])[0]
+    with store.transaction():
+        store.insert_record(record)
+        store.put_embedding(record.id, embedder.name, embedder.version, vector)
+    index.upsert(record.id, vector, index_version=store.record_index_version(record.id))
+
+    assert index.refresh(store, 512) == "current"
+    assert index.loaded_version == store.records_version()
+    assert index.refresh(store, 1) == "unchanged"
+    assert index.vector_for(record.id) is not None
+    store.close()
+
+
+def test_refresh_still_applies_another_process_delta(tmp_path: Path) -> None:
+    config = EmbeddingConfig(model="fake-embedder", version="1", dims=8)
+    reader = Store(tmp_path / "memory.sqlite")
+    writer = Store(tmp_path / "memory.sqlite")
+    embedder = FakeEmbedder(dims=config.dims)
+    index = VectorIndex(config)
+    index.load(reader)
+
+    record = _record("foreign-write")
+    with writer.transaction():
+        writer.insert_record(record)
+        writer.put_embedding(record.id, embedder.name, embedder.version, embedder.embed_documents([record.content])[0])
+
+    assert index.refresh(reader, 512) == "delta"
+    assert index.vector_for(record.id) is not None
+    reader.close()
+    writer.close()

@@ -239,9 +239,10 @@ class Retriever:
         """Pair a provisional record with its eligible authority counterpart without replacing real evidence."""
 
         by_id = {candidate.record_id: candidate for candidate in candidates}
+        positions = {candidate.record_id: position for position, candidate in enumerate(candidates)}
         companions: dict[str, Candidate] = {}
         claimed_authorities: set[str] = set()
-        for candidate in candidates:
+        for position, candidate in enumerate(candidates):
             record = records[candidate.record_id]
             if record.status != "provisional":
                 continue
@@ -255,6 +256,11 @@ class Retriever:
                 continue
             authority = max(peer_records, key=self._authority_key)
             if authority.id in claimed_authorities:
+                continue
+            authority_position = positions.get(authority.id)
+            if authority_position is not None and authority_position < position:
+                # The counterpart already outranks the provisional record on its own evidence.
+                # Moving it here would demote it and could push it past the result limit.
                 continue
             records[authority.id] = authority
             companions[candidate.record_id] = by_id.get(authority.id, _authority_candidate(authority.id))
