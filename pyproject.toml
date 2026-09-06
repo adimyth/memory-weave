@@ -17,6 +17,10 @@ memory-weave = "memory_weave.cli:main"
 local-models = [
   "sentence-transformers>=3.0",
 ]
+live = [
+  "anthropic>=0.68",
+  "python-dotenv>=1.0",
+]
 
 [build-system]
 requires = ["hatchling>=1.27"]

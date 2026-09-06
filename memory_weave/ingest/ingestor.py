@@ -289,9 +289,7 @@ class Ingestor:
         if existing.status not in _REVISABLE_STATUSES:
             # A superseded, expired, or forgotten record is history: revising it would fork lineage
             # or resurrect content the user asked to remove.
-            return self._result(
-                None, None, "invalid_input", f"a {existing.status} record cannot be revised", timer
-            )
+            return self._result(None, None, "invalid_input", f"a {existing.status} record cannot be revised", timer)
         timer.mark("permission")
         current_time = self._current_time()
 
@@ -317,7 +315,12 @@ class Ingestor:
         )
         check, entailment_score = self._validate_evidence(principal, request, timer)
         revision = self._new_record(
-            request, principal, existing.scope, check.source_kind, self._source_ref(principal, check), check,
+            request,
+            principal,
+            existing.scope,
+            check.source_kind,
+            self._source_ref(principal, check),
+            check,
             current_time,
         )
         revision.version = existing.version + 1
@@ -362,9 +365,7 @@ class Ingestor:
         timer.mark("persistence")
         timer.mark("event_log")
         timer.mark("transaction")
-        self._vector_index.upsert(
-            revision.id, vector, index_version=self._store.record_index_version(revision.id)
-        )
+        self._vector_index.upsert(revision.id, vector, index_version=self._store.record_index_version(revision.id))
         timer.mark("index_update")
         return self._result(revision.id, revision.status, "superseded", check.note, timer)
 

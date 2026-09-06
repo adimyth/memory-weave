@@ -12,7 +12,7 @@ from memory_weave.util import normalize_alias, normalize_ws
 
 _ACTIVE_ENTITY_STATUSES: tuple[EntityStatus, ...] = ("provisional", "confirmed")
 # One message for a missing entity and for an unreadable one, so an error never reveals that an id exists.
-_ENTITY_NOT_FOUND = 'entity_not_found'
+_ENTITY_NOT_FOUND = "entity_not_found"
 
 
 class EntityResolutionError(ValueError):
