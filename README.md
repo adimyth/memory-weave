@@ -265,6 +265,8 @@ The answer to 6.4 is to stop scoring the query against the record and instead as
 
 On a held-out scenario set of 36 turns, with `gpt-4o` planning gaps and `gpt-5.4` judging admission, the path produced 0 of 20 ordinary-turn injections, 9 of 10 explicit stored-fact recalls, 5 of 6 implicit recalls, no placebo, misleading, stale, or unrelated private record admitted, and identical gap decisions across three repeats on every turn. Turns that needed no memory added no latency, because gap planning finished before the draft did. Preferences about how to answer never reached the answer unless they were placed in the always-present ambient profile, so ambient activation is a prerequisite for rollout, not an option.
 
+A pre-registered run on a blind third split then held the safety half and missed the recall half: 0 of 20 ordinary injections and no unsafe admission again, but 8 of 10 explicit and 5 of 7 implicit recall against thresholds of 90% and 75%. The planner stays silent on organisation-specific questions that lack a possessive such as "our" or "my". That is the open item before Phase 2, and it is recorded rather than tuned away; see section 8e of the findings.
+
 The same runs showed that the quality of this path depends on which model fills each role. Small reasoning models failed at both roles: unstable as planners, and as judges they admitted a misleading record and added tens of seconds. A mid-tier non-reasoning model was enough for planning. A frontier model was needed for judging.
 
 > [!IMPORTANT]

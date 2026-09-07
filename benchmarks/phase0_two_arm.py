@@ -98,6 +98,32 @@ _ADMISSION_SYSTEM = (
     "candidate id exactly once in verdicts."
 )
 
+_ADMISSION_SYSTEM_V2 = (
+    "You decide which stored memory records, if any, should be given to an assistant before it answers. You "
+    "see the user's message, the preferences already applied, a draft answer written without any of the "
+    "candidate records, and the candidate records with their recorded date and status. Evaluate the "
+    "candidates together. Give every candidate exactly one verdict:\n"
+    "- helpful: the requested answer itself would say something different with this record: a fact, value, "
+    "name, date, choice, or recommendation stated in the answer would change, or the draft asked the user "
+    "for exactly this information.\n"
+    "- jointly_helpful: it meets the helpful test only in combination with another candidate you are also "
+    "admitting.\n"
+    "- redundant: it repeats what the draft, public knowledge, or the applied preferences already cover.\n"
+    "- insufficient: it concerns the request but the requested answer would not say anything different. "
+    "Background, attribution, context the user did not ask for, and usefulness for possible follow-up work "
+    "are insufficient, not helpful.\n"
+    "- stale_or_conflicting: it is marked superseded or conflicting, or a stronger candidate contradicts it. "
+    "Disagreeing with the draft is not a reason for this verdict; the draft was written without the records.\n"
+    "- potentially_harmful: using it risks factual distortion, agreeing with a false belief, suppressing "
+    "warnings, inappropriate personalisation, or exposing private information unrelated to the request.\n"
+    "Admit only candidates with verdict helpful or jointly_helpful. When you are not sure the answer would "
+    'change, do not admit. An empty admitted list is the normal outcome. Reply with JSON only: {"admitted": '
+    '["<id>", ...], "verdicts": [{"id": "<id>", "verdict": "<verdict>", "reason": "<one short sentence>"}]}. '
+    "Include every candidate id exactly once in verdicts."
+)
+
+_ADMISSION_PROMPTS = {"v1": _ADMISSION_SYSTEM, "v2": _ADMISSION_SYSTEM_V2}
+
 _CORRECTNESS_SYSTEM = (
     "You check whether an assistant's answer contains a set of reference facts. Reply with JSON only: "
     '{"contains_reference": true|false, "contradicts_reference": true|false, "note": "<one short sentence>"}. '
@@ -153,6 +179,7 @@ class Phase0:
         gap_repeats: int,
         workers: int,
         draft_cache: Path | None,
+        admission_prompt: str = "v1",
     ) -> None:
         self.scenario = scenario
         self.draft_model = draft_model
@@ -160,6 +187,7 @@ class Phase0:
         self.admission_model = admission_model
         self.check_model = check_model
         self.gap_prompt = gap_prompt
+        self.admission_prompt = admission_prompt
         self.gap_repeats = max(1, gap_repeats)
         self.workers = workers
         self.models = Models()
@@ -298,7 +326,7 @@ class Phase0:
             f"Candidate records:\n{self._candidate_block(candidates)}"
         )
         try:
-            raw, timing.admission_s = self._timed(self.admission_model, _ADMISSION_SYSTEM, admission_user, json_mode=True)
+            raw, timing.admission_s = self._timed(self.admission_model, _ADMISSION_PROMPTS[self.admission_prompt], admission_user, json_mode=True)
             parsed = json.loads(raw)
             known = {c["id"] for c in candidates}
             verdicts = []
@@ -396,8 +424,18 @@ def summarise(arm: str, results: list[TurnResult], records: dict[str, dict[str, 
     def injected(r: TurnResult) -> bool:
         return bool(r.admitted)
 
+    def conditional_expected(r: TurnResult) -> list[str]:
+        # In the ambient arm an ambient record is in the profile, so it cannot be a retrieval miss.
+        return [e for e in r.expected if not (arm == "ambient" and e in ambient_ids)]
+
     def recalled(r: TurnResult) -> bool:
-        return bool(r.expected) and all(e in r.admitted for e in r.expected)
+        expected = conditional_expected(r)
+        return bool(expected) and all(e in r.admitted for e in expected)
+
+    # Turns whose only expected record is ambient leave the recall denominator in the ambient arm; their
+    # answer-correctness check still measures whether the profile did its job.
+    explicit = [r for r in explicit if conditional_expected(r)]
+    implicit = [r for r in implicit if conditional_expected(r)]
 
     admitted_total = sum(len(r.admitted) for r in results)
     admitted_useful = sum(sum(1 for i in r.admitted if i in r.expected) for r in results)
@@ -487,6 +525,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--admission-model", default=None)
     parser.add_argument("--check-model", default="gpt-5.4", help="Reference checker; keep fixed across configurations")
     parser.add_argument("--gap-prompt", choices=sorted(_GAP_PROMPTS), default="v1")
+    parser.add_argument("--admission-prompt", choices=sorted(_ADMISSION_PROMPTS), default="v1")
     parser.add_argument("--gap-repeats", type=int, default=1, help="Extra gap-planning calls per turn to measure decision stability")
     parser.add_argument("--arms", default="ambient,conditional")
     parser.add_argument("--workers", type=int, default=4)
@@ -498,8 +537,8 @@ def main(argv: list[str] | None = None) -> int:
     gap_model = args.gap_model or args.policy_model
     admission_model = args.admission_model or args.policy_model
     scenario = json.loads(args.scenario.read_text())
-    runner = Phase0(scenario, args.draft_model, gap_model, admission_model, args.check_model, args.gap_prompt, args.gap_repeats, args.workers, args.draft_cache)
-    print(f"scenario={args.scenario} draft={args.draft_model} gap={gap_model}/{args.gap_prompt} admission={admission_model} check={args.check_model} repeats={args.gap_repeats}", flush=True)
+    runner = Phase0(scenario, args.draft_model, gap_model, admission_model, args.check_model, args.gap_prompt, args.gap_repeats, args.workers, args.draft_cache, args.admission_prompt)
+    print(f"scenario={args.scenario} draft={args.draft_model} gap={gap_model}/{args.gap_prompt} admission={admission_model}/{args.admission_prompt} check={args.check_model} repeats={args.gap_repeats}", flush=True)
     arms = [a.strip() for a in args.arms.split(",") if a.strip()]
     all_results: dict[str, list[TurnResult]] = {}
     summaries: dict[str, dict[str, Any]] = {}
@@ -512,13 +551,14 @@ def main(argv: list[str] | None = None) -> int:
     args.out_dir.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     tag = f"-{args.tag}" if args.tag else ""
-    path = args.out_dir / f"{stamp}-{args.scenario.stem}-gap-{gap_model}-{args.gap_prompt}-adm-{admission_model}{tag}.json"
+    path = args.out_dir / f"{stamp}-{args.scenario.stem}-gap-{gap_model}-{args.gap_prompt}-adm-{admission_model}-{args.admission_prompt}{tag}.json"
     payload = {
         "scenario": str(args.scenario),
         "draft_model": args.draft_model,
         "gap_model": gap_model,
         "gap_prompt": args.gap_prompt,
         "admission_model": admission_model,
+        "admission_prompt": args.admission_prompt,
         "check_model": args.check_model,
         "gap_repeats": args.gap_repeats,
         "usage": runner.models.usage,

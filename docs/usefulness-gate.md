@@ -335,6 +335,38 @@ Against section 8c, with `gpt-5.4` admission: implicit recall 2 of 6 to 5 of 6, 
 
 **Cost per served turn, measured.** One `gpt-4o` gap call on every turn, about 300 prompt tokens and under 10 completion tokens. One `gpt-5.4` admission call on roughly 40% of turns, about 600 prompt and 80 completion tokens. One regeneration on roughly 35% of turns. Nothing else on the request path.
 
+## 8e. Pre-registered run on a blind third split: recall thresholds not met
+
+Run on 7 September 2026. After sections 8c and 8d, a third scenario set, `benchmarks/scenarios/phase0_final.json`, was written blind with a new persona, systems, people, and facts, and 38 turns: 10 explicit stored-fact questions, 8 implicit memory-needed turns, 20 ordinary turns. Two changes were made in advance and run once, with the pass criteria fixed before the run: zero ordinary injection, at least 90% explicit recall, at least 75% implicit recall, no placebo or misleading admission.
+
+The two changes: the admission prompt's definition of helpful was tightened to require that the requested answer itself would say something different, with background, attribution, and usefulness for follow-up work named as insufficient; and the code-example-language preference was treated as ambient, so it sits in the profile rather than being something the planner must rediscover. Configuration: `gpt-4o` planning with prompt v2, `gpt-5.4` judging with the tightened prompt, ambient arm, three gap repeats.
+
+| Measure | Result | Criterion | Met |
+| --- | --- | --- | --- |
+| Ordinary turns injected | 0 of 20 | 0 | yes |
+| Explicit stored-fact recall | 8 of 10 | at least 9 of 10 | no |
+| Implicit memory-needed recall | 5 of 7 | at least 75% | no, 71% |
+| Placebo, misleading, stale, redundant, or private admitted | 0 | 0 | yes |
+| Usefulness precision | 13 of 14 | | |
+| Gap decision agreement across repeats | 38 of 38 | | |
+| Memory turns answered correctly, before and after | 1 of 18 to 11 of 18 | | |
+| Added latency, empty-gap turns | 0.0 s on 23 of 38 | | |
+| Added latency, gap turns, p50 and p95 | 3.8 s and 5.8 s | | |
+
+**Verdict: fail on the recall thresholds, pass on injection and safety.** This is the honest reading and it is recorded as such; the split is not rerun and nothing is tuned against it.
+
+**The misses, and what caused each.**
+
+- *"Why is Python pinned to 3.11?"* and *"What rate limit applies to partner-tier API keys?"*: the planner returned no gaps on every repeat. Both are questions about an organisation's own decisions, and both lack a possessive. On the tuning split the same planner recalled *"What availability target applies to the checkout tier?"* and missed *"Why is Node pinned to 20?"*, which has the same shape. The planner is keying on surface cues such as "our", "my", and "we", and a blind split with fewer of them exposed that. This is the largest finding of the run and it is a property of the planner, not of the judge.
+- *"Write a one-line note on our infrastructure tooling for the new-hire guide."*: the planner produced a gap, "infrastructure tooling description", but dense retrieval on it returned the conflicting Pulumi record at 0.46 and not the Terraform decision, which fell below the third rank. The judge correctly rejected the conflicting record. This is the first retrieval-stage miss in any run and it is a limit of the dense-only, top-three-per-query stand-in used here; the production candidate pipeline has lexical and entity channels that this replay does not.
+- *"Can I schedule a load test for Tuesday morning?"*: the planner produced gaps, retrieval found the design-review record, and the tightened judge marked it insufficient with the reason that the answer "need not change based on it alone", while admitting the time-zone record. The earlier prompt would have admitted both. The tightening bought precision on the checklist over-admission case in section 8d and paid for it here with a missed warning. That is the trade the tightening makes, and this run shows it is not free.
+
+**What worked, and is now confirmed on a blind split.** Ordinary injection is zero for the fourth set of ordinary turns in a row, 72 ordinary turns across three splits with no conditional injection. No placebo, misleading, stale, redundant, or unrelated private record has been admitted in any run. Gap decisions were identical across all three repeats on all 38 turns. The code-example-language preference placed ambient produced a Go example on the YAML turn with no retrieval at all, which settles that it belongs in the profile. Empty-gap turns added no latency.
+
+**A caveat that applies to every run so far.** Zero ordinary injection has been achieved entirely by the planner: on every ordinary turn in every split, gap planning returned an empty list, so no ordinary turn has ever reached the judge. The judge's false-admission rate on ordinary turns is therefore unmeasured, and the placebo rejections all come from memory-needed turns. A planner change that fires more often, which the recall misses call for, will put ordinary turns in front of the judge for the first time, and that number must be measured when it does.
+
+**What this means.** The architecture's safety half is established across three splits. Its recall half is bounded by a planner that decides from surface cues, and the two levers tried so far, prompt wording and model choice, have moved it from 2 of 6 to about 5 of 7 and no further. The next change is structural rather than a prompt edit: give the planner a bounded, content-free index of what kinds of facts the store holds for this principal, such as time zone, manager, clusters, tooling decisions, and API limits, so that a question about a rate limit or a version pin can be recognised as possibly organisation-specific without a possessive in the sentence. That change must be written and evaluated on a fourth split, with the judge's ordinary-turn false-admission rate measured alongside, and with the admission prompt's tightening revisited against the warning case above.
+
 ## 9. Sources
 
 - Ross, Mahabaleshwarkar, Suhara. *When2Call: When (not) to Call Tools.* NAACL 2025. https://aclanthology.org/2025.naacl-long.174/
