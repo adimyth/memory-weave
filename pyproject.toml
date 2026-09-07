@@ -15,10 +15,13 @@ memory-weave = "memory_weave.cli:main"
 
 [project.optional-dependencies]
 local-models = [
-  "sentence-transformers>=3.0",
+  "sentence-transformers>=3.0,<5",
+  "protobuf>=4.25",
+  "sentencepiece>=0.2",
 ]
 live = [
   "anthropic>=0.68",
+  "openai>=1.0",
   "python-dotenv>=1.0",
 ]
 
@@ -57,5 +60,10 @@ select = ["E", "F", "I", "UP"]
 [tool.mypy]
 python_version = "3.12"
 strict = true
-files = ["memory_weave"]
+files = ["memory_weave", "examples"]
 warn_unused_configs = true
+
+[[tool.mypy.overrides]]
+# Optional live-run SDKs; installed only with the `live` extra.
+module = ["anthropic.*", "openai.*", "dotenv.*", "sentence_transformers.*"]
+ignore_missing_imports = true

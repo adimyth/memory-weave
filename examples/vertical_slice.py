@@ -12,22 +12,33 @@ from pathlib import Path
 from tempfile import TemporaryDirectory, mkdtemp
 from typing import Any, Literal, Protocol, cast
 
-from memory_weave.config import MemoryWeaveConfig, load_config
+from memory_weave.config import MemoryWeaveConfig, TriggerConfig, load_config
 from memory_weave.host import MemoryHost
 from memory_weave.index.embedder import BgeM3Embedder, Embedder
 from memory_weave.index.vector import VectorIndex
 from memory_weave.ingest import EquivalenceJudge, Ingestor, NLICrossEncoderJudge, SessionBuffer
 from memory_weave.models import Principal, Scope, Turn
-from memory_weave.policy import MEMORY_USE_POLICY, MEMORY_USE_POLICY_VERSION
+from memory_weave.policy import AUTO_MEMORY_NOTICE, AUTO_MEMORY_USE_POLICY, MEMORY_USE_POLICY, MEMORY_USE_POLICY_VERSION
 from memory_weave.retrieve import Retriever
 from memory_weave.store import Store
-from memory_weave.tools import ToolHandlers, tool_schemas
-from memory_weave.util import now
+from memory_weave.tools import ToolHandlers
+from memory_weave.util import normalize_ws, now
 
-_DEFAULT_MODEL = "claude-haiku-4-5-20251001"
+Provider = Literal["anthropic", "openai", "openrouter"]
+
+_DEFAULT_ANTHROPIC_MODEL = "claude-haiku-4-5-20251001"
+_OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 _AGENT_ID = "vertical-slice-agent"
 _USER_ID = "user-aditya"
 _MAX_TOOL_ROUNDS = 8
+# Tool-call arguments count toward the output budget, so keep it well clear of a full memory_write payload.
+_MAX_OUTPUT_TOKENS = 2000
+# Chat Completions function parameters reject these top-level composition keywords.
+_UNSUPPORTED_SCHEMA_KEYWORDS = frozenset({"oneOf", "anyOf", "allOf", "not"})
+
+
+class TruncatedReplyError(RuntimeError):
+    """Raised when a provider stopped at the output limit, which would score a lost tool call as model behaviour."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -96,11 +107,16 @@ class AnthropicToolModel:
 
         response = self._client.messages.create(
             model=self._model,
-            max_tokens=800,
+            max_tokens=_MAX_OUTPUT_TOKENS,
             system=system,
             messages=cast(Any, messages),
             tools=cast(Any, tools),
         )
+        if getattr(response, "stop_reason", None) == "max_tokens":
+            raise TruncatedReplyError(
+                f"{self._model} stopped at the {_MAX_OUTPUT_TOKENS}-token output limit; "
+                "a dropped tool call would be miscounted as a decision not to call one."
+            )
         content: list[dict[str, object]] = []
         tool_uses: list[ToolUse] = []
         for block in response.content:
@@ -111,6 +127,275 @@ class AnthropicToolModel:
                 content.append({"type": "tool_use", "id": block.id, "name": block.name, "input": input_value})
                 tool_uses.append(ToolUse(block.id, block.name, input_value))
         return ModelReply(content, tool_uses)
+
+
+class _OpenAICompatibleToolModel:
+    """Translate the provider-neutral loop into OpenAI Chat Completions function calls."""
+
+    def __init__(self, model: str, client: Any) -> None:
+        self._client = client
+        self._model = model
+        # Chat Completions renamed this parameter; reasoning models reject the old name and older
+        # models reject the new one, so the first call settles which one this model accepts.
+        self._token_parameter: str | None = None
+        # Some reasoning models apply a default effort that Chat Completions refuses to combine with
+        # function tools. The first rejection settles whether this model needs the effort turned off.
+        self._extra_options: dict[str, object] = {}
+
+    def respond(self, *, system: str, messages: list[dict[str, object]], tools: list[dict[str, object]]) -> ModelReply:
+        """Call the OpenAI-compatible endpoint and translate its message and function-call shapes."""
+
+        response = self._create(
+            messages=cast(Any, _openai_messages(system, messages)),
+            tools=cast(Any, _openai_tools(tools)),
+        )
+        choices = getattr(response, "choices", [])
+        if not choices:
+            raise RuntimeError("The OpenAI-compatible endpoint returned no completion choices.")
+        if getattr(choices[0], "finish_reason", None) == "length":
+            raise TruncatedReplyError(
+                f"{self._model} stopped at the {_MAX_OUTPUT_TOKENS}-token output limit; "
+                "a dropped tool call would be miscounted as a decision not to call one."
+            )
+        message = choices[0].message
+        content: list[dict[str, object]] = []
+        text = getattr(message, "content", None)
+        if isinstance(text, str) and text:
+            content.append({"type": "text", "text": text})
+        tool_uses: list[ToolUse] = []
+        for tool_call in getattr(message, "tool_calls", None) or []:
+            function = tool_call.function
+            try:
+                input_value = json.loads(function.arguments)
+            except (TypeError, json.JSONDecodeError) as error:
+                raise RuntimeError(f"Tool call {tool_call.id} has invalid JSON arguments.") from error
+            if not isinstance(input_value, Mapping):
+                raise RuntimeError(f"Tool call {tool_call.id} must have an object as its arguments.")
+            tool_use = ToolUse(str(tool_call.id), str(function.name), dict(input_value))
+            content.append({"type": "tool_use", "id": tool_use.id, "name": tool_use.name, "input": tool_use.input})
+            tool_uses.append(tool_use)
+        return ModelReply(content, tool_uses)
+
+    def _create(self, **request: Any) -> Any:
+        """Send one completion, discovering the parameter shape this model accepts for tool calls."""
+
+        names = [self._token_parameter] if self._token_parameter else ["max_tokens", "max_completion_tokens"]
+        last_error: Exception | None = None
+        for name in names:
+            try:
+                response = self._client.chat.completions.create(
+                    model=self._model, **{name: _MAX_OUTPUT_TOKENS}, **self._extra_options, **request
+                )
+            except Exception as error:  # noqa: BLE001 - provider SDKs raise their own request errors
+                if _is_reasoning_effort_error(error) and "reasoning_effort" not in self._extra_options:
+                    self._extra_options["reasoning_effort"] = "none"
+                    return self._create(**request)
+                if not _is_token_parameter_error(error):
+                    raise
+                last_error = error
+                continue
+            self._token_parameter = name
+            return response
+        raise RuntimeError(
+            f"{self._model} rejected both max_tokens and max_completion_tokens: {last_error}"
+        ) from last_error
+
+
+def _is_token_parameter_error(error: Exception) -> bool:
+    """Return whether a provider rejected the output-token parameter name rather than the request itself."""
+
+    message = str(error).lower()
+    return "max_tokens" in message or "max_completion_tokens" in message
+
+
+def _is_reasoning_effort_error(error: Exception) -> bool:
+    """Return whether a provider refused to combine its default reasoning effort with function tools."""
+
+    return "reasoning_effort" in str(error).lower()
+
+
+class OpenAIToolModel(_OpenAICompatibleToolModel):
+    """OpenAI Chat Completions adapter for the provider-neutral vertical-slice loop."""
+
+    def __init__(self, model: str, *, client: Any | None = None) -> None:
+        resolved_client = client if client is not None else _new_openai_client(_required_environment("OPENAI_API_KEY"))
+        super().__init__(model, resolved_client)
+
+
+class OpenRouterToolModel(_OpenAICompatibleToolModel):
+    """OpenRouter adapter that uses its OpenAI-compatible Chat Completions endpoint."""
+
+    def __init__(self, model: str, *, client: Any | None = None) -> None:
+        resolved_client = client
+        if resolved_client is None:
+            resolved_client = _new_openai_client(
+                _required_environment("OPENROUTER_API_KEY"),
+                base_url=_OPENROUTER_BASE_URL,
+                default_headers=_openrouter_headers(),
+            )
+        super().__init__(
+            model,
+            resolved_client,
+        )
+
+
+def _new_openai_client(
+    api_key: str,
+    *,
+    base_url: str | None = None,
+    default_headers: Mapping[str, str] | None = None,
+) -> Any:
+    """Create an OpenAI SDK client for OpenAI itself or an OpenAI-compatible provider."""
+
+    try:
+        from openai import OpenAI
+    except ImportError as error:
+        raise RuntimeError(
+            "The OpenAI and OpenRouter adapters need the OpenAI SDK. Install it with: uv sync --extra live"
+        ) from error
+    options: dict[str, Any] = {"api_key": api_key}
+    if base_url is not None:
+        options["base_url"] = base_url
+    if default_headers:
+        options["default_headers"] = dict(default_headers)
+    return OpenAI(**options)
+
+
+def _required_environment(name: str) -> str:
+    """Return a required non-empty environment variable without exposing its value in an error."""
+
+    value = os.environ.get(name)
+    if not value:
+        raise RuntimeError(f"Set {name} before running this provider.")
+    return value
+
+
+def _openrouter_headers() -> dict[str, str]:
+    """Return optional OpenRouter attribution headers when the caller configured them."""
+
+    values = {
+        "HTTP-Referer": os.environ.get("OPENROUTER_HTTP_REFERER"),
+        "X-OpenRouter-Title": os.environ.get("OPENROUTER_APP_TITLE"),
+    }
+    return {name: value for name, value in values.items() if value}
+
+
+def _openai_messages(system: str, messages: Sequence[Mapping[str, object]]) -> list[dict[str, object]]:
+    """Convert the loop's text, function-call, and function-result messages into Chat Completions messages."""
+
+    converted: list[dict[str, object]] = [{"role": "system", "content": system}]
+    for message in messages:
+        role = message.get("role")
+        content = message.get("content")
+        if role == "user" and isinstance(content, str):
+            converted.append({"role": "user", "content": content})
+        elif role == "assistant" and isinstance(content, list):
+            converted.append(_openai_assistant_message(content))
+        elif role == "user" and isinstance(content, list):
+            converted.extend(_openai_tool_messages(content))
+        else:
+            raise RuntimeError("The provider-neutral loop produced an unsupported message shape.")
+    return converted
+
+
+def _openai_assistant_message(content: list[object]) -> dict[str, object]:
+    """Convert one standardized assistant response into an OpenAI assistant message."""
+
+    text_parts: list[str] = []
+    tool_calls: list[dict[str, object]] = []
+    for block in content:
+        if not isinstance(block, Mapping):
+            raise RuntimeError("Assistant content must contain objects.")
+        if block.get("type") == "text" and isinstance(block.get("text"), str):
+            text_parts.append(cast(str, block["text"]))
+        elif block.get("type") == "tool_use":
+            identifier = block.get("id")
+            name = block.get("name")
+            input_value = block.get("input")
+            if not isinstance(identifier, str) or not isinstance(name, str) or not isinstance(input_value, Mapping):
+                raise RuntimeError("Tool-use content is missing an id, name, or object input.")
+            tool_calls.append(
+                {
+                    "id": identifier,
+                    "type": "function",
+                    "function": {"name": name, "arguments": json.dumps(dict(input_value), sort_keys=True)},
+                }
+            )
+        else:
+            raise RuntimeError("Assistant content has an unsupported block type.")
+    message: dict[str, object] = {"role": "assistant", "content": "\n".join(text_parts) or None}
+    if tool_calls:
+        message["tool_calls"] = tool_calls
+    return message
+
+
+def _openai_tool_messages(content: list[object]) -> list[dict[str, object]]:
+    """Convert standardized tool-result blocks into one Chat Completions tool message per result."""
+
+    converted: list[dict[str, object]] = []
+    for block in content:
+        if not isinstance(block, Mapping):
+            raise RuntimeError("Tool-result content must contain objects.")
+        identifier = block.get("tool_use_id")
+        result = block.get("content")
+        if block.get("type") != "tool_result" or not isinstance(identifier, str) or not isinstance(result, str):
+            raise RuntimeError("Tool-result content is missing a tool call id or string result.")
+        converted.append({"role": "tool", "tool_call_id": identifier, "content": result})
+    return converted
+
+
+def _openai_tools(tools: Sequence[Mapping[str, object]]) -> list[dict[str, object]]:
+    """Wrap the framework-neutral schemas in the OpenAI Chat Completions function-tool envelope."""
+
+    converted: list[dict[str, object]] = []
+    for tool in tools:
+        name = tool.get("name")
+        description = tool.get("description")
+        parameters = tool.get("input_schema")
+        if not isinstance(name, str) or not isinstance(description, str) or not isinstance(parameters, Mapping):
+            raise RuntimeError("Tool schemas must have a name, description, and input_schema object.")
+        converted.append(
+            {
+                "type": "function",
+                "function": {
+                    "name": name,
+                    "description": description,
+                    "parameters": _openai_parameters(name, dict(parameters)),
+                },
+            }
+        )
+    return converted
+
+
+def _openai_parameters(name: str, schema: dict[str, object]) -> dict[str, object]:
+    """Drop top-level composition keywords that OpenAI-compatible endpoints reject in a function schema.
+
+    Only the copy sent to the provider is relaxed. ``validate_tool_input`` still enforces the published
+    contract on the way in, so a payload that violates a dropped branch rule is rejected by the handler
+    exactly as it would be for any other provider.
+    """
+
+    relaxed = {key: value for key, value in schema.items() if key not in _UNSUPPORTED_SCHEMA_KEYWORDS}
+    dropped = sorted(set(schema) - set(relaxed))
+    if dropped:
+        requirement = _branch_requirement(schema)
+        description = f"Shape constraints enforced by the tool: {requirement}." if requirement else ""
+        relaxed["description"] = " ".join(filter(None, (cast(str, relaxed.get("description", "")), description)))
+    return relaxed
+
+
+def _branch_requirement(schema: Mapping[str, object]) -> str:
+    """Describe the dropped ``oneOf`` branches in prose so the model still learns the accepted shapes."""
+
+    branches = schema.get("oneOf")
+    if not isinstance(branches, list):
+        return ""
+    shapes = [
+        ", ".join(cast(list[str], branch["required"]))
+        for branch in branches
+        if isinstance(branch, Mapping) and isinstance(branch.get("required"), list)
+    ]
+    return "supply exactly one of these field sets: " + "; or ".join(shapes) if shapes else ""
 
 
 @dataclass(slots=True)
@@ -137,6 +422,7 @@ class ToolTrace:
     name: str
     input: dict[str, object]
     result: dict[str, object]
+    trigger: str = "tool"
 
 
 @dataclass(frozen=True, slots=True)
@@ -157,6 +443,9 @@ class RunMetrics:
     ordinary_searched_turns: int
     ordinary_nonempty_search_calls: int
     ordinary_nonempty_search_turns: int
+    host_search_calls: int
+    host_nonempty_calls: int
+    host_ordinary_nonempty_calls: int
 
 
 def build_runtime(
@@ -175,7 +464,9 @@ def build_runtime(
     host.grant(_AGENT_ID, user_scope, read=True, write=True)
     host.provision_user(_USER_ID, aliases=("Aditya", "Aditya Mishra"))
     principal = Principal(_AGENT_ID, _USER_ID, f"vertical-slice-{run}", None)
-    store.create_session(principal.session_id, principal.agent_id, principal.user_id, principal.project_id, now())
+    store.create_session(
+        _session_id_from_principal(principal), principal.agent_id, principal.user_id, principal.project_id, now()
+    )
     session_buffer = SessionBuffer(store)
     vector_index = VectorIndex(config.embedding)
     ingestor = Ingestor(store, vector_index, embedder, judge, session_buffer, config)
@@ -188,19 +479,33 @@ def run_conversation(
     model: ToolModel,
     runtime: VerticalSliceRuntime,
     conversation: Sequence[ConversationTurn] = CONVERSATION,
+    *,
+    trigger_mode: str = "tool_only",
+    config: MemoryWeaveConfig | None = None,
 ) -> list[ToolTrace]:
     """Replay the fixed conversation, persist its transcript, and return every completed tool call in order."""
 
+    settings = (config or load_config()).retrieval.trigger
     messages: list[dict[str, object]] = []
     traces: list[ToolTrace] = []
     next_turn = 1
-    schemas = tool_schemas()
+    schemas = runtime.handlers.tool_schemas(runtime.principal)
+    if trigger_mode == "auto":
+        # LLD 14.1: auto is the control that isolates the host trigger, so the model gets no search tool.
+        schemas = [schema for schema in schemas if schema["name"] != "memory_search"]
+    system_prompt = _system_prompt(trigger_mode)
     for user_turn, spec in enumerate(conversation, start=1):
         runtime.session_buffer.append_turn(Turn(_session_id(runtime), next_turn, "user", spec.text, now()))
         next_turn += 1
         messages.append({"role": "user", "content": spec.text})
+        if trigger_mode in ("auto", "hybrid"):
+            recalled = _host_search(runtime, spec, settings, user_turn)
+            if recalled is not None:
+                trace, block = recalled
+                traces.append(trace)
+                messages.extend(block)
         for _ in range(_MAX_TOOL_ROUNDS):
-            reply = model.respond(system=MEMORY_USE_POLICY, messages=messages, tools=schemas)
+            reply = model.respond(system=system_prompt, messages=messages, tools=schemas)
             messages.append({"role": "assistant", "content": reply.content})
             assistant_text = _reply_text(reply)
             if assistant_text:
@@ -229,13 +534,96 @@ def run_conversation(
     return traces
 
 
+def _host_search(
+    runtime: VerticalSliceRuntime,
+    spec: ConversationTurn,
+    settings: TriggerConfig,
+    user_turn: int,
+) -> tuple[ToolTrace, list[dict[str, object]]] | None:
+    """Issue one host search for a new user turn and render any non-empty result as a recalled-memory block.
+
+    This is the adapter behaviour from LLD 14.1: one search per user turn, never on assistant or tool
+    turns, appended after the existing messages so the prompt prefix is never rewritten.
+    """
+
+    query = normalize_ws(spec.text)
+    if len(query) < settings.auto_min_query_chars:
+        runtime.store.append_event(
+            "trigger.skipped",
+            runtime.principal.agent_id,
+            None,
+            None,
+            {"query_chars": len(query), "minimum": settings.auto_min_query_chars, "turn": user_turn},
+        )
+        return None
+    payload = {"queries": [query], "k": settings.auto_k}
+    result = runtime.handlers.memory_search(runtime.principal, payload, context=_host_context(runtime), trigger="auto")
+    trace = ToolTrace(user_turn, spec.category, "memory_search", payload, result, trigger="auto")
+    if result.get("ok") is not True or not result.get("results"):
+        return trace, []
+    # The recalled block is injected context, not something the user or a tool produced, so it is
+    # deliberately kept out of the transcript. Writing it there would let a later write quote a
+    # recalled memory back as if it were the user's own evidence.
+    call_id = f"recalled-{user_turn}"
+    encoded = _render_recalled(result)
+    return trace, [
+        {
+            "role": "assistant",
+            "content": [
+                {"type": "tool_use", "id": call_id, "name": "memory_search", "input": payload},
+            ],
+        },
+        {"role": "user", "content": [{"type": "tool_result", "tool_use_id": call_id, "content": encoded}]},
+    ]
+
+
+def _system_prompt(trigger_mode: str) -> str:
+    """Return the policy text for the mode, since auto and hybrid must announce unrequested recall."""
+
+    if trigger_mode == "tool_only":
+        return MEMORY_USE_POLICY
+    if trigger_mode == "auto":
+        # The tool is not registered, so the instruction to call it is removed rather than contradicted.
+        base = MEMORY_USE_POLICY.replace(
+            "Before acting on anything that could depend on the user's preferences, earlier decisions, "
+            "or previous sessions, call `memory_search` with one to three specific phrases. ",
+            "",
+        )
+        return f"{base} {AUTO_MEMORY_NOTICE}"
+    return f"{MEMORY_USE_POLICY} {AUTO_MEMORY_USE_POLICY}"
+
+
+def _host_context(runtime: VerticalSliceRuntime) -> str:
+    """Return the last user and assistant turns, which is the context LLD 14.1 gives the rewriter."""
+
+    turns = runtime.session_buffer.turns(_session_id(runtime))
+    recent = [turn for turn in turns if turn.role in ("user", "assistant")][-2:]
+    return "\n".join(f"{turn.role}: {turn.content}" for turn in recent)
+
+
+def _render_recalled(result: Mapping[str, object]) -> str:
+    """Render recalled memory the way an agent would see a tool result, not as a raw payload dump."""
+
+    results = cast(Sequence[Mapping[str, object]], result.get("results", []))
+    lines = ["recalled memory:"]
+    for entry in results:
+        explanation = cast(Mapping[str, object], entry.get("explanation", {}))
+        summary = explanation.get("summary")
+        record = cast(Mapping[str, object], entry.get("record", {}))
+        lines.append(str(summary) if summary else f"[{record.get('id')}] {record.get('content')}")
+    return "\n\n".join(lines)
+
+
 def run_experiment(
     model_factory: Callable[[int], ToolModel],
     runtime_factory: Callable[[Path, int], VerticalSliceRuntime],
     *,
     model_id: str,
+    trigger_mode: str = "tool_only",
+    provider: str = "scripted",
     runs: int = 3,
     database_dir: Path | None = None,
+    config: MemoryWeaveConfig | None = None,
 ) -> dict[str, object]:
     """Run the conversation against fresh stores and aggregate the contract metrics the phase is meant to learn."""
 
@@ -243,27 +631,54 @@ def run_experiment(
         raise ValueError("runs must be positive.")
     if database_dir is None:
         with TemporaryDirectory(prefix="memory-weave-vertical-slice-") as temporary:
-            return _run_experiment(Path(temporary), model_factory, runtime_factory, model_id, runs, artifact_dir=None)
+            return _run_experiment(
+                Path(temporary),
+                model_factory,
+                runtime_factory,
+                model_id,
+                provider,
+                runs,
+                trigger_mode,
+                config,
+                artifact_dir=None,
+            )
     database_dir.mkdir(parents=True, exist_ok=True)
-    attempt_dir = Path(mkdtemp(prefix="attempt-", dir=database_dir))
-    return _run_experiment(attempt_dir, model_factory, runtime_factory, model_id, runs, artifact_dir=attempt_dir)
+    # Name the directory after the mode and start time, so an artifact folder says what produced it.
+    stamp = now().strftime("%Y%m%d-%H%M%S")
+    attempt_dir = Path(mkdtemp(prefix=f"{trigger_mode}-{stamp}-", dir=database_dir))
+    return _run_experiment(
+        attempt_dir,
+        model_factory,
+        runtime_factory,
+        model_id,
+        provider,
+        runs,
+        trigger_mode,
+        config,
+        artifact_dir=attempt_dir,
+    )
 
 
 def run_live(
     *,
-    model_id: str = _DEFAULT_MODEL,
+    provider: Provider | None = None,
+    model_id: str | None = None,
     config_path: Path | None = None,
     runs: int = 3,
     database_dir: Path | None = None,
+    trigger_mode: str | None = None,
 ) -> dict[str, object]:
-    """Run the real Anthropic plus local-model experiment only after the caller explicitly enables live execution."""
+    """Run one provider's hosted model plus local-model experiment only after the caller explicitly enables it."""
 
     _load_local_env()
     if os.environ.get("MEMORY_WEAVE_LIVE") != "1":
         raise RuntimeError(
             "Live execution is disabled. Set MEMORY_WEAVE_LIVE=1 after installing the live dependencies."
         )
+    resolved_provider = _live_provider(provider)
+    resolved_model = _live_model(resolved_provider, model_id)
     config = load_config(config_path)
+    resolved_trigger = trigger_mode or config.retrieval.trigger.mode
 
     def runtime_factory(path: Path, run: int) -> VerticalSliceRuntime:
         return build_runtime(
@@ -271,9 +686,12 @@ def run_live(
         )
 
     return run_experiment(
-        lambda _run: AnthropicToolModel(model_id),
+        lambda _run: _provider_model(resolved_provider, resolved_model),
         runtime_factory,
-        model_id=model_id,
+        model_id=resolved_model,
+        provider=resolved_provider,
+        trigger_mode=resolved_trigger,
+        config=config,
         runs=runs,
         database_dir=database_dir or Path("benchmarks/results/vertical-slice"),
     )
@@ -289,12 +707,45 @@ def _load_local_env() -> None:
     load_dotenv()
 
 
+def _live_provider(provider: Provider | None) -> Provider:
+    """Resolve and validate the requested hosted-model provider without silently changing providers."""
+
+    value = provider or os.environ.get("MEMORY_WEAVE_VERTICAL_SLICE_PROVIDER", "anthropic")
+    if value not in {"anthropic", "openai", "openrouter"}:
+        raise ValueError("provider must be anthropic, openai, or openrouter.")
+    return cast(Provider, value)
+
+
+def _live_model(provider: Provider, model_id: str | None) -> str:
+    """Resolve the model from the call or environment and retain the historical Anthropic default."""
+
+    resolved = model_id or os.environ.get("MEMORY_WEAVE_VERTICAL_SLICE_MODEL")
+    if resolved:
+        return resolved
+    if provider == "anthropic":
+        return _DEFAULT_ANTHROPIC_MODEL
+    raise ValueError(f"Set MEMORY_WEAVE_VERTICAL_SLICE_MODEL or pass --model for the {provider} provider.")
+
+
+def _provider_model(provider: Provider, model_id: str) -> ToolModel:
+    """Construct the requested vendor adapter while leaving the experiment loop vendor-neutral."""
+
+    if provider == "anthropic":
+        return AnthropicToolModel(model_id)
+    if provider == "openai":
+        return OpenAIToolModel(model_id)
+    return OpenRouterToolModel(model_id)
+
+
 def _run_experiment(
     database_dir: Path,
     model_factory: Callable[[int], ToolModel],
     runtime_factory: Callable[[Path, int], VerticalSliceRuntime],
     model_id: str,
+    provider: str,
     runs: int,
+    trigger_mode: str,
+    config: MemoryWeaveConfig | None,
     *,
     artifact_dir: Path | None,
 ) -> dict[str, object]:
@@ -307,7 +758,7 @@ def _run_experiment(
         try:
             runtime = runtime_factory(database_path, run)
             stage = "conversation"
-            traces = run_conversation(model_factory(run), runtime)
+            traces = run_conversation(model_factory(run), runtime, trigger_mode=trigger_mode, config=config)
             stage = "metrics"
             metrics.append(_collect_metrics(runtime.store, runtime.principal, traces, run))
         except Exception as error:
@@ -323,7 +774,20 @@ def _run_experiment(
         finally:
             if runtime is not None:
                 runtime.close()
-    return _aggregate_metrics(model_id, metrics, requested_runs=runs, failures=failures, artifact_dir=artifact_dir)
+    report = _aggregate_metrics(
+        model_id,
+        provider,
+        metrics,
+        requested_runs=runs,
+        failures=failures,
+        artifact_dir=artifact_dir,
+        trigger_mode=trigger_mode,
+    )
+    if artifact_dir is not None:
+        report_path = artifact_dir / "report.json"
+        report["report_path"] = str(report_path)
+        report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return report
 
 
 def _dispatch(handlers: ToolHandlers, principal: Principal, tool_use: ToolUse, context: str) -> dict[str, object]:
@@ -419,6 +883,9 @@ def _collect_metrics(store: Store, principal: Principal, traces: Sequence[ToolTr
         ordinary_searched_turns=search_metrics["ordinary_searched_turns"],
         ordinary_nonempty_search_calls=search_metrics["ordinary_nonempty_search_calls"],
         ordinary_nonempty_search_turns=search_metrics["ordinary_nonempty_search_turns"],
+        host_search_calls=search_metrics["host_search_calls"],
+        host_nonempty_calls=search_metrics["host_nonempty_calls"],
+        host_ordinary_nonempty_calls=search_metrics["host_ordinary_nonempty_calls"],
     )
 
 
@@ -450,9 +917,19 @@ def _search_metrics(store: Store, traces: Sequence[ToolTrace]) -> dict[str, int]
         "memory_applies_search_calls": 0,
         "ordinary_search_calls": 0,
         "ordinary_nonempty_search_calls": 0,
+        "host_search_calls": 0,
+        "host_nonempty_calls": 0,
+        "host_ordinary_nonempty_calls": 0,
     }
     for trace in traces:
         if trace.name != "memory_search" or trace.result.get("ok") is not True:
+            continue
+        if trace.trigger == "auto":
+            counts["host_search_calls"] += 1
+            if trace.result.get("results"):
+                counts["host_nonempty_calls"] += 1
+                if trace.category == "ordinary":
+                    counts["host_ordinary_nonempty_calls"] += 1
             continue
         search_id = trace.result.get("search_id")
         if not isinstance(search_id, str):
@@ -479,11 +956,13 @@ def _search_metrics(store: Store, traces: Sequence[ToolTrace]) -> dict[str, int]
 
 def _aggregate_metrics(
     model_id: str,
+    provider: str,
     metrics: Sequence[RunMetrics],
     *,
     requested_runs: int,
     failures: Sequence[Mapping[str, object]],
     artifact_dir: Path | None,
+    trigger_mode: str,
 ) -> dict[str, object]:
     per_run_attributes = [{"attributes": run.preference_attributes, "run": run.run} for run in metrics]
     contributing_attributes = [run.preference_attributes for run in metrics if run.preference_attributes]
@@ -501,13 +980,20 @@ def _aggregate_metrics(
     ordinary_searched_turns = sum(run.ordinary_searched_turns for run in metrics)
     ordinary_nonempty_search_calls = sum(run.ordinary_nonempty_search_calls for run in metrics)
     ordinary_nonempty_search_turns = sum(run.ordinary_nonempty_search_turns for run in metrics)
+    host_search_calls = sum(run.host_search_calls for run in metrics)
+    host_nonempty_calls = sum(run.host_nonempty_calls for run in metrics)
+    host_ordinary_nonempty_calls = sum(run.host_ordinary_nonempty_calls for run in metrics)
     return {
         "model_id": model_id,
+        "provider": provider,
+        "trigger_mode": trigger_mode,
         "prompt_version": MEMORY_USE_POLICY_VERSION,
+        "finished_at": now().isoformat(),
         "runs": requested_runs,
         "completed_runs": len(metrics),
         "failed_runs": list(failures),
         "artifact_dir": str(artifact_dir) if artifact_dir is not None else None,
+        "report_path": None,
         "writes_attempted": sum(run.write_attempts for run in metrics),
         "write_outcomes": dict(sorted(outcomes.items())),
         "invalid_subject": outcomes["invalid_subject"],
@@ -538,6 +1024,11 @@ def _aggregate_metrics(
         "ordinary_nonempty_search_calls": ordinary_nonempty_search_calls,
         "ordinary_nonempty_search_turns": ordinary_nonempty_search_turns,
         "ordinary_nonempty_turn_rate": (ordinary_nonempty_search_turns / ordinary_turns if ordinary_turns else None),
+        "host_search_calls": host_search_calls,
+        "host_nonempty_calls": host_nonempty_calls,
+        "host_ordinary_nonempty_calls": host_ordinary_nonempty_calls,
+        "host_injection_rate": (host_nonempty_calls / host_search_calls if host_search_calls else None),
+        "host_ordinary_injection_rate": (host_ordinary_nonempty_calls / ordinary_turns if ordinary_turns else None),
         "ordinary_turns": ordinary_turns,
         "per_run": [_run_metrics_payload(run) for run in metrics],
     }
@@ -559,6 +1050,9 @@ def _run_metrics_payload(metrics: RunMetrics) -> dict[str, object]:
         "ordinary_searched_turns": metrics.ordinary_searched_turns,
         "ordinary_nonempty_search_calls": metrics.ordinary_nonempty_search_calls,
         "ordinary_nonempty_search_turns": metrics.ordinary_nonempty_search_turns,
+        "host_search_calls": metrics.host_search_calls,
+        "host_nonempty_calls": metrics.host_nonempty_calls,
+        "host_ordinary_nonempty_calls": metrics.host_ordinary_nonempty_calls,
     }
 
 
@@ -580,10 +1074,12 @@ def parse_args() -> argparse.Namespace:
     """Parse live-run controls without requiring users to edit the example file."""
 
     parser = argparse.ArgumentParser(description="Run the Memory Weave Phase 9a vertical slice.")
-    parser.add_argument("--model", default=os.environ.get("MEMORY_WEAVE_VERTICAL_SLICE_MODEL") or _DEFAULT_MODEL)
+    parser.add_argument("--provider", choices=["anthropic", "openai", "openrouter"])
+    parser.add_argument("--model")
     parser.add_argument("--config", type=Path)
     parser.add_argument("--runs", type=int, default=3)
     parser.add_argument("--database-dir", type=Path)
+    parser.add_argument("--trigger", choices=["tool_only", "auto", "hybrid"])
     return parser.parse_args()
 
 
@@ -591,7 +1087,14 @@ def main() -> int:
     """Run the opt-in live experiment and print one JSON report suitable for the findings note."""
 
     args = parse_args()
-    report = run_live(model_id=args.model, config_path=args.config, runs=args.runs, database_dir=args.database_dir)
+    report = run_live(
+        provider=args.provider,
+        model_id=args.model,
+        config_path=args.config,
+        runs=args.runs,
+        database_dir=args.database_dir,
+        trigger_mode=args.trigger,
+    )
     print(json.dumps(report, indent=2, sort_keys=True))
     return 0
 
