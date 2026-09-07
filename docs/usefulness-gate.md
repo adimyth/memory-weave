@@ -465,6 +465,22 @@ Run on 7 September 2026. After section 8g the promotion rule was frozen as form 
 
 **A caveat that stays.** The split was run twice: once, failed for the ingestion reason above, then again after that fix. The fix touched supersession, not the promotion rule, and the rule's decisions were already correct on every record in the first run. The rerun is disclosed here rather than presented as a first pass.
 
+## 8i. Second-vendor matrix with an open-weight model: portable planner, non-portable judge
+
+Run on 7 September 2026. The hosted second-vendor keys are not configured in this environment, so the second vendor is Meta's open-weight Llama 3.1 8B Instruct, run locally on the laptop with greedy decoding. The tuning split, ambient arm, identical cached drafts, reference checker held at `gpt-5.4`. Each role was swapped in turn while the other stayed at its selected model.
+
+| Configuration | Ordinary injected, of 12 | Ordinary turns where planner fired | Explicit, of 8 | Implicit, of 8 | Unsafe admitted | Usefulness precision | Gap-turn latency p50 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Reference: `gpt-4o` planner, `gpt-5.4` judge | 0 | 0 | 8 | 7 | 0 | 16 of 18 | 3.4 s |
+| Llama 8B planner, `gpt-5.4` judge | 0 | 6 | 8 | 8 | 0 | 17 of 18 | 4.1 s |
+| `gpt-4o` planner, Llama 8B judge | 0 | 0 | 7 | 3 | 0 | 11 of 23 | 13.6 s |
+
+**The planner role is portable to an 8B open-weight model.** Recall matched or beat the reference, nothing unsafe was admitted, and the served injection stayed at zero. The nuance matters: the open-weight planner fired on 6 of 12 ordinary turns where `gpt-4o` fired on none, and every one of those candidate sets was rejected by the `gpt-5.4` judge. In that configuration the judge, not the planner, held the injection line. The planner is portable; the division of labour is not fixed, and a permissive planner needs the judge's adjacency rate measured before it ships.
+
+**The judge role is not portable to an 8B model.** With Llama 8B judging, implicit recall fell to 3 of 8, twelve unrelated or redundant records were admitted across memory-needed turns, the event-bus decision on a scaffold request, the manager's name on a slot proposal, a kubectl command on a Slack message, one call returned malformed output, and each admission call took about 14 seconds. Nothing unsafe was admitted, which repeats the pattern seen with `gpt-5-nano` and `gpt-4o`: weaker judges fail on adjacency and precision, not on harm. Zero ordinary injection here is entirely the `gpt-4o` planner's silence.
+
+**What this establishes about vendor neutrality.** The fitness test ranked a candidate model per role in about half an hour and a few dollars, and gave different answers for the two roles. That is the mechanism the design relies on. The claim itself is only partly earned: the planner role is validated on two vendors, one hosted and one open-weight; the judge role is validated on one frontier vendor, and every non-frontier candidate tried has failed it. A second frontier vendor's model must pass the judge fitness test before the design can claim provider neutrality for that role.
+
 ## 9. Sources
 
 - Ross, Mahabaleshwarkar, Suhara. *When2Call: When (not) to Call Tools.* NAACL 2025. https://aclanthology.org/2025.naacl-long.174/
