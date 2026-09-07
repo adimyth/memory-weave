@@ -1,0 +1,1461 @@
+{
+  "attempt_dir": "benchmarks/results/vertical-slice/hybrid-20260906-reproduction",
+  "frozen_model": "meta-llama/Llama-3.1-8B-Instruct",
+  "samples": 5,
+  "max_new_tokens": 20,
+  "policy_model": "gpt-5.4",
+  "searches": [
+    {
+      "run": "run-1",
+      "category": "memory_applies",
+      "turn": "Show me a small Python example that parses this configuration file.",
+      "reference": "Please provide or paste the configuration file (and its format, if unclear). Then I\u2019ll show a small Python parser.",
+      "rums_entropy_base": 0.6320539216758471,
+      "records": [
+        {
+          "record_id": "01a07766-437f-7555-9fa9-8e3d166f8c44",
+          "attribute": "code_language",
+          "profile": true,
+          "content": "Use Python for code examples unless the user requests another language.",
+          "dense_score": 0.5314234495162964,
+          "rums_entropy": 0.6833388603377534,
+          "rums_utility": -0.05128493866190631,
+          "trace_dl": 0.29231739044189453,
+          "trace_dh": 0.13316881656646729
+        },
+        {
+          "record_id": "01a07766-7363-7810-88ff-d4082318bdce",
+          "attribute": "ownership",
+          "profile": false,
+          "content": "Priya Nair owns the deployment checklist.",
+          "dense_score": 0.472639799118042,
+          "rums_entropy": 0.6732222500856982,
+          "rums_utility": -0.041168328409851185,
+          "trace_dl": 0.22906279563903809,
+          "trace_dh": -0.19300329685211182
+        },
+        {
+          "record_id": "01a07766-7ef8-7916-8a00-75baa3bdfc7e",
+          "attribute": "storage_location",
+          "profile": false,
+          "content": "Priya asked the team to keep the deployment checklist in the repository.",
+          "dense_score": 0.44666728377342224,
+          "rums_entropy": 0.765368562822132,
+          "rums_utility": -0.13331464114628488,
+          "trace_dl": 0.31380414962768555,
+          "trace_dh": -0.10596644878387451
+        },
+        {
+          "record_id": "01a07766-6093-74ff-b04e-0af7b8491976",
+          "attribute": "response_style",
+          "profile": true,
+          "content": "User prefers concise answers that include the important trade-off.",
+          "dense_score": 0.4401492476463318,
+          "rums_entropy": 0.6935565780810885,
+          "rums_utility": -0.06150265640524144,
+          "trace_dl": 0.49506330490112305,
+          "trace_dh": 0.08476781845092773
+        },
+        {
+          "record_id": "01a07766-546c-7c13-a6e1-727456b88cce",
+          "attribute": "working_timezone",
+          "profile": true,
+          "content": "User\u2019s working time zone is Asia/Kolkata.",
+          "dense_score": 0.42921924591064453,
+          "rums_entropy": 0.56692640725214,
+          "rums_utility": 0.06512751442370701,
+          "trace_dl": 0.07289862632751465,
+          "trace_dh": 0.04240691661834717
+        }
+      ],
+      "rums_utility_all": -0.19589009150490255,
+      "trace_dl_all": 0.6378073692321777,
+      "trace_dh_all": 0.08502936363220215,
+      "placebo_utility": -0.004344169479522875,
+      "placebo_dl": 0.18817877769470215,
+      "placebo_dh": -0.03909718990325928,
+      "gate_returned": [],
+      "stage1_queries": [],
+      "stage1_retrieved": []
+    },
+    {
+      "run": "run-1",
+      "category": "memory_applies",
+      "turn": "What time zone should you use when suggesting a meeting for me?",
+      "reference": "Use **Asia/Kolkata (IST)** for meeting suggestions.",
+      "rums_entropy_base": 0.7318456136499298,
+      "records": [
+        {
+          "record_id": "01a07766-546c-7c13-a6e1-727456b88cce",
+          "attribute": "working_timezone",
+          "profile": true,
+          "content": "User\u2019s working time zone is Asia/Kolkata.",
+          "dense_score": 0.6206685304641724,
+          "rums_entropy": 0.5426661104828782,
+          "rums_utility": 0.18917950316705168,
+          "trace_dl": 0.951655387878418,
+          "trace_dh": 0.7032663822174072
+        },
+        {
+          "record_id": "01a07766-6093-74ff-b04e-0af7b8491976",
+          "attribute": "response_style",
+          "profile": true,
+          "content": "User prefers concise answers that include the important trade-off.",
+          "dense_score": 0.4852396249771118,
+          "rums_entropy": 1.183583203185048,
+          "rums_utility": -0.4517375895351181,
+          "trace_dl": 1.150101900100708,
+          "trace_dh": 0.31335723400115967
+        },
+        {
+          "record_id": "01a07766-437f-7555-9fa9-8e3d166f8c44",
+          "attribute": "code_language",
+          "profile": true,
+          "content": "Use Python for code examples unless the user requests another language.",
+          "dense_score": 0.4573514461517334,
+          "rums_entropy": 0.774883857068271,
+          "rums_utility": -0.04303824341834117,
+          "trace_dl": 0.3566780090332031,
+          "trace_dh": 0.29983317852020264
+        },
+        {
+          "record_id": "01a07766-7ef8-7916-8a00-75baa3bdfc7e",
+          "attribute": "storage_location",
+          "profile": false,
+          "content": "Priya asked the team to keep the deployment checklist in the repository.",
+          "dense_score": 0.42579543590545654,
+          "rums_entropy": 0.691623149202278,
+          "rums_utility": 0.04022246444765187,
+          "trace_dl": 0.2870488166809082,
+          "trace_dh": 0.16905128955841064
+        },
+        {
+          "record_id": "01a07766-7363-7810-88ff-d4082318bdce",
+          "attribute": "ownership",
+          "profile": false,
+          "content": "Priya Nair owns the deployment checklist.",
+          "dense_score": 0.3941209316253662,
+          "rums_entropy": 0.7382546469013687,
+          "rums_utility": -0.006409033251438823,
+          "trace_dl": 0.4930384159088135,
+          "trace_dh": 0.13990259170532227
+        }
+      ],
+      "rums_utility_all": 0.2458538732184266,
+      "trace_dl_all": 2.2439982891082764,
+      "trace_dh_all": 0.7743899822235107,
+      "placebo_utility": 0.13650745430099043,
+      "placebo_dl": -0.21869659423828125,
+      "placebo_dh": 0.003848552703857422,
+      "gate_returned": [
+        "01a07766-546c-7c13-a6e1-727456b88cce"
+      ],
+      "stage1_queries": [
+        "user time zone or current location",
+        "preferred working hours for meetings",
+        "organization/team default time zone for scheduling"
+      ],
+      "stage1_retrieved": [
+        {
+          "record_id": "01a07766-546c-7c13-a6e1-727456b88cce",
+          "attribute": "working_timezone",
+          "profile": true,
+          "content": "User\u2019s working time zone is Asia/Kolkata.",
+          "score": 0.753,
+          "query": "user time zone or current location"
+        },
+        {
+          "record_id": "01a07766-6093-74ff-b04e-0af7b8491976",
+          "attribute": "response_style",
+          "profile": true,
+          "content": "User prefers concise answers that include the important trade-off.",
+          "score": 0.508,
+          "query": "preferred working hours for meetings"
+        },
+        {
+          "record_id": "01a07766-437f-7555-9fa9-8e3d166f8c44",
+          "attribute": "code_language",
+          "profile": true,
+          "content": "Use Python for code examples unless the user requests another language.",
+          "score": 0.493,
+          "query": "user time zone or current location"
+        },
+        {
+          "record_id": "01a07766-7363-7810-88ff-d4082318bdce",
+          "attribute": "ownership",
+          "profile": false,
+          "content": "Priya Nair owns the deployment checklist.",
+          "score": 0.422,
+          "query": "organization/team default time zone for scheduling"
+        }
+      ]
+    },
+    {
+      "run": "run-1",
+      "category": "ordinary",
+      "turn": "Should I use tabs or spaces in Python?",
+      "reference": "Use **4 spaces per indentation level** in Python, as specified by **PEP 8**.\n\n**Trade-off:** tabs can work, but mixing tabs and spaces risks `IndentationError` and inconsistent formatting. Most Python tooling assumes spaces.",
+      "rums_entropy_base": 0.4632920469934357,
+      "records": [
+        {
+          "record_id": "01a07766-437f-7555-9fa9-8e3d166f8c44",
+          "attribute": "code_language",
+          "profile": true,
+          "content": "Use Python for code examples unless the user requests another language.",
+          "dense_score": 0.5398485660552979,
+          "rums_entropy": 0.45557243376011963,
+          "rums_utility": 0.007719613233316047,
+          "trace_dl": -0.12451457977294922,
+          "trace_dh": 0.04228711128234863
+        },
+        {
+          "record_id": "01a07766-6093-74ff-b04e-0af7b8491976",
+          "attribute": "response_style",
+          "profile": true,
+          "content": "User prefers concise answers that include the important trade-off.",
+          "dense_score": 0.48079702258110046,
+          "rums_entropy": 0.7303507614839145,
+          "rums_utility": -0.26705871449047885,
+          "trace_dl": 0.5111651420593262,
+          "trace_dh": 0.2882281541824341
+        },
+        {
+          "record_id": "01a07766-546c-7c13-a6e1-727456b88cce",
+          "attribute": "working_timezone",
+          "profile": true,
+          "content": "User\u2019s working time zone is Asia/Kolkata.",
+          "dense_score": 0.42596545815467834,
+          "rums_entropy": 0.4285981335198346,
+          "rums_utility": 0.03469391347360107,
+          "trace_dl": -0.07830452919006348,
+          "trace_dh": -0.04189014434814453
+        },
+        {
+          "record_id": "01a07766-7ef8-7916-8a00-75baa3bdfc7e",
+          "attribute": "storage_location",
+          "profile": false,
+          "content": "Priya asked the team to keep the deployment checklist in the repository.",
+          "dense_score": 0.40836101770401,
+          "rums_entropy": 0.4110398171799778,
+          "rums_utility": 0.052252229813457896,
+          "trace_dl": -0.16370153427124023,
+          "trace_dh": -0.07610940933227539
+        },
+        {
+          "record_id": "01a07766-7363-7810-88ff-d4082318bdce",
+          "attribute": "ownership",
+          "profile": false,
+          "content": "Priya Nair owns the deployment checklist.",
+          "dense_score": 0.3719424903392792,
+          "rums_entropy": 0.4065704336535691,
+          "rums_utility": 0.05672161333986658,
+          "trace_dl": -0.07123327255249023,
+          "trace_dh": -0.06152796745300293
+        }
+      ],
+      "rums_utility_all": -0.07860008022291592,
+      "trace_dl_all": 0.43546223640441895,
+      "trace_dh_all": 0.2937878370285034,
+      "placebo_utility": -0.15395641385609676,
+      "placebo_dl": -0.10465407371520996,
+      "placebo_dh": -0.04776871204376221,
+      "gate_returned": [],
+      "stage1_queries": [],
+      "stage1_retrieved": []
+    },
+    {
+      "run": "run-1",
+      "category": "ordinary",
+      "turn": "How often should a deployment checklist be reviewed?",
+      "reference": "Review it:\n\n- **Before every deployment**\u2014verify it matches the release.\n- **After incidents or process changes**\u2014update it promptly.\n- **On a regular cadence**, typically **quarterly** for active systems.\n\n**Trade-off:** More frequent reviews improve reliability but add maintenance overhead; quarterly plus event-driven reviews is a practical balance.",
+      "rums_entropy_base": 0.487074917631835,
+      "records": [
+        {
+          "record_id": "01a07766-7ef8-7916-8a00-75baa3bdfc7e",
+          "attribute": "storage_location",
+          "profile": false,
+          "content": "Priya asked the team to keep the deployment checklist in the repository.",
+          "dense_score": 0.6355165243148804,
+          "rums_entropy": 0.5325423075748994,
+          "rums_utility": -0.045467389943064374,
+          "trace_dl": -0.13565397262573242,
+          "trace_dh": 0.09267902374267578
+        },
+        {
+          "record_id": "01a07766-7363-7810-88ff-d4082318bdce",
+          "attribute": "ownership",
+          "profile": false,
+          "content": "Priya Nair owns the deployment checklist.",
+          "dense_score": 0.6272143125534058,
+          "rums_entropy": 0.6129480063472965,
+          "rums_utility": -0.1258730887154615,
+          "trace_dl": -0.14365077018737793,
+          "trace_dh": 0.07389676570892334
+        },
+        {
+          "record_id": "01a07766-6093-74ff-b04e-0af7b8491976",
+          "attribute": "response_style",
+          "profile": true,
+          "content": "User prefers concise answers that include the important trade-off.",
+          "dense_score": 0.36599257588386536,
+          "rums_entropy": 0.6596645991966943,
+          "rums_utility": -0.17258968156485927,
+          "trace_dl": 0.3947722911834717,
+          "trace_dh": 0.6471762657165527
+        },
+        {
+          "record_id": "01a07766-437f-7555-9fa9-8e3d166f8c44",
+          "attribute": "code_language",
+          "profile": true,
+          "content": "Use Python for code examples unless the user requests another language.",
+          "dense_score": 0.3374903202056885,
+          "rums_entropy": 0.6959059902683611,
+          "rums_utility": -0.20883107263652606,
+          "trace_dl": -0.04291868209838867,
+          "trace_dh": 0.09844565391540527
+        },
+        {
+          "record_id": "01a07766-546c-7c13-a6e1-727456b88cce",
+          "attribute": "working_timezone",
+          "profile": true,
+          "content": "User\u2019s working time zone is Asia/Kolkata.",
+          "dense_score": 0.3285630941390991,
+          "rums_entropy": 0.548178728421517,
+          "rums_utility": -0.06110381078968202,
+          "trace_dl": -0.029935359954833984,
+          "trace_dh": 0.010804295539855957
+        }
+      ],
+      "rums_utility_all": -0.31612974000343447,
+      "trace_dl_all": 0.30123257637023926,
+      "trace_dh_all": 0.47422778606414795,
+      "placebo_utility": -0.14140116553924592,
+      "placebo_dl": -0.05315876007080078,
+      "placebo_dh": 0.02173483371734619,
+      "gate_returned": [
+        "01a07766-7ef8-7916-8a00-75baa3bdfc7e",
+        "01a07766-7363-7810-88ff-d4082318bdce"
+      ],
+      "stage1_queries": [],
+      "stage1_retrieved": []
+    },
+    {
+      "run": "run-1",
+      "category": "ordinary",
+      "turn": "What is a clear way to format a trade-off in a design note?",
+      "reference": "Use a short **Trade-off** section:\n\n```markdown\n## Trade-off\n\n**Chosen:** PostgreSQL\n\n**Benefits:** Strong consistency, rich queries, mature tooling.\n\n**Costs:** More operational overhead than a managed key-value store.\n\n**Why:** Consistency and query flexibility matter more than minimal operations for this workload.\n```\n\n**Rationale:** Separating benefits, costs, and decision rationale makes the compromise explicit and reviewable.",
+      "rums_entropy_base": 0.48149078707572174,
+      "records": [
+        {
+          "record_id": "01a07766-6093-74ff-b04e-0af7b8491976",
+          "attribute": "response_style",
+          "profile": true,
+          "content": "User prefers concise answers that include the important trade-off.",
+          "dense_score": 0.6086080074310303,
+          "rums_entropy": 0.5993890665880917,
+          "rums_utility": -0.11789827951236992,
+          "trace_dl": 0.020662546157836914,
+          "trace_dh": 0.27641761302948
+        },
+        {
+          "record_id": "01a07766-437f-7555-9fa9-8e3d166f8c44",
+          "attribute": "code_language",
+          "profile": true,
+          "content": "Use Python for code examples unless the user requests another language.",
+          "dense_score": 0.3964978754520416,
+          "rums_entropy": 0.6453379690737802,
+          "rums_utility": -0.16384718199805842,
+          "trace_dl": 0.07808089256286621,
+          "trace_dh": 0.01486825942993164
+        },
+        {
+          "record_id": "01a07766-7363-7810-88ff-d4082318bdce",
+          "attribute": "ownership",
+          "profile": false,
+          "content": "Priya Nair owns the deployment checklist.",
+          "dense_score": 0.3677784204483032,
+          "rums_entropy": 0.4792835957571924,
+          "rums_utility": 0.0022071913185293113,
+          "trace_dl": 0.04608917236328125,
+          "trace_dh": -0.03550601005554199
+        },
+        {
+          "record_id": "01a07766-546c-7c13-a6e1-727456b88cce",
+          "attribute": "working_timezone",
+          "profile": true,
+          "content": "User\u2019s working time zone is Asia/Kolkata.",
+          "dense_score": 0.366066575050354,
+          "rums_entropy": 0.4844250647717871,
+          "rums_utility": -0.002934277696065357,
+          "trace_dl": 0.004945993423461914,
+          "trace_dh": -0.04308140277862549
+        },
+        {
+          "record_id": "01a07766-7ef8-7916-8a00-75baa3bdfc7e",
+          "attribute": "storage_location",
+          "profile": false,
+          "content": "Priya asked the team to keep the deployment checklist in the repository.",
+          "dense_score": 0.3542494475841522,
+          "rums_entropy": 0.4512601872380083,
+          "rums_utility": 0.030230599837713423,
+          "trace_dl": 0.036202430725097656,
+          "trace_dh": -0.023119330406188965
+        }
+      ],
+      "rums_utility_all": -0.11186320840906155,
+      "trace_dl_all": 0.11448407173156738,
+      "trace_dh_all": 0.26009976863861084,
+      "placebo_utility": 0.032352751331986174,
+      "placebo_dl": -0.013860464096069336,
+      "placebo_dh": -0.04764699935913086,
+      "gate_returned": [
+        "01a07766-6093-74ff-b04e-0af7b8491976"
+      ],
+      "stage1_queries": [],
+      "stage1_retrieved": []
+    },
+    {
+      "run": "run-1",
+      "category": "ordinary",
+      "turn": "What are common mistakes when naming a Python virtual environment?",
+      "reference": "Common mistakes:\n\n- **Using a generic name** like `env` in a shared project directory\u2014prefer `.venv`.\n- **Committing it to Git**\u2014add `.venv/` to `.gitignore`.\n- **Including secrets or sensitive data** in the name.\n- **Using spaces or unusual characters**\u2014prefer lowercase letters, digits, `_`, or `-`.\n- **Embedding a stale Python version**\u2014e.g. `venv-python3.10` after upgrading.\n- **Creating it inside the package source tree** where tooling may accidentally scan it.\n\nExample:\n\n```bash\npython -m venv .venv\n```\n\n**Trade-off:** A descriptive name can help when managing multiple environments, while `.venv` is conventional and works well with IDEs and tooling.",
+      "rums_entropy_base": 0.3664271141641075,
+      "records": [
+        {
+          "record_id": "01a07766-437f-7555-9fa9-8e3d166f8c44",
+          "attribute": "code_language",
+          "profile": true,
+          "content": "Use Python for code examples unless the user requests another language.",
+          "dense_score": 0.4529891610145569,
+          "rums_entropy": 0.35858627794713355,
+          "rums_utility": 0.007840836216973956,
+          "trace_dl": 0.00586247444152832,
+          "trace_dh": 0.040248990058898926
+        },
+        {
+          "record_id": "01a07766-7ef8-7916-8a00-75baa3bdfc7e",
+          "attribute": "storage_location",
+          "profile": false,
+          "content": "Priya asked the team to keep the deployment checklist in the repository.",
+          "dense_score": 0.4026646018028259,
+          "rums_entropy": 0.5172275873555555,
+          "rums_utility": -0.15080047319144801,
+          "trace_dl": 0.017123699188232422,
+          "trace_dh": -0.03314673900604248
+        },
+        {
+          "record_id": "01a07766-546c-7c13-a6e1-727456b88cce",
+          "attribute": "working_timezone",
+          "profile": true,
+          "content": "User\u2019s working time zone is Asia/Kolkata.",
+          "dense_score": 0.37688952684402466,
+          "rums_entropy": 0.4896154271823434,
+          "rums_utility": -0.1231883130182359,
+          "trace_dl": 0.02963113784790039,
+          "trace_dh": 0.019253134727478027
+        },
+        {
+          "record_id": "01a07766-7363-7810-88ff-d4082318bdce",
+          "attribute": "ownership",
+          "profile": false,
+          "content": "Priya Nair owns the deployment checklist.",
+          "dense_score": 0.3452911376953125,
+          "rums_entropy": 0.44233271716320816,
+          "rums_utility": -0.07590560299910065,
+          "trace_dl": 0.01830887794494629,
+          "trace_dh": -0.02019035816192627
+        },
+        {
+          "record_id": "01a07766-6093-74ff-b04e-0af7b8491976",
+          "attribute": "response_style",
+          "profile": true,
+          "content": "User prefers concise answers that include the important trade-off.",
+          "dense_score": 0.3427519202232361,
+          "rums_entropy": 0.6764480748215282,
+          "rums_utility": -0.31002096065742074,
+          "trace_dl": 0.0701596736907959,
+          "trace_dh": 0.2788785696029663
+        }
+      ],
+      "rums_utility_all": -0.4422684902773108,
+      "trace_dl_all": 0.1550006866455078,
+      "trace_dh_all": 0.16926205158233643,
+      "placebo_utility": -0.09593002304764014,
+      "placebo_dl": 0.03384709358215332,
+      "placebo_dh": -0.0044901371002197266,
+      "gate_returned": [],
+      "stage1_queries": [],
+      "stage1_retrieved": []
+    },
+    {
+      "run": "run-2",
+      "category": "memory_applies",
+      "turn": "Show me a small Python example that parses this configuration file.",
+      "reference": "Please provide or paste the configuration file (and its format, if unclear). Then I\u2019ll show a small Python parser.",
+      "rums_entropy_base": 0.6320539216758471,
+      "records": [
+        {
+          "record_id": "01a07766-cfc7-7ad9-9602-c74e20fdc2bf",
+          "attribute": "code_language_preference",
+          "profile": true,
+          "content": "Use Python for code examples unless the user explicitly asks for another language.",
+          "dense_score": 0.5184489488601685,
+          "rums_entropy": 0.5704957908186896,
+          "rums_utility": 0.061558130857157445,
+          "trace_dl": 0.2637479305267334,
+          "trace_dh": 0.1513303518295288
+        },
+        {
+          "record_id": "01a07766-f3d9-71b2-892a-1be5c6233a41",
+          "attribute": "deployment_checklist_owner",
+          "profile": false,
+          "content": "Priya Nair owns the deployment checklist.",
+          "dense_score": 0.472639799118042,
+          "rums_entropy": 0.6732222500856982,
+          "rums_utility": -0.041168328409851185,
+          "trace_dl": 0.22906279563903809,
+          "trace_dh": -0.19300329685211182
+        },
+        {
+          "record_id": "01a07766-dc2c-76af-aed7-454c1ac2bf67",
+          "attribute": "working_timezone",
+          "profile": true,
+          "content": "User's working time zone is Asia/Kolkata.",
+          "dense_score": 0.42827144265174866,
+          "rums_entropy": 0.6149194665435426,
+          "rums_utility": 0.017134455132304494,
+          "trace_dl": 0.10406851768493652,
+          "trace_dh": 0.04011738300323486
+        },
+        {
+          "record_id": "01a07767-0118-73a8-8f5b-938e4adb3fa7",
+          "attribute": "deployment_checklist_location",
+          "profile": false,
+          "content": "Priya Nair asked the team to keep the deployment checklist in the repository.",
+          "dense_score": 0.4274691343307495,
+          "rums_entropy": 0.8430972999382357,
+          "rums_utility": -0.21104337826238861,
+          "trace_dl": 0.3175687789916992,
+          "trace_dh": -0.10867786407470703
+        },
+        {
+          "record_id": "01a07766-e784-7281-a0e2-9b0aeaae2150",
+          "attribute": "response_preference",
+          "profile": true,
+          "content": "User prefers concise answers that include the important trade-off; this refines the earlier preference for a short rationale.",
+          "dense_score": 0.42378291487693787,
+          "rums_entropy": 0.6980775455277398,
+          "rums_utility": -0.06602362385189275,
+          "trace_dl": 0.5352969169616699,
+          "trace_dh": 0.06517517566680908
+        }
+      ],
+      "rums_utility_all": -0.3018200229871809,
+      "trace_dl_all": 0.6103315353393555,
+      "trace_dh_all": 0.09141170978546143,
+      "placebo_utility": -0.004344169479522875,
+      "placebo_dl": 0.18817877769470215,
+      "placebo_dh": -0.03909718990325928,
+      "gate_returned": [],
+      "stage1_queries": [],
+      "stage1_retrieved": []
+    },
+    {
+      "run": "run-2",
+      "category": "memory_applies",
+      "turn": "What time zone should you use when suggesting a meeting for me?",
+      "reference": "Use **Asia/Kolkata (IST, UTC+5:30)**.",
+      "rums_entropy_base": 0.7318456136499298,
+      "records": [
+        {
+          "record_id": "01a07766-dc2c-76af-aed7-454c1ac2bf67",
+          "attribute": "working_timezone",
+          "profile": true,
+          "content": "User's working time zone is Asia/Kolkata.",
+          "dense_score": 0.6172295808792114,
+          "rums_entropy": 0.4542726907542078,
+          "rums_utility": 0.27757292289572205,
+          "trace_dl": 0.8752849102020264,
+          "trace_dh": 0.3051432967185974
+        },
+        {
+          "record_id": "01a07766-cfc7-7ad9-9602-c74e20fdc2bf",
+          "attribute": "code_language_preference",
+          "profile": true,
+          "content": "Use Python for code examples unless the user explicitly asks for another language.",
+          "dense_score": 0.4537518620491028,
+          "rums_entropy": 0.8538215521065287,
+          "rums_utility": -0.12197593845659882,
+          "trace_dl": 0.16485142707824707,
+          "trace_dh": 0.13725358247756958
+        },
+        {
+          "record_id": "01a07766-e784-7281-a0e2-9b0aeaae2150",
+          "attribute": "response_preference",
+          "profile": true,
+          "content": "User prefers concise answers that include the important trade-off; this refines the earlier preference for a short rationale.",
+          "dense_score": 0.4210761785507202,
+          "rums_entropy": 1.0864865007474456,
+          "rums_utility": -0.35464088709751573,
+          "trace_dl": 0.929323673248291,
+          "trace_dh": 0.08815789222717285
+        },
+        {
+          "record_id": "01a07767-0118-73a8-8f5b-938e4adb3fa7",
+          "attribute": "deployment_checklist_location",
+          "profile": false,
+          "content": "Priya Nair asked the team to keep the deployment checklist in the repository.",
+          "dense_score": 0.4189140796661377,
+          "rums_entropy": 0.660583548856548,
+          "rums_utility": 0.07126206479338182,
+          "trace_dl": 0.23041558265686035,
+          "trace_dh": -0.006308019161224365
+        },
+        {
+          "record_id": "01a07766-f3d9-71b2-892a-1be5c6233a41",
+          "attribute": "deployment_checklist_owner",
+          "profile": false,
+          "content": "Priya Nair owns the deployment checklist.",
+          "dense_score": 0.3941209316253662,
+          "rums_entropy": 0.7382546469013687,
+          "rums_utility": -0.006409033251438823,
+          "trace_dl": 0.2965517044067383,
+          "trace_dh": -0.03675597906112671
+        }
+      ],
+      "rums_utility_all": 0.032946264891630106,
+      "trace_dl_all": 1.346177577972412,
+      "trace_dh_all": 0.34634625911712646,
+      "placebo_utility": 0.13650745430099043,
+      "placebo_dl": -0.22449016571044922,
+      "placebo_dh": -0.08323454856872559,
+      "gate_returned": [
+        "01a07766-dc2c-76af-aed7-454c1ac2bf67"
+      ],
+      "stage1_queries": [
+        "user time zone or current location",
+        "preferred working hours for meetings",
+        "organization/team default time zone for scheduling"
+      ],
+      "stage1_retrieved": [
+        {
+          "record_id": "01a07766-dc2c-76af-aed7-454c1ac2bf67",
+          "attribute": "working_timezone",
+          "profile": true,
+          "content": "User's working time zone is Asia/Kolkata.",
+          "score": 0.753,
+          "query": "user time zone or current location"
+        },
+        {
+          "record_id": "01a07766-cfc7-7ad9-9602-c74e20fdc2bf",
+          "attribute": "code_language_preference",
+          "profile": true,
+          "content": "Use Python for code examples unless the user explicitly asks for another language.",
+          "score": 0.475,
+          "query": "user time zone or current location"
+        },
+        {
+          "record_id": "01a07766-e784-7281-a0e2-9b0aeaae2150",
+          "attribute": "response_preference",
+          "profile": true,
+          "content": "User prefers concise answers that include the important trade-off; this refines the earlier preference for a short rationale.",
+          "score": 0.445,
+          "query": "preferred working hours for meetings"
+        },
+        {
+          "record_id": "01a07766-f3d9-71b2-892a-1be5c6233a41",
+          "attribute": "deployment_checklist_owner",
+          "profile": false,
+          "content": "Priya Nair owns the deployment checklist.",
+          "score": 0.422,
+          "query": "organization/team default time zone for scheduling"
+        },
+        {
+          "record_id": "01a07767-0118-73a8-8f5b-938e4adb3fa7",
+          "attribute": "deployment_checklist_location",
+          "profile": false,
+          "content": "Priya Nair asked the team to keep the deployment checklist in the repository.",
+          "score": 0.42,
+          "query": "organization/team default time zone for scheduling"
+        }
+      ]
+    },
+    {
+      "run": "run-2",
+      "category": "ordinary",
+      "turn": "Should I use tabs or spaces in Python?",
+      "reference": "Use **4 spaces per indentation level** in Python, not tabs.\n\n**Rationale:** PEP 8 recommends spaces, and mixing tabs and spaces can cause syntax errors or inconsistent indentation.",
+      "rums_entropy_base": 0.4632920469934357,
+      "records": [
+        {
+          "record_id": "01a07766-cfc7-7ad9-9602-c74e20fdc2bf",
+          "attribute": "code_language_preference",
+          "profile": true,
+          "content": "Use Python for code examples unless the user explicitly asks for another language.",
+          "dense_score": 0.5375338792800903,
+          "rums_entropy": 0.437423106917002,
+          "rums_utility": 0.0258689400764337,
+          "trace_dl": -0.20531463623046875,
+          "trace_dh": 0.046814680099487305
+        },
+        {
+          "record_id": "01a07766-e784-7281-a0e2-9b0aeaae2150",
+          "attribute": "response_preference",
+          "profile": true,
+          "content": "User prefers concise answers that include the important trade-off; this refines the earlier preference for a short rationale.",
+          "dense_score": 0.4398338794708252,
+          "rums_entropy": 0.7818351183793221,
+          "rums_utility": -0.3185430713858864,
+          "trace_dl": 0.9541440010070801,
+          "trace_dh": 0.04434335231781006
+        },
+        {
+          "record_id": "01a07766-dc2c-76af-aed7-454c1ac2bf67",
+          "attribute": "working_timezone",
+          "profile": true,
+          "content": "User's working time zone is Asia/Kolkata.",
+          "dense_score": 0.42420145869255066,
+          "rums_entropy": 0.4718204106447229,
+          "rums_utility": -0.00852836365128723,
+          "trace_dl": -0.09823751449584961,
+          "trace_dh": -0.011812329292297363
+        },
+        {
+          "record_id": "01a07767-0118-73a8-8f5b-938e4adb3fa7",
+          "attribute": "deployment_checklist_location",
+          "profile": false,
+          "content": "Priya Nair asked the team to keep the deployment checklist in the repository.",
+          "dense_score": 0.4056757688522339,
+          "rums_entropy": 0.6568428473662464,
+          "rums_utility": -0.19355080037281075,
+          "trace_dl": -0.1733090877532959,
+          "trace_dh": -0.02218526601791382
+        },
+        {
+          "record_id": "01a07766-f3d9-71b2-892a-1be5c6233a41",
+          "attribute": "deployment_checklist_owner",
+          "profile": false,
+          "content": "Priya Nair owns the deployment checklist.",
+          "dense_score": 0.3719424903392792,
+          "rums_entropy": 0.4065704336535691,
+          "rums_utility": 0.05672161333986658,
+          "trace_dl": -0.10731768608093262,
+          "trace_dh": -0.01325899362564087
+        }
+      ],
+      "rums_utility_all": -0.3364091676353859,
+      "trace_dl_all": 0.7441956996917725,
+      "trace_dh_all": 0.01541358232498169,
+      "placebo_utility": -0.15395641385609676,
+      "placebo_dl": -0.05578017234802246,
+      "placebo_dh": -0.03390061855316162,
+      "gate_returned": [],
+      "stage1_queries": [],
+      "stage1_retrieved": []
+    },
+    {
+      "run": "run-2",
+      "category": "ordinary",
+      "turn": "How often should a deployment checklist be reviewed?",
+      "reference": "Review it:\n\n- **Before every deployment**\n- **After any incident or deployment-process change**\n- **At least quarterly** even if nothing changed\n\n**Trade-off:** More frequent reviews improve reliability but add maintenance overhead. For high-risk systems, use monthly or per-release reviews.",
+      "rums_entropy_base": 0.487074917631835,
+      "records": [
+        {
+          "record_id": "01a07766-f3d9-71b2-892a-1be5c6233a41",
+          "attribute": "deployment_checklist_owner",
+          "profile": false,
+          "content": "Priya Nair owns the deployment checklist.",
+          "dense_score": 0.6272143125534058,
+          "rums_entropy": 0.6129480063472965,
+          "rums_utility": -0.1258730887154615,
+          "trace_dl": -0.20321416854858398,
+          "trace_dh": 0.05022156238555908
+        },
+        {
+          "record_id": "01a07767-0118-73a8-8f5b-938e4adb3fa7",
+          "attribute": "deployment_checklist_location",
+          "profile": false,
+          "content": "Priya Nair asked the team to keep the deployment checklist in the repository.",
+          "dense_score": 0.6136715412139893,
+          "rums_entropy": 0.5495585384856713,
+          "rums_utility": -0.06248362085383624,
+          "trace_dl": -0.1330580711364746,
+          "trace_dh": 0.09784483909606934
+        },
+        {
+          "record_id": "01a07766-e784-7281-a0e2-9b0aeaae2150",
+          "attribute": "response_preference",
+          "profile": true,
+          "content": "User prefers concise answers that include the important trade-off; this refines the earlier preference for a short rationale.",
+          "dense_score": 0.3599691390991211,
+          "rums_entropy": 0.8093464712292189,
+          "rums_utility": -0.32227155359738385,
+          "trace_dl": 0.4131598472595215,
+          "trace_dh": 0.5907214879989624
+        },
+        {
+          "record_id": "01a07766-cfc7-7ad9-9602-c74e20fdc2bf",
+          "attribute": "code_language_preference",
+          "profile": true,
+          "content": "Use Python for code examples unless the user explicitly asks for another language.",
+          "dense_score": 0.3332914710044861,
+          "rums_entropy": 0.7143895592638001,
+          "rums_utility": -0.22731464163196508,
+          "trace_dl": 0.0051479339599609375,
+          "trace_dh": 0.14862191677093506
+        },
+        {
+          "record_id": "01a07766-dc2c-76af-aed7-454c1ac2bf67",
+          "attribute": "working_timezone",
+          "profile": true,
+          "content": "User's working time zone is Asia/Kolkata.",
+          "dense_score": 0.32542943954467773,
+          "rums_entropy": 0.6868168057766889,
+          "rums_utility": -0.19974188814485389,
+          "trace_dl": -0.04056978225708008,
+          "trace_dh": 0.01720893383026123
+        }
+      ],
+      "rums_utility_all": -0.16621176132922294,
+      "trace_dl_all": 0.21202802658081055,
+      "trace_dh_all": 0.5026339292526245,
+      "placebo_utility": -0.14140116553924592,
+      "placebo_dl": -0.06344342231750488,
+      "placebo_dh": -0.008431196212768555,
+      "gate_returned": [
+        "01a07766-f3d9-71b2-892a-1be5c6233a41",
+        "01a07767-0118-73a8-8f5b-938e4adb3fa7"
+      ],
+      "stage1_queries": [],
+      "stage1_retrieved": []
+    },
+    {
+      "run": "run-2",
+      "category": "ordinary",
+      "turn": "What is a clear way to format a trade-off in a design note?",
+      "reference": "Use a short **Trade-off** section:\n\n```markdown\n### Trade-off\n\nWe choose [option A] over [option B] because [primary reason].\n\n- **Benefit:** [what improves]\n- **Cost:** [what worsens]\n- **Acceptable because:** [why the cost is tolerable]\n```\n\n**Example:**\n\n```markdown\n### Trade-off\n\nWe choose synchronous processing over queues for simpler operations.\n\n- **Benefit:** Easier debugging and deployment\n- **Cost:** Higher request latency under load\n- **Acceptable because:** Current traffic is low and predictable\n```",
+      "rums_entropy_base": 0.48149078707572174,
+      "records": [
+        {
+          "record_id": "01a07766-e784-7281-a0e2-9b0aeaae2150",
+          "attribute": "response_preference",
+          "profile": true,
+          "content": "User prefers concise answers that include the important trade-off; this refines the earlier preference for a short rationale.",
+          "dense_score": 0.5320904850959778,
+          "rums_entropy": 0.5210562919992798,
+          "rums_utility": -0.03956550492355809,
+          "trace_dl": 0.1195063591003418,
+          "trace_dh": 0.14868533611297607
+        },
+        {
+          "record_id": "01a07766-cfc7-7ad9-9602-c74e20fdc2bf",
+          "attribute": "code_language_preference",
+          "profile": true,
+          "content": "Use Python for code examples unless the user explicitly asks for another language.",
+          "dense_score": 0.3975655436515808,
+          "rums_entropy": 0.529395516401882,
+          "rums_utility": -0.047904729326160245,
+          "trace_dl": 0.07081735134124756,
+          "trace_dh": 0.03382313251495361
+        },
+        {
+          "record_id": "01a07766-f3d9-71b2-892a-1be5c6233a41",
+          "attribute": "deployment_checklist_owner",
+          "profile": false,
+          "content": "Priya Nair owns the deployment checklist.",
+          "dense_score": 0.3677784204483032,
+          "rums_entropy": 0.4792835957571924,
+          "rums_utility": 0.0022071913185293113,
+          "trace_dl": 0.0636669397354126,
+          "trace_dh": 0.003156900405883789
+        },
+        {
+          "record_id": "01a07766-dc2c-76af-aed7-454c1ac2bf67",
+          "attribute": "working_timezone",
+          "profile": true,
+          "content": "User's working time zone is Asia/Kolkata.",
+          "dense_score": 0.3629717230796814,
+          "rums_entropy": 0.3850226270350151,
+          "rums_utility": 0.09646816004070663,
+          "trace_dl": 0.04480552673339844,
+          "trace_dh": 0.010829567909240723
+        },
+        {
+          "record_id": "01a07767-0118-73a8-8f5b-938e4adb3fa7",
+          "attribute": "deployment_checklist_location",
+          "profile": false,
+          "content": "Priya Nair asked the team to keep the deployment checklist in the repository.",
+          "dense_score": 0.34932368993759155,
+          "rums_entropy": 0.4622964234730989,
+          "rums_utility": 0.019194363602622833,
+          "trace_dl": 0.06151866912841797,
+          "trace_dh": 0.015729784965515137
+        }
+      ],
+      "rums_utility_all": -0.009862585534711032,
+      "trace_dl_all": 0.2209721803665161,
+      "trace_dh_all": 0.17192727327346802,
+      "placebo_utility": 0.032352751331986174,
+      "placebo_dl": -0.05050933361053467,
+      "placebo_dh": -0.01111602783203125,
+      "gate_returned": [],
+      "stage1_queries": [],
+      "stage1_retrieved": []
+    },
+    {
+      "run": "run-2",
+      "category": "ordinary",
+      "turn": "What are common mistakes when naming a Python virtual environment?",
+      "reference": "Common mistakes:\n\n- **Using spaces or punctuation:** Prefer `.venv`, `venv`, or `project-env`.\n- **Using a name that conflicts with a package:** Avoid names like `requests`, `numpy`, or `django`.\n- **Naming it after Python itself:** Avoid `python` or `site-packages`.\n- **Committing it to Git:** Add the environment directory to `.gitignore`.\n- **Using inconsistent names across projects:** `.venv` is a common, recognizable convention.\n\n**Trade-off:** A project-specific name can clarify purpose, while `.venv` is simpler and tooling-friendly.",
+      "rums_entropy_base": 0.3664271141641075,
+      "records": [
+        {
+          "record_id": "01a07766-cfc7-7ad9-9602-c74e20fdc2bf",
+          "attribute": "code_language_preference",
+          "profile": true,
+          "content": "Use Python for code examples unless the user explicitly asks for another language.",
+          "dense_score": 0.4500054121017456,
+          "rums_entropy": 0.4294855268111496,
+          "rums_utility": -0.0630584126470421,
+          "trace_dl": -0.00688481330871582,
+          "trace_dh": 0.055106520652770996
+        },
+        {
+          "record_id": "01a07767-0118-73a8-8f5b-938e4adb3fa7",
+          "attribute": "deployment_checklist_location",
+          "profile": false,
+          "content": "Priya Nair asked the team to keep the deployment checklist in the repository.",
+          "dense_score": 0.39995476603507996,
+          "rums_entropy": 0.4114727452317129,
+          "rums_utility": -0.045045631067605396,
+          "trace_dl": 0.019178152084350586,
+          "trace_dh": -0.015301704406738281
+        },
+        {
+          "record_id": "01a07766-dc2c-76af-aed7-454c1ac2bf67",
+          "attribute": "working_timezone",
+          "profile": true,
+          "content": "User's working time zone is Asia/Kolkata.",
+          "dense_score": 0.3743889331817627,
+          "rums_entropy": 0.46675647158673195,
+          "rums_utility": -0.10032935742262444,
+          "trace_dl": 0.042282819747924805,
+          "trace_dh": 0.041194915771484375
+        },
+        {
+          "record_id": "01a07766-f3d9-71b2-892a-1be5c6233a41",
+          "attribute": "deployment_checklist_owner",
+          "profile": false,
+          "content": "Priya Nair owns the deployment checklist.",
+          "dense_score": 0.3452911376953125,
+          "rums_entropy": 0.44233271716320816,
+          "rums_utility": -0.07590560299910065,
+          "trace_dl": 0.027514934539794922,
+          "trace_dh": 0.017845511436462402
+        },
+        {
+          "record_id": "01a07766-e784-7281-a0e2-9b0aeaae2150",
+          "attribute": "response_preference",
+          "profile": true,
+          "content": "User prefers concise answers that include the important trade-off; this refines the earlier preference for a short rationale.",
+          "dense_score": 0.3038652539253235,
+          "rums_entropy": 0.7098189354709757,
+          "rums_utility": -0.34339182130686824,
+          "trace_dl": 0.16913414001464844,
+          "trace_dh": 0.284814715385437
+        }
+      ],
+      "rums_utility_all": -0.3254343372725998,
+      "trace_dl_all": 0.15884637832641602,
+      "trace_dh_all": 0.13675785064697266,
+      "placebo_utility": -0.09593002304764014,
+      "placebo_dl": 0.06503868103027344,
+      "placebo_dh": 0.02142190933227539,
+      "gate_returned": [],
+      "stage1_queries": [],
+      "stage1_retrieved": []
+    },
+    {
+      "run": "run-3",
+      "category": "memory_applies",
+      "turn": "Show me a small Python example that parses this configuration file.",
+      "reference": "Please provide the configuration file contents or specify its format (e.g., JSON, YAML, TOML, INI). I\u2019ll then give a small Python parser example.",
+      "rums_entropy_base": 0.6320539216758471,
+      "records": [
+        {
+          "record_id": "01a07767-8f47-7e68-9695-be582c3d6d0b",
+          "attribute": "deployment_checklist_owner",
+          "profile": false,
+          "content": "Priya Nair, the user's colleague, owns the deployment checklist.",
+          "dense_score": 0.534194827079773,
+          "rums_entropy": 0.7726840249094311,
+          "rums_utility": -0.14063010323358405,
+          "trace_dl": 0.23980748653411865,
+          "trace_dh": -0.1961771845817566
+        },
+        {
+          "record_id": "01a07767-5b4c-75bf-b4ab-7e017728cadf",
+          "attribute": "code_language_preference",
+          "profile": true,
+          "content": "Use Python for code examples unless the user explicitly asks for another language.",
+          "dense_score": 0.5184489488601685,
+          "rums_entropy": 0.5704957908186896,
+          "rums_utility": 0.061558130857157445,
+          "trace_dl": 0.26657164096832275,
+          "trace_dh": 0.11975890398025513
+        },
+        {
+          "record_id": "01a07767-77a2-71d6-a974-6283569d780b",
+          "attribute": "response_preference",
+          "profile": true,
+          "content": "The user prefers concise answers that include the important trade-off.",
+          "dense_score": 0.4504396617412567,
+          "rums_entropy": 0.6525902678014245,
+          "rums_utility": -0.02053634612557742,
+          "trace_dl": 0.39037835597991943,
+          "trace_dh": 0.08581727743148804
+        },
+        {
+          "record_id": "01a07767-9cdf-7dff-adbb-af2a599ace8c",
+          "attribute": "deployment_checklist_location",
+          "profile": false,
+          "content": "Priya asked the team to keep the deployment checklist in the repository.",
+          "dense_score": 0.44666728377342224,
+          "rums_entropy": 0.765368562822132,
+          "rums_utility": -0.13331464114628488,
+          "trace_dl": 0.25047338008880615,
+          "trace_dh": -0.08326023817062378
+        },
+        {
+          "record_id": "01a07767-695f-755a-af81-c7e401b2f2f4",
+          "attribute": "working_timezone",
+          "profile": true,
+          "content": "The user's working time zone is Asia/Kolkata.",
+          "dense_score": 0.441199392080307,
+          "rums_entropy": 0.5606949281359812,
+          "rums_utility": 0.07135899353986586,
+          "trace_dl": 0.19499826431274414,
+          "trace_dh": -6.330013275146484e-05
+        }
+      ],
+      "rums_utility_all": -0.08643230681795555,
+      "trace_dl_all": 0.6027872562408447,
+      "trace_dh_all": 0.046063005924224854,
+      "placebo_utility": -0.004344169479522875,
+      "placebo_dl": 0.18356084823608398,
+      "placebo_dh": -0.0377887487411499,
+      "gate_returned": [],
+      "stage1_queries": [],
+      "stage1_retrieved": []
+    },
+    {
+      "run": "run-3",
+      "category": "memory_applies",
+      "turn": "What time zone should you use when suggesting a meeting for me?",
+      "reference": "Use **Asia/Kolkata (IST, UTC+5:30)** when suggesting meetings.",
+      "rums_entropy_base": 0.7318456136499298,
+      "records": [
+        {
+          "record_id": "01a07767-695f-755a-af81-c7e401b2f2f4",
+          "attribute": "working_timezone",
+          "profile": true,
+          "content": "The user's working time zone is Asia/Kolkata.",
+          "dense_score": 0.6140018701553345,
+          "rums_entropy": 0.3608164801670227,
+          "rums_utility": 0.3710291334829071,
+          "trace_dl": 0.6644747257232666,
+          "trace_dh": 0.34794819355010986
+        },
+        {
+          "record_id": "01a07767-77a2-71d6-a974-6283569d780b",
+          "attribute": "response_preference",
+          "profile": true,
+          "content": "The user prefers concise answers that include the important trade-off.",
+          "dense_score": 0.4852276146411896,
+          "rums_entropy": 0.8965899971325417,
+          "rums_utility": -0.1647443834826119,
+          "trace_dl": 0.7854342460632324,
+          "trace_dh": 0.1122320294380188
+        },
+        {
+          "record_id": "01a07767-5b4c-75bf-b4ab-7e017728cadf",
+          "attribute": "code_language_preference",
+          "profile": true,
+          "content": "Use Python for code examples unless the user explicitly asks for another language.",
+          "dense_score": 0.4537518620491028,
+          "rums_entropy": 0.8538215521065287,
+          "rums_utility": -0.12197593845659882,
+          "trace_dl": 0.17579936981201172,
+          "trace_dh": 0.17319625616073608
+        },
+        {
+          "record_id": "01a07767-8f47-7e68-9695-be582c3d6d0b",
+          "attribute": "deployment_checklist_owner",
+          "profile": false,
+          "content": "Priya Nair, the user's colleague, owns the deployment checklist.",
+          "dense_score": 0.4456945061683655,
+          "rums_entropy": 0.7766010719649967,
+          "rums_utility": -0.04475545831506689,
+          "trace_dl": 0.12520241737365723,
+          "trace_dh": 0.014919936656951904
+        },
+        {
+          "record_id": "01a07767-9cdf-7dff-adbb-af2a599ace8c",
+          "attribute": "deployment_checklist_location",
+          "profile": false,
+          "content": "Priya asked the team to keep the deployment checklist in the repository.",
+          "dense_score": 0.42579543590545654,
+          "rums_entropy": 0.691623149202278,
+          "rums_utility": 0.04022246444765187,
+          "trace_dl": 0.08253049850463867,
+          "trace_dh": 0.10109114646911621
+        }
+      ],
+      "rums_utility_all": 0.09888777228161061,
+      "trace_dl_all": 1.46884286403656,
+      "trace_dh_all": 0.41016656160354614,
+      "placebo_utility": 0.13650745430099043,
+      "placebo_dl": -0.2632443904876709,
+      "placebo_dh": -0.026045143604278564,
+      "gate_returned": [
+        "01a07767-695f-755a-af81-c7e401b2f2f4"
+      ],
+      "stage1_queries": [
+        "user time zone or current location",
+        "preferred working hours for meetings",
+        "organization/team default time zone for scheduling"
+      ],
+      "stage1_retrieved": [
+        {
+          "record_id": "01a07767-695f-755a-af81-c7e401b2f2f4",
+          "attribute": "working_timezone",
+          "profile": true,
+          "content": "The user's working time zone is Asia/Kolkata.",
+          "score": 0.748,
+          "query": "user time zone or current location"
+        },
+        {
+          "record_id": "01a07767-8f47-7e68-9695-be582c3d6d0b",
+          "attribute": "deployment_checklist_owner",
+          "profile": false,
+          "content": "Priya Nair, the user's colleague, owns the deployment checklist.",
+          "score": 0.552,
+          "query": "user time zone or current location"
+        },
+        {
+          "record_id": "01a07767-77a2-71d6-a974-6283569d780b",
+          "attribute": "response_preference",
+          "profile": true,
+          "content": "The user prefers concise answers that include the important trade-off.",
+          "score": 0.507,
+          "query": "preferred working hours for meetings"
+        },
+        {
+          "record_id": "01a07767-5b4c-75bf-b4ab-7e017728cadf",
+          "attribute": "code_language_preference",
+          "profile": true,
+          "content": "Use Python for code examples unless the user explicitly asks for another language.",
+          "score": 0.412,
+          "query": "preferred working hours for meetings"
+        }
+      ]
+    },
+    {
+      "run": "run-3",
+      "category": "ordinary",
+      "turn": "Should I use tabs or spaces in Python?",
+      "reference": "Use **4 spaces** for indentation in Python, as specified by **PEP 8**.\n\n**Trade-off:** Tabs can save keystrokes, but mixing tabs and spaces causes errors and inconsistent formatting. Consistency matters most.",
+      "rums_entropy_base": 0.4632920469934357,
+      "records": [
+        {
+          "record_id": "01a07767-5b4c-75bf-b4ab-7e017728cadf",
+          "attribute": "code_language_preference",
+          "profile": true,
+          "content": "Use Python for code examples unless the user explicitly asks for another language.",
+          "dense_score": 0.5375338792800903,
+          "rums_entropy": 0.437423106917002,
+          "rums_utility": 0.0258689400764337,
+          "trace_dl": -0.197434663772583,
+          "trace_dh": 0.019259929656982422
+        },
+        {
+          "record_id": "01a07767-77a2-71d6-a974-6283569d780b",
+          "attribute": "response_preference",
+          "profile": true,
+          "content": "The user prefers concise answers that include the important trade-off.",
+          "dense_score": 0.4764506220817566,
+          "rums_entropy": 0.7032465805162792,
+          "rums_utility": -0.23995453352284352,
+          "trace_dl": 0.7241402864456177,
+          "trace_dh": 0.20645052194595337
+        },
+        {
+          "record_id": "01a07767-8f47-7e68-9695-be582c3d6d0b",
+          "attribute": "deployment_checklist_owner",
+          "profile": false,
+          "content": "Priya Nair, the user's colleague, owns the deployment checklist.",
+          "dense_score": 0.42634153366088867,
+          "rums_entropy": 0.47731052505756677,
+          "rums_utility": -0.01401847806413109,
+          "trace_dl": -0.18076062202453613,
+          "trace_dh": -0.06348848342895508
+        },
+        {
+          "record_id": "01a07767-695f-755a-af81-c7e401b2f2f4",
+          "attribute": "working_timezone",
+          "profile": true,
+          "content": "The user's working time zone is Asia/Kolkata.",
+          "dense_score": 0.42550772428512573,
+          "rums_entropy": 0.42642072908062917,
+          "rums_utility": 0.03687131791280651,
+          "trace_dl": -0.13045358657836914,
+          "trace_dh": -0.03245723247528076
+        },
+        {
+          "record_id": "01a07767-9cdf-7dff-adbb-af2a599ace8c",
+          "attribute": "deployment_checklist_location",
+          "profile": false,
+          "content": "Priya asked the team to keep the deployment checklist in the repository.",
+          "dense_score": 0.40836101770401,
+          "rums_entropy": 0.4110398171799778,
+          "rums_utility": 0.052252229813457896,
+          "trace_dl": -0.18302655220031738,
+          "trace_dh": -0.05664968490600586
+        }
+      ],
+      "rums_utility_all": -0.07284503125935998,
+      "trace_dl_all": 0.6477711200714111,
+      "trace_dh_all": 0.20784544944763184,
+      "placebo_utility": -0.15395641385609676,
+      "placebo_dl": -0.15919065475463867,
+      "placebo_dh": -0.028039216995239258,
+      "gate_returned": [],
+      "stage1_queries": [],
+      "stage1_retrieved": []
+    },
+    {
+      "run": "run-3",
+      "category": "ordinary",
+      "turn": "How often should a deployment checklist be reviewed?",
+      "reference": "Review it:\n\n- **Before every deployment**\n- **After any incident, rollback, or significant process change**\n- **On a regular cadence**, typically monthly or quarterly\n\n**Trade-off:** Frequent reviews reduce drift but add maintenance overhead. For a frequently changing system, use monthly reviews; for a stable one, quarterly may be sufficient.",
+      "rums_entropy_base": 0.487074917631835,
+      "records": [
+        {
+          "record_id": "01a07767-9cdf-7dff-adbb-af2a599ace8c",
+          "attribute": "deployment_checklist_location",
+          "profile": false,
+          "content": "Priya asked the team to keep the deployment checklist in the repository.",
+          "dense_score": 0.6355165243148804,
+          "rums_entropy": 0.5325423075748994,
+          "rums_utility": -0.045467389943064374,
+          "trace_dl": -0.11250948905944824,
+          "trace_dh": 0.08063554763793945
+        },
+        {
+          "record_id": "01a07767-8f47-7e68-9695-be582c3d6d0b",
+          "attribute": "deployment_checklist_owner",
+          "profile": false,
+          "content": "Priya Nair, the user's colleague, owns the deployment checklist.",
+          "dense_score": 0.6215169429779053,
+          "rums_entropy": 0.4465245703359687,
+          "rums_utility": 0.04055034729586632,
+          "trace_dl": -0.13367342948913574,
+          "trace_dh": 0.04426872730255127
+        },
+        {
+          "record_id": "01a07767-77a2-71d6-a974-6283569d780b",
+          "attribute": "response_preference",
+          "profile": true,
+          "content": "The user prefers concise answers that include the important trade-off.",
+          "dense_score": 0.36380311846733093,
+          "rums_entropy": 0.8101095991989131,
+          "rums_utility": -0.3230346815670781,
+          "trace_dl": 0.1985938549041748,
+          "trace_dh": 0.4633241891860962
+        },
+        {
+          "record_id": "01a07767-5b4c-75bf-b4ab-7e017728cadf",
+          "attribute": "code_language_preference",
+          "profile": true,
+          "content": "Use Python for code examples unless the user explicitly asks for another language.",
+          "dense_score": 0.3332914710044861,
+          "rums_entropy": 0.7143895592638001,
+          "rums_utility": -0.22731464163196508,
+          "trace_dl": -0.016726970672607422,
+          "trace_dh": 0.1528869867324829
+        },
+        {
+          "record_id": "01a07767-695f-755a-af81-c7e401b2f2f4",
+          "attribute": "working_timezone",
+          "profile": true,
+          "content": "The user's working time zone is Asia/Kolkata.",
+          "dense_score": 0.3296482264995575,
+          "rums_entropy": 0.5203717952822626,
+          "rums_utility": -0.0332968776504276,
+          "trace_dl": 0.0004451274871826172,
+          "trace_dh": -0.007355332374572754
+        }
+      ],
+      "rums_utility_all": -0.27164753348059095,
+      "trace_dl_all": 0.1472477912902832,
+      "trace_dh_all": 0.3046135902404785,
+      "placebo_utility": -0.14140116553924592,
+      "placebo_dl": -0.05863785743713379,
+      "placebo_dh": 0.04398465156555176,
+      "gate_returned": [
+        "01a07767-8f47-7e68-9695-be582c3d6d0b",
+        "01a07767-9cdf-7dff-adbb-af2a599ace8c"
+      ],
+      "stage1_queries": [],
+      "stage1_retrieved": []
+    },
+    {
+      "run": "run-3",
+      "category": "ordinary",
+      "turn": "What is a clear way to format a trade-off in a design note?",
+      "reference": "Use a short **Decision / Trade-off** section:\n\n```markdown\n## Decision\n\nUse PostgreSQL for durable job state.\n\n## Trade-off\n\n- **Benefits:** ACID transactions, mature tooling, easy inspection\n- **Costs:** More operational overhead than an embedded store\n- **Why this choice:** Correctness and observability matter more than minimal deployment complexity\n```\n\nThis separates the chosen option from its consequences, making the rationale easy to scan.",
+      "rums_entropy_base": 0.48149078707572174,
+      "records": [
+        {
+          "record_id": "01a07767-77a2-71d6-a974-6283569d780b",
+          "attribute": "response_preference",
+          "profile": true,
+          "content": "The user prefers concise answers that include the important trade-off.",
+          "dense_score": 0.6042378544807434,
+          "rums_entropy": 0.5459996568200267,
+          "rums_utility": -0.06450886974430498,
+          "trace_dl": 0.11655616760253906,
+          "trace_dh": 0.4355916976928711
+        },
+        {
+          "record_id": "01a07767-5b4c-75bf-b4ab-7e017728cadf",
+          "attribute": "code_language_preference",
+          "profile": true,
+          "content": "Use Python for code examples unless the user explicitly asks for another language.",
+          "dense_score": 0.3975655436515808,
+          "rums_entropy": 0.529395516401882,
+          "rums_utility": -0.047904729326160245,
+          "trace_dl": 0.1241912841796875,
+          "trace_dh": 0.027091026306152344
+        },
+        {
+          "record_id": "01a07767-8f47-7e68-9695-be582c3d6d0b",
+          "attribute": "deployment_checklist_owner",
+          "profile": false,
+          "content": "Priya Nair, the user's colleague, owns the deployment checklist.",
+          "dense_score": 0.392305850982666,
+          "rums_entropy": 0.42395251423368113,
+          "rums_utility": 0.057538272842040605,
+          "trace_dl": 0.08076024055480957,
+          "trace_dh": -0.06066882610321045
+        },
+        {
+          "record_id": "01a07767-695f-755a-af81-c7e401b2f2f4",
+          "attribute": "working_timezone",
+          "profile": true,
+          "content": "The user's working time zone is Asia/Kolkata.",
+          "dense_score": 0.36359286308288574,
+          "rums_entropy": 0.4280079805594409,
+          "rums_utility": 0.053482806516280845,
+          "trace_dl": 0.036501407623291016,
+          "trace_dh": -0.07760751247406006
+        },
+        {
+          "record_id": "01a07767-9cdf-7dff-adbb-af2a599ace8c",
+          "attribute": "deployment_checklist_location",
+          "profile": false,
+          "content": "Priya asked the team to keep the deployment checklist in the repository.",
+          "dense_score": 0.3542494475841522,
+          "rums_entropy": 0.4512601872380083,
+          "rums_utility": 0.030230599837713423,
+          "trace_dl": 0.14833331108093262,
+          "trace_dh": -0.024165987968444824
+        }
+      ],
+      "rums_utility_all": -0.0006997470448915633,
+      "trace_dl_all": 0.364016056060791,
+      "trace_dh_all": 0.40921449661254883,
+      "placebo_utility": 0.032352751331986174,
+      "placebo_dl": -0.006682395935058594,
+      "placebo_dh": -0.077117919921875,
+      "gate_returned": [
+        "01a07767-77a2-71d6-a974-6283569d780b"
+      ],
+      "stage1_queries": [],
+      "stage1_retrieved": []
+    },
+    {
+      "run": "run-3",
+      "category": "ordinary",
+      "turn": "What are common mistakes when naming a Python virtual environment?",
+      "reference": "Common mistakes:\n\n- **Using generic names** like `env` or `venv`, which become ambiguous across projects.\n- **Including spaces or special characters**, causing shell and tooling issues.\n- **Using inconsistent names** across documentation and scripts.\n- **Committing the environment directory** to version control; add it to `.gitignore`.\n- **Naming it after a Python version only**, such as `python311`, which hides the project context.\n- **Using a name that conflicts with a package or directory**, potentially confusing imports.\n\nA practical default is `.venv`: standard, project-local, and recognized by many IDEs.\n\n**Trade-off:** A descriptive name like `.venv-projectname` helps when managing multiple environments, but `.venv` integrates more cleanly with common tooling.",
+      "rums_entropy_base": 0.3664271141641075,
+      "records": [
+        {
+          "record_id": "01a07767-5b4c-75bf-b4ab-7e017728cadf",
+          "attribute": "code_language_preference",
+          "profile": true,
+          "content": "Use Python for code examples unless the user explicitly asks for another language.",
+          "dense_score": 0.4500054121017456,
+          "rums_entropy": 0.4294855268111496,
+          "rums_utility": -0.0630584126470421,
+          "trace_dl": -0.018607139587402344,
+          "trace_dh": 0.08797562122344971
+        },
+        {
+          "record_id": "01a07767-8f47-7e68-9695-be582c3d6d0b",
+          "attribute": "deployment_checklist_owner",
+          "profile": false,
+          "content": "Priya Nair, the user's colleague, owns the deployment checklist.",
+          "dense_score": 0.41523104906082153,
+          "rums_entropy": 0.47126460340907217,
+          "rums_utility": -0.10483748924496467,
+          "trace_dl": 0.016358375549316406,
+          "trace_dh": -0.0008027553558349609
+        },
+        {
+          "record_id": "01a07767-9cdf-7dff-adbb-af2a599ace8c",
+          "attribute": "deployment_checklist_location",
+          "profile": false,
+          "content": "Priya asked the team to keep the deployment checklist in the repository.",
+          "dense_score": 0.4026646018028259,
+          "rums_entropy": 0.5172275873555555,
+          "rums_utility": -0.15080047319144801,
+          "trace_dl": 0.0201871395111084,
+          "trace_dh": 0.009377837181091309
+        },
+        {
+          "record_id": "01a07767-695f-755a-af81-c7e401b2f2f4",
+          "attribute": "working_timezone",
+          "profile": true,
+          "content": "The user's working time zone is Asia/Kolkata.",
+          "dense_score": 0.3744998574256897,
+          "rums_entropy": 0.4556636219126631,
+          "rums_utility": -0.08923650774855557,
+          "trace_dl": 0.016699790954589844,
+          "trace_dh": 0.0396343469619751
+        },
+        {
+          "record_id": "01a07767-77a2-71d6-a974-6283569d780b",
+          "attribute": "response_preference",
+          "profile": true,
+          "content": "The user prefers concise answers that include the important trade-off.",
+          "dense_score": 0.3453800678253174,
+          "rums_entropy": 0.7468654861333561,
+          "rums_utility": -0.3804383719692486,
+          "trace_dl": 0.05460190773010254,
+          "trace_dh": 0.33376646041870117
+        }
+      ],
+      "rums_utility_all": -0.38407573409451284,
+      "trace_dl_all": 0.12148785591125488,
+      "trace_dh_all": 0.20877158641815186,
+      "placebo_utility": -0.09593002304764014,
+      "placebo_dl": 0.03475069999694824,
+      "placebo_dh": 0.008592724800109863,
+      "gate_returned": [],
+      "stage1_queries": [],
+      "stage1_retrieved": []
+    }
+  ]
+}

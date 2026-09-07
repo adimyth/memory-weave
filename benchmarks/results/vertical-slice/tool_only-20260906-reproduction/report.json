@@ -1,0 +1,139 @@
+{
+  "artifact_dir": "/Users/adimyth/PersonalProjects/agentic-memory-system/benchmarks/results/vertical-slice/attempt-8_l0o13f",
+  "completed_runs": 3,
+  "direct_claims": 18,
+  "downgrades": 12,
+  "entity_ambiguous": 0,
+  "evidence_not_supported": 6,
+  "evidence_quote_match_rate": 0.6666666666666666,
+  "evidence_quote_matches": 12,
+  "failed_runs": [],
+  "finished_at": "2026-09-06T15:46:15.332145+00:00",
+  "host_injection_rate": null,
+  "host_nonempty_calls": 0,
+  "host_ordinary_injection_rate": 0.0,
+  "host_ordinary_nonempty_calls": 0,
+  "host_search_calls": 0,
+  "invalid_subject": 0,
+  "memory_applies_search_calls": 0,
+  "memory_applies_search_turn_rate": 0.0,
+  "memory_applies_searched_turns": 0,
+  "model_id": "gpt-5.6-luna",
+  "ordinary_nonempty_search_calls": 1,
+  "ordinary_nonempty_search_turns": 1,
+  "ordinary_nonempty_turn_rate": 0.08333333333333333,
+  "ordinary_search_calls": 1,
+  "ordinary_search_turn_rate": 0.08333333333333333,
+  "ordinary_searched_turns": 1,
+  "ordinary_turns": 12,
+  "per_run": [
+    {
+      "direct_claims": 6,
+      "downgrades": 3,
+      "evidence_not_supported": 3,
+      "host_nonempty_calls": 0,
+      "host_ordinary_nonempty_calls": 0,
+      "host_search_calls": 0,
+      "matched_evidence_quotes": 6,
+      "memory_applies_search_calls": 0,
+      "memory_applies_searched_turns": 0,
+      "ordinary_nonempty_search_calls": 0,
+      "ordinary_nonempty_search_turns": 0,
+      "ordinary_search_calls": 0,
+      "ordinary_searched_turns": 0,
+      "preference_attributes": [
+        "response_style"
+      ],
+      "run": 1,
+      "write_attempts": 6,
+      "write_outcomes": {
+        "conflict:01a07764-9cfc-7136-910f-95505700c46a": 1,
+        "created": 5
+      }
+    },
+    {
+      "direct_claims": 6,
+      "downgrades": 6,
+      "evidence_not_supported": 0,
+      "host_nonempty_calls": 0,
+      "host_ordinary_nonempty_calls": 0,
+      "host_search_calls": 0,
+      "matched_evidence_quotes": 0,
+      "memory_applies_search_calls": 0,
+      "memory_applies_searched_turns": 0,
+      "ordinary_nonempty_search_calls": 0,
+      "ordinary_nonempty_search_turns": 0,
+      "ordinary_search_calls": 0,
+      "ordinary_searched_turns": 0,
+      "preference_attributes": [],
+      "run": 2,
+      "write_attempts": 6,
+      "write_outcomes": {
+        "created": 5,
+        "superseded:01a07765-147f-7f8c-9dc7-c8207ebb78c2": 1
+      }
+    },
+    {
+      "direct_claims": 6,
+      "downgrades": 3,
+      "evidence_not_supported": 3,
+      "host_nonempty_calls": 0,
+      "host_ordinary_nonempty_calls": 0,
+      "host_search_calls": 0,
+      "matched_evidence_quotes": 6,
+      "memory_applies_search_calls": 0,
+      "memory_applies_searched_turns": 0,
+      "ordinary_nonempty_search_calls": 1,
+      "ordinary_nonempty_search_turns": 1,
+      "ordinary_search_calls": 1,
+      "ordinary_searched_turns": 1,
+      "preference_attributes": [
+        "response_style_preference"
+      ],
+      "run": 3,
+      "write_attempts": 6,
+      "write_outcomes": {
+        "conflict:01a07765-9e13-7113-8b96-864b59fd4db9": 1,
+        "created": 5
+      }
+    }
+  ],
+  "prompt_version": "v1",
+  "provider": "openai",
+  "report_path": "/Users/adimyth/PersonalProjects/agentic-memory-system/benchmarks/results/vertical-slice/attempt-8_l0o13f/report.json",
+  "runs": 3,
+  "subject_stability": {
+    "per_run_attributes": [
+      {
+        "attributes": [
+          "response_style"
+        ],
+        "run": 1
+      },
+      {
+        "attributes": [],
+        "run": 2
+      },
+      {
+        "attributes": [
+          "response_style_preference"
+        ],
+        "run": 3
+      }
+    ],
+    "runs_with_attributes": 2,
+    "same_preference_attributes": [
+      "response_style",
+      "response_style_preference"
+    ],
+    "stable": false
+  },
+  "trigger_mode": "tool_only",
+  "write_outcomes": {
+    "conflict:01a07764-9cfc-7136-910f-95505700c46a": 1,
+    "conflict:01a07765-9e13-7113-8b96-864b59fd4db9": 1,
+    "created": 15,
+    "superseded:01a07765-147f-7f8c-9dc7-c8207ebb78c2": 1
+  },
+  "writes_attempted": 18
+}

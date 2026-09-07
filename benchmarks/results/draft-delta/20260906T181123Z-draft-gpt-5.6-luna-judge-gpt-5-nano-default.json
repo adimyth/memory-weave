@@ -1,0 +1,1057 @@
+{
+  "attempt_dir": "benchmarks/results/vertical-slice/hybrid-20260906-reproduction",
+  "draft_model": "gpt-5.6-luna",
+  "judge_model": "gpt-5-nano",
+  "judge_reasoning_effort": null,
+  "usage": {
+    "gpt-5.6-luna": {
+      "prompt": 327,
+      "completion": 775
+    },
+    "gpt-5-nano": {
+      "prompt": 7650,
+      "completion": 25892
+    }
+  },
+  "calls": {
+    "gpt-5.6-luna": 6,
+    "gpt-5-nano": 18
+  },
+  "latency_s": {
+    "gpt-5.6-luna": 15.016794207913335,
+    "gpt-5-nano": 133.3564037909964
+  },
+  "searches": [
+    {
+      "run": "run-1",
+      "category": "memory_applies",
+      "turn": "Show me a small Python example that parses this configuration file.",
+      "draft": "Please paste or upload the configuration file (or show a sample). The parsing code depends on its format, such as:\n\n- **INI** \u2192 `configparser`\n- **JSON** \u2192 `json`\n- **YAML** \u2192 `PyYAML`\n- **TOML** \u2192 `tomllib`\n\nFor example, for JSON:\n\n```python\nimport json\n\nwith open(\"config.json\", \"r\", encoding=\"utf-8\") as f:\n    config = json.load(f)\n\nprint(config[\"database\"][\"host\"])\n```\n\nShare the file contents and I\u2019ll provide an exact example.",
+      "verdicts": [
+        {
+          "record_id": "01a07766-437f-7555-9fa9-8e3d166f8c44",
+          "verdict": "unchanged",
+          "reason": "The draft uses Python and the user asked for Python.",
+          "profile": true,
+          "attribute": "code_language",
+          "content": "Use Python for code examples unless the user requests another language.",
+          "dense_score": 0.5314234495162964
+        },
+        {
+          "record_id": "01a07766-7363-7810-88ff-d4082318bdce",
+          "verdict": "unchanged",
+          "reason": "Irrelevant to the code example.",
+          "profile": false,
+          "attribute": "ownership",
+          "content": "Priya Nair owns the deployment checklist.",
+          "dense_score": 0.472639799118042
+        },
+        {
+          "record_id": "01a07766-7ef8-7916-8a00-75baa3bdfc7e",
+          "verdict": "unchanged",
+          "reason": "Policy about repository irrelevant to the code snippet.",
+          "profile": false,
+          "attribute": "storage_location",
+          "content": "Priya asked the team to keep the deployment checklist in the repository.",
+          "dense_score": 0.44666728377342224
+        },
+        {
+          "record_id": "01a07766-6093-74ff-b04e-0af7b8491976",
+          "verdict": "fills_gap",
+          "reason": "User prefers concise answers; the draft could be trimmed.",
+          "profile": true,
+          "attribute": "response_style",
+          "content": "User prefers concise answers that include the important trade-off.",
+          "dense_score": 0.4401492476463318
+        },
+        {
+          "record_id": "01a07766-546c-7c13-a6e1-727456b88cce",
+          "verdict": "unchanged",
+          "reason": "Time zone does not affect Python example.",
+          "profile": true,
+          "attribute": "working_timezone",
+          "content": "User\u2019s working time zone is Asia/Kolkata.",
+          "dense_score": 0.42921924591064453
+        }
+      ],
+      "gate_returned": [],
+      "judge_admitted": [
+        "01a07766-6093-74ff-b04e-0af7b8491976"
+      ]
+    },
+    {
+      "run": "run-1",
+      "category": "memory_applies",
+      "turn": "What time zone should you use when suggesting a meeting for me?",
+      "draft": "Which time zone are you in, or what city should I use?",
+      "verdicts": [
+        {
+          "record_id": "01a07766-546c-7c13-a6e1-727456b88cce",
+          "verdict": "fills_gap",
+          "reason": "Draft does not use the known time zone Asia/Kolkata.",
+          "profile": true,
+          "attribute": "working_timezone",
+          "content": "User\u2019s working time zone is Asia/Kolkata.",
+          "dense_score": 0.6206685304641724
+        },
+        {
+          "record_id": "01a07766-6093-74ff-b04e-0af7b8491976",
+          "verdict": "fills_gap",
+          "reason": "User prefers concise answers, so the draft should give a direct time-zone recommendation.",
+          "profile": true,
+          "attribute": "response_style",
+          "content": "User prefers concise answers that include the important trade-off.",
+          "dense_score": 0.4852396249771118
+        },
+        {
+          "record_id": "01a07766-437f-7555-9fa9-8e3d166f8c44",
+          "verdict": "unchanged",
+          "reason": "Python usage fact does not affect time zone guidance.",
+          "profile": true,
+          "attribute": "code_language",
+          "content": "Use Python for code examples unless the user requests another language.",
+          "dense_score": 0.4573514461517334
+        },
+        {
+          "record_id": "01a07766-7ef8-7916-8a00-75baa3bdfc7e",
+          "verdict": "unchanged",
+          "reason": "Deployment checklist details are irrelevant to time zone guidance.",
+          "profile": false,
+          "attribute": "storage_location",
+          "content": "Priya asked the team to keep the deployment checklist in the repository.",
+          "dense_score": 0.42579543590545654
+        },
+        {
+          "record_id": "01a07766-7363-7810-88ff-d4082318bdce",
+          "verdict": "unchanged",
+          "reason": "Ownership of the deployment checklist is irrelevant to this question.",
+          "profile": false,
+          "attribute": "ownership",
+          "content": "Priya Nair owns the deployment checklist.",
+          "dense_score": 0.3941209316253662
+        }
+      ],
+      "gate_returned": [
+        "01a07766-546c-7c13-a6e1-727456b88cce"
+      ],
+      "judge_admitted": [
+        "01a07766-546c-7c13-a6e1-727456b88cce",
+        "01a07766-6093-74ff-b04e-0af7b8491976"
+      ]
+    },
+    {
+      "run": "run-1",
+      "category": "ordinary",
+      "turn": "Should I use tabs or spaces in Python?",
+      "draft": "Use **4 spaces per indentation level** in Python. This is the standard recommended by **PEP 8** and avoids compatibility issues.\n\nAvoid mixing tabs and spaces; Python 3 raises an error when indentation is inconsistent. Most editors can be configured to insert spaces when you press Tab.",
+      "verdicts": [
+        {
+          "record_id": "01a07766-437f-7555-9fa9-8e3d166f8c44",
+          "verdict": "unchanged",
+          "reason": "language choice does not affect Python indentation guidance.",
+          "profile": true,
+          "attribute": "code_language",
+          "content": "Use Python for code examples unless the user requests another language.",
+          "dense_score": 0.5398485660552979
+        },
+        {
+          "record_id": "01a07766-6093-74ff-b04e-0af7b8491976",
+          "verdict": "unchanged",
+          "reason": "the draft remains concise and aligns with the user's preference for important trade-offs.",
+          "profile": true,
+          "attribute": "response_style",
+          "content": "User prefers concise answers that include the important trade-off.",
+          "dense_score": 0.48079702258110046
+        },
+        {
+          "record_id": "01a07766-546c-7c13-a6e1-727456b88cce",
+          "verdict": "unchanged",
+          "reason": "time zone has no bearing on indentation advice.",
+          "profile": true,
+          "attribute": "working_timezone",
+          "content": "User\u2019s working time zone is Asia/Kolkata.",
+          "dense_score": 0.42596545815467834
+        },
+        {
+          "record_id": "01a07766-7ef8-7916-8a00-75baa3bdfc7e",
+          "verdict": "unchanged",
+          "reason": "deployment checklist topic is unrelated to Python indentation guidance.",
+          "profile": false,
+          "attribute": "storage_location",
+          "content": "Priya asked the team to keep the deployment checklist in the repository.",
+          "dense_score": 0.40836101770401
+        },
+        {
+          "record_id": "01a07766-7363-7810-88ff-d4082318bdce",
+          "verdict": "unchanged",
+          "reason": "ownership of deployment checklist is unrelated to Python indentation guidance.",
+          "profile": false,
+          "attribute": "ownership",
+          "content": "Priya Nair owns the deployment checklist.",
+          "dense_score": 0.3719424903392792
+        }
+      ],
+      "gate_returned": [],
+      "judge_admitted": []
+    },
+    {
+      "run": "run-1",
+      "category": "ordinary",
+      "turn": "How often should a deployment checklist be reviewed?",
+      "draft": "Review the deployment checklist:\n\n- **Before every deployment** to ensure it\u2019s complete and relevant.\n- **After incidents, failed deployments, or major changes** to capture lessons learned.\n- **On a regular schedule**, typically **quarterly**; high-risk or rapidly changing environments may warrant monthly reviews.\n\nAssign an owner and track checklist revisions so outdated steps are removed and new controls are documented.",
+      "verdicts": [
+        {
+          "record_id": "01a07766-7ef8-7916-8a00-75baa3bdfc7e",
+          "verdict": "fills_gap",
+          "reason": "Its repository storage location could affect how revisions are tracked and communicated.",
+          "profile": false,
+          "attribute": "storage_location",
+          "content": "Priya asked the team to keep the deployment checklist in the repository.",
+          "dense_score": 0.6355165243148804
+        },
+        {
+          "record_id": "01a07766-7363-7810-88ff-d4082318bdce",
+          "verdict": "unchanged",
+          "reason": "Ownership name does not change the requested frequency guidance.",
+          "profile": false,
+          "attribute": "ownership",
+          "content": "Priya Nair owns the deployment checklist.",
+          "dense_score": 0.6272143125534058
+        },
+        {
+          "record_id": "01a07766-6093-74ff-b04e-0af7b8491976",
+          "verdict": "fills_gap",
+          "reason": "User preference for concise wording and explicit trade-offs could alter how the answer is phrased.",
+          "profile": true,
+          "attribute": "response_style",
+          "content": "User prefers concise answers that include the important trade-off.",
+          "dense_score": 0.36599257588386536
+        },
+        {
+          "record_id": "01a07766-437f-7555-9fa9-8e3d166f8c44",
+          "verdict": "unchanged",
+          "reason": "Code-language preference does not affect deployment-checklist frequency guidance.",
+          "profile": true,
+          "attribute": "code_language",
+          "content": "Use Python for code examples unless the user requests another language.",
+          "dense_score": 0.3374903202056885
+        },
+        {
+          "record_id": "01a07766-546c-7c13-a6e1-727456b88cce",
+          "verdict": "unchanged",
+          "reason": "Time zone does not change the recommended cadence.",
+          "profile": true,
+          "attribute": "working_timezone",
+          "content": "User\u2019s working time zone is Asia/Kolkata.",
+          "dense_score": 0.3285630941390991
+        }
+      ],
+      "gate_returned": [
+        "01a07766-7ef8-7916-8a00-75baa3bdfc7e",
+        "01a07766-7363-7810-88ff-d4082318bdce"
+      ],
+      "judge_admitted": [
+        "01a07766-7ef8-7916-8a00-75baa3bdfc7e",
+        "01a07766-6093-74ff-b04e-0af7b8491976"
+      ]
+    },
+    {
+      "run": "run-1",
+      "category": "ordinary",
+      "turn": "What is a clear way to format a trade-off in a design note?",
+      "draft": "A clear trade-off format is:\n\n**Decision:** What you chose  \n**Options considered:** Briefly list alternatives  \n**Criteria:** Cost, performance, complexity, risk, etc.  \n**Trade-off:** What you gain and give up with each option  \n**Rationale:** Why the chosen option best fits the priorities  \n**Consequences:** Expected impacts, limitations, and follow-up actions\n\nExample:\n\n> **Decision:** Use PostgreSQL instead of DynamoDB.  \n> **Trade-off:** PostgreSQL provides stronger relational queries and consistency, but requires more operational management and may scale less simply.  \n> **Rationale:** Our workload depends on joins and transactional integrity.  \n> **Consequence:** We must provision backups, monitoring, and scaling procedures.",
+      "verdicts": [
+        {
+          "record_id": "01a07766-6093-74ff-b04e-0af7b8491976",
+          "verdict": "unchanged",
+          "reason": "The draft format already aims for conciseness and highlights key trade-offs.",
+          "profile": true,
+          "attribute": "response_style",
+          "content": "User prefers concise answers that include the important trade-off.",
+          "dense_score": 0.6086080074310303
+        },
+        {
+          "record_id": "01a07766-437f-7555-9fa9-8e3d166f8c44",
+          "verdict": "unchanged",
+          "reason": "No code examples are involved, so language choice is irrelevant here.",
+          "profile": true,
+          "attribute": "code_language",
+          "content": "Use Python for code examples unless the user requests another language.",
+          "dense_score": 0.3964978754520416
+        },
+        {
+          "record_id": "01a07766-7363-7810-88ff-d4082318bdce",
+          "verdict": "unchanged",
+          "reason": "Ownership of a deployment checklist does not affect the suggested trade-off formatting.",
+          "profile": false,
+          "attribute": "ownership",
+          "content": "Priya Nair owns the deployment checklist.",
+          "dense_score": 0.3677784204483032
+        },
+        {
+          "record_id": "01a07766-546c-7c13-a6e1-727456b88cce",
+          "verdict": "unchanged",
+          "reason": "Time zone is not pertinent to how to format a design trade-off.",
+          "profile": true,
+          "attribute": "working_timezone",
+          "content": "User\u2019s working time zone is Asia/Kolkata.",
+          "dense_score": 0.366066575050354
+        },
+        {
+          "record_id": "01a07766-7ef8-7916-8a00-75baa3bdfc7e",
+          "verdict": "unchanged",
+          "reason": "Deployment checklist location in repo does not change the trade-off note structure.",
+          "profile": false,
+          "attribute": "storage_location",
+          "content": "Priya asked the team to keep the deployment checklist in the repository.",
+          "dense_score": 0.3542494475841522
+        }
+      ],
+      "gate_returned": [
+        "01a07766-6093-74ff-b04e-0af7b8491976"
+      ],
+      "judge_admitted": []
+    },
+    {
+      "run": "run-1",
+      "category": "ordinary",
+      "turn": "What are common mistakes when naming a Python virtual environment?",
+      "draft": "Common mistakes include:\n\n- **Using spaces or special characters** that complicate shell commands, e.g. `my env`; prefer `myenv` or `.venv`.\n- **Using confusing names** like `python`, `env`, or `venv` when managing multiple projects; use project-specific names when helpful.\n- **Inconsistent naming** across projects, making activation and scripts harder to remember.\n- **Creating the environment in the wrong directory**, instead of the project root or a standard location.\n- **Naming it after a Python version only**, such as `3.11`, without indicating the project.\n- **Accidentally committing the environment** to version control; add `.venv/` or `venv/` to `.gitignore`.\n- **Assuming the name changes the Python version**; it only identifies the environment.",
+      "verdicts": [
+        {
+          "record_id": "01a07766-437f-7555-9fa9-8e3d166f8c44",
+          "verdict": "unchanged",
+          "reason": "Code-example language preference does not affect env-name guidance.",
+          "profile": true,
+          "attribute": "code_language",
+          "content": "Use Python for code examples unless the user requests another language.",
+          "dense_score": 0.4529891610145569
+        },
+        {
+          "record_id": "01a07766-7ef8-7916-8a00-75baa3bdfc7e",
+          "verdict": "unchanged",
+          "reason": "Checklist location doesn't affect how to name virtual environments.",
+          "profile": false,
+          "attribute": "storage_location",
+          "content": "Priya asked the team to keep the deployment checklist in the repository.",
+          "dense_score": 0.4026646018028259
+        },
+        {
+          "record_id": "01a07766-546c-7c13-a6e1-727456b88cce",
+          "verdict": "unchanged",
+          "reason": "Time zone has no bearing on naming conventions.",
+          "profile": true,
+          "attribute": "working_timezone",
+          "content": "User\u2019s working time zone is Asia/Kolkata.",
+          "dense_score": 0.37688952684402466
+        },
+        {
+          "record_id": "01a07766-7363-7810-88ff-d4082318bdce",
+          "verdict": "unchanged",
+          "reason": "Ownership of a deployment checklist does not change naming advice.",
+          "profile": false,
+          "attribute": "ownership",
+          "content": "Priya Nair owns the deployment checklist.",
+          "dense_score": 0.3452911376953125
+        },
+        {
+          "record_id": "01a07766-6093-74ff-b04e-0af7b8491976",
+          "verdict": "unchanged",
+          "reason": "Preferring conciseness does not change the substantive content.",
+          "profile": true,
+          "attribute": "response_style",
+          "content": "User prefers concise answers that include the important trade-off.",
+          "dense_score": 0.3427519202232361
+        }
+      ],
+      "gate_returned": [],
+      "judge_admitted": []
+    },
+    {
+      "run": "run-2",
+      "category": "memory_applies",
+      "turn": "Show me a small Python example that parses this configuration file.",
+      "draft": "Please paste or upload the configuration file (or show a sample). The parsing code depends on its format, such as:\n\n- **INI** \u2192 `configparser`\n- **JSON** \u2192 `json`\n- **YAML** \u2192 `PyYAML`\n- **TOML** \u2192 `tomllib`\n\nFor example, for JSON:\n\n```python\nimport json\n\nwith open(\"config.json\", \"r\", encoding=\"utf-8\") as f:\n    config = json.load(f)\n\nprint(config[\"database\"][\"host\"])\n```\n\nShare the file contents and I\u2019ll provide an exact example.",
+      "verdicts": [
+        {
+          "record_id": "01a07766-cfc7-7ad9-9602-c74e20fdc2bf",
+          "verdict": "unchanged",
+          "reason": "Consistent with user request to use Python; no change.",
+          "profile": true,
+          "attribute": "code_language_preference",
+          "content": "Use Python for code examples unless the user explicitly asks for another language.",
+          "dense_score": 0.5184489488601685
+        },
+        {
+          "record_id": "01a07766-f3d9-71b2-892a-1be5c6233a41",
+          "verdict": "unchanged",
+          "reason": "Irrelevant personal ownership; does not affect answer.",
+          "profile": false,
+          "attribute": "deployment_checklist_owner",
+          "content": "Priya Nair owns the deployment checklist.",
+          "dense_score": 0.472639799118042
+        },
+        {
+          "record_id": "01a07766-dc2c-76af-aed7-454c1ac2bf67",
+          "verdict": "unchanged",
+          "reason": "Time zone irrelevant to parsing config file.",
+          "profile": true,
+          "attribute": "working_timezone",
+          "content": "User's working time zone is Asia/Kolkata.",
+          "dense_score": 0.42827144265174866
+        },
+        {
+          "record_id": "01a07767-0118-73a8-8f5b-938e4adb3fa7",
+          "verdict": "unchanged",
+          "reason": "Checklist location irrelevant to code example.",
+          "profile": false,
+          "attribute": "deployment_checklist_location",
+          "content": "Priya Nair asked the team to keep the deployment checklist in the repository.",
+          "dense_score": 0.4274691343307495
+        },
+        {
+          "record_id": "01a07766-e784-7281-a0e2-9b0aeaae2150",
+          "verdict": "fills_gap",
+          "reason": "User prefers concise answers; should be a shorter, more focused example.",
+          "profile": true,
+          "attribute": "response_preference",
+          "content": "User prefers concise answers that include the important trade-off; this refines the earlier preference for a short rationale.",
+          "dense_score": 0.42378291487693787
+        }
+      ],
+      "gate_returned": [],
+      "judge_admitted": [
+        "01a07766-e784-7281-a0e2-9b0aeaae2150"
+      ]
+    },
+    {
+      "run": "run-2",
+      "category": "memory_applies",
+      "turn": "What time zone should you use when suggesting a meeting for me?",
+      "draft": "Which time zone are you in, or what city should I use?",
+      "verdicts": [
+        {
+          "record_id": "01a07766-dc2c-76af-aed7-454c1ac2bf67",
+          "verdict": "fills_gap",
+          "reason": "Provides a concrete time zone the answer should use.",
+          "profile": true,
+          "attribute": "working_timezone",
+          "content": "User's working time zone is Asia/Kolkata.",
+          "dense_score": 0.6172295808792114
+        },
+        {
+          "record_id": "01a07766-cfc7-7ad9-9602-c74e20fdc2bf",
+          "verdict": "unchanged",
+          "reason": "Unrelated to the time zone content.",
+          "profile": true,
+          "attribute": "code_language_preference",
+          "content": "Use Python for code examples unless the user explicitly asks for another language.",
+          "dense_score": 0.4537518620491028
+        },
+        {
+          "record_id": "01a07766-e784-7281-a0e2-9b0aeaae2150",
+          "verdict": "unchanged",
+          "reason": "Affects wording/conciseness but not the core time zone content.",
+          "profile": true,
+          "attribute": "response_preference",
+          "content": "User prefers concise answers that include the important trade-off; this refines the earlier preference for a short rationale.",
+          "dense_score": 0.4210761785507202
+        },
+        {
+          "record_id": "01a07767-0118-73a8-8f5b-938e4adb3fa7",
+          "verdict": "unchanged",
+          "reason": "Unrelated to meeting time zone.",
+          "profile": false,
+          "attribute": "deployment_checklist_location",
+          "content": "Priya Nair asked the team to keep the deployment checklist in the repository.",
+          "dense_score": 0.4189140796661377
+        },
+        {
+          "record_id": "01a07766-f3d9-71b2-892a-1be5c6233a41",
+          "verdict": "unchanged",
+          "reason": "Unrelated to meeting time zone.",
+          "profile": false,
+          "attribute": "deployment_checklist_owner",
+          "content": "Priya Nair owns the deployment checklist.",
+          "dense_score": 0.3941209316253662
+        }
+      ],
+      "gate_returned": [
+        "01a07766-dc2c-76af-aed7-454c1ac2bf67"
+      ],
+      "judge_admitted": [
+        "01a07766-dc2c-76af-aed7-454c1ac2bf67"
+      ]
+    },
+    {
+      "run": "run-2",
+      "category": "ordinary",
+      "turn": "Should I use tabs or spaces in Python?",
+      "draft": "Use **4 spaces per indentation level** in Python. This is the standard recommended by **PEP 8** and avoids compatibility issues.\n\nAvoid mixing tabs and spaces; Python 3 raises an error when indentation is inconsistent. Most editors can be configured to insert spaces when you press Tab.",
+      "verdicts": [
+        {
+          "record_id": "01a07766-cfc7-7ad9-9602-c74e20fdc2bf",
+          "verdict": "unchanged",
+          "reason": "The fact is about using Python for code examples; the draft stays in Python and doesn't involve other languages.",
+          "profile": true,
+          "attribute": "code_language_preference",
+          "content": "Use Python for code examples unless the user explicitly asks for another language.",
+          "dense_score": 0.5375338792800903
+        },
+        {
+          "record_id": "01a07766-e784-7281-a0e2-9b0aeaae2150",
+          "verdict": "unchanged",
+          "reason": "The draft is concise and covers the key trade-off between spaces and tabs.",
+          "profile": true,
+          "attribute": "response_preference",
+          "content": "User prefers concise answers that include the important trade-off; this refines the earlier preference for a short rationale.",
+          "dense_score": 0.4398338794708252
+        },
+        {
+          "record_id": "01a07766-dc2c-76af-aed7-454c1ac2bf67",
+          "verdict": "unchanged",
+          "reason": "Time zone is irrelevant to Python indentation guidance.",
+          "profile": true,
+          "attribute": "working_timezone",
+          "content": "User's working time zone is Asia/Kolkata.",
+          "dense_score": 0.42420145869255066
+        },
+        {
+          "record_id": "01a07767-0118-73a8-8f5b-938e4adb3fa7",
+          "verdict": "unchanged",
+          "reason": "Deployment checklist topic is unrelated to Python indentation guidance.",
+          "profile": false,
+          "attribute": "deployment_checklist_location",
+          "content": "Priya Nair asked the team to keep the deployment checklist in the repository.",
+          "dense_score": 0.4056757688522339
+        },
+        {
+          "record_id": "01a07766-f3d9-71b2-892a-1be5c6233a41",
+          "verdict": "unchanged",
+          "reason": "Ownership of deployment checklist is irrelevant to the Python indentation guidance.",
+          "profile": false,
+          "attribute": "deployment_checklist_owner",
+          "content": "Priya Nair owns the deployment checklist.",
+          "dense_score": 0.3719424903392792
+        }
+      ],
+      "gate_returned": [],
+      "judge_admitted": []
+    },
+    {
+      "run": "run-2",
+      "category": "ordinary",
+      "turn": "How often should a deployment checklist be reviewed?",
+      "draft": "Review the deployment checklist:\n\n- **Before every deployment** to ensure it\u2019s complete and relevant.\n- **After incidents, failed deployments, or major changes** to capture lessons learned.\n- **On a regular schedule**, typically **quarterly**; high-risk or rapidly changing environments may warrant monthly reviews.\n\nAssign an owner and track checklist revisions so outdated steps are removed and new controls are documented.",
+      "verdicts": [
+        {
+          "record_id": "01a07766-f3d9-71b2-892a-1be5c6233a41",
+          "verdict": "unchanged",
+          "reason": "Owner identity does not affect the suggested review frequency.",
+          "profile": false,
+          "attribute": "deployment_checklist_owner",
+          "content": "Priya Nair owns the deployment checklist.",
+          "dense_score": 0.6272143125534058
+        },
+        {
+          "record_id": "01a07767-0118-73a8-8f5b-938e4adb3fa7",
+          "verdict": "unchanged",
+          "reason": "Repository location doesn't change how often to review.",
+          "profile": false,
+          "attribute": "deployment_checklist_location",
+          "content": "Priya Nair asked the team to keep the deployment checklist in the repository.",
+          "dense_score": 0.6136715412139893
+        },
+        {
+          "record_id": "01a07766-e784-7281-a0e2-9b0aeaae2150",
+          "verdict": "unchanged",
+          "reason": "Conciseness preference doesn't alter the frequency guidance.",
+          "profile": true,
+          "attribute": "response_preference",
+          "content": "User prefers concise answers that include the important trade-off; this refines the earlier preference for a short rationale.",
+          "dense_score": 0.3599691390991211
+        },
+        {
+          "record_id": "01a07766-cfc7-7ad9-9602-c74e20fdc2bf",
+          "verdict": "unchanged",
+          "reason": "Languages for code don't affect review cadence.",
+          "profile": true,
+          "attribute": "code_language_preference",
+          "content": "Use Python for code examples unless the user explicitly asks for another language.",
+          "dense_score": 0.3332914710044861
+        },
+        {
+          "record_id": "01a07766-dc2c-76af-aed7-454c1ac2bf67",
+          "verdict": "unchanged",
+          "reason": "Time zone doesn't change how often to review.",
+          "profile": true,
+          "attribute": "working_timezone",
+          "content": "User's working time zone is Asia/Kolkata.",
+          "dense_score": 0.32542943954467773
+        }
+      ],
+      "gate_returned": [
+        "01a07766-f3d9-71b2-892a-1be5c6233a41",
+        "01a07767-0118-73a8-8f5b-938e4adb3fa7"
+      ],
+      "judge_admitted": []
+    },
+    {
+      "run": "run-2",
+      "category": "ordinary",
+      "turn": "What is a clear way to format a trade-off in a design note?",
+      "draft": "A clear trade-off format is:\n\n**Decision:** What you chose  \n**Options considered:** Briefly list alternatives  \n**Criteria:** Cost, performance, complexity, risk, etc.  \n**Trade-off:** What you gain and give up with each option  \n**Rationale:** Why the chosen option best fits the priorities  \n**Consequences:** Expected impacts, limitations, and follow-up actions\n\nExample:\n\n> **Decision:** Use PostgreSQL instead of DynamoDB.  \n> **Trade-off:** PostgreSQL provides stronger relational queries and consistency, but requires more operational management and may scale less simply.  \n> **Rationale:** Our workload depends on joins and transactional integrity.  \n> **Consequence:** We must provision backups, monitoring, and scaling procedures.",
+      "verdicts": [
+        {
+          "record_id": "01a07766-e784-7281-a0e2-9b0aeaae2150",
+          "verdict": "unchanged",
+          "reason": "The draft\u2019s concise, structured format already prioritizes key trade-offs, so the user preference aligns with it and does not require changes.",
+          "profile": true,
+          "attribute": "response_preference",
+          "content": "User prefers concise answers that include the important trade-off; this refines the earlier preference for a short rationale.",
+          "dense_score": 0.5320904850959778
+        },
+        {
+          "record_id": "01a07766-cfc7-7ad9-9602-c74e20fdc2bf",
+          "verdict": "unchanged",
+          "reason": "No code examples are specified or required in this guidance, so the Python default does not alter the answer.",
+          "profile": true,
+          "attribute": "code_language_preference",
+          "content": "Use Python for code examples unless the user explicitly asks for another language.",
+          "dense_score": 0.3975655436515808
+        },
+        {
+          "record_id": "01a07766-f3d9-71b2-892a-1be5c6233a41",
+          "verdict": "unchanged",
+          "reason": "Ownership of the deployment checklist does not affect how to format a design-note trade-off.",
+          "profile": false,
+          "attribute": "deployment_checklist_owner",
+          "content": "Priya Nair owns the deployment checklist.",
+          "dense_score": 0.3677784204483032
+        },
+        {
+          "record_id": "01a07766-dc2c-76af-aed7-454c1ac2bf67",
+          "verdict": "unchanged",
+          "reason": "Time zone is irrelevant to the recommended design-note format.",
+          "profile": true,
+          "attribute": "working_timezone",
+          "content": "User's working time zone is Asia/Kolkata.",
+          "dense_score": 0.3629717230796814
+        },
+        {
+          "record_id": "01a07767-0118-73a8-8f5b-938e4adb3fa7",
+          "verdict": "unchanged",
+          "reason": "Checklist repository policy does not affect the trade-off formatting guidance.",
+          "profile": false,
+          "attribute": "deployment_checklist_location",
+          "content": "Priya Nair asked the team to keep the deployment checklist in the repository.",
+          "dense_score": 0.34932368993759155
+        }
+      ],
+      "gate_returned": [],
+      "judge_admitted": []
+    },
+    {
+      "run": "run-2",
+      "category": "ordinary",
+      "turn": "What are common mistakes when naming a Python virtual environment?",
+      "draft": "Common mistakes include:\n\n- **Using spaces or special characters** that complicate shell commands, e.g. `my env`; prefer `myenv` or `.venv`.\n- **Using confusing names** like `python`, `env`, or `venv` when managing multiple projects; use project-specific names when helpful.\n- **Inconsistent naming** across projects, making activation and scripts harder to remember.\n- **Creating the environment in the wrong directory**, instead of the project root or a standard location.\n- **Naming it after a Python version only**, such as `3.11`, without indicating the project.\n- **Accidentally committing the environment** to version control; add `.venv/` or `venv/` to `.gitignore`.\n- **Assuming the name changes the Python version**; it only identifies the environment.",
+      "verdicts": [
+        {
+          "record_id": "01a07766-cfc7-7ad9-9602-c74e20fdc2bf",
+          "verdict": "unchanged",
+          "reason": "The fact does not affect VE naming guidance or its presentation.",
+          "profile": true,
+          "attribute": "code_language_preference",
+          "content": "Use Python for code examples unless the user explicitly asks for another language.",
+          "dense_score": 0.4500054121017456
+        },
+        {
+          "record_id": "01a07767-0118-73a8-8f5b-938e4adb3fa7",
+          "verdict": "unchanged",
+          "reason": "Checklist ownership is irrelevant to VEnv naming guidance.",
+          "profile": false,
+          "attribute": "deployment_checklist_location",
+          "content": "Priya Nair asked the team to keep the deployment checklist in the repository.",
+          "dense_score": 0.39995476603507996
+        },
+        {
+          "record_id": "01a07766-dc2c-76af-aed7-454c1ac2bf67",
+          "verdict": "unchanged",
+          "reason": "Time zone has no bearing on how to name virtual environments.",
+          "profile": true,
+          "attribute": "working_timezone",
+          "content": "User's working time zone is Asia/Kolkata.",
+          "dense_score": 0.3743889331817627
+        },
+        {
+          "record_id": "01a07766-f3d9-71b2-892a-1be5c6233a41",
+          "verdict": "unchanged",
+          "reason": "Ownership of a checklist does not change VE naming advice.",
+          "profile": false,
+          "attribute": "deployment_checklist_owner",
+          "content": "Priya Nair owns the deployment checklist.",
+          "dense_score": 0.3452911376953125
+        },
+        {
+          "record_id": "01a07766-e784-7281-a0e2-9b0aeaae2150",
+          "verdict": "fills_gap",
+          "reason": "User preference for concise, trade-off focused answers suggests the draft should be tighter.",
+          "profile": true,
+          "attribute": "response_preference",
+          "content": "User prefers concise answers that include the important trade-off; this refines the earlier preference for a short rationale.",
+          "dense_score": 0.3038652539253235
+        }
+      ],
+      "gate_returned": [],
+      "judge_admitted": [
+        "01a07766-e784-7281-a0e2-9b0aeaae2150"
+      ]
+    },
+    {
+      "run": "run-3",
+      "category": "memory_applies",
+      "turn": "Show me a small Python example that parses this configuration file.",
+      "draft": "Please paste or upload the configuration file (or show a sample). The parsing code depends on its format, such as:\n\n- **INI** \u2192 `configparser`\n- **JSON** \u2192 `json`\n- **YAML** \u2192 `PyYAML`\n- **TOML** \u2192 `tomllib`\n\nFor example, for JSON:\n\n```python\nimport json\n\nwith open(\"config.json\", \"r\", encoding=\"utf-8\") as f:\n    config = json.load(f)\n\nprint(config[\"database\"][\"host\"])\n```\n\nShare the file contents and I\u2019ll provide an exact example.",
+      "verdicts": [
+        {
+          "record_id": "01a07767-8f47-7e68-9695-be582c3d6d0b",
+          "verdict": "unchanged",
+          "reason": "Irrelevant to a Python config-parsing example.",
+          "profile": false,
+          "attribute": "deployment_checklist_owner",
+          "content": "Priya Nair, the user's colleague, owns the deployment checklist.",
+          "dense_score": 0.534194827079773
+        },
+        {
+          "record_id": "01a07767-5b4c-75bf-b4ab-7e017728cadf",
+          "verdict": "unchanged",
+          "reason": "Matches the user preference to use Python for code examples.",
+          "profile": true,
+          "attribute": "code_language_preference",
+          "content": "Use Python for code examples unless the user explicitly asks for another language.",
+          "dense_score": 0.5184489488601685
+        },
+        {
+          "record_id": "01a07767-77a2-71d6-a974-6283569d780b",
+          "verdict": "fills_gap",
+          "reason": "The user prefers concise answers, so the draft should be shorter.",
+          "profile": true,
+          "attribute": "response_preference",
+          "content": "The user prefers concise answers that include the important trade-off.",
+          "dense_score": 0.4504396617412567
+        },
+        {
+          "record_id": "01a07767-9cdf-7dff-adbb-af2a599ace8c",
+          "verdict": "unchanged",
+          "reason": "Irrelevant to the code example.",
+          "profile": false,
+          "attribute": "deployment_checklist_location",
+          "content": "Priya asked the team to keep the deployment checklist in the repository.",
+          "dense_score": 0.44666728377342224
+        },
+        {
+          "record_id": "01a07767-695f-755a-af81-c7e401b2f2f4",
+          "verdict": "unchanged",
+          "reason": "Time zone does not affect config parsing code.",
+          "profile": true,
+          "attribute": "working_timezone",
+          "content": "The user's working time zone is Asia/Kolkata.",
+          "dense_score": 0.441199392080307
+        }
+      ],
+      "gate_returned": [],
+      "judge_admitted": [
+        "01a07767-77a2-71d6-a974-6283569d780b"
+      ]
+    },
+    {
+      "run": "run-3",
+      "category": "memory_applies",
+      "turn": "What time zone should you use when suggesting a meeting for me?",
+      "draft": "Which time zone are you in, or what city should I use?",
+      "verdicts": [
+        {
+          "record_id": "01a07767-695f-755a-af81-c7e401b2f2f4",
+          "verdict": "fills_gap",
+          "reason": "Knowledge of the user\u2019s time zone lets us answer with a specific zone.",
+          "profile": true,
+          "attribute": "working_timezone",
+          "content": "The user's working time zone is Asia/Kolkata.",
+          "dense_score": 0.6140018701553345
+        },
+        {
+          "record_id": "01a07767-77a2-71d6-a974-6283569d780b",
+          "verdict": "fills_gap",
+          "reason": "User prefers concise answers with trade-offs, which would change the phrasing.",
+          "profile": true,
+          "attribute": "response_preference",
+          "content": "The user prefers concise answers that include the important trade-off.",
+          "dense_score": 0.4852276146411896
+        },
+        {
+          "record_id": "01a07767-5b4c-75bf-b4ab-7e017728cadf",
+          "verdict": "unchanged",
+          "reason": "Not related to time zone guidance.",
+          "profile": true,
+          "attribute": "code_language_preference",
+          "content": "Use Python for code examples unless the user explicitly asks for another language.",
+          "dense_score": 0.4537518620491028
+        },
+        {
+          "record_id": "01a07767-8f47-7e68-9695-be582c3d6d0b",
+          "verdict": "unchanged",
+          "reason": "Not related to meeting time zone; about deployment checklist.",
+          "profile": false,
+          "attribute": "deployment_checklist_owner",
+          "content": "Priya Nair, the user's colleague, owns the deployment checklist.",
+          "dense_score": 0.4456945061683655
+        },
+        {
+          "record_id": "01a07767-9cdf-7dff-adbb-af2a599ace8c",
+          "verdict": "unchanged",
+          "reason": "Not related to time zone guidance.",
+          "profile": false,
+          "attribute": "deployment_checklist_location",
+          "content": "Priya asked the team to keep the deployment checklist in the repository.",
+          "dense_score": 0.42579543590545654
+        }
+      ],
+      "gate_returned": [
+        "01a07767-695f-755a-af81-c7e401b2f2f4"
+      ],
+      "judge_admitted": [
+        "01a07767-695f-755a-af81-c7e401b2f2f4",
+        "01a07767-77a2-71d6-a974-6283569d780b"
+      ]
+    },
+    {
+      "run": "run-3",
+      "category": "ordinary",
+      "turn": "Should I use tabs or spaces in Python?",
+      "draft": "Use **4 spaces per indentation level** in Python. This is the standard recommended by **PEP 8** and avoids compatibility issues.\n\nAvoid mixing tabs and spaces; Python 3 raises an error when indentation is inconsistent. Most editors can be configured to insert spaces when you press Tab.",
+      "verdicts": [
+        {
+          "record_id": "01a07767-5b4c-75bf-b4ab-7e017728cadf",
+          "verdict": "unchanged",
+          "reason": "This fact doesn't affect indentation guidance in Python.",
+          "profile": true,
+          "attribute": "code_language_preference",
+          "content": "Use Python for code examples unless the user explicitly asks for another language.",
+          "dense_score": 0.5375338792800903
+        },
+        {
+          "record_id": "01a07767-77a2-71d6-a974-6283569d780b",
+          "verdict": "unchanged",
+          "reason": "Draft remains concise; user preference supports this style.",
+          "profile": true,
+          "attribute": "response_preference",
+          "content": "The user prefers concise answers that include the important trade-off.",
+          "dense_score": 0.4764506220817566
+        },
+        {
+          "record_id": "01a07767-8f47-7e68-9695-be582c3d6d0b",
+          "verdict": "unchanged",
+          "reason": "Colleague's deployment checklist ownership is unrelated.",
+          "profile": false,
+          "attribute": "deployment_checklist_owner",
+          "content": "Priya Nair, the user's colleague, owns the deployment checklist.",
+          "dense_score": 0.42634153366088867
+        },
+        {
+          "record_id": "01a07767-695f-755a-af81-c7e401b2f2f4",
+          "verdict": "unchanged",
+          "reason": "Time zone does not impact Python indentation advice.",
+          "profile": true,
+          "attribute": "working_timezone",
+          "content": "The user's working time zone is Asia/Kolkata.",
+          "dense_score": 0.42550772428512573
+        },
+        {
+          "record_id": "01a07767-9cdf-7dff-adbb-af2a599ace8c",
+          "verdict": "unchanged",
+          "reason": "Checklist placement in repo is unrelated to indentation guidance.",
+          "profile": false,
+          "attribute": "deployment_checklist_location",
+          "content": "Priya asked the team to keep the deployment checklist in the repository.",
+          "dense_score": 0.40836101770401
+        }
+      ],
+      "gate_returned": [],
+      "judge_admitted": []
+    },
+    {
+      "run": "run-3",
+      "category": "ordinary",
+      "turn": "How often should a deployment checklist be reviewed?",
+      "draft": "Review the deployment checklist:\n\n- **Before every deployment** to ensure it\u2019s complete and relevant.\n- **After incidents, failed deployments, or major changes** to capture lessons learned.\n- **On a regular schedule**, typically **quarterly**; high-risk or rapidly changing environments may warrant monthly reviews.\n\nAssign an owner and track checklist revisions so outdated steps are removed and new controls are documented.",
+      "verdicts": [
+        {
+          "record_id": "01a07767-9cdf-7dff-adbb-af2a599ace8c",
+          "verdict": "fills_gap",
+          "reason": "Draft doesn\u2019t specify storing the checklist in the repository, which this fact would require.",
+          "profile": false,
+          "attribute": "deployment_checklist_location",
+          "content": "Priya asked the team to keep the deployment checklist in the repository.",
+          "dense_score": 0.6355165243148804
+        },
+        {
+          "record_id": "01a07767-8f47-7e68-9695-be582c3d6d0b",
+          "verdict": "fills_gap",
+          "reason": "Draft doesn\u2019t name the owner; knowing Priya Nair owns it would change the wording to attribute ownership.",
+          "profile": false,
+          "attribute": "deployment_checklist_owner",
+          "content": "Priya Nair, the user's colleague, owns the deployment checklist.",
+          "dense_score": 0.6215169429779053
+        },
+        {
+          "record_id": "01a07767-77a2-71d6-a974-6283569d780b",
+          "verdict": "unchanged",
+          "reason": "Draft already emphasizes concise guidance and trade-offs in cadence.",
+          "profile": true,
+          "attribute": "response_preference",
+          "content": "The user prefers concise answers that include the important trade-off.",
+          "dense_score": 0.36380311846733093
+        },
+        {
+          "record_id": "01a07767-5b4c-75bf-b4ab-7e017728cadf",
+          "verdict": "unchanged",
+          "reason": "Python usage preference is not relevant to the checklist guidance.",
+          "profile": true,
+          "attribute": "code_language_preference",
+          "content": "Use Python for code examples unless the user explicitly asks for another language.",
+          "dense_score": 0.3332914710044861
+        },
+        {
+          "record_id": "01a07767-695f-755a-af81-c7e401b2f2f4",
+          "verdict": "unchanged",
+          "reason": "Time zone information isn\u2019t used in the draft guidance.",
+          "profile": true,
+          "attribute": "working_timezone",
+          "content": "The user's working time zone is Asia/Kolkata.",
+          "dense_score": 0.3296482264995575
+        }
+      ],
+      "gate_returned": [
+        "01a07767-8f47-7e68-9695-be582c3d6d0b",
+        "01a07767-9cdf-7dff-adbb-af2a599ace8c"
+      ],
+      "judge_admitted": [
+        "01a07767-9cdf-7dff-adbb-af2a599ace8c",
+        "01a07767-8f47-7e68-9695-be582c3d6d0b"
+      ]
+    },
+    {
+      "run": "run-3",
+      "category": "ordinary",
+      "turn": "What is a clear way to format a trade-off in a design note?",
+      "draft": "A clear trade-off format is:\n\n**Decision:** What you chose  \n**Options considered:** Briefly list alternatives  \n**Criteria:** Cost, performance, complexity, risk, etc.  \n**Trade-off:** What you gain and give up with each option  \n**Rationale:** Why the chosen option best fits the priorities  \n**Consequences:** Expected impacts, limitations, and follow-up actions\n\nExample:\n\n> **Decision:** Use PostgreSQL instead of DynamoDB.  \n> **Trade-off:** PostgreSQL provides stronger relational queries and consistency, but requires more operational management and may scale less simply.  \n> **Rationale:** Our workload depends on joins and transactional integrity.  \n> **Consequence:** We must provision backups, monitoring, and scaling procedures.",
+      "verdicts": [
+        {
+          "record_id": "01a07767-77a2-71d6-a974-6283569d780b",
+          "verdict": "unchanged",
+          "reason": "The draft already emphasizes concise, important trade-offs and does not require changes for user preference.",
+          "profile": true,
+          "attribute": "response_preference",
+          "content": "The user prefers concise answers that include the important trade-off.",
+          "dense_score": 0.6042378544807434
+        },
+        {
+          "record_id": "01a07767-5b4c-75bf-b4ab-7e017728cadf",
+          "verdict": "unchanged",
+          "reason": "Code language choice is irrelevant to this trade-off-format guidance.",
+          "profile": true,
+          "attribute": "code_language_preference",
+          "content": "Use Python for code examples unless the user explicitly asks for another language.",
+          "dense_score": 0.3975655436515808
+        },
+        {
+          "record_id": "01a07767-8f47-7e68-9695-be582c3d6d0b",
+          "verdict": "unchanged",
+          "reason": "Ownership of the deployment checklist does not affect the trade-off-note structure.",
+          "profile": false,
+          "attribute": "deployment_checklist_owner",
+          "content": "Priya Nair, the user's colleague, owns the deployment checklist.",
+          "dense_score": 0.392305850982666
+        },
+        {
+          "record_id": "01a07767-695f-755a-af81-c7e401b2f2f4",
+          "verdict": "unchanged",
+          "reason": "Time zone does not influence how to format a design-note trade-off.",
+          "profile": true,
+          "attribute": "working_timezone",
+          "content": "The user's working time zone is Asia/Kolkata.",
+          "dense_score": 0.36359286308288574
+        },
+        {
+          "record_id": "01a07767-9cdf-7dff-adbb-af2a599ace8c",
+          "verdict": "unchanged",
+          "reason": "Checklist storage location has no bearing on the trade-off format.",
+          "profile": false,
+          "attribute": "deployment_checklist_location",
+          "content": "Priya asked the team to keep the deployment checklist in the repository.",
+          "dense_score": 0.3542494475841522
+        }
+      ],
+      "gate_returned": [
+        "01a07767-77a2-71d6-a974-6283569d780b"
+      ],
+      "judge_admitted": []
+    },
+    {
+      "run": "run-3",
+      "category": "ordinary",
+      "turn": "What are common mistakes when naming a Python virtual environment?",
+      "draft": "Common mistakes include:\n\n- **Using spaces or special characters** that complicate shell commands, e.g. `my env`; prefer `myenv` or `.venv`.\n- **Using confusing names** like `python`, `env`, or `venv` when managing multiple projects; use project-specific names when helpful.\n- **Inconsistent naming** across projects, making activation and scripts harder to remember.\n- **Creating the environment in the wrong directory**, instead of the project root or a standard location.\n- **Naming it after a Python version only**, such as `3.11`, without indicating the project.\n- **Accidentally committing the environment** to version control; add `.venv/` or `venv/` to `.gitignore`.\n- **Assuming the name changes the Python version**; it only identifies the environment.",
+      "verdicts": [
+        {
+          "record_id": "01a07767-5b4c-75bf-b4ab-7e017728cadf",
+          "verdict": "unchanged",
+          "reason": "Code-example policy is not relevant to naming a Python venv.",
+          "profile": true,
+          "attribute": "code_language_preference",
+          "content": "Use Python for code examples unless the user explicitly asks for another language.",
+          "dense_score": 0.4500054121017456
+        },
+        {
+          "record_id": "01a07767-8f47-7e68-9695-be582c3d6d0b",
+          "verdict": "unchanged",
+          "reason": "Colleague ownership details do not affect venv naming guidance.",
+          "profile": false,
+          "attribute": "deployment_checklist_owner",
+          "content": "Priya Nair, the user's colleague, owns the deployment checklist.",
+          "dense_score": 0.41523104906082153
+        },
+        {
+          "record_id": "01a07767-9cdf-7dff-adbb-af2a599ace8c",
+          "verdict": "unchanged",
+          "reason": "Repo deployment checklist info doesn't change naming advice.",
+          "profile": false,
+          "attribute": "deployment_checklist_location",
+          "content": "Priya asked the team to keep the deployment checklist in the repository.",
+          "dense_score": 0.4026646018028259
+        },
+        {
+          "record_id": "01a07767-695f-755a-af81-c7e401b2f2f4",
+          "verdict": "unchanged",
+          "reason": "Timezone does not alter naming conventions for venvs.",
+          "profile": true,
+          "attribute": "working_timezone",
+          "content": "The user's working time zone is Asia/Kolkata.",
+          "dense_score": 0.3744998574256897
+        },
+        {
+          "record_id": "01a07767-77a2-71d6-a974-6283569d780b",
+          "verdict": "unchanged",
+          "reason": "Draft already reflects a concise style and includes relevant trade-offs.",
+          "profile": true,
+          "attribute": "response_preference",
+          "content": "The user prefers concise answers that include the important trade-off.",
+          "dense_score": 0.3453800678253174
+        }
+      ],
+      "gate_returned": [],
+      "judge_admitted": []
+    }
+  ]
+}

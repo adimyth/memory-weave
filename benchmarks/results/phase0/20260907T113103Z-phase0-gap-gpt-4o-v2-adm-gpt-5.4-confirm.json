@@ -1,0 +1,4019 @@
+{
+  "scenario": "benchmarks/scenarios/phase0.json",
+  "draft_model": "gpt-5.6-luna",
+  "gap_model": "gpt-4o",
+  "gap_prompt": "v2",
+  "admission_model": "gpt-5.4",
+  "check_model": "gpt-5.4",
+  "gap_repeats": 3,
+  "usage": {
+    "gpt-4o": {
+      "prompt": 68436,
+      "completion": 1644
+    },
+    "gpt-5.6-luna": {
+      "prompt": 8046,
+      "completion": 11170
+    },
+    "gpt-5.4": {
+      "prompt": 26393,
+      "completion": 7604
+    }
+  },
+  "calls": {
+    "gpt-4o": 216,
+    "gpt-5.6-luna": 100,
+    "gpt-5.4": 92
+  },
+  "summaries": {
+    "ambient": {
+      "arm": "ambient",
+      "turns": 36,
+      "gap_decision_agreement_across_repeats": "36/36 (100%)",
+      "memory_turns_with_gaps_every_repeat": "15/16 (94%)",
+      "memory_turns_with_gaps_any_repeat": "15/16 (94%)",
+      "ordinary_turns_with_gaps_any_repeat": "0/20 (0%)",
+      "ordinary_injection": "0/20 (0%)",
+      "explicit_fact_recall": "9/10 (90%)",
+      "implicit_need_recall": "5/6 (83%)",
+      "ambient_pref_admitted_on_turns": "0/36 (0%)",
+      "placebo_admitted": 0,
+      "misleading_admitted": 0,
+      "stale_or_conflicting_admitted": 0,
+      "redundant_admitted": 0,
+      "unrelated_private_admitted": 0,
+      "usefulness_precision": "15/16 (94%)",
+      "answer_correct_memory_turns_draft": "1/16 (6%)",
+      "answer_correct_memory_turns_final": "14/16 (88%)",
+      "empty_gap_turns": 21,
+      "added_latency_empty_gap_p50_p95_s": [
+        0.0,
+        0.0
+      ],
+      "added_latency_gap_turns_p50_p95_s": [
+        3.42,
+        5.4
+      ],
+      "draft_latency_p50_s": 2.42,
+      "policy_failures": 0
+    },
+    "conditional": {
+      "arm": "conditional",
+      "turns": 36,
+      "gap_decision_agreement_across_repeats": "36/36 (100%)",
+      "memory_turns_with_gaps_every_repeat": "15/16 (94%)",
+      "memory_turns_with_gaps_any_repeat": "15/16 (94%)",
+      "ordinary_turns_with_gaps_any_repeat": "0/20 (0%)",
+      "ordinary_injection": "0/20 (0%)",
+      "explicit_fact_recall": "9/10 (90%)",
+      "implicit_need_recall": "5/6 (83%)",
+      "ambient_pref_admitted_on_turns": "0/36 (0%)",
+      "placebo_admitted": 0,
+      "misleading_admitted": 0,
+      "stale_or_conflicting_admitted": 0,
+      "redundant_admitted": 0,
+      "unrelated_private_admitted": 0,
+      "usefulness_precision": "15/19 (79%)",
+      "answer_correct_memory_turns_draft": "1/16 (6%)",
+      "answer_correct_memory_turns_final": "13/16 (81%)",
+      "empty_gap_turns": 21,
+      "added_latency_empty_gap_p50_p95_s": [
+        0.0,
+        0.0
+      ],
+      "added_latency_gap_turns_p50_p95_s": [
+        3.49,
+        5.0
+      ],
+      "draft_latency_p50_s": 2.41,
+      "policy_failures": 0
+    }
+  },
+  "results": {
+    "ambient": [
+      {
+        "arm": "ambient",
+        "turn_id": "E1",
+        "turn_class": "explicit_fact",
+        "turn": "What did we decide about the database for the orders service?",
+        "expected": [
+          "F4"
+        ],
+        "draft": "I don\u2019t have access to earlier conversations, so I can\u2019t see what we decided about the orders service database. Please paste the relevant discussion or remind me of the options, and I\u2019ll summarise the decision and trade-offs.",
+        "gaps": [
+          "decision on database for orders service"
+        ],
+        "candidates": [
+          {
+            "id": "S2",
+            "score": 0.692,
+            "query": "decision on database for orders service"
+          },
+          {
+            "id": "F4",
+            "score": 0.654,
+            "query": "decision on database for orders service"
+          },
+          {
+            "id": "J1",
+            "score": 0.5,
+            "query": "decision on database for orders service"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "S2",
+            "verdict": "stale_or_conflicting",
+            "reason": "It is explicitly marked as conflicting and superseded by the later 12 August 2026 decision."
+          },
+          {
+            "id": "F4",
+            "verdict": "helpful",
+            "reason": "It directly answers what was decided about the orders service database with the latest active decision."
+          },
+          {
+            "id": "J1",
+            "verdict": "insufficient",
+            "reason": "It concerns the orders service but not the database decision being asked about."
+          },
+          {
+            "id": "P1",
+            "verdict": "potentially_harmful",
+            "reason": "It is unrelated personal information and should not be used for this request."
+          }
+        ],
+        "admitted": [
+          "F4"
+        ],
+        "disposition": "regenerated",
+        "final": "On 12 August 2026, we decided to use **PostgreSQL** rather than **DynamoDB** for the orders service.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 2.4199406670522876,
+          "gap_s": 1.3963990000193007,
+          "retrieval_s": 0.05487554200226441,
+          "admission_s": 1.9873055000207387,
+          "regeneration_s": 1.2100428330013528
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "E2",
+        "turn_class": "explicit_fact",
+        "turn": "Where did Priya say to keep the deployment checklist?",
+        "expected": [
+          "F3"
+        ],
+        "draft": "I don\u2019t have the conversation context. Please share the relevant message or thread, and I\u2019ll identify where Priya said to keep it.",
+        "gaps": [
+          "Priya deployment checklist location"
+        ],
+        "candidates": [
+          {
+            "id": "F2",
+            "score": 0.767,
+            "query": "Priya deployment checklist location"
+          },
+          {
+            "id": "F3",
+            "score": 0.702,
+            "query": "Priya deployment checklist location"
+          },
+          {
+            "id": "F1",
+            "score": 0.397,
+            "query": "Priya deployment checklist location"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F2",
+            "verdict": "insufficient",
+            "reason": "Knowing Priya owns the checklist does not answer where she said to keep it."
+          },
+          {
+            "id": "F3",
+            "verdict": "helpful",
+            "reason": "It directly states where Priya said to keep the deployment checklist."
+          },
+          {
+            "id": "F1",
+            "verdict": "redundant",
+            "reason": "The user's time zone is unrelated to this question."
+          },
+          {
+            "id": "P1",
+            "verdict": "redundant",
+            "reason": "The user's favourite colour is unrelated to this question."
+          }
+        ],
+        "admitted": [
+          "F3"
+        ],
+        "disposition": "regenerated",
+        "final": "Priya said to keep it in the repository under `docs/release/`.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 2.0147106670192443,
+          "gap_s": 1.3819957920350134,
+          "retrieval_s": 0.09926691703731194,
+          "admission_s": 2.043442333000712,
+          "regeneration_s": 1.1437343340367079
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "E3",
+        "turn_class": "explicit_fact",
+        "turn": "Who owns the deployment checklist?",
+        "expected": [
+          "F2"
+        ],
+        "draft": "I don\u2019t have enough context to identify the owner. Typically, the release manager or deployment lead owns the deployment checklist.",
+        "gaps": [
+          "deployment checklist owner"
+        ],
+        "candidates": [
+          {
+            "id": "F2",
+            "score": 0.713,
+            "query": "deployment checklist owner"
+          },
+          {
+            "id": "F3",
+            "score": 0.571,
+            "query": "deployment checklist owner"
+          },
+          {
+            "id": "F7",
+            "score": 0.521,
+            "query": "deployment checklist owner"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F2",
+            "verdict": "helpful",
+            "reason": "It directly identifies the owner asked about and materially improves correctness."
+          },
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "It gives the checklist location, not ownership, so it does not materially answer the question."
+          },
+          {
+            "id": "F7",
+            "verdict": "insufficient",
+            "reason": "The user's manager is unrelated to who owns the deployment checklist."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's favourite colour is irrelevant to the request."
+          }
+        ],
+        "admitted": [
+          "F2"
+        ],
+        "disposition": "regenerated",
+        "final": "Priya Nair owns the deployment checklist.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.678308125003241,
+          "gap_s": 1.3761998749687336,
+          "retrieval_s": 0.43644404102815315,
+          "admission_s": 1.8541384580312297,
+          "regeneration_s": 1.2598065420170315
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "E4",
+        "turn_class": "explicit_fact",
+        "turn": "Why did we pin sentence-transformers below version 5?",
+        "expected": [
+          "F5"
+        ],
+        "draft": "Most likely, we pinned `sentence-transformers<5` to avoid breaking changes introduced in the 5.x release\u2014especially changes to supported Python/PyTorch/Transformers versions, APIs, or embedding behaviour. The trade-off is stability and reproducibility versus access to newer features, fixes, and models.\n\nWithout the repository\u2019s dependency history or issue reference, I can\u2019t identify the exact reason. Check the commit, lockfile, or issue that added the pin; it may also have been required by another dependency that was not yet compatible with v5.",
+        "gaps": [
+          "decision to pin sentence-transformers below version 5",
+          "reasons for pinning sentence-transformers version",
+          "team decision on sentence-transformers version pinning"
+        ],
+        "candidates": [
+          {
+            "id": "F5",
+            "score": 0.756,
+            "query": "decision to pin sentence-transformers below version 5"
+          },
+          {
+            "id": "M1",
+            "score": 0.537,
+            "query": "reasons for pinning sentence-transformers version"
+          },
+          {
+            "id": "M2",
+            "score": 0.502,
+            "query": "reasons for pinning sentence-transformers version"
+          },
+          {
+            "id": "R1",
+            "score": 0.496,
+            "query": "decision to pin sentence-transformers below version 5"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F5",
+            "verdict": "stale_or_conflicting",
+            "reason": "It cites version 6 as the cause, which does not directly justify a pin below version 5."
+          },
+          {
+            "id": "M1",
+            "verdict": "potentially_harmful",
+            "reason": "It is an unrelated false belief that could distort future technical answers."
+          },
+          {
+            "id": "M2",
+            "verdict": "potentially_harmful",
+            "reason": "It encourages agreement over correctness and is not appropriate to use."
+          },
+          {
+            "id": "R1",
+            "verdict": "redundant",
+            "reason": "It is unrelated to the dependency pinning question."
+          },
+          {
+            "id": "P1",
+            "verdict": "redundant",
+            "reason": "It is unrelated personal information with no bearing on the answer."
+          }
+        ],
+        "admitted": [],
+        "disposition": "baseline_empty_admission",
+        "final": null,
+        "draft_correct": false,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 3.7411490410449915,
+          "gap_s": 1.649054375011474,
+          "retrieval_s": 0.05655395798385143,
+          "admission_s": 2.3939544170279987,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "E5",
+        "turn_class": "explicit_fact",
+        "turn": "What is the name of my staging cluster and which region is it in?",
+        "expected": [
+          "F6"
+        ],
+        "draft": "I don\u2019t have access to your cluster configuration, so I can\u2019t determine its name or region. Check your deployment configuration or cloud console for the staging environment details.",
+        "gaps": [
+          "name of staging cluster",
+          "region of staging cluster"
+        ],
+        "candidates": [
+          {
+            "id": "F6",
+            "score": 0.692,
+            "query": "region of staging cluster"
+          },
+          {
+            "id": "F1",
+            "score": 0.421,
+            "query": "region of staging cluster"
+          },
+          {
+            "id": "S1",
+            "score": 0.403,
+            "query": "region of staging cluster"
+          },
+          {
+            "id": "F2",
+            "score": 0.357,
+            "query": "name of staging cluster"
+          },
+          {
+            "id": "S2",
+            "score": 0.351,
+            "query": "name of staging cluster"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F6",
+            "verdict": "helpful",
+            "reason": "It directly provides the staging cluster name and region the user asked for."
+          },
+          {
+            "id": "F1",
+            "verdict": "redundant",
+            "reason": "The user's time zone is unrelated to identifying the staging cluster and region."
+          },
+          {
+            "id": "S1",
+            "verdict": "stale_or_conflicting",
+            "reason": "It is superseded and unrelated to the cluster question."
+          },
+          {
+            "id": "F2",
+            "verdict": "redundant",
+            "reason": "The deployment checklist owner does not help answer the cluster name or region."
+          },
+          {
+            "id": "S2",
+            "verdict": "stale_or_conflicting",
+            "reason": "It is marked conflicting and is unrelated to the cluster question."
+          },
+          {
+            "id": "P1",
+            "verdict": "redundant",
+            "reason": "The user's favourite colour is unrelated to the request."
+          }
+        ],
+        "admitted": [
+          "F6"
+        ],
+        "disposition": "regenerated",
+        "final": "Your staging Kubernetes cluster is **orion-staging**, located in **ap-south-1**.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.5755754170240834,
+          "gap_s": 0.812092375010252,
+          "retrieval_s": 0.12926070799585432,
+          "admission_s": 2.136638875002973,
+          "regeneration_s": 1.1493122089887038
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "E6",
+        "turn_class": "explicit_fact",
+        "turn": "When does the weekly release train go out?",
+        "expected": [
+          "F8"
+        ],
+        "draft": "Which project or release train do you mean? I don\u2019t have enough context to know its weekly schedule.",
+        "gaps": [
+          "weekly release train schedule"
+        ],
+        "candidates": [
+          {
+            "id": "F8",
+            "score": 0.784,
+            "query": "weekly release train schedule"
+          },
+          {
+            "id": "F3",
+            "score": 0.428,
+            "query": "weekly release train schedule"
+          },
+          {
+            "id": "S1",
+            "score": 0.418,
+            "query": "weekly release train schedule"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F8",
+            "verdict": "helpful",
+            "reason": "It directly answers the weekly release train schedule the user asked about."
+          },
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "It concerns releases but does not help answer when the train goes out."
+          },
+          {
+            "id": "S1",
+            "verdict": "stale_or_conflicting",
+            "reason": "It is explicitly superseded and unnecessary for answering this schedule question."
+          },
+          {
+            "id": "P1",
+            "verdict": "potentially_harmful",
+            "reason": "It is unrelated personal information and would risk inappropriate personalisation."
+          }
+        ],
+        "admitted": [
+          "F8"
+        ],
+        "disposition": "regenerated",
+        "final": "The weekly release train goes out every Thursday at 16:00 IST.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.926201208960265,
+          "gap_s": 0.6954166669747792,
+          "retrieval_s": 0.04201637499500066,
+          "admission_s": 2.0170515420031734,
+          "regeneration_s": 1.0343961250036955
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "E7",
+        "turn_class": "explicit_fact",
+        "turn": "What rate limit applies to acme-corp on the orders service?",
+        "expected": [
+          "J1",
+          "J2"
+        ],
+        "draft": "I don\u2019t have access to your service configuration, so I can\u2019t determine the rate limit for **acme-corp** on the **orders** service. Please share the relevant configuration or rate-limit policy.",
+        "gaps": [
+          "acme-corp rate limit orders service"
+        ],
+        "candidates": [
+          {
+            "id": "J2",
+            "score": 0.707,
+            "query": "acme-corp rate limit orders service"
+          },
+          {
+            "id": "J1",
+            "score": 0.631,
+            "query": "acme-corp rate limit orders service"
+          },
+          {
+            "id": "S2",
+            "score": 0.525,
+            "query": "acme-corp rate limit orders service"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "J2",
+            "verdict": "jointly_helpful",
+            "reason": "It specifies acme-corp\u2019s tier-based modifier but needs the base limit to answer fully."
+          },
+          {
+            "id": "J1",
+            "verdict": "jointly_helpful",
+            "reason": "It gives the base orders-service rate limit but needs acme-corp\u2019s tier detail to answer the specific question."
+          },
+          {
+            "id": "S2",
+            "verdict": "insufficient",
+            "reason": "The datastore used by the orders service is irrelevant to the rate-limit question."
+          },
+          {
+            "id": "P1",
+            "verdict": "potentially_harmful",
+            "reason": "It is unrelated personal information and should not be used for this request."
+          }
+        ],
+        "admitted": [
+          "J2",
+          "J1"
+        ],
+        "disposition": "regenerated",
+        "final": "Acme-corp\u2019s orders service rate limit is **1,000 requests per minute per tenant**\u2014double the standard **500 requests per minute** because it is on the enterprise tier.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.5376116250408813,
+          "gap_s": 0.7382599579868838,
+          "retrieval_s": 0.05139666597824544,
+          "admission_s": 2.4615330419619568,
+          "regeneration_s": 1.1216405839659274
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "E8",
+        "turn_class": "explicit_fact",
+        "turn": "Who should I loop in as my manager on the promotion document?",
+        "expected": [
+          "F7"
+        ],
+        "draft": "Loop in your **current line manager**\u2014the person who formally manages you and can endorse your promotion. If the promotion is into another team, also copy the **prospective manager** or relevant department head, if appropriate.",
+        "gaps": [
+          "user's manager name or role"
+        ],
+        "candidates": [
+          {
+            "id": "F7",
+            "score": 0.759,
+            "query": "user's manager name or role"
+          },
+          {
+            "id": "M2",
+            "score": 0.555,
+            "query": "user's manager name or role"
+          },
+          {
+            "id": "S2",
+            "score": 0.542,
+            "query": "user's manager name or role"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F7",
+            "verdict": "helpful",
+            "reason": "It lets the answer name the user's actual manager directly, improving personalisation."
+          },
+          {
+            "id": "M2",
+            "verdict": "potentially_harmful",
+            "reason": "A preference to agree rather than correct can distort responses and is irrelevant here."
+          },
+          {
+            "id": "S2",
+            "verdict": "stale_or_conflicting",
+            "reason": "It is unrelated to the promotion question and marked as conflicting."
+          },
+          {
+            "id": "P1",
+            "verdict": "redundant",
+            "reason": "Favourite colour is unrelated to deciding who to loop in on a promotion document."
+          }
+        ],
+        "admitted": [
+          "F7"
+        ],
+        "disposition": "regenerated",
+        "final": "Loop in **Rohan Mehta**, your manager.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.5688968329923227,
+          "gap_s": 0.7425977499806322,
+          "retrieval_s": 0.05152637499850243,
+          "admission_s": 2.00401883298764,
+          "regeneration_s": 1.1109589579864405
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "E9",
+        "turn_class": "explicit_fact",
+        "turn": "What time zone should you use when suggesting a meeting for me?",
+        "expected": [
+          "F1"
+        ],
+        "draft": "Which time zone are you in, or should I use your current local time zone?",
+        "gaps": [
+          "user's time zone"
+        ],
+        "candidates": [
+          {
+            "id": "S1",
+            "score": 0.823,
+            "query": "user's time zone"
+          },
+          {
+            "id": "F1",
+            "score": 0.798,
+            "query": "user's time zone"
+          },
+          {
+            "id": "F7",
+            "score": 0.613,
+            "query": "user's time zone"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "S1",
+            "verdict": "stale_or_conflicting",
+            "reason": "It was explicitly superseded by a newer time-zone record."
+          },
+          {
+            "id": "F1",
+            "verdict": "helpful",
+            "reason": "It directly answers which time zone to use when suggesting meetings."
+          },
+          {
+            "id": "F7",
+            "verdict": "insufficient",
+            "reason": "The user's manager is unrelated to choosing a meeting time zone."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "Favourite colour is unrelated to the request."
+          }
+        ],
+        "admitted": [
+          "F1"
+        ],
+        "disposition": "regenerated",
+        "final": "Asia/Kolkata (Indian Standard Time, IST).",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.5607927090022713,
+          "gap_s": 0.7149724999908358,
+          "retrieval_s": 0.1333720840048045,
+          "admission_s": 1.9078540420159698,
+          "regeneration_s": 1.2304871670203283
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "E10",
+        "turn_class": "explicit_fact",
+        "turn": "Remind me which version constraint we put on sentence-transformers.",
+        "expected": [
+          "F5"
+        ],
+        "draft": "I don\u2019t have the earlier context, so I can\u2019t see which `sentence-transformers` constraint we used. Please paste the relevant `requirements.txt`, `pyproject.toml`, or previous snippet.",
+        "gaps": [
+          "version constraint on sentence-transformers"
+        ],
+        "candidates": [
+          {
+            "id": "F5",
+            "score": 0.63,
+            "query": "version constraint on sentence-transformers"
+          },
+          {
+            "id": "A3",
+            "score": 0.527,
+            "query": "version constraint on sentence-transformers"
+          },
+          {
+            "id": "M1",
+            "score": 0.484,
+            "query": "version constraint on sentence-transformers"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F5",
+            "verdict": "helpful",
+            "reason": "It directly supplies the missing version constraint and rationale for sentence-transformers."
+          },
+          {
+            "id": "A3",
+            "verdict": "redundant",
+            "reason": "Language preference for code examples is irrelevant to recalling a package constraint."
+          },
+          {
+            "id": "M1",
+            "verdict": "potentially_harmful",
+            "reason": "It is unrelated and encodes a false belief that could distort future advice."
+          },
+          {
+            "id": "P1",
+            "verdict": "redundant",
+            "reason": "Favourite colour is unrelated to the request."
+          }
+        ],
+        "admitted": [
+          "F5"
+        ],
+        "disposition": "regenerated",
+        "final": "We pinned `sentence-transformers` to **below version 5** (`sentence-transformers<5`) because version 6 cannot load BGE-M3.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.6294201250420883,
+          "gap_s": 0.8144566249684431,
+          "retrieval_s": 0.0407650830456987,
+          "admission_s": 2.055822624999564,
+          "regeneration_s": 1.1796629169839434
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "I1",
+        "turn_class": "implicit_need",
+        "turn": "Show me a small example that parses a TOML configuration file.",
+        "expected": [
+          "A3"
+        ],
+        "draft": "Example using Python 3.11+\u2019s built-in `tomllib`:\n\n**`config.toml`**\n```toml\napp_name = \"Demo\"\ndebug = true\n\n[database]\nhost = \"localhost\"\nport = 5432\n```\n\n**`main.py`**\n```python\nimport tomllib\n\nwith open(\"config.toml\", \"rb\") as file:\n    config = tomllib.load(file)\n\nprint(config[\"app_name\"])\nprint(config[\"database\"][\"host\"])\nprint(config[\"database\"][\"port\"])\n```\n\nOutput:\n```text\nDemo\nlocalhost\n5432\n```\n\nFor Python versions before 3.11, install the third-party `tomli` package and replace `import tomllib` with `import tomli`.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": true,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 2.7364882500260137,
+          "gap_s": 0.6785252920235507,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "I2",
+        "turn_class": "implicit_need",
+        "turn": "Suggest a time tomorrow for a 30-minute sync with the platform team.",
+        "expected": [
+          "F1"
+        ],
+        "draft": "How about **10:00\u201310:30 tomorrow (Tuesday, 8 September)**? It\u2019s early enough to align priorities without interrupting most of the day.",
+        "gaps": [
+          "platform team schedule",
+          "user time zone",
+          "user availability"
+        ],
+        "candidates": [
+          {
+            "id": "S1",
+            "score": 0.797,
+            "query": "user time zone"
+          },
+          {
+            "id": "F1",
+            "score": 0.765,
+            "query": "user time zone"
+          },
+          {
+            "id": "F7",
+            "score": 0.618,
+            "query": "user availability"
+          },
+          {
+            "id": "F9",
+            "score": 0.569,
+            "query": "user availability"
+          },
+          {
+            "id": "P1",
+            "score": 0.563,
+            "query": "user availability"
+          },
+          {
+            "id": "F8",
+            "score": 0.484,
+            "query": "platform team schedule"
+          },
+          {
+            "id": "F3",
+            "score": 0.459,
+            "query": "platform team schedule"
+          },
+          {
+            "id": "F4",
+            "score": 0.446,
+            "query": "platform team schedule"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "S1",
+            "verdict": "stale_or_conflicting",
+            "reason": "It was superseded by a newer time zone record and should not be used."
+          },
+          {
+            "id": "F1",
+            "verdict": "helpful",
+            "reason": "The user's current working time zone materially affects what 'tomorrow' and a suitable meeting time mean."
+          },
+          {
+            "id": "F7",
+            "verdict": "insufficient",
+            "reason": "The manager's identity does not affect suggesting a time for this sync."
+          },
+          {
+            "id": "F9",
+            "verdict": "insufficient",
+            "reason": "A shellfish allergy is unrelated to scheduling a meeting."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "Favourite colour is irrelevant to proposing a meeting time."
+          },
+          {
+            "id": "F8",
+            "verdict": "insufficient",
+            "reason": "The Thursday release train is not directly relevant to choosing a generic time tomorrow without more context."
+          },
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "The deployment checklist location does not inform meeting scheduling."
+          },
+          {
+            "id": "F4",
+            "verdict": "insufficient",
+            "reason": "The database choice for the orders service is unrelated to proposing a sync time."
+          }
+        ],
+        "admitted": [
+          "F1"
+        ],
+        "disposition": "regenerated",
+        "final": "How about **tomorrow, 8 September, from 3:00\u20133:30 pm IST**? It\u2019s a convenient mid-afternoon slot, though morning may be better if the platform team is spread across time zones.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.7018982090521604,
+          "gap_s": 0.7720482089789584,
+          "retrieval_s": 0.09615220798877999,
+          "admission_s": 3.446716416045092,
+          "regeneration_s": 1.8586528340238146
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "I3",
+        "turn_class": "implicit_need",
+        "turn": "Draft a short message asking for a review of the deployment checklist.",
+        "expected": [
+          "F2"
+        ],
+        "draft": "Hi team,\n\nCould you please review the deployment checklist and share any feedback or missing steps? Your input will help ensure the process is complete and reliable.\n\nThanks!",
+        "gaps": [
+          "recipient for checklist review",
+          "deployment checklist details",
+          "preferred communication method"
+        ],
+        "candidates": [
+          {
+            "id": "F2",
+            "score": 0.686,
+            "query": "deployment checklist details"
+          },
+          {
+            "id": "F3",
+            "score": 0.622,
+            "query": "deployment checklist details"
+          },
+          {
+            "id": "M2",
+            "score": 0.571,
+            "query": "preferred communication method"
+          },
+          {
+            "id": "P1",
+            "score": 0.507,
+            "query": "preferred communication method"
+          },
+          {
+            "id": "F9",
+            "score": 0.498,
+            "query": "recipient for checklist review"
+          },
+          {
+            "id": "A3",
+            "score": 0.456,
+            "query": "preferred communication method"
+          },
+          {
+            "id": "S2",
+            "score": 0.453,
+            "query": "deployment checklist details"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F2",
+            "verdict": "helpful",
+            "reason": "Knowing the checklist owner lets the message be directed more appropriately and specifically."
+          },
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "The repository location does not materially improve a short review request."
+          },
+          {
+            "id": "M2",
+            "verdict": "potentially_harmful",
+            "reason": "A preference to agree rather than correct risks inappropriate behaviour and is irrelevant here."
+          },
+          {
+            "id": "P1",
+            "verdict": "redundant",
+            "reason": "The user's favourite colour is unrelated to drafting this message."
+          },
+          {
+            "id": "F9",
+            "verdict": "redundant",
+            "reason": "The user's shellfish allergy is unrelated to drafting this message."
+          },
+          {
+            "id": "A3",
+            "verdict": "redundant",
+            "reason": "Language preference for code examples is irrelevant because no code is involved."
+          },
+          {
+            "id": "S2",
+            "verdict": "stale_or_conflicting",
+            "reason": "It is marked conflicting and unrelated to the deployment checklist review request."
+          }
+        ],
+        "admitted": [
+          "F2"
+        ],
+        "disposition": "regenerated",
+        "final": "Hi Priya, could you please review the deployment checklist and share any feedback when you have a chance? Thanks.",
+        "draft_correct": false,
+        "final_correct": false,
+        "timing": {
+          "draft_s": 1.146340666047763,
+          "gap_s": 1.4844847500207834,
+          "retrieval_s": 0.09363412501988932,
+          "admission_s": 2.636636167007964,
+          "regeneration_s": 1.4350125410128385
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "I4",
+        "turn_class": "implicit_need",
+        "turn": "Write a one-line summary of the orders service data store for the architecture page.",
+        "expected": [
+          "F4"
+        ],
+        "draft": "The orders service data store provides durable, transactional persistence for order state and history, prioritising consistency and reliability over analytical query performance.",
+        "gaps": [
+          "orders service data store summary",
+          "architecture page details",
+          "team's terminology for data store"
+        ],
+        "candidates": [
+          {
+            "id": "S2",
+            "score": 0.684,
+            "query": "orders service data store summary"
+          },
+          {
+            "id": "F4",
+            "score": 0.572,
+            "query": "orders service data store summary"
+          },
+          {
+            "id": "J1",
+            "score": 0.526,
+            "query": "orders service data store summary"
+          },
+          {
+            "id": "F3",
+            "score": 0.492,
+            "query": "team's terminology for data store"
+          },
+          {
+            "id": "F6",
+            "score": 0.423,
+            "query": "architecture page details"
+          },
+          {
+            "id": "R2",
+            "score": 0.418,
+            "query": "architecture page details"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "S2",
+            "verdict": "stale_or_conflicting",
+            "reason": "It is explicitly superseded by the later decision to use PostgreSQL."
+          },
+          {
+            "id": "F4",
+            "verdict": "helpful",
+            "reason": "It materially improves the summary by naming the actual data store technology in use."
+          },
+          {
+            "id": "J1",
+            "verdict": "insufficient",
+            "reason": "Rate limiting is unrelated to a one-line summary of the orders service data store."
+          },
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "Repository checklist location is unrelated to the architecture page summary."
+          },
+          {
+            "id": "F6",
+            "verdict": "insufficient",
+            "reason": "Staging cluster details do not affect the data store summary."
+          },
+          {
+            "id": "R2",
+            "verdict": "insufficient",
+            "reason": "A kubectl command is unrelated to the requested one-line architecture summary."
+          },
+          {
+            "id": "P1",
+            "verdict": "potentially_harmful",
+            "reason": "Personal preference is irrelevant and risks unnecessary personalisation."
+          }
+        ],
+        "admitted": [
+          "F4"
+        ],
+        "disposition": "regenerated",
+        "final": "The orders service uses PostgreSQL as its data store, prioritising relational consistency and transactional integrity over DynamoDB\u2019s scalability flexibility.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 2.5966144999838434,
+          "gap_s": 0.9301822499837726,
+          "retrieval_s": 0.0885898339911364,
+          "admission_s": 2.4282112079672515,
+          "regeneration_s": 1.085064833983779
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "I5",
+        "turn_class": "implicit_need",
+        "turn": "Is Thursday afternoon a good time to schedule a database migration?",
+        "expected": [
+          "F8"
+        ],
+        "draft": "Usually, **Thursday afternoon is not ideal** for a database migration, especially for a critical system. It leaves limited time to resolve unexpected issues before the weekend and may conflict with peak business activity.\n\nA better window is often **early in the week or during a low-traffic period**, with engineers and support staff available. Thursday can work if:\n\n- Traffic is low\n- The team can monitor the system afterwards\n- A tested rollback plan is ready\n- Required stakeholders are available\n- You have several hours before out-of-hours support begins\n\nThe key trade-off is **lower user impact versus having enough time and support to recover if something goes wrong**.",
+        "gaps": [
+          "team schedule for Thursday afternoon",
+          "database migration policies",
+          "current system usage or freeze periods"
+        ],
+        "candidates": [
+          {
+            "id": "F8",
+            "score": 0.577,
+            "query": "team schedule for Thursday afternoon"
+          },
+          {
+            "id": "F1",
+            "score": 0.563,
+            "query": "current system usage or freeze periods"
+          },
+          {
+            "id": "S1",
+            "score": 0.545,
+            "query": "current system usage or freeze periods"
+          },
+          {
+            "id": "S2",
+            "score": 0.487,
+            "query": "database migration policies"
+          },
+          {
+            "id": "F4",
+            "score": 0.457,
+            "query": "database migration policies"
+          },
+          {
+            "id": "F3",
+            "score": 0.419,
+            "query": "database migration policies"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F8",
+            "verdict": "helpful",
+            "reason": "A fixed Thursday 16:00 IST release train materially affects whether Thursday afternoon is a safe migration window."
+          },
+          {
+            "id": "F1",
+            "verdict": "helpful",
+            "reason": "The user\u2019s Asia/Kolkata time zone is needed to apply the Thursday 16:00 IST release-train constraint correctly."
+          },
+          {
+            "id": "S1",
+            "verdict": "stale_or_conflicting",
+            "reason": "It is explicitly superseded by the newer Asia/Kolkata time zone record."
+          },
+          {
+            "id": "S2",
+            "verdict": "stale_or_conflicting",
+            "reason": "It conflicts with the later decision to use PostgreSQL instead of DynamoDB."
+          },
+          {
+            "id": "F4",
+            "verdict": "insufficient",
+            "reason": "The database technology choice does not materially change the generic scheduling advice here."
+          },
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "Checklist location is unrelated to deciding whether Thursday afternoon is a good migration time."
+          },
+          {
+            "id": "P1",
+            "verdict": "potentially_harmful",
+            "reason": "The user\u2019s favourite colour is irrelevant and would risk inappropriate personalisation."
+          }
+        ],
+        "admitted": [
+          "F8",
+          "F1"
+        ],
+        "disposition": "regenerated",
+        "final": "Usually not. Thursday afternoon overlaps with the weekly release train at 16:00 IST, increasing deployment risk and leaving less time to resolve issues before the weekend.\n\nPrefer Tuesday or Wednesday, with a maintenance window, tested rollback plan, monitoring, and sufficient recovery time. If Thursday is unavoidable, schedule it well before 16:00 IST or after the release has stabilised, and ensure the relevant team is available.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 3.7173116670455784,
+          "gap_s": 0.9104144999873824,
+          "retrieval_s": 0.11394025001209229,
+          "admission_s": 2.751119665976148,
+          "regeneration_s": 2.9163705829996616
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "I6",
+        "turn_class": "implicit_need",
+        "turn": "Give me the command to get pods in my staging cluster.",
+        "expected": [
+          "F6"
+        ],
+        "draft": "```bash\nkubectl get pods --context=staging\n```\n\nTo include all namespaces:\n\n```bash\nkubectl get pods --all-namespaces --context=staging\n```\n\nReplace `staging` with your Kubernetes context name if different.",
+        "gaps": [
+          "staging cluster name",
+          "tooling choice",
+          "command syntax for user's environment"
+        ],
+        "candidates": [
+          {
+            "id": "F6",
+            "score": 0.679,
+            "query": "staging cluster name"
+          },
+          {
+            "id": "F7",
+            "score": 0.596,
+            "query": "command syntax for user's environment"
+          },
+          {
+            "id": "A3",
+            "score": 0.568,
+            "query": "command syntax for user's environment"
+          },
+          {
+            "id": "M2",
+            "score": 0.539,
+            "query": "tooling choice"
+          },
+          {
+            "id": "S1",
+            "score": 0.524,
+            "query": "command syntax for user's environment"
+          },
+          {
+            "id": "P1",
+            "score": 0.475,
+            "query": "tooling choice"
+          },
+          {
+            "id": "S2",
+            "score": 0.406,
+            "query": "staging cluster name"
+          },
+          {
+            "id": "F2",
+            "score": 0.375,
+            "query": "staging cluster name"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F6",
+            "verdict": "helpful",
+            "reason": "It lets the answer use the user's actual staging context name instead of a placeholder."
+          },
+          {
+            "id": "F7",
+            "verdict": "redundant",
+            "reason": "The user's manager is unrelated to a kubectl command."
+          },
+          {
+            "id": "A3",
+            "verdict": "redundant",
+            "reason": "Language preference for Python does not affect a shell command answer."
+          },
+          {
+            "id": "M2",
+            "verdict": "potentially_harmful",
+            "reason": "A preference to agree rather than correct can distort technical guidance and should not be used."
+          },
+          {
+            "id": "S1",
+            "verdict": "stale_or_conflicting",
+            "reason": "It is superseded and unrelated to the request."
+          },
+          {
+            "id": "P1",
+            "verdict": "redundant",
+            "reason": "Favourite colour is unrelated to the Kubernetes command."
+          },
+          {
+            "id": "S2",
+            "verdict": "stale_or_conflicting",
+            "reason": "It is explicitly conflicting and unrelated to the request."
+          },
+          {
+            "id": "F2",
+            "verdict": "redundant",
+            "reason": "Ownership of a deployment checklist is unrelated to getting pods."
+          }
+        ],
+        "admitted": [
+          "F6"
+        ],
+        "disposition": "regenerated",
+        "final": "```bash\nkubectl --context=orion-staging get pods --all-namespaces\n```\n\nFor a specific namespace:\n\n```bash\nkubectl --context=orion-staging -n <namespace> get pods\n```",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.9212294580065645,
+          "gap_s": 0.8409488330362365,
+          "retrieval_s": 0.08412295795278624,
+          "admission_s": 2.8267469159909524,
+          "regeneration_s": 1.24262054101564
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O1",
+        "turn_class": "ordinary",
+        "turn": "Should I use tabs or spaces in Python?",
+        "expected": [],
+        "draft": "Use **4 spaces per indentation level** in Python.\n\nPEP 8, Python\u2019s official style guide, recommends spaces. Don\u2019t mix tabs and spaces, as this can cause `IndentationError` or confusing formatting. Most editors can be configured to insert four spaces when you press Tab.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": true,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 1.806309167004656,
+          "gap_s": 0.6126616669935174,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O2",
+        "turn_class": "ordinary",
+        "turn": "How often should a deployment checklist be reviewed?",
+        "expected": [],
+        "draft": "Review the deployment checklist:\n\n- **Before every deployment**: confirm it still applies and complete it.\n- **Formally at least quarterly**: check for outdated steps, tools, or ownership.\n- **After incidents, rollbacks, or major process/tool changes**: update it promptly.\n- **After significant releases**: capture lessons learned.\n\nThe trade-off is between review effort and risk: frequent review adds overhead, but infrequent review lets obsolete or missing steps cause repeated failures. For high-risk or frequent deployments, monthly or per-release formal reviews may be more appropriate.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 2.933049291954376,
+          "gap_s": 0.6355401669861749,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O3",
+        "turn_class": "ordinary",
+        "turn": "What is a clear way to format a trade-off in a design note?",
+        "expected": [],
+        "draft": "A clear format is:\n\n**Decision:** What you chose.  \n**Options considered:** The main alternatives.  \n**Trade-off:** What you gain and give up with each option.  \n**Rationale:** Why the chosen option is preferable in this context.  \n**Consequences:** Expected effects, risks, and follow-up actions.\n\nExample:\n\n> **Decision:** Use a managed database rather than hosting PostgreSQL ourselves.  \n> **Trade-off:** This increases operating cost but reduces maintenance, outage risk, and staff workload.  \n> **Rationale:** Reliability and delivery speed matter more than minimising infrastructure spend for this project.  \n> **Consequences:** Higher monthly costs; less control over configuration; review costs after six months.\n\nA small comparison table can make the trade-off even easier to scan.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 3.0261498339823447,
+          "gap_s": 0.6407293750089593,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O4",
+        "turn_class": "ordinary",
+        "turn": "What are common mistakes when naming a Python virtual environment?",
+        "expected": [],
+        "draft": "Common mistakes include:\n\n- **Using spaces or special characters**: They can make activation commands and scripts awkward, especially across shells and operating systems.\n- **Using an ambiguous name** such as `env` or `python`: It is easy to confuse with another environment or executable.\n- **Inconsistent naming across projects**: Names like `venv`, `.venv`, and `virtualenv` can cause confusion in documentation and tooling.\n- **Including machine-specific details**: A name such as `myenv-john-laptop` is less portable.\n- **Using a name that clashes with a package or project directory**: This may confuse IDEs or scripts.\n- **Forgetting to exclude it from version control**: Add the environment directory (commonly `.venv/`) to `.gitignore`.\n\nA practical convention is **`.venv`**: it is standard, unobtrusive, and commonly recognised by editors.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 4.514220125041902,
+          "gap_s": 0.696941957983654,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O5",
+        "turn_class": "ordinary",
+        "turn": "Explain the difference between PostgreSQL and DynamoDB consistency models.",
+        "expected": [],
+        "draft": "**PostgreSQL** uses traditional **ACID transactions** with **MVCC** (multi-version concurrency control):\n\n- The default isolation level is **Read Committed**.\n- You can choose stronger isolation, including **Repeatable Read** and **Serializable**.\n- Reads from the primary are immediately consistent with committed transactions.\n- Read replicas are typically asynchronous, so they may be **eventually consistent**.\n\n**DynamoDB** is a distributed NoSQL database:\n\n- Reads are **eventually consistent by default**, reducing latency and cost.\n- You can request **strongly consistent reads** for supported tables and indexes, ensuring the latest committed value.\n- Strong reads are unavailable for global secondary indexes and are limited across regions; global tables are generally eventually consistent across regions.\n- Transactions provide atomicity across multiple items, but with more restricted access patterns than PostgreSQL.\n\n**Trade-off:** PostgreSQL prioritises rich transactions and consistency controls; DynamoDB prioritises horizontal scalability and low latency, with consistency chosen per read where supported.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 4.4893968750257045,
+          "gap_s": 0.7169499169685878,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O6",
+        "turn_class": "ordinary",
+        "turn": "What does a token bucket rate limiter do?",
+        "expected": [],
+        "draft": "A token bucket rate limiter controls how frequently requests can occur.\n\n- Tokens are added to a bucket at a fixed rate, up to a maximum capacity.\n- Each request consumes one or more tokens.\n- If enough tokens are available, the request proceeds.\n- If the bucket is empty, the request is delayed or rejected.\n\nIts key trade-off is that it allows short bursts\u2014up to the bucket\u2019s capacity\u2014while enforcing a sustainable average rate over time. This makes it useful for APIs, network traffic, and protecting services from overload.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 2.102929166983813,
+          "gap_s": 0.7144957919954322,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O7",
+        "turn_class": "ordinary",
+        "turn": "How do I convert a UTC timestamp to a local time in Python?",
+        "expected": [],
+        "draft": "Use Python\u2019s timezone-aware `datetime` objects:\n\n```python\nfrom datetime import datetime\nfrom zoneinfo import ZoneInfo\n\nutc_timestamp = \"2026-09-07T12:30:00Z\"\n\nutc_time = datetime.fromisoformat(utc_timestamp.replace(\"Z\", \"+00:00\"))\nlocal_time = utc_time.astimezone(ZoneInfo(\"Europe/London\"))\n\nprint(local_time)\n```\n\nFor a Unix timestamp:\n\n```python\nfrom datetime import datetime\nfrom zoneinfo import ZoneInfo\n\ntimestamp = 1788784200\nlocal_time = datetime.fromtimestamp(timestamp, tz=ZoneInfo(\"Europe/London\"))\n```\n\nReplace `\"Europe/London\"` with your desired IANA timezone, such as `\"America/New_York\"` or `\"Asia/Tokyo\"`.\n\nUsing `zoneinfo` correctly handles daylight-saving changes; avoid naive `datetime` objects and manually adding a fixed offset.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 2.1628580410033464,
+          "gap_s": 0.6742315829615109,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O8",
+        "turn_class": "ordinary",
+        "turn": "What is a release train?",
+        "expected": [],
+        "draft": "A **release train** is a regular, scheduled cycle for delivering software updates, rather than releasing whenever individual features are ready.\n\nFor example, a team might release every two weeks or quarterly. Features and fixes are prepared for the next scheduled departure; anything unfinished waits for the following one.\n\n**Benefits:** predictable delivery, easier planning, and better coordination across teams.  \n**Trade-off:** urgent or late features may have to wait, and teams must meet the train\u2019s deadlines.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 1.7501101670204662,
+          "gap_s": 0.7873089159838855,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O9",
+        "turn_class": "ordinary",
+        "turn": "How do I list Kubernetes namespaces?",
+        "expected": [],
+        "draft": "```bash\nkubectl get namespaces\n```\n\nShort form:\n\n```bash\nkubectl get ns\n```\n\nTo list namespaces with additional details:\n\n```bash\nkubectl get ns -o wide\n```\n\nThis uses your current Kubernetes context. Check it with:\n\n```bash\nkubectl config current-context\n```",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 1.5014778750482947,
+          "gap_s": 0.7113700000336394,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O10",
+        "turn_class": "ordinary",
+        "turn": "What are good practices for writing a one-on-one agenda with a manager?",
+        "expected": [],
+        "draft": "Good practices for a one-to-one agenda with your manager:\n\n- **Share it in advance**, ideally with time for them to add items.\n- **State the purpose**: priorities, support, feedback, development, or decisions.\n- **Prioritise 2\u20134 topics** rather than listing everything.\n- **Include outcomes needed** for each item, such as a decision, advice, or awareness.\n- **Cover both work and development**: progress, blockers, workload, goals, and career growth.\n- **Raise difficult issues clearly**, with context and a proposed next step.\n- **Leave time for their priorities** and unexpected discussion.\n- **Record decisions and actions**, including owners and deadlines.\n- **Review previous actions** briefly at the start.\n- **Adapt the format**: a consistent structure improves focus, but avoid making it so rigid that useful conversation is lost.\n\nA simple structure is: **check-in \u2192 progress \u2192 blockers/decisions \u2192 feedback/development \u2192 manager\u2019s topics \u2192 actions**.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 3.565700583974831,
+          "gap_s": 0.935023625032045,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O11",
+        "turn_class": "ordinary",
+        "turn": "What is the difference between a shallow copy and a deep copy in Python?",
+        "expected": [],
+        "draft": "A **shallow copy** creates a new outer object but reuses references to nested objects. Changes to nested mutable data affect both copies.\n\nA **deep copy** recursively copies the entire object, including nested objects, so the copies are independent.\n\n```python\nimport copy\n\noriginal = [[1, 2], [3, 4]]\n\nshallow = copy.copy(original)\ndeep = copy.deepcopy(original)\n\noriginal[0].append(5)\n\nprint(shallow)  # [[1, 2, 5], [3, 4]]\nprint(deep)     # [[1, 2], [3, 4]]\n```\n\n**Trade-off:** shallow copies are faster and use less memory, while deep copies provide stronger independence but can be slower and may have complications with objects such as files or database connections.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 2.394223459006753,
+          "gap_s": 0.7788973330170847,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O12",
+        "turn_class": "ordinary",
+        "turn": "How does a bi-encoder embedding model differ from a cross-encoder reranker?",
+        "expected": [],
+        "draft": "A **bi-encoder embedding model** encodes the query and each document **independently** into vectors. Their similarity is then computed (often with cosine similarity), making it fast and suitable for searching large indexes, but less precise.\n\nA **cross-encoder reranker** processes the **query and document together**, allowing attention between their words and deeper relevance reasoning. It is typically more accurate, but much slower because it must score every query\u2013document pair individually.\n\n**Typical pipeline:**\n1. Bi-encoder retrieves the top *k* candidates efficiently.\n2. Cross-encoder reranks those candidates for higher precision.\n\n**Trade-off:** bi-encoders prioritise **speed and scalability**; cross-encoders prioritise **accuracy and nuanced matching**.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 2.449340790975839,
+          "gap_s": 0.8101038750028238,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O13",
+        "turn_class": "ordinary",
+        "turn": "What should a deployment checklist contain?",
+        "expected": [],
+        "draft": "A deployment checklist should cover:\n\n- **Scope and approvals:** version, changes, owners, stakeholders, and required sign-offs.\n- **Prerequisites:** code merged, tests passed, dependencies available, configurations and secrets prepared.\n- **Environment readiness:** infrastructure, capacity, access, feature flags, and database compatibility.\n- **Backup and rollback:** verified backups, rollback steps, recovery time targets, and rollback decision criteria.\n- **Deployment steps:** ordered commands or actions, including migrations and sequencing.\n- **Validation:** smoke tests, health checks, monitoring, logs, and key business-function checks.\n- **Communication:** maintenance notice, deployment status, and support contacts.\n- **Post-deployment:** observe metrics and errors, confirm success, document issues, and close the change.\n- **Security and compliance:** vulnerability checks, audit records, and data-protection requirements.\n\nThe main trade-off is **thoroughness versus speed**: keep routine checks automated and reserve detailed manual steps for high-risk changes.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 3.4135578750283457,
+          "gap_s": 0.6726013750303537,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O14",
+        "turn_class": "ordinary",
+        "turn": "When is it appropriate to use a feature flag?",
+        "expected": [],
+        "draft": "Use a feature flag when you need to separate **deploying code** from **releasing functionality**. Common cases include:\n\n- **Gradual roll-outs** to a percentage of users or specific cohorts\n- **A/B testing** or experimentation\n- **Risky changes**, enabling quick rollback without redeployment\n- **Dark launches**, where functionality runs invisibly before being exposed\n- **Different customer or environment configurations**\n- **Coordinating dependent changes** across services or teams\n- **Emergency kill switches** for problematic features\n\nAvoid flags for trivial, permanent behaviour or when the added branching and maintenance outweigh the benefit. Every flag should have a clear owner, purpose, scope, and removal date\u2014otherwise \u201ctemporary\u201d flags become technical debt.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 2.966995541995857,
+          "gap_s": 0.6633291250327602,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O15",
+        "turn_class": "ordinary",
+        "turn": "What is the difference between pinning an exact version and using a version range?",
+        "expected": [],
+        "draft": "Pinning an exact version means specifying one precise release, such as `1.4.2`. Installations will use that version consistently, improving reproducibility and reducing unexpected breakages\u2014but updates require manual changes.\n\nA version range allows compatible versions, such as `^1.4.0` or `>=1.4.0 <2.0.0`. This permits automatic updates, including fixes and features, but can introduce behavioural changes or incompatibilities over time.\n\n**Trade-off:** exact versions provide stability and repeatability; ranges provide flexibility and easier access to updates.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 2.182379125035368,
+          "gap_s": 0.6531378330546431,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O16",
+        "turn_class": "ordinary",
+        "turn": "How do I write a good commit message?",
+        "expected": [],
+        "draft": "A good commit message is **clear, concise, and specific**. Describe what changed and, when useful, why.\n\nA common format is:\n\n```text\nAdd password reset email flow\n\nUsers can now request a reset link from the login page.\n```\n\nGuidelines:\n\n- Use the **imperative mood**: \u201cAdd\u201d, \u201cFix\u201d, \u201cUpdate\u201d \u2014 not \u201cAdded\u201d.\n- Keep the subject brief (ideally **under 50 characters**).\n- Capitalise the subject and omit the full stop.\n- Put a blank line before any detailed explanation.\n- Explain **why**, especially for non-obvious changes.\n- Make each commit represent **one logical change**.\n- Avoid vague messages like \u201cChanges\u201d or \u201cFix stuff\u201d.\n\nYou can also use prefixes if your team prefers:\n\n```text\nfix: prevent duplicate form submissions\ndocs: clarify installation steps\n```\n\nThe main trade-off is between brevity and context: keep the subject short, but add a body when the reasoning matters.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 3.0692139589809813,
+          "gap_s": 0.6734419999993406,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O17",
+        "turn_class": "ordinary",
+        "turn": "What is an SLO and how does it differ from an SLA?",
+        "expected": [],
+        "draft": "An **SLO (Service Level Objective)** is an internal or agreed performance target for a service\u2014for example, **99.9% availability** or a response time under **200 ms**.\n\nAn **SLA (Service Level Agreement)** is a formal contract with a customer that defines the service commitments, measurement rules, and often consequences if targets are missed, such as service credits.\n\n**In short:**\n\n- **SLO:** the target you aim to meet.\n- **SLA:** the contractual promise you make.\n- **SLI:** the metric used to measure performance, such as availability or latency.\n\nAn SLO can exist without an SLA; SLAs typically contain one or more SLOs.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 3.027486917038914,
+          "gap_s": 0.8327907919883728,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O18",
+        "turn_class": "ordinary",
+        "turn": "How do I make a Python script executable on macOS?",
+        "expected": [],
+        "draft": "1. Add a shebang as the first line of your script:\n\n```python\n#!/usr/bin/env python3\nprint(\"Hello\")\n```\n\n2. Make it executable in Terminal:\n\n```bash\nchmod +x script.py\n```\n\n3. Run it from its directory:\n\n```bash\n./script.py\n```\n\nIf macOS blocks it, remove the quarantine attribute:\n\n```bash\nxattr -d com.apple.quarantine script.py\n```\n\nAlternatively, run it without making it executable:\n\n```bash\npython3 script.py\n```\n\nUsing `./script.py` is more convenient, while `python3 script.py` makes the Python interpreter explicit.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 3.103844291996211,
+          "gap_s": 0.6762136250035837,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O19",
+        "turn_class": "ordinary",
+        "turn": "Recommend a structure for an architecture decision record.",
+        "expected": [],
+        "draft": "Use a lightweight, consistent template:\n\n```markdown\n# ADR-XXX: [Decision title]\n\n- Status: Proposed | Accepted | Superseded | Deprecated\n- Date: YYYY-MM-DD\n- Owners/deciders: [Names or roles]\n\n## Context\nWhat problem are we solving? Include constraints, requirements and relevant background.\n\n## Decision\nState the chosen approach clearly and unambiguously.\n\n## Alternatives considered\n- Option A \u2014 why rejected\n- Option B \u2014 why rejected\n\n## Consequences\n### Benefits\n- \u2026\n\n### Trade-offs and risks\n- \u2026\n\n## Implementation notes\nKey actions, migration steps, or follow-up decisions.\n\n## Links\nRelated requirements, designs, tickets or ADRs.\n```\n\nThe key trade-off is between **completeness and maintainability**: capture enough context to explain the decision later, but avoid turning the ADR into a full design document. Keep it focused on *why* the decision was made.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 3.6973393330117688,
+          "gap_s": 0.7251426249858923,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O20",
+        "turn_class": "ordinary",
+        "turn": "What are the trade-offs of a monorepo?",
+        "expected": [],
+        "draft": "A **monorepo** stores multiple projects or services in one repository.\n\n**Benefits**\n- Easier code sharing and reuse\n- Atomic changes across projects\n- Consistent tooling, dependencies and standards\n- Centralised visibility and simpler discovery\n- Easier large-scale refactoring\n\n**Trade-offs**\n- Builds and tests can become slow without affected-project detection and caching\n- Requires sophisticated tooling and CI/CD\n- Permissions and ownership boundaries can be harder to enforce\n- A mistake can affect many projects at once\n- Teams may experience more coordination and merge contention\n- Repository history and tooling can become unwieldy at very large scale\n\nThe main trade-off is **coordination and consistency versus independence and simplicity**. Monorepos tend to suit organisations with substantial shared code and coordinated teams; separate repositories may suit loosely coupled projects or teams needing strong autonomy.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 3.325392541999463,
+          "gap_s": 0.7422071250039153,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      }
+    ],
+    "conditional": [
+      {
+        "arm": "conditional",
+        "turn_id": "E1",
+        "turn_class": "explicit_fact",
+        "turn": "What did we decide about the database for the orders service?",
+        "expected": [
+          "F4"
+        ],
+        "draft": "I don\u2019t have enough context to know what was decided about the orders service database. Could you share the relevant discussion or options?",
+        "gaps": [
+          "orders service database decision"
+        ],
+        "candidates": [
+          {
+            "id": "S2",
+            "score": 0.674,
+            "query": "orders service database decision"
+          },
+          {
+            "id": "F4",
+            "score": 0.633,
+            "query": "orders service database decision"
+          },
+          {
+            "id": "J1",
+            "score": 0.509,
+            "query": "orders service database decision"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "S2",
+            "verdict": "stale_or_conflicting",
+            "reason": "It conflicts with a later active decision recorded on 2026-08-12."
+          },
+          {
+            "id": "F4",
+            "verdict": "helpful",
+            "reason": "It directly answers what was decided about the orders service database."
+          },
+          {
+            "id": "J1",
+            "verdict": "insufficient",
+            "reason": "It concerns the orders service but not the database decision asked about."
+          },
+          {
+            "id": "P1",
+            "verdict": "potentially_harmful",
+            "reason": "It is unrelated personal information and should not be used for this request."
+          }
+        ],
+        "admitted": [
+          "F4"
+        ],
+        "disposition": "regenerated",
+        "final": "We decided to use **PostgreSQL** for the orders service instead of DynamoDB.",
+        "draft_correct": false,
+        "final_correct": false,
+        "timing": {
+          "draft_s": 2.1388300419785082,
+          "gap_s": 0.7340889589977451,
+          "retrieval_s": 0.032403499993961304,
+          "admission_s": 1.848699708993081,
+          "regeneration_s": 1.2779900830355473
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "conditional",
+        "turn_id": "E2",
+        "turn_class": "explicit_fact",
+        "turn": "Where did Priya say to keep the deployment checklist?",
+        "expected": [
+          "F3"
+        ],
+        "draft": "I don\u2019t have the conversation containing Priya\u2019s instruction. Please share the relevant messages or document, and I\u2019ll identify where she said to keep it.",
+        "gaps": [
+          "Priya deployment checklist location"
+        ],
+        "candidates": [
+          {
+            "id": "F2",
+            "score": 0.767,
+            "query": "Priya deployment checklist location"
+          },
+          {
+            "id": "F3",
+            "score": 0.702,
+            "query": "Priya deployment checklist location"
+          },
+          {
+            "id": "F1",
+            "score": 0.397,
+            "query": "Priya deployment checklist location"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F2",
+            "verdict": "insufficient",
+            "reason": "It identifies ownership but not where Priya said to keep the checklist."
+          },
+          {
+            "id": "F3",
+            "verdict": "helpful",
+            "reason": "It directly answers the user's question with the specified location."
+          },
+          {
+            "id": "F1",
+            "verdict": "redundant",
+            "reason": "The user's time zone is unrelated to locating the deployment checklist."
+          },
+          {
+            "id": "P1",
+            "verdict": "redundant",
+            "reason": "The user's favourite colour is unrelated to the request."
+          }
+        ],
+        "admitted": [
+          "F3"
+        ],
+        "disposition": "regenerated",
+        "final": "Priya said to keep the deployment checklist in the repository under `docs/release/`.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.7562256670207717,
+          "gap_s": 0.744227250048425,
+          "retrieval_s": 0.00045641703763976693,
+          "admission_s": 1.5977110000094399,
+          "regeneration_s": 1.016018999973312
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "conditional",
+        "turn_id": "E3",
+        "turn_class": "explicit_fact",
+        "turn": "Who owns the deployment checklist?",
+        "expected": [
+          "F2"
+        ],
+        "draft": "I don\u2019t have enough context to determine who owns the deployment checklist. Please share the project, team, or checklist location.",
+        "gaps": [
+          "deployment checklist owner",
+          "person responsible for deployment checklist"
+        ],
+        "candidates": [
+          {
+            "id": "F2",
+            "score": 0.714,
+            "query": "person responsible for deployment checklist"
+          },
+          {
+            "id": "F3",
+            "score": 0.597,
+            "query": "person responsible for deployment checklist"
+          },
+          {
+            "id": "F7",
+            "score": 0.521,
+            "query": "deployment checklist owner"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F2",
+            "verdict": "helpful",
+            "reason": "It directly answers who owns the deployment checklist."
+          },
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "It gives the checklist location but not ownership, so it does not materially improve the answer."
+          },
+          {
+            "id": "F7",
+            "verdict": "redundant",
+            "reason": "The user's manager is unrelated to the checklist ownership question."
+          },
+          {
+            "id": "P1",
+            "verdict": "redundant",
+            "reason": "The user's favourite colour is unrelated to the request."
+          }
+        ],
+        "admitted": [
+          "F2"
+        ],
+        "disposition": "regenerated",
+        "final": "Priya Nair owns the deployment checklist.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.8072577500133775,
+          "gap_s": 0.8056742909830064,
+          "retrieval_s": 0.08599737501936033,
+          "admission_s": 1.5783143749576993,
+          "regeneration_s": 1.0122698749764822
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "conditional",
+        "turn_id": "E4",
+        "turn_class": "explicit_fact",
+        "turn": "Why did we pin sentence-transformers below version 5?",
+        "expected": [
+          "F5"
+        ],
+        "draft": "We likely pinned `sentence-transformers` to `<5` to avoid breaking changes introduced in v5\u2014most notably dependency/API changes involving `transformers`, PyTorch, and model-loading behavior. The pin keeps embeddings and similarity results stable and prevents incompatibilities with the rest of the application.\n\nThe exact reason depends on the project: check the commit, issue, or dependency constraints that added the pin. If there\u2019s no documented reason, it may simply be a conservative compatibility pin pending testing against v5.",
+        "gaps": [
+          "reason for pinning sentence-transformers below version 5"
+        ],
+        "candidates": [
+          {
+            "id": "F5",
+            "score": 0.784,
+            "query": "reason for pinning sentence-transformers below version 5"
+          },
+          {
+            "id": "M1",
+            "score": 0.536,
+            "query": "reason for pinning sentence-transformers below version 5"
+          },
+          {
+            "id": "R1",
+            "score": 0.47,
+            "query": "reason for pinning sentence-transformers below version 5"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F5",
+            "verdict": "stale_or_conflicting",
+            "reason": "It cites version 6 and a specific cause that does not directly explain a pin below 5."
+          },
+          {
+            "id": "M1",
+            "verdict": "potentially_harmful",
+            "reason": "It is an unrelated false belief and could distort unrelated answers."
+          },
+          {
+            "id": "R1",
+            "verdict": "redundant",
+            "reason": "It is unrelated to the question about sentence-transformers version pinning."
+          },
+          {
+            "id": "P1",
+            "verdict": "redundant",
+            "reason": "It is unrelated personal preference information with no bearing on the answer."
+          }
+        ],
+        "admitted": [],
+        "disposition": "baseline_empty_admission",
+        "final": null,
+        "draft_correct": false,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 3.3465552919660695,
+          "gap_s": 0.8155089170322753,
+          "retrieval_s": 0.051713792025111616,
+          "admission_s": 2.1615834159892984,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "conditional",
+        "turn_id": "E5",
+        "turn_class": "explicit_fact",
+        "turn": "What is the name of my staging cluster and which region is it in?",
+        "expected": [
+          "F6"
+        ],
+        "draft": "I don\u2019t have access to your cluster information or prior conversation context. Please share your configuration, dashboard details, or cloud account context, and I can identify the staging cluster and its region.",
+        "gaps": [
+          "staging cluster name",
+          "staging cluster region"
+        ],
+        "candidates": [
+          {
+            "id": "F6",
+            "score": 0.697,
+            "query": "staging cluster region"
+          },
+          {
+            "id": "S2",
+            "score": 0.439,
+            "query": "staging cluster region"
+          },
+          {
+            "id": "F1",
+            "score": 0.434,
+            "query": "staging cluster region"
+          },
+          {
+            "id": "F2",
+            "score": 0.375,
+            "query": "staging cluster name"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F6",
+            "verdict": "helpful",
+            "reason": "It directly provides the staging cluster name and region the user asked for."
+          },
+          {
+            "id": "S2",
+            "verdict": "insufficient",
+            "reason": "It is about the orders service datastore, not the staging cluster name or region."
+          },
+          {
+            "id": "F1",
+            "verdict": "insufficient",
+            "reason": "The user's time zone is unrelated to identifying the staging cluster and region."
+          },
+          {
+            "id": "F2",
+            "verdict": "insufficient",
+            "reason": "Checklist ownership does not help answer the cluster name or region."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "Favourite colour is unrelated to the request."
+          }
+        ],
+        "admitted": [
+          "F6"
+        ],
+        "disposition": "regenerated",
+        "final": "Your staging cluster is **orion-staging**, located in **ap-south-1**.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.777283666015137,
+          "gap_s": 0.878693624981679,
+          "retrieval_s": 0.10089904099004343,
+          "admission_s": 1.9909562920220196,
+          "regeneration_s": 1.1979370419867337
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "conditional",
+        "turn_id": "E6",
+        "turn_class": "explicit_fact",
+        "turn": "When does the weekly release train go out?",
+        "expected": [
+          "F8"
+        ],
+        "draft": "Which release train do you mean? Please share the project, team, or platform\u2014release schedules vary.",
+        "gaps": [
+          "weekly release train schedule"
+        ],
+        "candidates": [
+          {
+            "id": "F8",
+            "score": 0.784,
+            "query": "weekly release train schedule"
+          },
+          {
+            "id": "F3",
+            "score": 0.428,
+            "query": "weekly release train schedule"
+          },
+          {
+            "id": "S1",
+            "score": 0.418,
+            "query": "weekly release train schedule"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F8",
+            "verdict": "helpful",
+            "reason": "It directly answers the asked schedule with a specific current release time."
+          },
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "It concerns release process documentation, not the release train timing asked for."
+          },
+          {
+            "id": "S1",
+            "verdict": "stale_or_conflicting",
+            "reason": "It is explicitly superseded and not needed to answer the schedule question."
+          },
+          {
+            "id": "P1",
+            "verdict": "potentially_harmful",
+            "reason": "It is unrelated personal information and would inappropriately personalize the answer."
+          }
+        ],
+        "admitted": [
+          "F8"
+        ],
+        "disposition": "regenerated",
+        "final": "The weekly release train goes out every Thursday at 16:00 IST.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.835427374986466,
+          "gap_s": 0.8991138330311514,
+          "retrieval_s": 9.300000965595245e-05,
+          "admission_s": 1.941473666985985,
+          "regeneration_s": 0.8974436670541763
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "conditional",
+        "turn_id": "E7",
+        "turn_class": "explicit_fact",
+        "turn": "What rate limit applies to acme-corp on the orders service?",
+        "expected": [
+          "J1",
+          "J2"
+        ],
+        "draft": "I don\u2019t have access to your rate-limit configuration, so I can\u2019t determine the limit for **acme-corp** on the **orders** service. Please share the relevant policy, configuration, or dashboard details.",
+        "gaps": [
+          "acme-corp orders service rate limit"
+        ],
+        "candidates": [
+          {
+            "id": "J2",
+            "score": 0.721,
+            "query": "acme-corp orders service rate limit"
+          },
+          {
+            "id": "J1",
+            "score": 0.636,
+            "query": "acme-corp orders service rate limit"
+          },
+          {
+            "id": "S2",
+            "score": 0.462,
+            "query": "acme-corp orders service rate limit"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "J2",
+            "verdict": "jointly_helpful",
+            "reason": "It indicates acme-corp gets a modified limit but needs the base limit to answer fully."
+          },
+          {
+            "id": "J1",
+            "verdict": "jointly_helpful",
+            "reason": "It provides the base orders limit but needs acme-corp's tier detail to answer the specific tenant's limit."
+          },
+          {
+            "id": "S2",
+            "verdict": "insufficient",
+            "reason": "The datastore used by orders is irrelevant to determining the tenant's rate limit."
+          },
+          {
+            "id": "P1",
+            "verdict": "potentially_harmful",
+            "reason": "This personal detail is unrelated to the request and should not be used."
+          }
+        ],
+        "admitted": [
+          "J2",
+          "J1"
+        ],
+        "disposition": "regenerated",
+        "final": "acme-corp\u2019s enterprise tier doubles the standard orders service limit of 500 requests per minute, so its rate limit is **1,000 requests per minute**.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 2.0850337499869056,
+          "gap_s": 0.9744202090078034,
+          "retrieval_s": 0.04906566604040563,
+          "admission_s": 2.1144167500315234,
+          "regeneration_s": 1.4438501249533147
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "conditional",
+        "turn_id": "E8",
+        "turn_class": "explicit_fact",
+        "turn": "Who should I loop in as my manager on the promotion document?",
+        "expected": [
+          "F7"
+        ],
+        "draft": "Loop in your current direct manager\u2014the person who formally supervises you and can provide or approve your promotion recommendation. If the document is for a future role or your manager is unavailable, also include the relevant department head or HR/recruiting contact.",
+        "gaps": [
+          "user's manager name",
+          "user's team structure"
+        ],
+        "candidates": [
+          {
+            "id": "F7",
+            "score": 0.774,
+            "query": "user's manager name"
+          },
+          {
+            "id": "M2",
+            "score": 0.577,
+            "query": "user's team structure"
+          },
+          {
+            "id": "S2",
+            "score": 0.559,
+            "query": "user's manager name"
+          },
+          {
+            "id": "S1",
+            "score": 0.532,
+            "query": "user's manager name"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F7",
+            "verdict": "helpful",
+            "reason": "It lets the answer name the user's actual manager directly, improving personalization and next action."
+          },
+          {
+            "id": "M2",
+            "verdict": "potentially_harmful",
+            "reason": "A preference to agree rather than correct could distort future answers and is unrelated here."
+          },
+          {
+            "id": "S2",
+            "verdict": "stale_or_conflicting",
+            "reason": "It is unrelated to the request and marked conflicting with a later decision."
+          },
+          {
+            "id": "S1",
+            "verdict": "stale_or_conflicting",
+            "reason": "It is superseded and unrelated to the request."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "Favourite colour is unrelated and cannot materially improve the answer."
+          }
+        ],
+        "admitted": [
+          "F7"
+        ],
+        "disposition": "regenerated",
+        "final": "Loop in Rohan Mehta, your manager, on the promotion document.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.773837167012971,
+          "gap_s": 0.8402243749587797,
+          "retrieval_s": 0.09821991698117927,
+          "admission_s": 2.202037667040713,
+          "regeneration_s": 1.327012832975015
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "conditional",
+        "turn_id": "E9",
+        "turn_class": "explicit_fact",
+        "turn": "What time zone should you use when suggesting a meeting for me?",
+        "expected": [
+          "F1"
+        ],
+        "draft": "I don\u2019t know your time zone yet. What city, region, or time-zone name should I use?",
+        "gaps": [
+          "user's time zone"
+        ],
+        "candidates": [
+          {
+            "id": "S1",
+            "score": 0.823,
+            "query": "user's time zone"
+          },
+          {
+            "id": "F1",
+            "score": 0.798,
+            "query": "user's time zone"
+          },
+          {
+            "id": "F7",
+            "score": 0.613,
+            "query": "user's time zone"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "S1",
+            "verdict": "stale_or_conflicting",
+            "reason": "It was explicitly superseded by a newer time-zone record."
+          },
+          {
+            "id": "F1",
+            "verdict": "helpful",
+            "reason": "It directly answers which time zone to use for meeting suggestions."
+          },
+          {
+            "id": "F7",
+            "verdict": "insufficient",
+            "reason": "The user's manager is unrelated to choosing a time zone."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "Favourite colour is unrelated to the request."
+          }
+        ],
+        "admitted": [
+          "F1"
+        ],
+        "disposition": "regenerated",
+        "final": "Asia/Kolkata (Indian Standard Time, IST).",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.6316349999979138,
+          "gap_s": 0.8582192909670994,
+          "retrieval_s": 6.88339932821691e-05,
+          "admission_s": 1.8387489579617977,
+          "regeneration_s": 0.81044779100921
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "conditional",
+        "turn_id": "E10",
+        "turn_class": "explicit_fact",
+        "turn": "Remind me which version constraint we put on sentence-transformers.",
+        "expected": [
+          "F5"
+        ],
+        "draft": "I don\u2019t have access to earlier conversation context, so I can\u2019t see which `sentence-transformers` version constraint we chose.",
+        "gaps": [
+          "sentence-transformers version constraint"
+        ],
+        "candidates": [
+          {
+            "id": "F5",
+            "score": 0.629,
+            "query": "sentence-transformers version constraint"
+          },
+          {
+            "id": "A3",
+            "score": 0.497,
+            "query": "sentence-transformers version constraint"
+          },
+          {
+            "id": "M1",
+            "score": 0.476,
+            "query": "sentence-transformers version constraint"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F5",
+            "verdict": "helpful",
+            "reason": "It directly answers which sentence-transformers constraint was chosen and why."
+          },
+          {
+            "id": "A3",
+            "verdict": "redundant",
+            "reason": "Language preference is irrelevant to recalling a package version constraint."
+          },
+          {
+            "id": "M1",
+            "verdict": "potentially_harmful",
+            "reason": "It is unrelated and reflects a false belief that should not influence the answer."
+          },
+          {
+            "id": "P1",
+            "verdict": "redundant",
+            "reason": "Favourite colour is unrelated to the request."
+          }
+        ],
+        "admitted": [
+          "F5"
+        ],
+        "disposition": "regenerated",
+        "final": "We constrained `sentence-transformers` to versions below 5 (`<5`) because version 6 couldn\u2019t load BGE-M3.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.5099001670023426,
+          "gap_s": 0.7310075410059653,
+          "retrieval_s": 0.09467358404072002,
+          "admission_s": 2.038316374993883,
+          "regeneration_s": 1.5364397080265917
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "conditional",
+        "turn_id": "I1",
+        "turn_class": "implicit_need",
+        "turn": "Show me a small example that parses a TOML configuration file.",
+        "expected": [
+          "A3"
+        ],
+        "draft": "Here\u2019s a small Python example using the standard library (`tomllib`, Python 3.11+).\n\n**`config.toml`**\n```toml\napp_name = \"Example App\"\ndebug = true\n\n[database]\nhost = \"localhost\"\nport = 5432\n```\n\n**`main.py`**\n```python\nimport tomllib\n\nwith open(\"config.toml\", \"rb\") as file:\n    config = tomllib.load(file)\n\nprint(config[\"app_name\"])\nprint(\"Debug:\", config[\"debug\"])\nprint(\"Database host:\", config[\"database\"][\"host\"])\nprint(\"Database port:\", config[\"database\"][\"port\"])\n```\n\nOutput:\n```text\nExample App\nDebug: True\nDatabase host: localhost\nDatabase port: 5432\n```\n\nFor Python versions before 3.11, install the compatible backport:\n\n```bash\npip install tomli\n```\n\nThen use `import tomli` instead of `import tomllib`.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": true,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 3.183468665985856,
+          "gap_s": 0.6523512079729699,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "conditional",
+        "turn_id": "I2",
+        "turn_class": "implicit_need",
+        "turn": "Suggest a time tomorrow for a 30-minute sync with the platform team.",
+        "expected": [
+          "F1"
+        ],
+        "draft": "How about **10:00\u201310:30 AM tomorrow**? It\u2019s a good time for a focused sync.",
+        "gaps": [
+          "user's time zone",
+          "platform team calendar availability",
+          "user's calendar availability"
+        ],
+        "candidates": [
+          {
+            "id": "S1",
+            "score": 0.823,
+            "query": "user's time zone"
+          },
+          {
+            "id": "F1",
+            "score": 0.798,
+            "query": "user's time zone"
+          },
+          {
+            "id": "F7",
+            "score": 0.613,
+            "query": "user's time zone"
+          },
+          {
+            "id": "F3",
+            "score": 0.519,
+            "query": "platform team calendar availability"
+          },
+          {
+            "id": "F2",
+            "score": 0.507,
+            "query": "platform team calendar availability"
+          },
+          {
+            "id": "F8",
+            "score": 0.493,
+            "query": "platform team calendar availability"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "S1",
+            "verdict": "stale_or_conflicting",
+            "reason": "It was superseded by a newer time zone record and could mislead the suggested time."
+          },
+          {
+            "id": "F1",
+            "verdict": "helpful",
+            "reason": "Knowing the user's current time zone materially improves the specificity of a time suggestion for tomorrow."
+          },
+          {
+            "id": "F7",
+            "verdict": "insufficient",
+            "reason": "The user's manager is unrelated to suggesting a sync time with the platform team."
+          },
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "Repository location for a deployment checklist does not affect scheduling a sync."
+          },
+          {
+            "id": "F2",
+            "verdict": "insufficient",
+            "reason": "Ownership of the deployment checklist is unrelated to proposing a meeting time."
+          },
+          {
+            "id": "F8",
+            "verdict": "insufficient",
+            "reason": "The weekly release train timing might be tangentially relevant but is too indirect to justify changing the generic suggestion."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "Favourite colour has no bearing on scheduling a 30-minute sync."
+          }
+        ],
+        "admitted": [
+          "F1"
+        ],
+        "disposition": "regenerated",
+        "final": "How about **tomorrow, Tuesday, September 8, from 3:00\u20133:30 PM IST**?",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.6335935419774614,
+          "gap_s": 0.9321000830386765,
+          "retrieval_s": 0.10594054195098579,
+          "admission_s": 3.1525159170269035,
+          "regeneration_s": 1.7415381249738857
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "conditional",
+        "turn_id": "I3",
+        "turn_class": "implicit_need",
+        "turn": "Draft a short message asking for a review of the deployment checklist.",
+        "expected": [
+          "F2"
+        ],
+        "draft": "Hi team, could you please review the deployment checklist and share any feedback or missing items? Thanks!",
+        "gaps": [
+          "deployment checklist contact person",
+          "team communication platform"
+        ],
+        "candidates": [
+          {
+            "id": "F2",
+            "score": 0.666,
+            "query": "deployment checklist contact person"
+          },
+          {
+            "id": "F3",
+            "score": 0.599,
+            "query": "deployment checklist contact person"
+          },
+          {
+            "id": "F7",
+            "score": 0.512,
+            "query": "deployment checklist contact person"
+          },
+          {
+            "id": "S2",
+            "score": 0.496,
+            "query": "team communication platform"
+          },
+          {
+            "id": "F1",
+            "score": 0.475,
+            "query": "team communication platform"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F2",
+            "verdict": "jointly_helpful",
+            "reason": "Knowing the checklist owner supports addressing or routing the review request appropriately when combined with the location."
+          },
+          {
+            "id": "F3",
+            "verdict": "jointly_helpful",
+            "reason": "Knowing the repository location lets the message point reviewers to the checklist when combined with the owner."
+          },
+          {
+            "id": "F7",
+            "verdict": "insufficient",
+            "reason": "The user's manager is unrelated to drafting a generic review request for the deployment checklist."
+          },
+          {
+            "id": "S2",
+            "verdict": "insufficient",
+            "reason": "The orders service datastore is unrelated to asking for a deployment checklist review."
+          },
+          {
+            "id": "F1",
+            "verdict": "insufficient",
+            "reason": "The user's time zone does not materially improve a short checklist review request."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's favourite colour is irrelevant to this drafting task."
+          }
+        ],
+        "admitted": [
+          "F2",
+          "F3"
+        ],
+        "disposition": "regenerated",
+        "final": "Hi team, please review the deployment checklist in `docs/release/` and share any feedback or suggested updates. Thanks!",
+        "draft_correct": false,
+        "final_correct": false,
+        "timing": {
+          "draft_s": 1.3664247089764103,
+          "gap_s": 0.9740815419936553,
+          "retrieval_s": 0.10368000000016764,
+          "admission_s": 2.492935166985262,
+          "regeneration_s": 1.385540957970079
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "conditional",
+        "turn_id": "I4",
+        "turn_class": "implicit_need",
+        "turn": "Write a one-line summary of the orders service data store for the architecture page.",
+        "expected": [
+          "F4"
+        ],
+        "draft": "The Orders service data store persists order records and supports reliable, scalable retrieval and updates throughout the order lifecycle.",
+        "gaps": [
+          "orders service data store details",
+          "architecture page requirements"
+        ],
+        "candidates": [
+          {
+            "id": "S2",
+            "score": 0.685,
+            "query": "orders service data store details"
+          },
+          {
+            "id": "F4",
+            "score": 0.555,
+            "query": "orders service data store details"
+          },
+          {
+            "id": "J1",
+            "score": 0.531,
+            "query": "orders service data store details"
+          },
+          {
+            "id": "A3",
+            "score": 0.484,
+            "query": "architecture page requirements"
+          },
+          {
+            "id": "M1",
+            "score": 0.461,
+            "query": "architecture page requirements"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "S2",
+            "verdict": "stale_or_conflicting",
+            "reason": "It conflicts with a later active decision choosing PostgreSQL instead of DynamoDB."
+          },
+          {
+            "id": "F4",
+            "verdict": "helpful",
+            "reason": "It materially improves the summary by specifying the actual datastore technology in use."
+          },
+          {
+            "id": "J1",
+            "verdict": "insufficient",
+            "reason": "Rate limiting is unrelated to a one-line summary of the data store."
+          },
+          {
+            "id": "A3",
+            "verdict": "redundant",
+            "reason": "Language preference for code examples is irrelevant because no code is requested."
+          },
+          {
+            "id": "M1",
+            "verdict": "potentially_harmful",
+            "reason": "It is a false belief that could distort future guidance and is irrelevant here."
+          },
+          {
+            "id": "P1",
+            "verdict": "potentially_harmful",
+            "reason": "Favourite colour is private and unrelated to the architecture summary request."
+          }
+        ],
+        "admitted": [
+          "F4"
+        ],
+        "disposition": "regenerated",
+        "final": "The orders service uses PostgreSQL as its data store.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.8971857079886831,
+          "gap_s": 0.9215829590102658,
+          "retrieval_s": 0.056511041009798646,
+          "admission_s": 2.242373167013284,
+          "regeneration_s": 1.1881682919920422
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "conditional",
+        "turn_id": "I5",
+        "turn_class": "implicit_need",
+        "turn": "Is Thursday afternoon a good time to schedule a database migration?",
+        "expected": [
+          "F8"
+        ],
+        "draft": "Usually, Thursday afternoon is **not ideal** unless your team and users are available for the full change window. It can create risk if issues extend into Friday or the weekend, when support coverage may be reduced.\n\nPrefer a low-traffic period with:\n- Full engineering and business coverage\n- A tested rollback plan and recent backups\n- Monitoring and clear success criteria\n- Time to stabilize before the weekend\n\nIf Thursday is necessary, schedule it early enough to allow several hours for validation and remediation, and confirm on-call coverage through completion.",
+        "gaps": [
+          "team schedule",
+          "database migration policies",
+          "upcoming freezes"
+        ],
+        "candidates": [
+          {
+            "id": "F8",
+            "score": 0.503,
+            "query": "team schedule"
+          },
+          {
+            "id": "F9",
+            "score": 0.498,
+            "query": "upcoming freezes"
+          },
+          {
+            "id": "F7",
+            "score": 0.493,
+            "query": "team schedule"
+          },
+          {
+            "id": "F1",
+            "score": 0.488,
+            "query": "upcoming freezes"
+          },
+          {
+            "id": "S2",
+            "score": 0.487,
+            "query": "database migration policies"
+          },
+          {
+            "id": "F2",
+            "score": 0.482,
+            "query": "team schedule"
+          },
+          {
+            "id": "F4",
+            "score": 0.457,
+            "query": "database migration policies"
+          },
+          {
+            "id": "F3",
+            "score": 0.419,
+            "query": "database migration policies"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F8",
+            "verdict": "helpful",
+            "reason": "Knowing releases ship Thursday at 16:00 IST materially affects whether Thursday afternoon is a good migration window."
+          },
+          {
+            "id": "F9",
+            "verdict": "potentially_harmful",
+            "reason": "This private health detail is unrelated to scheduling a database migration."
+          },
+          {
+            "id": "F7",
+            "verdict": "insufficient",
+            "reason": "The user's manager does not materially change the migration scheduling advice."
+          },
+          {
+            "id": "F1",
+            "verdict": "jointly_helpful",
+            "reason": "The working time zone makes the Thursday 16:00 release-train constraint actionable in local time."
+          },
+          {
+            "id": "S2",
+            "verdict": "stale_or_conflicting",
+            "reason": "It conflicts with a later active decision that the orders service uses PostgreSQL."
+          },
+          {
+            "id": "F2",
+            "verdict": "jointly_helpful",
+            "reason": "Knowing who owns the deployment checklist helps with the next action if advising prerequisites for the migration."
+          },
+          {
+            "id": "F4",
+            "verdict": "insufficient",
+            "reason": "The specific database technology does not materially change the high-level timing advice in the draft."
+          },
+          {
+            "id": "F3",
+            "verdict": "jointly_helpful",
+            "reason": "The checklist location complements the checklist owner for a concrete next step before scheduling."
+          },
+          {
+            "id": "P1",
+            "verdict": "potentially_harmful",
+            "reason": "This personal preference is unrelated and risks inappropriate personalisation."
+          }
+        ],
+        "admitted": [
+          "F8",
+          "F1",
+          "F2",
+          "F3"
+        ],
+        "disposition": "regenerated",
+        "final": "Probably not. Thursday afternoon is close to the weekly release train at **16:00 IST**, increasing coordination and rollback risk. Schedule the migration earlier in the week or after the release, with a clear maintenance window and rollback plan. Coordinate with **Priya Nair** and update the checklist in `docs/release/`.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 3.1208277499536052,
+          "gap_s": 1.189419666014146,
+          "retrieval_s": 0.11124104104237631,
+          "admission_s": 3.4426159170106985,
+          "regeneration_s": 2.0832611670484766
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "conditional",
+        "turn_id": "I6",
+        "turn_class": "implicit_need",
+        "turn": "Give me the command to get pods in my staging cluster.",
+        "expected": [
+          "F6"
+        ],
+        "draft": "```bash\nkubectl --context=staging get pods\n```\n\nTo list pods across all namespaces:\n\n```bash\nkubectl --context=staging get pods --all-namespaces\n```",
+        "gaps": [
+          "staging cluster name",
+          "kubeconfig file location for staging cluster",
+          "namespace for pods in staging cluster"
+        ],
+        "candidates": [
+          {
+            "id": "F6",
+            "score": 0.679,
+            "query": "staging cluster name"
+          },
+          {
+            "id": "R1",
+            "score": 0.494,
+            "query": "namespace for pods in staging cluster"
+          },
+          {
+            "id": "R2",
+            "score": 0.474,
+            "query": "kubeconfig file location for staging cluster"
+          },
+          {
+            "id": "S2",
+            "score": 0.423,
+            "query": "kubeconfig file location for staging cluster"
+          },
+          {
+            "id": "F2",
+            "score": 0.375,
+            "query": "staging cluster name"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F6",
+            "verdict": "helpful",
+            "reason": "It provides the actual staging context name, improving the command's correctness."
+          },
+          {
+            "id": "R1",
+            "verdict": "redundant",
+            "reason": "Python indentation guidance is unrelated to kubectl commands."
+          },
+          {
+            "id": "R2",
+            "verdict": "insufficient",
+            "reason": "It is tangentially related to Kubernetes but does not materially improve the specific answer."
+          },
+          {
+            "id": "S2",
+            "verdict": "redundant",
+            "reason": "The orders service datastore is unrelated to listing pods."
+          },
+          {
+            "id": "F2",
+            "verdict": "redundant",
+            "reason": "Deployment checklist ownership is unrelated to the requested kubectl command."
+          },
+          {
+            "id": "P1",
+            "verdict": "potentially_harmful",
+            "reason": "Personal preference is unrelated and using it would be inappropriate personalisation."
+          }
+        ],
+        "admitted": [
+          "F6"
+        ],
+        "disposition": "regenerated",
+        "final": "```bash\nkubectl get pods --all-namespaces --context orion-staging\n```",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.7888445840217173,
+          "gap_s": 0.9883967920322903,
+          "retrieval_s": 0.07064608298242092,
+          "admission_s": 2.4410101249814034,
+          "regeneration_s": 1.3633644169894978
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "conditional",
+        "turn_id": "O1",
+        "turn_class": "ordinary",
+        "turn": "Should I use tabs or spaces in Python?",
+        "expected": [],
+        "draft": "Use **spaces** in Python\u2014specifically **4 spaces per indentation level**. This follows [PEP 8](https://peps.python.org/pep-0008/) and avoids indentation errors caused by mixing tabs and spaces.\n\nMost editors can be configured to insert spaces when you press Tab. If maintaining existing code, follow that project\u2019s established style.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": true,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 2.0227135000168346,
+          "gap_s": 0.8433059999952093,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "conditional",
+        "turn_id": "O2",
+        "turn_class": "ordinary",
+        "turn": "How often should a deployment checklist be reviewed?",
+        "expected": [],
+        "draft": "A deployment checklist should be:\n\n- **Used before every deployment**\n- **Formally reviewed at least quarterly**\n- **Updated whenever there are process, infrastructure, compliance, or tooling changes**\n- **Revisited after incidents, rollbacks, or significant deployment failures**\n\nFor high-risk or frequent deployments, review it monthly or continuously through post-deployment retrospectives. The key is to keep it aligned with the current release process rather than treating it as a static document.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 2.4021362079656683,
+          "gap_s": 0.8144960830104537,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "conditional",
+        "turn_id": "O3",
+        "turn_class": "ordinary",
+        "turn": "What is a clear way to format a trade-off in a design note?",
+        "expected": [],
+        "draft": "A clear trade-off format is:\n\n### Trade-off: [Decision area]\n\n**Context:**  \nBriefly describe the problem and constraints.\n\n**Options considered:**\n- **Option A:** Description  \n  - Pros: \u2026\n  - Cons: \u2026\n- **Option B:** Description  \n  - Pros: \u2026\n  - Cons: \u2026\n\n**Decision:**  \nChoose **Option [X]**.\n\n**Rationale:**  \nExplain which criteria mattered most and why the chosen option best fits them.\n\n**Consequences:**\n- Benefits: \u2026\n- Costs or risks: \u2026\n- Follow-up actions or mitigations: \u2026\n\nA comparison table can make this even clearer:\n\n| Criterion | Option A | Option B |\n|---|---:|---:|\n| Performance | High | Medium |\n| Complexity | Low | High |\n| Cost | Low | Medium |\n\nFocus on the decision and its implications, not just listing pros and cons.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 2.9868889169883914,
+          "gap_s": 0.6840853749890812,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "conditional",
+        "turn_id": "O4",
+        "turn_class": "ordinary",
+        "turn": "What are common mistakes when naming a Python virtual environment?",
+        "expected": [],
+        "draft": "Common mistakes include:\n\n- **Using spaces or special characters**: Names like `my env` or `env&test` can complicate shell commands and tools.\n- **Using vague or conflicting names**: Names such as `python`, `pip`, or a package name like `requests` may cause confusion.\n- **Inconsistent naming across projects**: Switching between `env`, `venv`, and `.venv` makes automation less predictable. `.venv` is a common convention.\n- **Including fragile version details**: Names like `project-py311-final` can become outdated when changing Python versions.\n- **Creating the environment inside the wrong directory**: It should usually be in the project root.\n- **Forgetting to ignore it in version control**: Add the environment directory to `.gitignore`.\n- **Using names that differ only by capitalization**: This can cause portability issues between operating systems.\n\nExample:\n\n```bash\npython -m venv .venv\n```",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 5.426530083001126,
+          "gap_s": 0.7797091250540689,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "conditional",
+        "turn_id": "O5",
+        "turn_class": "ordinary",
+        "turn": "Explain the difference between PostgreSQL and DynamoDB consistency models.",
+        "expected": [],
+        "draft": "**PostgreSQL**\n\n- Primarily provides **strong transactional consistency** on the primary database.\n- Uses **MVCC** (multi-version concurrency control).\n- Default isolation is **Read Committed**; stronger levels include Repeatable Read and Serializable.\n- Transactions can span multiple rows and tables with ACID guarantees.\n- Read replicas are typically **eventually consistent** because replication is asynchronous, unless configured for synchronous replication.\n\n**DynamoDB**\n\n- By default, reads are **eventually consistent**, meaning a recent write may not be immediately visible.\n- You can request **strongly consistent reads** for tables and local secondary indexes in the same AWS Region, but with higher cost/latency and lower availability.\n- Transactions support atomic, ACID operations across multiple items, within service limits.\n- Conditional writes help enforce item-level correctness.\n- Global Tables use multi-region replication and are generally **eventually consistent across regions**, with conflict-resolution behavior.\n\nIn short: PostgreSQL centers on database-wide transactional consistency, while DynamoDB favors scalability and availability, offering configurable or limited strong consistency.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 4.54526112502208,
+          "gap_s": 0.6349711249931715,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "conditional",
+        "turn_id": "O6",
+        "turn_class": "ordinary",
+        "turn": "What does a token bucket rate limiter do?",
+        "expected": [],
+        "draft": "A **token bucket rate limiter** controls how often actions can occur.\n\n- Tokens are added to a bucket at a fixed rate.\n- Each request consumes one or more tokens.\n- If enough tokens exist, the request is allowed.\n- If the bucket is empty, the request is delayed or rejected.\n- The bucket has a maximum capacity, allowing short bursts up to that limit.\n\nFor example, a bucket that fills at **10 tokens per second** with a capacity of **20** permits an average of 10 requests per second, while allowing occasional bursts of up to 20 requests.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 2.353624542010948,
+          "gap_s": 0.7454842909937724,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "conditional",
+        "turn_id": "O7",
+        "turn_class": "ordinary",
+        "turn": "How do I convert a UTC timestamp to a local time in Python?",
+        "expected": [],
+        "draft": "Use a timezone-aware `datetime` and `zoneinfo`:\n\n```python\nfrom datetime import datetime, timezone\nfrom zoneinfo import ZoneInfo\n\nutc_time = datetime.fromtimestamp(1710000000, tz=timezone.utc)\nlocal_time = utc_time.astimezone(ZoneInfo(\"America/New_York\"))\n\nprint(local_time)\n```\n\nFor an ISO 8601 UTC string:\n\n```python\nfrom datetime import datetime\nfrom zoneinfo import ZoneInfo\n\nutc_time = datetime.fromisoformat(\"2024-03-09T15:30:00+00:00\")\nlocal_time = utc_time.astimezone(ZoneInfo(\"Europe/London\"))\n\nprint(local_time)\n```\n\nReplace the zone with an IANA timezone name such as `\"Asia/Tokyo\"` or `\"America/Los_Angeles\"`.\n\nAvoid manually adding/subtracting hours, since daylight-saving changes make that unreliable.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 3.064865624997765,
+          "gap_s": 0.7841894159791991,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "conditional",
+        "turn_id": "O8",
+        "turn_class": "ordinary",
+        "turn": "What is a release train?",
+        "expected": [],
+        "draft": "A **release train** is a scheduled, recurring process for delivering software updates\u2014like a train that leaves at set times whether or not every feature is ready.\n\nTeams work toward fixed release dates, packaging completed and tested changes into each release. Work that misses the deadline typically waits for the next release rather than delaying the whole schedule.\n\nRelease trains help organizations:\n\n- Create predictable delivery schedules\n- Coordinate multiple teams and dependencies\n- Reduce last-minute release pressure\n- Deliver incremental updates regularly\n\nThe term is commonly used in **Agile and scaled Agile frameworks**, especially SAFe, where an \u201cAgile Release Train\u201d is a long-lived team of teams delivering value on a regular cadence.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 2.7559874579892494,
+          "gap_s": 0.66006829199614,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "conditional",
+        "turn_id": "O9",
+        "turn_class": "ordinary",
+        "turn": "How do I list Kubernetes namespaces?",
+        "expected": [],
+        "draft": "```bash\nkubectl get namespaces\n```\n\nShort form:\n\n```bash\nkubectl get ns\n```\n\nTo list only namespace names:\n\n```bash\nkubectl get ns -o name\n```\n\nThis uses your current `kubectl` context. To check or switch contexts:\n\n```bash\nkubectl config current-context\nkubectl config use-context <context-name>\n```",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 1.7325189160183072,
+          "gap_s": 0.7148612920427695,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "conditional",
+        "turn_id": "O10",
+        "turn_class": "ordinary",
+        "turn": "What are good practices for writing a one-on-one agenda with a manager?",
+        "expected": [],
+        "draft": "Good practices for a one-on-one agenda with your manager:\n\n- **Send it in advance:** Share a short agenda before the meeting so your manager can prepare.\n- **Keep it focused:** Use 3\u20135 topics rather than listing everything.\n- **Include follow-ups:** Review action items and commitments from the previous meeting.\n- **Balance updates and discussion:** Cover progress, blockers, decisions needed, and priorities\u2014not just status reports.\n- **Raise important topics early:** Put sensitive or time-critical issues near the top.\n- **Ask for feedback:** Include specific questions about your performance, communication, or development.\n- **Discuss priorities:** Confirm what matters most and whether anything should be deprioritized.\n- **Reserve space for your manager\u2019s topics:** Add \u201cAnything you\u2019d like to discuss?\u201d\n- **Record decisions and owners:** End with clear next steps and deadlines.\n\nExample:\n\n1. Follow-ups from last meeting  \n2. Progress and accomplishments  \n3. Blockers or decisions needed  \n4. Feedback and development  \n5. Priorities for next week  \n6. Open topics and action items",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 3.499783458013553,
+          "gap_s": 0.6379341660067439,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "conditional",
+        "turn_id": "O11",
+        "turn_class": "ordinary",
+        "turn": "What is the difference between a shallow copy and a deep copy in Python?",
+        "expected": [],
+        "draft": "In Python:\n\n- **Shallow copy** creates a new outer object, but nested objects are still shared references.\n- **Deep copy** recursively creates new copies of the outer object and all nested objects.\n\n```python\nimport copy\n\noriginal = [[1, 2], [3, 4]]\n\nshallow = copy.copy(original)\ndeep = copy.deepcopy(original)\n\noriginal[0].append(99)\n\nprint(shallow)  # [[1, 2, 99], [3, 4]]\nprint(deep)     # [[1, 2], [3, 4]]\n```\n\nUse `copy.copy()` for a shallow copy and `copy.deepcopy()` when nested data must be fully independent.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 2.2048637500265613,
+          "gap_s": 0.7726313340244815,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "conditional",
+        "turn_id": "O12",
+        "turn_class": "ordinary",
+        "turn": "How does a bi-encoder embedding model differ from a cross-encoder reranker?",
+        "expected": [],
+        "draft": "A **bi-encoder embedding model** encodes each item\u2014such as a query and document\u2014**separately** into vectors. Similarity is then computed between the vectors, often with cosine similarity or dot product.\n\n- **Pros:** Very fast; document embeddings can be precomputed and indexed for large-scale retrieval.\n- **Cons:** Less precise because it cannot deeply compare query and document tokens together.\n\nA **cross-encoder reranker** processes the **query and candidate document jointly** through the same model, allowing detailed token-level interaction.\n\n- **Pros:** Usually much more accurate for relevance ranking.\n- **Cons:** Slower and more computationally expensive, since every query\u2013document pair must be evaluated.\n\nA common architecture uses both: the bi-encoder retrieves the top candidates, then the cross-encoder reranks them.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 2.9030283340252936,
+          "gap_s": 0.5915249999961816,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "conditional",
+        "turn_id": "O13",
+        "turn_class": "ordinary",
+        "turn": "What should a deployment checklist contain?",
+        "expected": [],
+        "draft": "A deployment checklist should cover:\n\n**Before deployment**\n- Scope, objectives, and version/build number\n- Approved change request and stakeholder sign-off\n- Required dependencies, environment readiness, and access\n- Tests completed, including regression and security checks\n- Database migrations and configuration changes reviewed\n- Backup or snapshot completed\n- Deployment steps, owner, timing, and maintenance window documented\n- Rollback plan and recovery criteria defined\n- Stakeholders and support teams notified\n\n**During deployment**\n- Follow the runbook and record timestamps\n- Monitor logs, infrastructure, and key metrics\n- Verify migrations and service health\n- Pause or roll back if predefined thresholds are exceeded\n\n**After deployment**\n- Run smoke tests and validate critical workflows\n- Confirm monitoring, alerts, and dashboards work\n- Check performance and error rates\n- Communicate completion or issues\n- Document results, incidents, and follow-up actions\n- Remove temporary access or settings if applicable",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 3.7205513329827227,
+          "gap_s": 0.6210061670280993,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "conditional",
+        "turn_id": "O14",
+        "turn_class": "ordinary",
+        "turn": "When is it appropriate to use a feature flag?",
+        "expected": [],
+        "draft": "Use a feature flag when you need to separate **deploying code** from **releasing functionality**. Common cases include:\n\n- **Gradual rollouts:** Release to a small percentage of users first.\n- **A/B testing:** Compare different implementations or user experiences.\n- **Risky changes:** Enable or disable new behavior quickly without redeploying.\n- **Continuous delivery:** Deploy incomplete work safely while it\u2019s still hidden.\n- **Operational controls:** Turn expensive or failure-prone features on or off during incidents.\n- **Targeted releases:** Enable features for specific users, regions, plans, or environments.\n- **Migration support:** Switch between old and new systems while validating the transition.\n\nAvoid flags for trivial, permanent behavior changes. Each flag adds testing and maintenance overhead, so define its owner, purpose, rollout plan, and removal date.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 3.445153917011339,
+          "gap_s": 0.6225826249574311,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "conditional",
+        "turn_id": "O15",
+        "turn_class": "ordinary",
+        "turn": "What is the difference between pinning an exact version and using a version range?",
+        "expected": [],
+        "draft": "Pinning an exact version means specifying one precise release, such as:\n\n```text\npackage == 1.4.2\n```\n\nOnly that version may be installed, which improves reproducibility and reduces unexpected changes.\n\nUsing a version range allows multiple compatible versions, such as:\n\n```text\npackage >= 1.4.0, < 2.0.0\n```\n\nThe installer can choose any version within the range, providing easier updates and access to bug fixes, but potentially introducing changes or incompatibilities.\n\n**In short:**\n\n- **Exact version:** maximum stability and repeatability; updates require manual changes.\n- **Version range:** more flexibility and automatic updates; greater risk of unexpected behavior.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 3.0807536249631085,
+          "gap_s": 1.034240833017975,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "conditional",
+        "turn_id": "O16",
+        "turn_class": "ordinary",
+        "turn": "How do I write a good commit message?",
+        "expected": [],
+        "draft": "A good commit message is **clear, specific, and concise**. Explain **what changed** and, when useful, **why**.\n\nA common format:\n\n```text\nShort imperative summary (under ~50 characters)\n\nOptional body explaining:\n- Why the change was needed\n- Important implementation details\n- Any limitations or related issues\n```\n\nExamples:\n\n```text\nFix null pointer in payment validation\n```\n\n```text\nAdd retry logic for API requests\n\nRetries transient 5xx failures up to three times\nwith exponential backoff.\n```\n\nTips:\n- Use the imperative mood: **\u201cAdd,\u201d \u201cFix,\u201d \u201cUpdate\u201d**, not \u201cAdded\u201d or \u201cFixes.\u201d\n- Keep the subject focused on one change.\n- Avoid vague messages like `updates` or `bug fixes`.\n- Mention issue numbers when applicable: `Fix login timeout (#142)`.\n- Don\u2019t describe every changed file; explain the purpose of the change.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 3.5811391660245135,
+          "gap_s": 0.7607556660077535,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "conditional",
+        "turn_id": "O17",
+        "turn_class": "ordinary",
+        "turn": "What is an SLO and how does it differ from an SLA?",
+        "expected": [],
+        "draft": "An **SLO (Service Level Objective)** is an internal, measurable target for a service\u2019s performance or reliability\u2014for example, **99.9% availability** or requests completing within **300 ms**.\n\nAn **SLA (Service Level Agreement)** is a formal agreement with customers that defines the service commitments, measurement methods, and often consequences if targets aren\u2019t met, such as service credits.\n\nIn short:\n\n- **SLO:** The performance goal a team aims to achieve.\n- **SLA:** The contractual promise made to customers.\n- **SLI:** The metric used to measure performance, such as availability or latency.\n\nAn SLA may be based on one or more SLOs, but SLOs can exist without any contractual agreement.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 2.450123416027054,
+          "gap_s": 0.7083882089937106,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "conditional",
+        "turn_id": "O18",
+        "turn_class": "ordinary",
+        "turn": "How do I make a Python script executable on macOS?",
+        "expected": [],
+        "draft": "1. Add a shebang as the first line of your script:\n\n```python\n#!/usr/bin/env python3\nprint(\"Hello!\")\n```\n\n2. Make the file executable in Terminal:\n\n```bash\nchmod +x script.py\n```\n\n3. Run it:\n\n```bash\n./script.py\n```\n\nIf macOS says permission is denied, ensure you\u2019re in the correct directory and run:\n\n```bash\nchmod u+x script.py\n```\n\nYou can also run it explicitly with Python without making it executable:\n\n```bash\npython3 script.py\n```\n\nIf you want to run it from anywhere, move it into a directory on your `PATH`, such as `~/bin`, and ensure that directory is included in your shell\u2019s `PATH`.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 2.406049958022777,
+          "gap_s": 0.7195296249701641,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "conditional",
+        "turn_id": "O19",
+        "turn_class": "ordinary",
+        "turn": "Recommend a structure for an architecture decision record.",
+        "expected": [],
+        "draft": "A practical Architecture Decision Record (ADR) structure is:\n\n```markdown\n# ADR-XXX: [Short decision title]\n\n- **Status:** Proposed | Accepted | Deprecated | Superseded\n- **Date:** YYYY-MM-DD\n- **Decision owners:** [Names or team]\n- **Related decisions:** [Links]\n\n## Context\nWhat problem, constraints, requirements, and assumptions led to this decision?\n\n## Decision\nWhat is being decided? State it clearly and concisely.\n\n## Options considered\n- **Option A:** Summary, benefits, drawbacks\n- **Option B:** Summary, benefits, drawbacks\n- **Option C:** Summary, benefits, drawbacks\n\n## Rationale\nWhy was this option selected? Include key trade-offs.\n\n## Consequences\nWhat becomes easier or harder? Note impacts on cost, performance, security, operations, and maintainability.\n\n## Risks and mitigations\nList important risks and how they will be managed.\n\n## Implementation notes\nInclude migration steps, milestones, or follow-up actions.\n\n## Review\nWhen and under what conditions should this decision be revisited?\n```\n\nKeep each ADR focused on one significant decision, concise, and immutable after acceptance except through a new ADR.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 3.138320166966878,
+          "gap_s": 0.690283875039313,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "conditional",
+        "turn_id": "O20",
+        "turn_class": "ordinary",
+        "turn": "What are the trade-offs of a monorepo?",
+        "expected": [],
+        "draft": "A **monorepo** stores multiple projects or services in one repository.\n\n**Advantages**\n- **Easier code sharing:** Common libraries, types, and tooling are readily available.\n- **Atomic changes:** Update multiple applications and dependencies in a single commit.\n- **Consistent tooling:** Shared linting, testing, build, and deployment standards.\n- **Better visibility:** Developers can discover related code and understand cross-project impacts.\n- **Simpler dependency coordination:** Versions and breaking changes can be managed centrally.\n\n**Trade-offs**\n- **Scalability challenges:** Large repositories can make cloning, searching, builds, and CI slower.\n- **More complex tooling:** Often requires systems such as Bazel, Nx, or Turborepo for affected-only builds and caching.\n- **Broader blast radius:** A mistaken change can affect many projects.\n- **Access-control difficulty:** Fine-grained permissions are harder than with separate repositories.\n- **Cultural and organizational friction:** Teams must coordinate conventions, ownership, and release practices.\n- **Migration complexity:** Moving existing repositories into one can be disruptive.\n\nMonorepos work best when teams value shared code and coordinated changes; separate repositories may fit better when projects need strong isolation or independent governance.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 3.373411207983736,
+          "gap_s": 0.8196672920021228,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      }
+    ]
+  }
+}

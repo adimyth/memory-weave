@@ -1,0 +1,128 @@
+{
+  "artifact_dir": "/Users/adimyth/PersonalProjects/agentic-memory-system/benchmarks/results/vertical-slice/attempt-kdqjzeee",
+  "completed_runs": 3,
+  "direct_claims": 18,
+  "downgrades": 18,
+  "entity_ambiguous": 0,
+  "evidence_not_supported": 0,
+  "evidence_quote_match_rate": 0.0,
+  "evidence_quote_matches": 0,
+  "failed_runs": [],
+  "finished_at": "2026-09-06T15:48:07.329809+00:00",
+  "host_injection_rate": 0.3888888888888889,
+  "host_nonempty_calls": 14,
+  "host_ordinary_injection_rate": 0.4166666666666667,
+  "host_ordinary_nonempty_calls": 5,
+  "host_search_calls": 36,
+  "invalid_subject": 0,
+  "memory_applies_search_calls": 0,
+  "memory_applies_search_turn_rate": 0.0,
+  "memory_applies_searched_turns": 0,
+  "model_id": "gpt-5.6-luna",
+  "ordinary_nonempty_search_calls": 0,
+  "ordinary_nonempty_search_turns": 0,
+  "ordinary_nonempty_turn_rate": 0.0,
+  "ordinary_search_calls": 0,
+  "ordinary_search_turn_rate": 0.0,
+  "ordinary_searched_turns": 0,
+  "ordinary_turns": 12,
+  "per_run": [
+    {
+      "direct_claims": 6,
+      "downgrades": 6,
+      "evidence_not_supported": 0,
+      "host_nonempty_calls": 5,
+      "host_ordinary_nonempty_calls": 2,
+      "host_search_calls": 12,
+      "matched_evidence_quotes": 0,
+      "memory_applies_search_calls": 0,
+      "memory_applies_searched_turns": 0,
+      "ordinary_nonempty_search_calls": 0,
+      "ordinary_nonempty_search_turns": 0,
+      "ordinary_search_calls": 0,
+      "ordinary_searched_turns": 0,
+      "preference_attributes": [],
+      "run": 1,
+      "write_attempts": 6,
+      "write_outcomes": {
+        "created": 5,
+        "superseded:01a07766-2cdf-7564-8429-0f25032af09a": 1
+      }
+    },
+    {
+      "direct_claims": 6,
+      "downgrades": 6,
+      "evidence_not_supported": 0,
+      "host_nonempty_calls": 4,
+      "host_ordinary_nonempty_calls": 1,
+      "host_search_calls": 12,
+      "matched_evidence_quotes": 0,
+      "memory_applies_search_calls": 0,
+      "memory_applies_searched_turns": 0,
+      "ordinary_nonempty_search_calls": 0,
+      "ordinary_nonempty_search_turns": 0,
+      "ordinary_search_calls": 0,
+      "ordinary_searched_turns": 0,
+      "preference_attributes": [],
+      "run": 2,
+      "write_attempts": 6,
+      "write_outcomes": {
+        "created": 5,
+        "superseded:01a07766-bf4d-7b68-987d-ae8b7fcabffe": 1
+      }
+    },
+    {
+      "direct_claims": 6,
+      "downgrades": 6,
+      "evidence_not_supported": 0,
+      "host_nonempty_calls": 5,
+      "host_ordinary_nonempty_calls": 2,
+      "host_search_calls": 12,
+      "matched_evidence_quotes": 0,
+      "memory_applies_search_calls": 0,
+      "memory_applies_searched_turns": 0,
+      "ordinary_nonempty_search_calls": 0,
+      "ordinary_nonempty_search_turns": 0,
+      "ordinary_search_calls": 0,
+      "ordinary_searched_turns": 0,
+      "preference_attributes": [],
+      "run": 3,
+      "write_attempts": 6,
+      "write_outcomes": {
+        "created": 5,
+        "superseded:01a07767-3f62-7ae3-adac-cd6cb91f0f27": 1
+      }
+    }
+  ],
+  "prompt_version": "v1",
+  "provider": "openai",
+  "report_path": "/Users/adimyth/PersonalProjects/agentic-memory-system/benchmarks/results/vertical-slice/attempt-kdqjzeee/report.json",
+  "runs": 3,
+  "subject_stability": {
+    "per_run_attributes": [
+      {
+        "attributes": [],
+        "run": 1
+      },
+      {
+        "attributes": [],
+        "run": 2
+      },
+      {
+        "attributes": [],
+        "run": 3
+      }
+    ],
+    "runs_with_attributes": 0,
+    "same_preference_attributes": [],
+    "stable": false
+  },
+  "trigger_mode": "hybrid",
+  "write_outcomes": {
+    "created": 15,
+    "superseded:01a07766-2cdf-7564-8429-0f25032af09a": 1,
+    "superseded:01a07766-bf4d-7b68-987d-ae8b7fcabffe": 1,
+    "superseded:01a07767-3f62-7ae3-adac-cd6cb91f0f27": 1
+  },
+  "writes_attempted": 18
+}

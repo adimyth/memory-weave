@@ -1,0 +1,2060 @@
+{
+  "scenario": "benchmarks/scenarios/phase0_tune.json",
+  "draft_model": "gpt-5.6-luna",
+  "gap_model": "gpt-4o",
+  "gap_prompt": "v1",
+  "admission_model": "gpt-5.4",
+  "check_model": "gpt-5.4",
+  "gap_repeats": 3,
+  "usage": {
+    "gpt-4o": {
+      "prompt": 16938,
+      "completion": 1651
+    },
+    "gpt-5.4": {
+      "prompt": 14953,
+      "completion": 4461
+    },
+    "gpt-5.6-luna": {
+      "prompt": 210,
+      "completion": 53
+    }
+  },
+  "calls": {
+    "gpt-4o": 84,
+    "gpt-5.4": 48,
+    "gpt-5.6-luna": 2
+  },
+  "summaries": {
+    "ambient": {
+      "arm": "ambient",
+      "turns": 28,
+      "gap_decision_agreement_across_repeats": "25/28 (89%)",
+      "memory_turns_with_gaps_every_repeat": "13/16 (81%)",
+      "memory_turns_with_gaps_any_repeat": "16/16 (100%)",
+      "ordinary_turns_with_gaps_any_repeat": "1/12 (8%)",
+      "ordinary_injection": "0/12 (0%)",
+      "explicit_fact_recall": "8/8 (100%)",
+      "implicit_need_recall": "7/8 (88%)",
+      "ambient_pref_admitted_on_turns": "0/28 (0%)",
+      "placebo_admitted": 0,
+      "misleading_admitted": 0,
+      "stale_or_conflicting_admitted": 0,
+      "redundant_admitted": 0,
+      "unrelated_private_admitted": 0,
+      "usefulness_precision": "16/17 (94%)",
+      "answer_correct_memory_turns_draft": "0/16 (0%)",
+      "answer_correct_memory_turns_final": "14/16 (88%)",
+      "empty_gap_turns": 11,
+      "added_latency_empty_gap_p50_p95_s": [
+        0.0,
+        0.0
+      ],
+      "added_latency_gap_turns_p50_p95_s": [
+        3.23,
+        4.72
+      ],
+      "draft_latency_p50_s": 2.68,
+      "policy_failures": 0
+    }
+  },
+  "results": {
+    "ambient": [
+      {
+        "arm": "ambient",
+        "turn_id": "E1",
+        "turn_class": "explicit_fact",
+        "turn": "What did we decide about the event bus?",
+        "expected": [
+          "F4"
+        ],
+        "draft": "- I don\u2019t have the earlier discussion about the event bus in this chat.\n- Paste the relevant notes or messages, and I\u2019ll summarize what we decided.",
+        "gaps": [
+          "Previous decision about the event bus",
+          "User's role in managing the event bus",
+          "Specific requirements or constraints discussed regarding the event bus"
+        ],
+        "candidates": [
+          {
+            "id": "S2",
+            "score": 0.71,
+            "query": "User's role in managing the event bus"
+          },
+          {
+            "id": "F4",
+            "score": 0.62,
+            "query": "Previous decision about the event bus"
+          },
+          {
+            "id": "F7",
+            "score": 0.613,
+            "query": "User's role in managing the event bus"
+          },
+          {
+            "id": "J2",
+            "score": 0.462,
+            "query": "Specific requirements or constraints discussed regarding the event bus"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "S2",
+            "verdict": "stale_or_conflicting",
+            "reason": "It is explicitly marked conflicting and superseded by the later 05-07-2026 decision."
+          },
+          {
+            "id": "F4",
+            "verdict": "helpful",
+            "reason": "It directly answers what was decided about the event bus with the latest active decision."
+          },
+          {
+            "id": "F7",
+            "verdict": "insufficient",
+            "reason": "The user's manager is unrelated to the event bus question."
+          },
+          {
+            "id": "J2",
+            "verdict": "insufficient",
+            "reason": "This service target detail does not bear on the event bus decision."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's favourite football club is unrelated to the request."
+          }
+        ],
+        "admitted": [
+          "F4"
+        ],
+        "disposition": "regenerated",
+        "final": "- We decided to use **Kafka** rather than **SQS** for the event bus.\n- Decision date: **5 July 2026**.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 3.194898292014841,
+          "gap_s": 1.597551165963523,
+          "retrieval_s": 0.023098416975699365,
+          "admission_s": 1.9102929169894196,
+          "regeneration_s": 1.020362208946608
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "E2",
+        "turn_class": "explicit_fact",
+        "turn": "Where do we keep incident postmortems?",
+        "expected": [
+          "F3"
+        ],
+        "draft": "- I don\u2019t have access to your internal documentation. Check your team\u2019s incident-management space, such as Confluence, Notion, or the incident channel archive.",
+        "gaps": [
+          "Location or platform where user stores incident postmortems",
+          "User's preferred format for incident postmortem documents",
+          "Access requirements for incident postmortem documents"
+        ],
+        "candidates": [
+          {
+            "id": "F3",
+            "score": 0.754,
+            "query": "Location or platform where user stores incident postmortems"
+          },
+          {
+            "id": "M2",
+            "score": 0.53,
+            "query": "User's preferred format for incident postmortem documents"
+          },
+          {
+            "id": "A3",
+            "score": 0.502,
+            "query": "User's preferred format for incident postmortem documents"
+          },
+          {
+            "id": "S2",
+            "score": 0.473,
+            "query": "Location or platform where user stores incident postmortems"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F3",
+            "verdict": "helpful",
+            "reason": "It directly answers the location of incident postmortems in the user's organization."
+          },
+          {
+            "id": "M2",
+            "verdict": "redundant",
+            "reason": "This preference is already applied and does not change the substance of the answer."
+          },
+          {
+            "id": "A3",
+            "verdict": "insufficient",
+            "reason": "The user's service language is unrelated to where postmortems are stored."
+          },
+          {
+            "id": "S2",
+            "verdict": "insufficient",
+            "reason": "The event bus technology is unrelated to the question about postmortem storage."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's favourite football club is unrelated to the question."
+          }
+        ],
+        "admitted": [
+          "F3"
+        ],
+        "disposition": "regenerated",
+        "final": "- Incident postmortems are stored in Confluence under **Platform/Postmortems**.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 3.535255666996818,
+          "gap_s": 1.6325300839962438,
+          "retrieval_s": 0.024320791999343783,
+          "admission_s": 2.035292374959681,
+          "regeneration_s": 1.018415125028696
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "E3",
+        "turn_class": "explicit_fact",
+        "turn": "Who is the on-call lead for the platform team this quarter?",
+        "expected": [
+          "F2"
+        ],
+        "draft": "- I don\u2019t have access to your team\u2019s on-call schedule. Please check the current rota or team calendar for the platform team\u2019s on-call lead this quarter.",
+        "gaps": [
+          "Current on-call lead for the user's platform team",
+          "Schedule of on-call leads for the platform team this quarter",
+          "Platform team composition and roles"
+        ],
+        "candidates": [
+          {
+            "id": "F2",
+            "score": 0.795,
+            "query": "Schedule of on-call leads for the platform team this quarter"
+          },
+          {
+            "id": "F7",
+            "score": 0.626,
+            "query": "Current on-call lead for the user's platform team"
+          },
+          {
+            "id": "S1",
+            "score": 0.53,
+            "query": "Current on-call lead for the user's platform team"
+          },
+          {
+            "id": "S2",
+            "score": 0.522,
+            "query": "Schedule of on-call leads for the platform team this quarter"
+          },
+          {
+            "id": "F4",
+            "score": 0.422,
+            "query": "Platform team composition and roles"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F2",
+            "verdict": "helpful",
+            "reason": "It directly answers who the current platform team on-call lead is this quarter."
+          },
+          {
+            "id": "F7",
+            "verdict": "insufficient",
+            "reason": "The user's manager does not help identify the platform team's on-call lead."
+          },
+          {
+            "id": "S1",
+            "verdict": "stale_or_conflicting",
+            "reason": "It is superseded and unrelated to the on-call lead question."
+          },
+          {
+            "id": "S2",
+            "verdict": "stale_or_conflicting",
+            "reason": "It is conflicting, unresolved, and unrelated to the on-call lead question."
+          },
+          {
+            "id": "F4",
+            "verdict": "insufficient",
+            "reason": "The event bus decision is unrelated to the on-call lead question."
+          },
+          {
+            "id": "P1",
+            "verdict": "potentially_harmful",
+            "reason": "It is unrelated personal information and would risk inappropriate personalisation."
+          }
+        ],
+        "admitted": [
+          "F2"
+        ],
+        "disposition": "regenerated",
+        "final": "- Lena Fischer is the on-call lead for the platform team this quarter.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 3.58858241699636,
+          "gap_s": 1.596708207973279,
+          "retrieval_s": 0.08195612503914163,
+          "admission_s": 2.0056562920217402,
+          "regeneration_s": 0.9810117919696495
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "E4",
+        "turn_class": "explicit_fact",
+        "turn": "Why is Node pinned to 20?",
+        "expected": [
+          "F5"
+        ],
+        "draft": "- **Node 20 is an LTS release**, offering longer-term security and bug-fix support.\n- It provides a stable baseline for production and CI environments.\n- Dependencies, build tools, and deployment platforms may be tested specifically against Node 20.\n- Pinning prevents unexpected behavior from newer Node versions introducing breaking changes.\n- It ensures consistent results across developers, CI, and production.\n\nIt may be updated once the project verifies compatibility with a newer LTS release.",
+        "gaps": [
+          "Previous discussion about reasons for pinning Node version",
+          "User's project or system constraints related to Node.js",
+          "User's team's decision-making around software versions"
+        ],
+        "candidates": [
+          {
+            "id": "F7",
+            "score": 0.568,
+            "query": "User's team's decision-making around software versions"
+          },
+          {
+            "id": "F5",
+            "score": 0.565,
+            "query": "Previous discussion about reasons for pinning Node version"
+          },
+          {
+            "id": "A3",
+            "score": 0.524,
+            "query": "User's team's decision-making around software versions"
+          },
+          {
+            "id": "F10",
+            "score": 0.512,
+            "query": "User's team's decision-making around software versions"
+          },
+          {
+            "id": "S1",
+            "score": 0.505,
+            "query": "User's project or system constraints related to Node.js"
+          },
+          {
+            "id": "J2",
+            "score": 0.465,
+            "query": "Previous discussion about reasons for pinning Node version"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F7",
+            "verdict": "insufficient",
+            "reason": "The user's manager is unrelated to why Node is pinned to 20."
+          },
+          {
+            "id": "F5",
+            "verdict": "helpful",
+            "reason": "It adds the concrete project-specific reason that Node 22 broke the build tooling."
+          },
+          {
+            "id": "A3",
+            "verdict": "insufficient",
+            "reason": "Using TypeScript does not materially explain the Node 20 pin beyond the draft."
+          },
+          {
+            "id": "F10",
+            "verdict": "insufficient",
+            "reason": "Marathon training is unrelated to the request."
+          },
+          {
+            "id": "S1",
+            "verdict": "stale_or_conflicting",
+            "reason": "This time zone record is superseded and unrelated to the request."
+          },
+          {
+            "id": "J2",
+            "verdict": "insufficient",
+            "reason": "Service reliability targets do not explain the Node version pin."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "Favourite football club is unrelated to the request."
+          }
+        ],
+        "admitted": [
+          "F5"
+        ],
+        "disposition": "regenerated",
+        "final": "- Node is pinned to **20 LTS** because **Node 22 broke the build tooling**.\n- Staying on Node 20 provides a stable, compatible environment.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 3.817706250003539,
+          "gap_s": 1.915247792028822,
+          "retrieval_s": 0.050066416966728866,
+          "admission_s": 2.2574200420058332,
+          "regeneration_s": 1.167288374970667
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "E5",
+        "turn_class": "explicit_fact",
+        "turn": "What is my production cluster called and where does it run?",
+        "expected": [
+          "F6"
+        ],
+        "draft": "- I don\u2019t have access to your infrastructure details or prior context.\n- Share your cluster configuration, deployment file, or cloud account details, and I can identify its name and where it runs.",
+        "gaps": [
+          "User's production cluster name",
+          "Location or hosting information of user's production cluster"
+        ],
+        "candidates": [
+          {
+            "id": "F6",
+            "score": 0.744,
+            "query": "User's production cluster name"
+          },
+          {
+            "id": "F7",
+            "score": 0.574,
+            "query": "User's production cluster name"
+          },
+          {
+            "id": "A3",
+            "score": 0.542,
+            "query": "User's production cluster name"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F6",
+            "verdict": "helpful",
+            "reason": "It directly provides the production cluster name and region the user asked for."
+          },
+          {
+            "id": "F7",
+            "verdict": "redundant",
+            "reason": "The user's manager is unrelated to identifying the production cluster."
+          },
+          {
+            "id": "A3",
+            "verdict": "redundant",
+            "reason": "Programming language preference does not help answer the cluster name or location."
+          },
+          {
+            "id": "P1",
+            "verdict": "redundant",
+            "reason": "Favourite football club is unrelated to the infrastructure question."
+          }
+        ],
+        "admitted": [
+          "F6"
+        ],
+        "disposition": "regenerated",
+        "final": "- **Cluster:** `helix-prod`\n- **Region:** `eu-central-1`",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.6290545840165578,
+          "gap_s": 1.1573304169578478,
+          "retrieval_s": 0.11352608300512657,
+          "admission_s": 1.7222910420387052,
+          "regeneration_s": 1.198256375035271
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "E6",
+        "turn_class": "explicit_fact",
+        "turn": "When is our change freeze?",
+        "expected": [
+          "F8"
+        ],
+        "draft": "- I don\u2019t have access to your organization\u2019s change calendar. Which project, team, or environment do you mean?",
+        "gaps": [
+          "User's organization's change freeze schedule",
+          "Previous discussions or notes about upcoming change freeze dates"
+        ],
+        "candidates": [
+          {
+            "id": "F8",
+            "score": 0.695,
+            "query": "User's organization's change freeze schedule"
+          },
+          {
+            "id": "S1",
+            "score": 0.554,
+            "query": "User's organization's change freeze schedule"
+          },
+          {
+            "id": "F1",
+            "score": 0.536,
+            "query": "User's organization's change freeze schedule"
+          },
+          {
+            "id": "F10",
+            "score": 0.466,
+            "query": "Previous discussions or notes about upcoming change freeze dates"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F8",
+            "verdict": "helpful",
+            "reason": "It directly answers the user\u2019s question with the organization\u2019s change-freeze schedule."
+          },
+          {
+            "id": "S1",
+            "verdict": "stale_or_conflicting",
+            "reason": "It is superseded by a newer time-zone record and is not needed here."
+          },
+          {
+            "id": "F1",
+            "verdict": "insufficient",
+            "reason": "The user\u2019s time zone alone does not answer when the change freeze occurs."
+          },
+          {
+            "id": "F10",
+            "verdict": "redundant",
+            "reason": "The user\u2019s marathon training is unrelated to the question."
+          },
+          {
+            "id": "P1",
+            "verdict": "redundant",
+            "reason": "The user\u2019s favourite football club is unrelated to the question."
+          }
+        ],
+        "admitted": [
+          "F8"
+        ],
+        "disposition": "regenerated",
+        "final": "- Every Friday after 14:00 BRT.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.5668803339940496,
+          "gap_s": 1.1300098749925382,
+          "retrieval_s": 0.026580541976727545,
+          "admission_s": 1.9248008329886943,
+          "regeneration_s": 0.916392499988433
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "E7",
+        "turn_class": "explicit_fact",
+        "turn": "What availability target applies to the checkout tier?",
+        "expected": [
+          "J1",
+          "J2"
+        ],
+        "draft": "- I don\u2019t have enough context to identify the checkout tier\u2019s availability target. Please share the relevant service-level document or context.",
+        "gaps": [
+          "User's specific availability targets for different service tiers",
+          "Previous conversations about availability targets",
+          "User's team-defined service level agreements"
+        ],
+        "candidates": [
+          {
+            "id": "J1",
+            "score": 0.611,
+            "query": "User's specific availability targets for different service tiers"
+          },
+          {
+            "id": "J2",
+            "score": 0.604,
+            "query": "User's specific availability targets for different service tiers"
+          },
+          {
+            "id": "A3",
+            "score": 0.548,
+            "query": "User's team-defined service level agreements"
+          },
+          {
+            "id": "F7",
+            "score": 0.522,
+            "query": "User's team-defined service level agreements"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "J1",
+            "verdict": "jointly_helpful",
+            "reason": "It provides the base payments target needed to infer checkout availability with J2."
+          },
+          {
+            "id": "J2",
+            "verdict": "jointly_helpful",
+            "reason": "It specifies checkout is one more nine than payments, which is only actionable with J1."
+          },
+          {
+            "id": "A3",
+            "verdict": "redundant",
+            "reason": "The user's preferred implementation language is unrelated to the availability target question."
+          },
+          {
+            "id": "F7",
+            "verdict": "potentially_harmful",
+            "reason": "The user's manager is private information unrelated to answering the question."
+          },
+          {
+            "id": "P1",
+            "verdict": "potentially_harmful",
+            "reason": "The user's favourite football club is private and irrelevant to the request."
+          }
+        ],
+        "admitted": [
+          "J1",
+          "J2"
+        ],
+        "disposition": "regenerated",
+        "final": "- Checkout tier availability target: **99.99%**.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.841235667001456,
+          "gap_s": 1.350803624955006,
+          "retrieval_s": 0.03946262504905462,
+          "admission_s": 2.1573995409999043,
+          "regeneration_s": 1.3727414580062032
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "E8",
+        "turn_class": "explicit_fact",
+        "turn": "Which time zone should you assume for me?",
+        "expected": [
+          "F1"
+        ],
+        "draft": "- I don\u2019t know your time zone.\n- Tell me your city, country, or UTC offset, and I\u2019ll use that.",
+        "gaps": [
+          "User's preferred time zone"
+        ],
+        "candidates": [
+          {
+            "id": "S1",
+            "score": 0.767,
+            "query": "User's preferred time zone"
+          },
+          {
+            "id": "F1",
+            "score": 0.746,
+            "query": "User's preferred time zone"
+          },
+          {
+            "id": "P1",
+            "score": 0.579,
+            "query": "User's preferred time zone"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "S1",
+            "verdict": "stale_or_conflicting",
+            "reason": "It was superseded by a newer time zone record and should not be used."
+          },
+          {
+            "id": "F1",
+            "verdict": "helpful",
+            "reason": "It directly answers which time zone to assume for the user."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "Their favourite football club is unrelated to determining a time zone."
+          }
+        ],
+        "admitted": [
+          "F1"
+        ],
+        "disposition": "regenerated",
+        "final": "- America/Sao_Paulo (Brazil time).",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.2741136669646949,
+          "gap_s": 0.885792582994327,
+          "retrieval_s": 0.07411874999525025,
+          "admission_s": 1.587625542015303,
+          "regeneration_s": 1.0305674159899354
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "I1",
+        "turn_class": "implicit_need",
+        "turn": "Propose a slot on Monday for a 45-minute incident review with the SRE team.",
+        "expected": [
+          "F1"
+        ],
+        "draft": "- **Monday, 07-09-2026, 10:00\u201310:45** \u2014 Incident review with the SRE team.",
+        "gaps": [
+          "User's SRE team availability",
+          "User's time zone",
+          "User's preferred time slots"
+        ],
+        "candidates": [
+          {
+            "id": "S1",
+            "score": 0.838,
+            "query": "User's time zone"
+          },
+          {
+            "id": "F1",
+            "score": 0.816,
+            "query": "User's time zone"
+          },
+          {
+            "id": "F9",
+            "score": 0.603,
+            "query": "User's time zone"
+          },
+          {
+            "id": "P1",
+            "score": 0.564,
+            "query": "User's preferred time slots"
+          },
+          {
+            "id": "F7",
+            "score": 0.55,
+            "query": "User's SRE team availability"
+          },
+          {
+            "id": "S2",
+            "score": 0.53,
+            "query": "User's SRE team availability"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "S1",
+            "verdict": "stale_or_conflicting",
+            "reason": "It was superseded by a newer time zone record."
+          },
+          {
+            "id": "F1",
+            "verdict": "helpful",
+            "reason": "The user's working time zone can materially affect which Monday slot is appropriate."
+          },
+          {
+            "id": "F9",
+            "verdict": "redundant",
+            "reason": "Dietary preference is irrelevant to proposing a meeting slot."
+          },
+          {
+            "id": "P1",
+            "verdict": "redundant",
+            "reason": "Favourite football club is unrelated to scheduling a meeting."
+          },
+          {
+            "id": "F7",
+            "verdict": "insufficient",
+            "reason": "Knowing the manager's name does not materially improve the proposed slot."
+          },
+          {
+            "id": "S2",
+            "verdict": "redundant",
+            "reason": "The event bus technology is unrelated to scheduling this meeting."
+          }
+        ],
+        "admitted": [
+          "F1"
+        ],
+        "disposition": "regenerated",
+        "final": "- **Monday, 07-09-2026, 14:00\u201314:45 (BRT / America/Sao_Paulo)** for the incident review with the SRE team.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.7791045000194572,
+          "gap_s": 0.9780498339678161,
+          "retrieval_s": 0.09888025000691414,
+          "admission_s": 2.079527291993145,
+          "regeneration_s": 2.544930125004612
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "I2",
+        "turn_class": "implicit_need",
+        "turn": "Write a short Slack message asking the on-call lead to acknowledge the open alert.",
+        "expected": [
+          "F2"
+        ],
+        "draft": "Hi @On-Call Lead, could you please acknowledge the open alert when you get a moment? Thanks!",
+        "gaps": [
+          "Name of the on-call lead",
+          "Specific alert details",
+          "Preferred communication tone for urgent messages"
+        ],
+        "candidates": [
+          {
+            "id": "F2",
+            "score": 0.623,
+            "query": "Name of the on-call lead"
+          },
+          {
+            "id": "M2",
+            "score": 0.56,
+            "query": "Preferred communication tone for urgent messages"
+          },
+          {
+            "id": "F7",
+            "score": 0.52,
+            "query": "Name of the on-call lead"
+          },
+          {
+            "id": "R1",
+            "score": 0.484,
+            "query": "Preferred communication tone for urgent messages"
+          },
+          {
+            "id": "R2",
+            "score": 0.457,
+            "query": "Name of the on-call lead"
+          },
+          {
+            "id": "F8",
+            "score": 0.451,
+            "query": "Specific alert details"
+          },
+          {
+            "id": "M1",
+            "score": 0.451,
+            "query": "Preferred communication tone for urgent messages"
+          },
+          {
+            "id": "J2",
+            "score": 0.434,
+            "query": "Specific alert details"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F2",
+            "verdict": "helpful",
+            "reason": "It enables personalizing the Slack message to the named on-call lead instead of a generic role mention."
+          },
+          {
+            "id": "M2",
+            "verdict": "redundant",
+            "reason": "The draft already avoids mentioning risks or caveats."
+          },
+          {
+            "id": "F7",
+            "verdict": "insufficient",
+            "reason": "The user's manager is unrelated to asking the on-call lead to acknowledge an alert."
+          },
+          {
+            "id": "R1",
+            "verdict": "insufficient",
+            "reason": "Kafka ordering facts are unrelated to composing this Slack message."
+          },
+          {
+            "id": "R2",
+            "verdict": "insufficient",
+            "reason": "kubectl log following is unrelated to the requested Slack message."
+          },
+          {
+            "id": "F8",
+            "verdict": "insufficient",
+            "reason": "The Friday change freeze does not materially affect this acknowledgment request."
+          },
+          {
+            "id": "M1",
+            "verdict": "potentially_harmful",
+            "reason": "It is a likely false belief and unrelated to the current request."
+          },
+          {
+            "id": "J2",
+            "verdict": "insufficient",
+            "reason": "Service availability targets are unrelated to this Slack message."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's favourite football club is unrelated to the request."
+          }
+        ],
+        "admitted": [
+          "F2"
+        ],
+        "disposition": "regenerated",
+        "final": "Hi Lena, please acknowledge the open alert when you get a chance. Thanks!",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.2855091249803081,
+          "gap_s": 0.9997349169570953,
+          "retrieval_s": 0.0566435840446502,
+          "admission_s": 2.661706874961965,
+          "regeneration_s": 1.0523826669668779
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "I3",
+        "turn_class": "implicit_need",
+        "turn": "Scaffold a minimal HTTP handler for a new internal service.",
+        "expected": [
+          "A3"
+        ],
+        "draft": "- Minimal Go HTTP service:\n\n```go\npackage main\n\nimport (\n\t\"fmt\"\n\t\"log\"\n\t\"net/http\"\n)\n\nfunc healthHandler(w http.ResponseWriter, r *http.Request) {\n\tw.Header().Set(\"Content-Type\", \"application/json\")\n\tfmt.Fprint(w, `{\"status\":\"ok\"}`)\n}\n\nfunc main() {\n\tmux := http.NewServeMux()\n\tmux.HandleFunc(\"/healthz\", healthHandler)\n\n\tserver := &http.Server{\n\t\tAddr:    \":8080\",\n\t\tHandler: mux,\n\t}\n\n\tlog.Println(\"listening on http://localhost:8080\")\n\tlog.Fatal(server.ListenAndServe())\n}\n```\n\n- Run:\n\n```bash\ngo mod init internal-service\ngo run .\n```\n\n- Test:\n\n```bash\ncurl http://localhost:8080/healthz\n```",
+        "gaps": [
+          "User's preferred programming language for internal services",
+          "Any existing templates or frameworks used by the user's team",
+          "Specific requirements or constraints for the service (e.g., authentication, logging)"
+        ],
+        "candidates": [
+          {
+            "id": "A3",
+            "score": 0.595,
+            "query": "User's preferred programming language for internal services"
+          },
+          {
+            "id": "F7",
+            "score": 0.566,
+            "query": "Any existing templates or frameworks used by the user's team"
+          },
+          {
+            "id": "J2",
+            "score": 0.556,
+            "query": "Specific requirements or constraints for the service (e.g., authentication, logging)"
+          },
+          {
+            "id": "F10",
+            "score": 0.529,
+            "query": "Any existing templates or frameworks used by the user's team"
+          },
+          {
+            "id": "J1",
+            "score": 0.522,
+            "query": "Specific requirements or constraints for the service (e.g., authentication, logging)"
+          },
+          {
+            "id": "M1",
+            "score": 0.497,
+            "query": "User's preferred programming language for internal services"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "A3",
+            "verdict": "helpful",
+            "reason": "It would materially improve the scaffold by switching from Go to the user's standard TypeScript stack."
+          },
+          {
+            "id": "F7",
+            "verdict": "insufficient",
+            "reason": "The user's manager is unrelated to scaffolding an HTTP handler."
+          },
+          {
+            "id": "J2",
+            "verdict": "insufficient",
+            "reason": "Service availability targets do not affect a minimal HTTP handler scaffold."
+          },
+          {
+            "id": "F10",
+            "verdict": "insufficient",
+            "reason": "Marathon training is unrelated to the coding request."
+          },
+          {
+            "id": "J1",
+            "verdict": "insufficient",
+            "reason": "Payments SLO information is irrelevant to the requested scaffold."
+          },
+          {
+            "id": "M1",
+            "verdict": "potentially_harmful",
+            "reason": "A false belief about Kafka is unrelated and risks distorting the answer if used."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "Favourite football club is unrelated to the request."
+          }
+        ],
+        "admitted": [
+          "A3"
+        ],
+        "disposition": "regenerated",
+        "final": "- `src/server.ts`\n\n```ts\nimport { createServer, type IncomingMessage, type ServerResponse } from \"node:http\";\n\nfunction handler(req: IncomingMessage, res: ServerResponse): void {\n  if (req.method === \"GET\" && req.url === \"/health\") {\n    res.writeHead(200, { \"content-type\": \"application/json\" });\n    res.end(JSON.stringify({ status: \"ok\" }));\n    return;\n  }\n\n  res.writeHead(404, { \"content-type\": \"application/json\" });\n  res.end(JSON.stringify({ error: \"Not found\" }));\n}\n\nconst port = Number(process.env.PORT ?? 3000);\n\ncreateServer(handler).listen(port, () => {\n  console.log(`Service listening on http://localhost:${port}`);\n});\n```\n\n- `package.json`\n\n```json\n{\n  \"scripts\": {\n    \"dev\": \"tsx src/server.ts\",\n    \"build\": \"tsc\",\n    \"start\": \"node dist/server.js\"\n  },\n  \"devDependencies\": {\n    \"@types/node\": \"^22.0.0\",\n    \"tsx\": \"^4.0.0\",\n    \"typescript\": \"^5.0.0\"\n  }\n}\n```\n\n- Test with:\n\n```bash\ncurl http://localhost:3000/health\n```",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 2.787166541966144,
+          "gap_s": 1.4134761250461452,
+          "retrieval_s": 0.06914879102259874,
+          "admission_s": 2.429919583024457,
+          "regeneration_s": 5.3733863339875825
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          false,
+          true
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "I4",
+        "turn_class": "implicit_need",
+        "turn": "Can I roll out a config change at 3pm this Friday?",
+        "expected": [
+          "F8"
+        ],
+        "draft": "- **Friday, 11-09-2026 at 15:00 local time** is reasonable if:\n  - Required approvals are in place.\n  - The change window permits it.\n  - Monitoring, rollback, and on-call coverage are ready.\n  - Stakeholders have been notified.\n- Otherwise, confirm with your change manager or on-call owner before proceeding.",
+        "gaps": [
+          "User's current timezone",
+          "Specific system or environment the config change affects",
+          "Other scheduled changes or restrictions for this Friday"
+        ],
+        "candidates": [
+          {
+            "id": "S1",
+            "score": 0.832,
+            "query": "User's current timezone"
+          },
+          {
+            "id": "F1",
+            "score": 0.81,
+            "query": "User's current timezone"
+          },
+          {
+            "id": "F8",
+            "score": 0.681,
+            "query": "Other scheduled changes or restrictions for this Friday"
+          },
+          {
+            "id": "F9",
+            "score": 0.618,
+            "query": "User's current timezone"
+          },
+          {
+            "id": "M1",
+            "score": 0.506,
+            "query": "Specific system or environment the config change affects"
+          },
+          {
+            "id": "S2",
+            "score": 0.487,
+            "query": "Other scheduled changes or restrictions for this Friday"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "S1",
+            "verdict": "stale_or_conflicting",
+            "reason": "It is superseded by a newer timezone record for the user."
+          },
+          {
+            "id": "F1",
+            "verdict": "helpful",
+            "reason": "It provides the user's current working timezone needed to interpret 3pm local time correctly."
+          },
+          {
+            "id": "F8",
+            "verdict": "helpful",
+            "reason": "It directly affects whether a Friday 15:00 rollout is allowed due to a change freeze after 14:00 BRT."
+          },
+          {
+            "id": "F9",
+            "verdict": "redundant",
+            "reason": "Diet preference is unrelated to scheduling a config change."
+          },
+          {
+            "id": "M1",
+            "verdict": "redundant",
+            "reason": "A belief about Kafka ordering is unrelated to the rollout timing question."
+          },
+          {
+            "id": "S2",
+            "verdict": "redundant",
+            "reason": "The event bus technology is unrelated to whether a Friday 15:00 config change can proceed."
+          },
+          {
+            "id": "P1",
+            "verdict": "redundant",
+            "reason": "Favourite football club is unrelated to the requested rollout timing."
+          }
+        ],
+        "admitted": [
+          "F1",
+          "F8"
+        ],
+        "disposition": "regenerated",
+        "final": "- No. **Friday, 11-09-2026 at 15:00 BRT** falls during the change freeze, which starts at 14:00.\n- You\u2019ll need to deploy before 14:00 or obtain an approved exception.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 2.4880038750125095,
+          "gap_s": 1.227713166968897,
+          "retrieval_s": 0.03748312499374151,
+          "admission_s": 2.6414754999568686,
+          "regeneration_s": 1.87326620798558
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "I5",
+        "turn_class": "implicit_need",
+        "turn": "Give me the command to tail logs of the payments deployment in production.",
+        "expected": [
+          "F6"
+        ],
+        "draft": "```bash\nkubectl logs -f deployment/payments -n production\n```",
+        "gaps": [
+          "Specific naming conventions or aliases used for production deployments",
+          "Any user-specific command line tool preferences",
+          "User's level of access to production systems"
+        ],
+        "candidates": [
+          {
+            "id": "F6",
+            "score": 0.559,
+            "query": "User's level of access to production systems"
+          },
+          {
+            "id": "M2",
+            "score": 0.549,
+            "query": "Any user-specific command line tool preferences"
+          },
+          {
+            "id": "F7",
+            "score": 0.543,
+            "query": "User's level of access to production systems"
+          },
+          {
+            "id": "A3",
+            "score": 0.538,
+            "query": "User's level of access to production systems"
+          },
+          {
+            "id": "M1",
+            "score": 0.52,
+            "query": "Any user-specific command line tool preferences"
+          },
+          {
+            "id": "J2",
+            "score": 0.415,
+            "query": "Specific naming conventions or aliases used for production deployments"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F6",
+            "verdict": "insufficient",
+            "reason": "Cluster name and region do not materially change the kubectl logs command as asked."
+          },
+          {
+            "id": "M2",
+            "verdict": "redundant",
+            "reason": "The applied preferences already govern style and the draft includes no risks or caveats."
+          },
+          {
+            "id": "F7",
+            "verdict": "potentially_harmful",
+            "reason": "The user's manager is irrelevant private information for this request."
+          },
+          {
+            "id": "A3",
+            "verdict": "redundant",
+            "reason": "TypeScript service preference is unrelated to tailing Kubernetes logs."
+          },
+          {
+            "id": "M1",
+            "verdict": "potentially_harmful",
+            "reason": "An unrelated likely false belief should not influence this answer."
+          },
+          {
+            "id": "J2",
+            "verdict": "insufficient",
+            "reason": "Service availability targets are unrelated to the requested log command."
+          },
+          {
+            "id": "P1",
+            "verdict": "potentially_harmful",
+            "reason": "Favourite football club is irrelevant personal information for this request."
+          }
+        ],
+        "admitted": [],
+        "disposition": "baseline_empty_admission",
+        "final": null,
+        "draft_correct": false,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 1.4563424169900827,
+          "gap_s": 1.5727870420087129,
+          "retrieval_s": 0.11046262498712167,
+          "admission_s": 2.5868875000160187,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          false,
+          true
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "I6",
+        "turn_class": "implicit_need",
+        "turn": "Write the one-sentence summary of our event bus choice for the onboarding page.",
+        "expected": [
+          "F4"
+        ],
+        "draft": "Which event bus did we choose? Share its name, and I\u2019ll write the one-sentence onboarding summary.",
+        "gaps": [
+          "Previous decision on event bus choice",
+          "Specific requirements for event bus",
+          "Reason for selecting current event bus"
+        ],
+        "candidates": [
+          {
+            "id": "S2",
+            "score": 0.674,
+            "query": "Reason for selecting current event bus"
+          },
+          {
+            "id": "F4",
+            "score": 0.614,
+            "query": "Previous decision on event bus choice"
+          },
+          {
+            "id": "J2",
+            "score": 0.462,
+            "query": "Previous decision on event bus choice"
+          },
+          {
+            "id": "F10",
+            "score": 0.456,
+            "query": "Reason for selecting current event bus"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "S2",
+            "verdict": "stale_or_conflicting",
+            "reason": "It conflicts with a later active decision that supersedes it."
+          },
+          {
+            "id": "F4",
+            "verdict": "helpful",
+            "reason": "It directly provides the chosen event bus needed to write the requested summary."
+          },
+          {
+            "id": "J2",
+            "verdict": "insufficient",
+            "reason": "It is unrelated to the event bus summary request."
+          },
+          {
+            "id": "F10",
+            "verdict": "insufficient",
+            "reason": "It is unrelated personal information with no bearing on the answer."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "It is unrelated personal preference with no bearing on the answer."
+          }
+        ],
+        "admitted": [
+          "F4"
+        ],
+        "disposition": "regenerated",
+        "final": "We use Kafka as our event bus, as decided by the team on 5 July 2026.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.6210447080084123,
+          "gap_s": 0.9846823749830946,
+          "retrieval_s": 0.050505709019489586,
+          "admission_s": 2.0225254590041004,
+          "regeneration_s": 1.159647791995667
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "I7",
+        "turn_class": "implicit_need",
+        "turn": "Which Node version should the new Dockerfile use?",
+        "expected": [
+          "F5"
+        ],
+        "draft": "- Use **Node.js 24 LTS**: `node:24-bookworm-slim`\n- For reproducible builds, pin an exact patch version, e.g. `node:24.x.y-bookworm-slim`.\n- Avoid `node:latest`; match the version specified in `package.json` or `.nvmrc` if one exists.",
+        "gaps": [
+          "User's preferred Node.js version",
+          "Specific project requirements for Node.js version",
+          "Previous Node.js version used by user"
+        ],
+        "candidates": [
+          {
+            "id": "A3",
+            "score": 0.556,
+            "query": "User's preferred Node.js version"
+          },
+          {
+            "id": "F7",
+            "score": 0.528,
+            "query": "Previous Node.js version used by user"
+          },
+          {
+            "id": "M2",
+            "score": 0.516,
+            "query": "User's preferred Node.js version"
+          },
+          {
+            "id": "F9",
+            "score": 0.506,
+            "query": "Previous Node.js version used by user"
+          },
+          {
+            "id": "F5",
+            "score": 0.493,
+            "query": "Specific project requirements for Node.js version"
+          },
+          {
+            "id": "J2",
+            "score": 0.481,
+            "query": "Specific project requirements for Node.js version"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "A3",
+            "verdict": "insufficient",
+            "reason": "Using TypeScript does not materially determine the Docker base Node version."
+          },
+          {
+            "id": "F7",
+            "verdict": "potentially_harmful",
+            "reason": "The manager's identity is private and irrelevant to choosing a Node version."
+          },
+          {
+            "id": "M2",
+            "verdict": "stale_or_conflicting",
+            "reason": "It conflicts with the currently applied preference to give short bullet lists, not omit caveats."
+          },
+          {
+            "id": "F9",
+            "verdict": "potentially_harmful",
+            "reason": "Dietary preference is private and unrelated to the technical request."
+          },
+          {
+            "id": "F5",
+            "verdict": "helpful",
+            "reason": "It directly changes the recommended Node version from 24 to the pinned 20 LTS line."
+          },
+          {
+            "id": "J2",
+            "verdict": "insufficient",
+            "reason": "Service reliability targets are unrelated to selecting a Docker Node image."
+          },
+          {
+            "id": "P1",
+            "verdict": "potentially_harmful",
+            "reason": "Favourite football club is private and irrelevant to the request."
+          }
+        ],
+        "admitted": [
+          "F5"
+        ],
+        "disposition": "regenerated",
+        "final": "- Use **Node.js 20 LTS** in the new Dockerfile.\n- Node 22 broke the build tooling, so keep the image on the Node 20 line.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 3.147534458024893,
+          "gap_s": 1.091582999972161,
+          "retrieval_s": 0.04438212502282113,
+          "admission_s": 2.632692333019804,
+          "regeneration_s": 1.2127841670298949
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "I8",
+        "turn_class": "implicit_need",
+        "turn": "Draft a one-line request to my manager for approval of the Kafka capacity increase.",
+        "expected": [
+          "F7"
+        ],
+        "draft": "Please approve the proposed Kafka capacity increase to support projected growth and maintain reliable performance.",
+        "gaps": [
+          "User's manager's preferred communication style",
+          "Specific justification for Kafka capacity increase shared before",
+          "Deadline or urgency for the Kafka capacity increase request"
+        ],
+        "candidates": [
+          {
+            "id": "F7",
+            "score": 0.635,
+            "query": "User's manager's preferred communication style"
+          },
+          {
+            "id": "M2",
+            "score": 0.594,
+            "query": "User's manager's preferred communication style"
+          },
+          {
+            "id": "M1",
+            "score": 0.577,
+            "query": "Specific justification for Kafka capacity increase shared before"
+          },
+          {
+            "id": "R1",
+            "score": 0.566,
+            "query": "Specific justification for Kafka capacity increase shared before"
+          },
+          {
+            "id": "A3",
+            "score": 0.535,
+            "query": "User's manager's preferred communication style"
+          },
+          {
+            "id": "F4",
+            "score": 0.526,
+            "query": "Deadline or urgency for the Kafka capacity increase request"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F7",
+            "verdict": "helpful",
+            "reason": "It enables a more personalized one-line request by addressing the manager by name."
+          },
+          {
+            "id": "M2",
+            "verdict": "redundant",
+            "reason": "The draft already avoids mentioning risks or caveats."
+          },
+          {
+            "id": "M1",
+            "verdict": "potentially_harmful",
+            "reason": "It is an incorrect belief unrelated to drafting this approval request."
+          },
+          {
+            "id": "R1",
+            "verdict": "insufficient",
+            "reason": "It is true but irrelevant to wording a manager approval request."
+          },
+          {
+            "id": "A3",
+            "verdict": "insufficient",
+            "reason": "The user's language choice for services does not affect this request."
+          },
+          {
+            "id": "F4",
+            "verdict": "insufficient",
+            "reason": "The event bus decision is not needed to improve this one-line approval ask."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "Favourite football club is unrelated to the request."
+          }
+        ],
+        "admitted": [
+          "F7"
+        ],
+        "disposition": "regenerated",
+        "final": "Hi Tomas, please approve the proposed Kafka capacity increase.",
+        "draft_correct": false,
+        "final_correct": false,
+        "timing": {
+          "draft_s": 1.1037954589701258,
+          "gap_s": 1.0655705000390299,
+          "retrieval_s": 0.10038399999029934,
+          "admission_s": 2.4239426660351455,
+          "regeneration_s": 1.15683504199842
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O1",
+        "turn_class": "ordinary",
+        "turn": "What is a Kafka consumer group?",
+        "expected": [],
+        "draft": "- A **Kafka consumer group** is a set of consumers that work together to read messages from Kafka topics.\n- Kafka divides a topic\u2019s **partitions** among the consumers in the group.\n- Each partition is assigned to **only one consumer within a group** at a time, enabling parallel processing.\n- Consumers in different groups receive their **own copy** of the messages independently.\n- Kafka tracks each group\u2019s **offsets**, recording which messages it has processed.\n- If a consumer fails, Kafka **reassigns its partitions** to another consumer in the group.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 1.948464083019644,
+          "gap_s": 0.8089896659948863,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O2",
+        "turn_class": "ordinary",
+        "turn": "How should an incident postmortem be structured?",
+        "expected": [],
+        "draft": "- **Title and metadata:** Incident name, date/time, duration, severity, services affected, owner, and status.\n- **Executive summary:** What happened, user/business impact, and current state.\n- **Impact:** Affected customers, regions, functionality, metrics, and duration.\n- **Timeline:** Key events, alerts, decisions, actions, and recovery milestones, with timestamps.\n- **Root cause:** Technical and contributing factors; distinguish symptoms from underlying causes.\n- **Detection and response:** What worked, what delayed detection or mitigation, and how communication went.\n- **Resolution and recovery:** Actions taken to contain, fix, and verify the issue.\n- **What went well:** Effective tools, processes, or decisions.\n- **What could improve:** Gaps and failures, stated without blame.\n- **Action items:** Specific tasks with owners, priorities, and due dates.\n- **Lessons learned:** Broader insights and prevention strategies.\n- **Appendices:** Logs, graphs, queries, links, and relevant technical details.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 3.483678249991499,
+          "gap_s": 0.9885672910022549,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O3",
+        "turn_class": "ordinary",
+        "turn": "What does a typical on-call rotation look like?",
+        "expected": [],
+        "draft": "A typical on-call rotation includes:\n\n- **Schedule:** Engineers take turns covering alerts, often in weekly or daily shifts.\n- **Primary on-call:** Responds first to incidents and owns coordination.\n- **Secondary/back-up:** Steps in if the primary is unavailable or needs help.\n- **Coverage hours:** Either 24/7 or limited to business hours, depending on the service.\n- **Handover:** Incoming and outgoing engineers review active incidents, risks, and recent changes.\n- **Response expectations:** Defined targets, such as acknowledging critical alerts within 5\u201315 minutes.\n- **Responsibilities:** Investigating alerts, mitigating outages, communicating updates, and documenting incidents.\n- **After-hours support:** Usually handled through an escalation policy.\n- **Follow-up:** Serious incidents may require a post-incident review and corrective actions.\n- **Compensation:** Some organisations provide an on-call allowance, overtime, or time off in lieu.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 3.489479875017423,
+          "gap_s": 0.8538803339470178,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O4",
+        "turn_class": "ordinary",
+        "turn": "When would you pick SQS over Kafka?",
+        "expected": [],
+        "draft": "Pick **Amazon SQS over Kafka** when:\n\n- You need a simple, fully managed work queue.\n- Messages are processed independently and can be deleted after successful handling.\n- You don\u2019t need message replay or long-term event retention.\n- Throughput and latency requirements are moderate.\n- You want minimal operational overhead and native AWS integration.\n- You need straightforward scaling, retries, dead-letter queues, or FIFO ordering.\n\nPick **Kafka** when you need:\n\n- High-throughput event streaming.\n- Multiple independent consumers reading the same events.\n- Message replay and durable, long-term retention.\n- Partition-based ordering and stream processing.\n- Complex event pipelines or event-sourcing architectures.\n\n**Rule of thumb:** use **SQS for task distribution**; use **Kafka for an event streaming platform**.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 3.4037931670318358,
+          "gap_s": 0.8268059170222841,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O5",
+        "turn_class": "ordinary",
+        "turn": "How do I pin a Node version in a Dockerfile?",
+        "expected": [],
+        "draft": "- Pin the base image to an exact Node version in your `Dockerfile`:\n\n```dockerfile\nFROM node:20.11.1\n\nWORKDIR /app\nCOPY package*.json ./\nRUN npm ci\n\nCOPY . .\nCMD [\"npm\", \"start\"]\n```\n\n- For stronger reproducibility, pin by image digest:\n\n```dockerfile\nFROM node:20.11.1@sha256:<image-digest>\n```\n\n- Avoid floating tags such as:\n\n```dockerfile\nFROM node:latest\nFROM node:20\n```\n\n- You can also declare the expected version in `package.json`:\n\n```json\n{\n  \"engines\": {\n    \"node\": \"20.11.1\"\n  }\n}\n```",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 2.626865917001851,
+          "gap_s": 0.7478718329803087,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O6",
+        "turn_class": "ordinary",
+        "turn": "How do I tail logs with kubectl?",
+        "expected": [],
+        "draft": "- View logs for a pod:\n  ```bash\n  kubectl logs <pod-name>\n  ```\n\n- Follow (tail) logs continuously:\n  ```bash\n  kubectl logs -f <pod-name>\n  ```\n\n- Specify a container:\n  ```bash\n  kubectl logs -f <pod-name> -c <container-name>\n  ```\n\n- Get the last 100 lines, then follow:\n  ```bash\n  kubectl logs -f --tail=100 <pod-name>\n  ```\n\n- View logs in a namespace:\n  ```bash\n  kubectl logs -f -n <namespace> <pod-name>\n  ```\n\n- View logs from all pods matching a label:\n  ```bash\n  kubectl logs -f -l app=my-app --all-containers=true\n  ```\n\n- Include timestamps:\n  ```bash\n  kubectl logs -f --timestamps <pod-name>\n  ```",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 2.4952207500464283,
+          "gap_s": 0.8121412500040606,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O7",
+        "turn_class": "ordinary",
+        "turn": "What is a change freeze and why do teams use one?",
+        "expected": [],
+        "draft": "- A **change freeze** is a set period when a team temporarily stops deploying non-essential changes to a system, application, or infrastructure.\n- Teams use one to:\n  - **Reduce risk** during critical periods, such as holidays, product launches, or financial reporting.\n  - **Improve stability** by limiting new variables and potential failures.\n  - **Focus on support and monitoring** rather than introducing changes.\n  - **Allow testing or audits** to complete without interference.\n- Emergency fixes may still be allowed through an approval process.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 2.229550375021063,
+          "gap_s": 0.7633103340049274,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O8",
+        "turn_class": "ordinary",
+        "turn": "How is availability in nines calculated?",
+        "expected": [],
+        "draft": "- **Availability (%)** = `(total time \u2212 downtime) \u00f7 total time \u00d7 100`\n- **Availability in nines** describes the percentage of uptime:\n  - **99%** = 2 nines\n  - **99.9%** = 3 nines\n  - **99.99%** = 4 nines\n  - **99.999%** = 5 nines\n- Mathematically, the number of nines is approximately:  \n  **`\u2212log10(1 \u2212 availability)`**, where availability is expressed as a decimal.\n\nExample: Over 30 days, **99.9% availability** allows about **43 minutes 12 seconds** of downtime.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 3.216258792032022,
+          "gap_s": 0.7352616250282153,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O9",
+        "turn_class": "ordinary",
+        "turn": "How do I convert between time zones in JavaScript?",
+        "expected": [],
+        "draft": "- JavaScript `Date` objects represent an instant in time; convert time zones when formatting them.\n- Use `Intl.DateTimeFormat` with an IANA time-zone name:\n\n```js\nconst date = new Date(\"2026-09-07T12:00:00Z\");\n\nconst formatted = new Intl.DateTimeFormat(\"en-GB\", {\n  timeZone: \"America/New_York\",\n  dateStyle: \"medium\",\n  timeStyle: \"short\",\n}).format(date);\n\nconsole.log(formatted); // 07 Sept 2026, 08:00\n```\n\n- Common time-zone names include:\n  - `\"UTC\"`\n  - `\"Europe/London\"`\n  - `\"America/New_York\"`\n  - `\"Asia/Tokyo\"`\n- To format in the user\u2019s local time zone, omit `timeZone`:\n\n```js\nnew Intl.DateTimeFormat(\"en-GB\", {\n  dateStyle: \"medium\",\n  timeStyle: \"short\",\n}).format(new Date());\n```\n\n- Avoid parsing ambiguous strings like `\"09/07/2026 12:00\"`; prefer ISO strings with an explicit offset, such as `\"2026-09-07T12:00:00Z\"`.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 3.4394868750241585,
+          "gap_s": 0.7976482089725323,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O10",
+        "turn_class": "ordinary",
+        "turn": "What is a good structure for a weekly one-on-one with a manager?",
+        "expected": [],
+        "draft": "- **Check-in (5 minutes):** How are you doing? Any urgent issues?\n- **Progress update (10 minutes):** Key accomplishments, current priorities, and upcoming deadlines.\n- **Blockers and support (10 minutes):** What\u2019s stuck, and what decisions or help do you need?\n- **Feedback (10 minutes):** Share feedback both ways; discuss what\u2019s working and what could improve.\n- **Growth and development (5 minutes):** Skills, career goals, and learning opportunities.\n- **Planning and next steps (5 minutes):** Confirm priorities, owners, and actions before the next meeting.\n\n**Tips:**\n- Send an agenda beforehand.\n- Focus on discussion, not status reporting.\n- Keep a shared notes document with action items.\n- Reserve time for topics your manager wants to raise.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 2.681400541041512,
+          "gap_s": 0.7389694169978611,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O11",
+        "turn_class": "ordinary",
+        "turn": "Explain the difference between at-least-once and exactly-once delivery.",
+        "expected": [],
+        "draft": "- **At-least-once delivery:** A message is delivered one or more times. It will not be lost, but duplicates can occur if acknowledgements fail or retries happen. Consumers should use **idempotent** processing.\n\n- **Exactly-once delivery:** Each message\u2019s effect is applied **once and only once**, with neither loss nor duplication. This typically requires coordination between message delivery, acknowledgements, and processing\u2014often using transactions or deduplication.\n\n- **Example:**  \n  - At-least-once: A payment request may be processed twice unless duplicates are detected.  \n  - Exactly-once: The system guarantees the payment is recorded only once.\n\n- **Practical note:** \u201cExactly once\u201d is difficult to guarantee end-to-end; many systems provide at-least-once delivery plus idempotent processing to achieve effectively-once results.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 2.693912916991394,
+          "gap_s": 0.7671129169757478,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O12",
+        "turn_class": "ordinary",
+        "turn": "What are the trade-offs of keeping docs in Confluence versus in the repository?",
+        "expected": [],
+        "draft": "- **Confluence advantages**\n  - Easy for non-technical users to edit and browse.\n  - Strong collaboration features: comments, ownership, templates, permissions.\n  - Good for company-wide, cross-team, and process documentation.\n  - Keeps docs separate from code and release workflows.\n\n- **Confluence drawbacks**\n  - Documentation can drift from the code.\n  - Versioning and review are usually weaker than Git-based workflows.\n  - Harder to test, lint, search alongside code, or update automatically.\n  - Access restrictions may prevent developers or tools from using it.\n\n- **Repository advantages**\n  - Versioned, reviewable, and changed alongside code.\n  - Supports Markdown, pull requests, automated checks, and generated docs.\n  - Keeps technical instructions close to the implementation.\n  - Works well offline and integrates with developer tooling.\n\n- **Repository drawbacks**\n  - Less approachable for non-developers.\n  - Collaboration and publishing can be less polished.\n  - Repository structure and permissions may limit broader visibility.\n\n**Rule of thumb:** keep technical, version-sensitive docs in the repository; keep policies, processes, onboarding, and cross-team knowledge in Confluence. Link between them and define a clear source of truth.",
+        "gaps": [
+          "User's current use of Confluence and repository for documentation",
+          "User's team size or specific team preferences for documentation tools",
+          "Decision-making criteria or priorities for choosing documentation tools"
+        ],
+        "candidates": [
+          {
+            "id": "F10",
+            "score": 0.57,
+            "query": "User's current use of Confluence and repository for documentation"
+          },
+          {
+            "id": "F9",
+            "score": 0.554,
+            "query": "User's current use of Confluence and repository for documentation"
+          },
+          {
+            "id": "F7",
+            "score": 0.55,
+            "query": "User's current use of Confluence and repository for documentation"
+          },
+          {
+            "id": "M2",
+            "score": 0.534,
+            "query": "User's team size or specific team preferences for documentation tools"
+          },
+          {
+            "id": "M1",
+            "score": 0.44,
+            "query": "Decision-making criteria or priorities for choosing documentation tools"
+          },
+          {
+            "id": "J2",
+            "score": 0.438,
+            "query": "Decision-making criteria or priorities for choosing documentation tools"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F10",
+            "verdict": "redundant",
+            "reason": "Marathon training is unrelated to documentation trade-offs."
+          },
+          {
+            "id": "F9",
+            "verdict": "redundant",
+            "reason": "Diet preference is unrelated to the question."
+          },
+          {
+            "id": "F7",
+            "verdict": "redundant",
+            "reason": "Manager identity does not affect the answer."
+          },
+          {
+            "id": "M2",
+            "verdict": "potentially_harmful",
+            "reason": "Suppressing caveats would worsen a balanced trade-off comparison."
+          },
+          {
+            "id": "M1",
+            "verdict": "redundant",
+            "reason": "Kafka ordering beliefs are unrelated to Confluence versus repository docs."
+          },
+          {
+            "id": "J2",
+            "verdict": "redundant",
+            "reason": "Service reliability targets are unrelated to documentation storage choices."
+          },
+          {
+            "id": "P1",
+            "verdict": "redundant",
+            "reason": "Favourite football club is unrelated to the request."
+          }
+        ],
+        "admitted": [],
+        "disposition": "baseline_empty_admission",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 4.325183749955613,
+          "gap_s": 1.06854845903581,
+          "retrieval_s": 0.11716775002423674,
+          "admission_s": 2.14174799999455,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ]
+      }
+    ]
+  }
+}
