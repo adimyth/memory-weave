@@ -82,6 +82,12 @@ ambient and once with them conditional. Prints the design gate and the promotion
 and measure gap-decision stability; `--draft-cache` keeps drafts identical across configurations.
 `scenarios/phase0_tune.json` is the separate tuning split used to choose the gap model and prompt, so
 that `phase0.json` stays a held-out set. That selection is in section 8d of the same document.
+`scenarios/phase0_final.json` and `scenarios/phase0_v4.json` are blind splits, each run once with the
+configuration fixed in advance; sections 8e and 8f. `--retrieval real` writes the records through the
+real ingestor and retrieves through `memory_search` (`phase0_real_retrieval.py`); `--shadow-judge` runs
+the judge on relevance-path candidates for no-gap turns without applying the result, which is how the
+judge's own ordinary-turn admission rate is measured; `--gap-prompt v3` adds the content-free category
+inventory and `--admission-prompt v3` is the decision-impact rule.
 
 ## Results, 6 September 2026
 

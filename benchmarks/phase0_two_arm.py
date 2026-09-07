@@ -77,7 +77,16 @@ _GAP_SYSTEM_V2 = (
     '{"queries": ["...", "..."]}'
 )
 
-_GAP_PROMPTS = {"v1": _GAP_SYSTEM, "v2": _GAP_SYSTEM_V2}
+_GAP_SYSTEM_V3 = (
+    _GAP_SYSTEM_V2
+    + "\n\nThe memory store for this user holds facts in these categories only, and nothing outside them:\n"
+    "{inventory}\n"
+    "A question about a decision, constraint, limit, schedule, location, system, or person that falls in one "
+    "of these categories may need memory even when it does not say my, our, or we. A question that asks how "
+    "something works in general, or how to do something in general, does not."
+)
+
+_GAP_PROMPTS = {"v1": _GAP_SYSTEM, "v2": _GAP_SYSTEM_V2, "v3": _GAP_SYSTEM_V3}
 
 _ADMISSION_SYSTEM = (
     "You decide which stored memory records, if any, should be given to an assistant before it answers. You "
@@ -122,7 +131,29 @@ _ADMISSION_SYSTEM_V2 = (
     "Include every candidate id exactly once in verdicts."
 )
 
-_ADMISSION_PROMPTS = {"v1": _ADMISSION_SYSTEM, "v2": _ADMISSION_SYSTEM_V2}
+_ADMISSION_SYSTEM_V3 = (
+    "You decide which stored memory records, if any, should be given to an assistant before it answers. You "
+    "see the user's message, the preferences already applied, a draft answer written without any of the "
+    "candidate records, and the candidate records with their recorded date and status. Evaluate the "
+    "candidates together. Give every candidate exactly one verdict:\n"
+    "- helpful: the record changes what the answer recommends, the time or date it proposes, the person it "
+    "addresses or names, the command or code it gives, a constraint or value it states, or a warning it "
+    "should raise. The draft asking the user for exactly this information also counts.\n"
+    "- jointly_helpful: it meets the helpful test only together with another candidate you are also admitting.\n"
+    "- redundant: it repeats what the draft, public knowledge, or the applied preferences already cover.\n"
+    "- insufficient: it concerns the request but changes none of the things listed under helpful. Background, "
+    "attribution, and usefulness for other work the user did not ask about are insufficient.\n"
+    "- stale_or_conflicting: it is marked superseded or conflicting, or a stronger candidate contradicts it. "
+    "Disagreeing with the draft is not a reason for this verdict; the draft was written without the records.\n"
+    "- potentially_harmful: using it risks factual distortion, agreeing with a false belief, suppressing "
+    "warnings, inappropriate personalisation, or exposing private information unrelated to the request.\n"
+    "Admit only candidates with verdict helpful or jointly_helpful. When you are not sure one of the listed "
+    'things would change, do not admit. An empty admitted list is the normal outcome. Reply with JSON only: '
+    '{"admitted": ["<id>", ...], "verdicts": [{"id": "<id>", "verdict": "<verdict>", "reason": "<one short '
+    'sentence>"}]}. Include every candidate id exactly once in verdicts.'
+)
+
+_ADMISSION_PROMPTS = {"v1": _ADMISSION_SYSTEM, "v2": _ADMISSION_SYSTEM_V2, "v3": _ADMISSION_SYSTEM_V3}
 
 _CORRECTNESS_SYSTEM = (
     "You check whether an assistant's answer contains a set of reference facts. Reply with JSON only: "
@@ -165,6 +196,9 @@ class TurnResult:
     timing: Timing
     failures: list[str] = field(default_factory=list)
     gap_repeats_nonempty: list[bool] = field(default_factory=list)
+    shadow_candidates: list[dict[str, Any]] = field(default_factory=list)
+    shadow_verdicts: list[dict[str, Any]] = field(default_factory=list)
+    shadow_admitted: list[str] = field(default_factory=list)
 
 
 class Phase0:
@@ -180,6 +214,9 @@ class Phase0:
         workers: int,
         draft_cache: Path | None,
         admission_prompt: str = "v1",
+        retrieval: str = "dense",
+        shadow_judge: bool = False,
+        real_workdir: Path | None = None,
     ) -> None:
         self.scenario = scenario
         self.draft_model = draft_model
@@ -188,6 +225,11 @@ class Phase0:
         self.check_model = check_model
         self.gap_prompt = gap_prompt
         self.admission_prompt = admission_prompt
+        self.retrieval = retrieval
+        self.shadow_judge = shadow_judge
+        self._real: Any = None
+        self._real_workdir = real_workdir or Path("benchmarks/results/phase0/stores")
+        self.write_logs: dict[str, list[dict[str, Any]]] = {}
         self.gap_repeats = max(1, gap_repeats)
         self.workers = workers
         self.models = Models()
@@ -219,6 +261,20 @@ class Phase0:
         if missing:
             vectors = self._embedder.embed_documents([self.records[i]["text"] for i in missing])
             self._doc_vectors.update(zip(missing, vectors, strict=True))
+
+    def _inventory_text(self, store_ids: list[str]) -> str:
+        """Content-free list of the fact categories present in the conditional store."""
+
+        labels = self.scenario.get("categories", {})
+        present = sorted({self.records[i].get("category", "") for i in store_ids} - {""})
+        if not present:
+            return "- (no category information available)"
+        return "\n".join(f"- {labels.get(c, c)}" for c in present)
+
+    def retrieve_any(self, arm: str, queries: list[str], store_ids: list[str], context: str) -> list[dict[str, Any]]:
+        if self.retrieval == "real":
+            return self._real.search(arm, queries, context)
+        return self.retrieve(queries, store_ids)
 
     def retrieve(self, queries: list[str], store_ids: list[str]) -> list[dict[str, Any]]:
         assert self._embedder is not None
@@ -274,6 +330,25 @@ class Phase0:
 
     # -- one turn ---------------------------------------------------------------------------------------
 
+    def _judge(self, profile_text: str, turn_text: str, draft: str, candidates: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[str], float]:
+        """One joint admission call. Returns (verdicts, admitted ids, seconds). Raises on malformed output."""
+
+        admission_user = (
+            f"{profile_text}\n\nUser message:\n{turn_text}\n\nDraft answer written without the candidates:\n{draft}\n\n"
+            f"Candidate records:\n{self._candidate_block(candidates)}"
+        )
+        raw, seconds = self._timed(self.admission_model, _ADMISSION_PROMPTS[self.admission_prompt], admission_user, json_mode=True)
+        parsed = json.loads(raw)
+        known = {c["id"] for c in candidates}
+        verdicts = []
+        for item in parsed.get("verdicts", []):
+            verdict = str(item.get("verdict", "")).strip().lower()
+            if str(item.get("id")) in known:
+                verdicts.append({"id": str(item["id"]), "verdict": verdict if verdict in _VERDICTS else f"unparsed:{verdict}", "reason": str(item.get("reason", ""))})
+        admitted = [str(i) for i in parsed.get("admitted", []) if str(i) in known]
+        admitted = [i for i in admitted if any(v["id"] == i and v["verdict"] in _ADMITTING for v in verdicts)]
+        return verdicts, admitted, seconds
+
     def run_turn(self, arm: str, turn: dict[str, Any], profile: list[dict[str, Any]], store_ids: list[str]) -> TurnResult:
         timing = Timing()
         failures: list[str] = []
@@ -282,6 +357,8 @@ class Phase0:
         gap_user = f"{profile_text}\n\nUser message:\n{turn['text']}"
 
         gap_system = _GAP_PROMPTS[self.gap_prompt]
+        if "{inventory}" in gap_system:
+            gap_system = gap_system.replace("{inventory}", self._inventory_text(store_ids))
 
         def plan() -> list[str]:
             raw, _ = self._timed(self.gap_model, gap_system, gap_user, json_mode=True)
@@ -307,11 +384,23 @@ class Phase0:
 
         result = TurnResult(arm, turn["id"], turn["class"], turn["text"], list(turn["expected"]), draft, gaps, [], [], [], "baseline_no_gaps", None, None, None, timing, failures, repeats)
         if not gaps:
+            if self.shadow_judge:
+                # Evaluation only: what would the judge do if the planner had fired? Retrieve on the raw turn,
+                # which is the old relevance path, and judge without applying the result.
+                shadow = self.retrieve_any(arm, [turn["text"]], store_ids, turn["text"])
+                if _PLACEBO_ID in store_ids and all(c["id"] != _PLACEBO_ID for c in shadow):
+                    shadow.append({"id": _PLACEBO_ID, "score": None, "query": "forced placebo"})
+                result.shadow_candidates = shadow
+                if shadow:
+                    try:
+                        result.shadow_verdicts, result.shadow_admitted, _ = self._judge(profile_text, turn["text"], draft, shadow)
+                    except Exception as error:  # noqa: BLE001
+                        failures.append(f"shadow:{type(error).__name__}")
             self._score_correctness(result, turn)
             return result
 
         started = time.perf_counter()
-        candidates = self.retrieve(gaps, store_ids)
+        candidates = self.retrieve_any(arm, gaps, store_ids, turn["text"])
         timing.retrieval_s = time.perf_counter() - started
         if _PLACEBO_ID in store_ids and all(c["id"] != _PLACEBO_ID for c in candidates):
             candidates.append({"id": _PLACEBO_ID, "score": None, "query": "forced placebo"})
@@ -321,21 +410,8 @@ class Phase0:
             self._score_correctness(result, turn)
             return result
 
-        admission_user = (
-            f"{profile_text}\n\nUser message:\n{turn['text']}\n\nDraft answer written without the candidates:\n{draft}\n\n"
-            f"Candidate records:\n{self._candidate_block(candidates)}"
-        )
         try:
-            raw, timing.admission_s = self._timed(self.admission_model, _ADMISSION_PROMPTS[self.admission_prompt], admission_user, json_mode=True)
-            parsed = json.loads(raw)
-            known = {c["id"] for c in candidates}
-            verdicts = []
-            for item in parsed.get("verdicts", []):
-                verdict = str(item.get("verdict", "")).strip().lower()
-                if str(item.get("id")) in known:
-                    verdicts.append({"id": str(item["id"]), "verdict": verdict if verdict in _VERDICTS else f"unparsed:{verdict}", "reason": str(item.get("reason", ""))})
-            admitted = [str(i) for i in parsed.get("admitted", []) if str(i) in known]
-            admitted = [i for i in admitted if any(v["id"] == i and v["verdict"] in _ADMITTING for v in verdicts)]
+            verdicts, admitted, timing.admission_s = self._judge(profile_text, turn["text"], draft, candidates)
             result.verdicts = verdicts
             result.admitted = admitted
         except Exception as error:  # noqa: BLE001
@@ -382,6 +458,17 @@ class Phase0:
             profile = []
             store_ids = [r["id"] for r in self.scenario["records"]]
         self._embed_store(store_ids)
+        if self.retrieval == "real":
+            from benchmarks.phase0_real_retrieval import RealRetrieval
+
+            if self._real is None:
+                self._real = RealRetrieval(self.scenario, self._real_workdir, self._embedder)
+            self.write_logs[arm] = self._real.build_arm(arm, store_ids)
+            outcomes = {}
+            for entry in self.write_logs[arm]:
+                key = f"{entry['outcome']}/{entry['status']}"
+                outcomes[key] = outcomes.get(key, 0) + 1
+            print(f"[{arm}] real store written: {outcomes}", flush=True)
         turns = self.scenario["turns"]
         results: list[TurnResult] = []
         with ThreadPoolExecutor(max_workers=self.workers) as pool:
@@ -454,6 +541,13 @@ def summarise(arm: str, results: list[TurnResult], records: dict[str, dict[str, 
     def final_or_draft(r: TurnResult) -> bool:
         return bool(r.final_correct) if r.final is not None else bool(r.draft_correct)
 
+    shadowed = [r for r in results if r.shadow_candidates]
+    shadow_ordinary = [r for r in shadowed if r.turn_class == "ordinary"]
+    shadow_ordinary_admit = sum(1 for r in shadow_ordinary if r.shadow_admitted)
+    shadow_unsafe = sum(
+        1 for r in shadowed for i in r.shadow_admitted if records[i]["kind"] in ("placebo", "misleading") or i in ("F9", "F10")
+    )
+
     repeated = [r for r in results if len(r.gap_repeats_nonempty) > 1]
     agree = sum(1 for r in repeated if len(set(r.gap_repeats_nonempty)) == 1)
     memory_turns = explicit + implicit
@@ -485,6 +579,9 @@ def summarise(arm: str, results: list[TurnResult], records: dict[str, dict[str, 
         "added_latency_gap_turns_p50_p95_s": (round(_p(gap_turns, 0.5), 2), round(_p(gap_turns, 0.95), 2)),
         "draft_latency_p50_s": round(_p([r.timing.draft_s for r in results], 0.5), 2),
         "policy_failures": sum(len(r.failures) for r in results),
+        "shadow_judge_ordinary_turns_with_candidates": len(shadow_ordinary),
+        "shadow_judge_ordinary_turns_it_would_inject": _pct(shadow_ordinary_admit, len(shadow_ordinary)) if shadow_ordinary else "n/a",
+        "shadow_judge_unsafe_admissions": shadow_unsafe if shadowed else "n/a",
     }
 
 
@@ -526,6 +623,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--check-model", default="gpt-5.4", help="Reference checker; keep fixed across configurations")
     parser.add_argument("--gap-prompt", choices=sorted(_GAP_PROMPTS), default="v1")
     parser.add_argument("--admission-prompt", choices=sorted(_ADMISSION_PROMPTS), default="v1")
+    parser.add_argument("--retrieval", choices=("dense", "real"), default="dense", help="dense: BGE-M3 top-k stand-in; real: the Memory Weave store, ingestor, and retriever")
+    parser.add_argument("--shadow-judge", action="store_true", help="On no-gap turns, retrieve on the raw turn and run the judge without applying it")
     parser.add_argument("--gap-repeats", type=int, default=1, help="Extra gap-planning calls per turn to measure decision stability")
     parser.add_argument("--arms", default="ambient,conditional")
     parser.add_argument("--workers", type=int, default=4)
@@ -537,8 +636,16 @@ def main(argv: list[str] | None = None) -> int:
     gap_model = args.gap_model or args.policy_model
     admission_model = args.admission_model or args.policy_model
     scenario = json.loads(args.scenario.read_text())
-    runner = Phase0(scenario, args.draft_model, gap_model, admission_model, args.check_model, args.gap_prompt, args.gap_repeats, args.workers, args.draft_cache, args.admission_prompt)
-    print(f"scenario={args.scenario} draft={args.draft_model} gap={gap_model}/{args.gap_prompt} admission={admission_model}/{args.admission_prompt} check={args.check_model} repeats={args.gap_repeats}", flush=True)
+    runner = Phase0(
+        scenario, args.draft_model, gap_model, admission_model, args.check_model, args.gap_prompt, args.gap_repeats,
+        args.workers, args.draft_cache, args.admission_prompt, args.retrieval, args.shadow_judge,
+        args.out_dir / "stores" / args.scenario.stem,
+    )
+    print(
+        f"scenario={args.scenario} draft={args.draft_model} gap={gap_model}/{args.gap_prompt} admission={admission_model}/{args.admission_prompt} "
+        f"check={args.check_model} repeats={args.gap_repeats} retrieval={args.retrieval} shadow_judge={args.shadow_judge}",
+        flush=True,
+    )
     arms = [a.strip() for a in args.arms.split(",") if a.strip()]
     all_results: dict[str, list[TurnResult]] = {}
     summaries: dict[str, dict[str, Any]] = {}
@@ -559,6 +666,9 @@ def main(argv: list[str] | None = None) -> int:
         "gap_prompt": args.gap_prompt,
         "admission_model": admission_model,
         "admission_prompt": args.admission_prompt,
+        "retrieval": args.retrieval,
+        "shadow_judge": args.shadow_judge,
+        "write_logs": runner.write_logs,
         "check_model": args.check_model,
         "gap_repeats": args.gap_repeats,
         "usage": runner.models.usage,
@@ -592,6 +702,13 @@ def main(argv: list[str] | None = None) -> int:
                 reasons = {v["id"]: v["reason"] for v in r.verdicts}
                 for i in wrong:
                     print(f"  [{arm}] {r.turn_id} {r.turn[:50]!r} admitted {i} ({runner.records[i]['kind']}): {reasons.get(i, '')}")
+    print("\n== shadow judge: what it would have admitted on no-gap turns ==")
+    for arm, rs in all_results.items():
+        for r in rs:
+            if r.shadow_admitted:
+                reasons = {v["id"]: v["reason"] for v in r.shadow_verdicts}
+                for i in r.shadow_admitted:
+                    print(f"  [{arm}] {r.turn_id} {r.turn_class:<13} {r.turn[:50]!r} would admit {i} ({runner.records[i]['kind']}): {reasons.get(i, '')}")
     print("\n== expected records not admitted ==")
     for arm, rs in all_results.items():
         for r in rs:

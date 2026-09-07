@@ -367,6 +367,49 @@ The two changes: the admission prompt's definition of helpful was tightened to r
 
 **What this means.** The architecture's safety half is established across three splits. Its recall half is bounded by a planner that decides from surface cues, and the two levers tried so far, prompt wording and model choice, have moved it from 2 of 6 to about 5 of 7 and no further. The next change is structural rather than a prompt edit: give the planner a bounded, content-free index of what kinds of facts the store holds for this principal, such as time zone, manager, clusters, tooling decisions, and API limits, so that a question about a rate limit or a version pin can be recognised as possibly organisation-specific without a possessive in the sentence. That change must be written and evaluated on a fourth split, with the judge's ordinary-turn false-admission rate measured alongside, and with the admission prompt's tightening revisited against the warning case above.
 
+## 8f. Pre-registered run on a blind fourth split with structural changes: pass, and the judge measured alone
+
+Run on 7 September 2026. Section 8e left three specific causes: a planner that decides from possessives, a dense-only retrieval stand-in that missed once, and an admission rule that traded an over-admission for a missed warning. It also left one unmeasured number: no ordinary turn had ever reached the judge. A fourth split, `benchmarks/scenarios/phase0_v4.json`, was written blind with a new persona and with half of the explicit questions carrying no possessive on purpose. Four changes were made in advance and run once with the criteria fixed beforehand: at most 1 of 20 ordinary injections, at least 9 of 10 explicit recall, at least 75% implicit recall, no placebo, misleading, or unrelated private admission.
+
+The four changes:
+
+1. **Category inventory for the planner.** The gap prompt now includes a bounded, content-free list of the fact categories the store holds for this principal, from a fixed ten-item taxonomy such as "runtime and version constraints" and "limits and quotas", with one sentence saying a question in one of those categories may need memory without "my", "our", or "we". No record content reaches the planner.
+2. **Decision-impact admission rule.** Helpful now means the record changes what the answer recommends, the time it proposes, the person it addresses, the command or code it gives, a constraint it states, or a warning it should raise.
+3. **Real retrieval.** Records are written through `memory_write` with session-turn evidence, so the ingestor applies its own evidence, lifecycle, and supersession rules, and retrieval runs through `memory_search` with `trigger="auto"` and the host gate loosened to recall-oriented floors. All 20 records were confirmed; the stale time zone and the older REST record were superseded by the system itself.
+4. **Shadow judging.** On every turn where the planner returned no gaps, the raw turn was retrieved on the old relevance path and the judge was run without its result being applied, to measure what it would admit if the planner had fired.
+
+Configuration: `gpt-4o` planning, `gpt-5.4` judging, ambient arm with three ambient preferences including code-example language, three gap repeats.
+
+| Measure | Result | Criterion | Met |
+| --- | --- | --- | --- |
+| Ordinary turns injected | 1 of 20 | at most 1 | yes, on the line |
+| Explicit stored-fact recall | 9 of 10 | at least 9 | yes |
+| Implicit memory-needed recall | 7 of 7 | at least 75% | yes |
+| Placebo, misleading, or unrelated private admitted | 0 | 0 | yes |
+| Memory turns with gaps, every repeat | 17 of 17 | | |
+| Gap decision agreement across repeats | 38 of 38 | | |
+| Usefulness precision | 17 of 20 | | |
+| Memory turns answered correctly, before and after | 1 of 18 to 16 of 18 | | |
+| Added latency, empty-gap turns | 0.0 s on 20 of 38 | | |
+| Added latency, gap turns, p50 and p95 | 4.2 s and 6.3 s | | |
+| Shadow judge: ordinary turns with candidates | 19 | | |
+| Shadow judge: ordinary turns it would have injected | 3 of 19 | | |
+| Shadow judge: unsafe admissions | 0 | | |
+
+**Verdict: pass.** Against section 8e, explicit recall 8 to 9 of 10, implicit 5 of 7 to 7 of 7, and the planner fired on every memory-needed turn on every repeat, including both no-possessive questions that failed last time, "why is Go pinned to 1.22" and "what concurrency limit applies to the ingest service". The category inventory did what it was built to do.
+
+**The one injection.** "How should I prepare for a conversation with my manager about a conference trip?" The possessive fired the planner, retrieval returned the manager's name, and the judge admitted it on the grounds that knowing the name changes how the advice addresses the conversation. The name is not needed for that answer. This is the judge over-admitting an adjacent fact, and it is the same behaviour the shadow measurement quantifies below.
+
+**The one explicit miss is a scoring artefact.** On "where are architecture decision records kept", the draft, written with no memory, guessed the convention `docs/adr/`, which happened to be the stored location. The judge marked the record redundant, correctly, and the answer was right. Recall as scored counts it as a miss because the record was not admitted; answer correctness counts it as correct.
+
+**The number that was missing: what the judge does on ordinary turns.** On 19 ordinary turns the judge saw real candidate sets for the first time. It admitted nothing unsafe: no placebo, misleading, or private record across 19 sets that all contained a forced placebo. It would have injected an adjacent fact on 3 of 19, about 16%: the team's gRPC decision on a general gRPC-versus-REST question, and the Go pin on both a go.mod question and a timer-versus-ticker question, each with a reason of the form "the answer should warn about this project's version". That is three times the injection budget. Two conclusions follow. The judge is reliable on the harm categories and not reliable on topical adjacency, and the near-zero injection across four splits is the planner's silence doing the work. The planner is load-bearing for precision; the judge is load-bearing for safety. Any change that makes the planner fire on more ordinary turns must be measured against this shadow number, not assumed safe because the judge exists.
+
+**Retrieval through the real pipeline.** With recall-oriented floors every search returned eight candidates, which is the intended behaviour: the gate is a candidate control and admission decides. The redundant-record admission, the gRPC-uses-HTTP/2 fact admitted as jointly helpful alongside the gRPC decision, is a small cost of that larger pool and is the case the decision-impact rule should reject; it is one of 20 admissions.
+
+**Cost per served turn.** One `gpt-4o` planning call always, about 480 prompt tokens with the inventory. One `gpt-5.4` admission call on 18 of 38 turns, about 700 prompt and 150 completion tokens with eight candidates. One regeneration on 17 of 38.
+
+**Status of the Phase 0 claims after four splits.** Ordinary injection across 92 ordinary turns and four personas: 1. Unsafe admissions: 0 in every run, including 19 shadow judgments. Explicit recall: 9 of 10 on the two most recent blind splits. Implicit recall: 7 of 7 on the fourth split after the structural change, 5 of 7 before it. Gap decisions stable across repeats on every turn of the last two splits. The design gate is met on a blind split with the real retrieval pipeline, and the remaining risk is named and measured: the judge's 16% adjacency admission rate when it is exercised.
+
 ## 9. Sources
 
 - Ross, Mahabaleshwarkar, Suhara. *When2Call: When (not) to Call Tools.* NAACL 2025. https://aclanthology.org/2025.naacl-long.174/
