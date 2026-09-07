@@ -175,6 +175,33 @@ The canary does not begin until all of the following hold:
 
 **Remaining before the canary:** monitoring that separates planner silence, retrieval misses, judge rejection, policy failure, and budget withholding, which the turn-decision log already carries per turn and needs only aggregation; then the canary itself with kill switches and rollback thresholds. Confidence unchanged at 9.5: the selected bundle has passed every gate, and the comparison strengthened the selection while narrowing a claim.
 
+### Sequence status, end of 7 September 2026
+
+| Step | Status |
+| --- | --- |
+| 1. Taxonomy by inventory coverage | Done. Classifier v2; coverage 16 of 19 to 19 of 19 on both splits. |
+| 2. Full fitness suite on the updated bundle | Done. All five runs pass. |
+| 3. Review-queue CLI | Done. `reviews list`, `reviews resolve`, `reviews backlog` with non-zero exit on breach, `activation`. |
+| 4. Three-judge comparison on recall, adjacency, safety, latency, cost | Done. Only `gpt-5.4` meets the safety and adjacency bar on the shadow set. |
+| 5. Select and version one supported bundle | Done. `bundle-2026-09-07-a`, tagged; alternatives recorded with numbers. |
+| 6. Full fitness rerun on any bundle change | In force as a rule. Not yet enforced by a mechanism. |
+| 7. Production canary | Pending. |
+
+Canary preconditions:
+
+| Precondition | Status |
+| --- | --- |
+| Review operations usable | Met, via the CLI. |
+| Selected bundle passes the gates | Met. |
+| Timeouts and budgets from measured latency | Met in the shadow harness, 4 s and 8 s. Not yet applied to a production configuration, because no production adapter exists; the shadow harness is the only place the bundle runs. |
+| Monitoring separates planner silence, retrieval misses, judge rejection, policy failure, and budget withholding | Not met. The turn-decision log records each per turn; nothing aggregates the five counts or watches them over time. |
+
+Pending work, in order:
+
+1. Monitoring: an aggregation over `turn_decisions` producing the five stage counts plus served and shadow injection, usable as a report and as the canary's rollback signal.
+2. The canary: needs a serving host that runs the orchestrator, per-stage kill switches, and rollback thresholds written before it starts. This repository holds the vertical-slice harness, not a serving host, so where the canary runs is an open decision.
+3. Optional, behind step 6: refuse to serve a bundle whose hash has no recorded fitness result, turning the rule into a mechanism.
+
 ### Requirements Phase 0 adds to Phase 2
 
 - The gap policy receives a bounded, content-free category inventory for the principal's readable conditional store, built from the activation policy's fixed taxonomy and never from extractor attribute slugs or record text. The inventory is part of the turn-decision log.
