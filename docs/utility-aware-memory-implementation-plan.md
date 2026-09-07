@@ -75,6 +75,10 @@ Also reported, not gated: retrieval-category assignment accuracy against the spl
 
 If A passes, confidence moves above 9. If A fails on promotion or inventory, Phase 1A is the cause and the fix is in code, not prompts. If A passes and B fails on recall, the judge keeps the decision-impact rule and Phase 2 stays in shadow mode until the adjacency rate is addressed another way.
 
+**Outcome, 7 September 2026.** A passed every threshold: 0 of 20 ordinary injections, 10 of 10 explicit, 7 of 8 implicit, no unsafe admission, 3 of 3 eligible preferences promoted, no unsafe promotion, scoped preference kept conditional. B met every threshold except promotion, 2 of 3, because its independent store build classified the code-example-language preference as scoped where A's had classified it as broad; over both builds eligible promotion was 5 of 6. B's gap-anchored judge is rejected on the evidence from the fourth-split offline evaluation, where it admitted a placebo, and from the fifth split, where it cost a scoped-preference recall while adding no precision. Full numbers in `usefulness-gate.md` section 8g.
+
+Consequences. The decision-impact judge is the Phase 2 admission policy. The activation rule now treats `code_example_language` as broad unless the policy flags it ambiguous or unsafe, since the override clause is the normal shape of that preference; this change is unit-tested and must be confirmed on the next blind split before the promotion gate is considered stable. Phase 1B tightens the category taxonomy and prompt, since assignment accuracy was 15 of 24 even though inventory coverage sufficed. Confidence is held at 9 rather than raised, because the promotion gate's pass in A was not reproduced by B's build.
+
 ### Requirements Phase 0 adds to Phase 2
 
 - The gap policy receives a bounded, content-free category inventory for the principal's readable conditional store, built from the activation policy's fixed taxonomy and never from extractor attribute slugs or record text. The inventory is part of the turn-decision log.

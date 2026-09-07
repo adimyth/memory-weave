@@ -410,6 +410,40 @@ Configuration: `gpt-4o` planning, `gpt-5.4` judging, ambient arm with three ambi
 
 **Status of the Phase 0 claims after four splits.** Ordinary injection across 92 ordinary turns and four personas: 1. Unsafe admissions: 0 in every run, including 19 shadow judgments. Explicit recall: 9 of 10 on the two most recent blind splits. Implicit recall: 7 of 7 on the fourth split after the structural change, 5 of 7 before it. Gap decisions stable across repeats on every turn of the last two splits. The design gate is met on a blind split with the real retrieval pipeline, and the remaining risk is named and measured: the judge's 16% adjacency admission rate when it is exercised.
 
+## 8g. Blind fifth split with Phase 1A: automatic promotion, store-generated inventory, and the gap-anchored judge
+
+Run on 7 September 2026. Phase 1A was built between the fourth and fifth splits: an activation field and retrieval category on every record, a category policy that proposes classifications, host verification of the claim in the principal's own user turns, deterministic promotion rules, a durable review queue, a profile assembler, and an inventory generated from the store's categories. The fifth split, `benchmarks/scenarios/phase0_v5.json`, was written and its thresholds registered before any of that existed. No record in it carries a category the pipeline can read. Every record was written conditional through `memory_write`; the activation policy decided what became ambient; the planner's inventory came from the store.
+
+Two configurations, both pre-registered, each an independent store build and a single run:
+
+- **A**: store-generated inventory, `gpt-4o` planner with prompt v3, `gpt-5.4` judge with the decision-impact rule.
+- **B**: identical, with the judge gap-anchored: admission requires naming the planner gap the record resolves, enforced in code.
+
+| Measure | A | B | Threshold |
+| --- | --- | --- | --- |
+| Ordinary turns injected | 0 of 20 | 0 of 20 | at most 1 |
+| Explicit stored-fact recall | 10 of 10 | 10 of 10 | at least 9 |
+| Implicit memory-needed recall, conditional records | 7 of 8 | 7 of 9 | at least 75% |
+| Placebo, misleading, or unrelated private admitted | 0 | 0 | 0 |
+| Eligible preferences promoted automatically | 3 of 3 | 2 of 3 | 3 of 3 |
+| Unsafe automatic promotion | 0 | 0 | 0 |
+| Scoped preference kept conditional | yes | yes | yes |
+| Verdict | **pass** | **fail on promotion** | |
+
+Also measured: gap decisions identical across three repeats on 39 of 39 turns in A and 37 of 39 in B; usefulness precision 18 of 19 in both; retrieval-category assignment matched the hidden labels on 15 of 24 in both; shadow judge on ordinary turns would have injected on 2 of 20 in A, and nothing unsafe; empty-gap turns added no latency; gap turns added 4.2 s at p50 and 5.3 s at p95.
+
+**Automatic promotion and the store-generated inventory work.** In A the policy promoted exactly the three broad preferences, sent the "agree when confident" record and one other to review as unsafe, kept the SQL-style preference conditional as scoped, rejected a third-party fact as not about the principal, and generated a nine-label inventory from the store. With that inventory the planner fired on every explicit question including the no-possessive ones, and explicit recall reached 10 of 10 for the first time. The profile did its job without retrieval: the CSV-parsing turn came back in Kotlin.
+
+**Promotion is not yet deterministic, and B showed it.** B's independent store build classified "code examples in Kotlin unless another language is requested" as scoped, with stated confidence 1.0, where A's build had classified the same sentence as broad. The clause "unless another language is requested" reads to the classifier as a condition. The rule then did what it is written to do and kept the record conditional. Over the two builds, eligible-preference promotion was 5 of 6, under the plan's 95% requirement. The fix is a rule, not a prompt: a default code-example language is broad by definition, its override clause is the normal shape of such a preference, and the deterministic rule should treat `code_example_language` as broad unless the policy flags it ambiguous or unsafe. That change is made in code with a unit test and is not validated on a blind split yet.
+
+**The gap-anchored judge is rejected.** On the fourth split, run offline before B, anchoring kept recall unchanged, left the served injection unchanged on the same "my manager" turn, and admitted a placebo for the first time in any run, the five-a-side football record as resolving a gap about recurring events. On the fifth split it cost the SQL-style preference: the planner named gaps about dialect and schema, retrieval found the record, and the anchored judge rejected it as a style preference rather than a listed fact. Its shadow number is zero by construction, since a turn with no gaps has nothing admissible, so it measures nothing. Anchoring did not constrain the judge; it gave it a different sentence to write. The decision-impact judge stays.
+
+**What the shadow judge says after two splits.** With the decision-impact rule, the judge would have injected an adjacent fact on 3 of 19 ordinary turns on the fourth split and 2 of 20 on the fifth, and nothing unsafe on either. The two cases on the fifth split are the Kotlin pin on a Gradle question and the manager's name on a laptop-request question, the same two shapes as before. The planner still carries precision; the judge still carries safety; the adjacency rate is stable at around one in eight when the judge is reached.
+
+**Category accuracy is low and it did not matter here.** The classifier agreed with the hidden labels on 15 of 24 records, disagreeing mostly between "limits", "constraints", and "other". The inventory nonetheless covered every question the planner needed to fire on, because the planner uses the inventory as a hint that organisation-specific facts exist, not as a lookup. It would matter for a store whose only records fall in a mislabelled category, and the taxonomy and prompt should be tightened in Phase 1B.
+
+**Status after five splits.** Ordinary injection across 112 ordinary turns and five personas: 1. Unsafe admissions on the served path: 0 in every run. Explicit recall on the last three blind splits: 8, 9, 10 of 10. Implicit recall: 5 of 7, 7 of 7, 7 of 8. The design gate holds with automatic promotion and a store-generated inventory. The one open defect is the applicability flip on the code-language preference, and its fix is deterministic.
+
 ## 9. Sources
 
 - Ross, Mahabaleshwarkar, Suhara. *When2Call: When (not) to Call Tools.* NAACL 2025. https://aclanthology.org/2025.naacl-long.174/

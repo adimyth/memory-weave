@@ -108,6 +108,11 @@ def test_rules_in_order() -> None:
     assert decide_activation(semantic, _broad("other"), principal_entity, 1) == ("conditional", "category_not_promotable")
     scoped = CategoryDecision("preferences", "answer_style", "scoped", 0.9)
     assert decide_activation(semantic, scoped, principal_entity, 1) == ("conditional", "scoped_preference")
+    # A default code-example language carries an override clause by nature; the rule treats it as broad.
+    scoped_code = CategoryDecision("preferences", "code_example_language", "scoped", 0.9)
+    assert decide_activation(semantic, scoped_code, principal_entity, 1) == ("promote", "eligible_broad_preference")
+    ambiguous_code = CategoryDecision("preferences", "code_example_language", "ambiguous", 0.9)
+    assert decide_activation(semantic, ambiguous_code, principal_entity, 1) == ("review", "ambiguous_applicability")
     ambiguous = CategoryDecision("preferences", "answer_style", "ambiguous", 0.9)
     assert decide_activation(semantic, ambiguous, principal_entity, 1) == ("review", "ambiguous_applicability")
     assert decide_activation(semantic, _broad(confidence=0.5), principal_entity, 1) == ("review", "low_confidence")

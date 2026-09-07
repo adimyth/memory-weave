@@ -130,10 +130,13 @@ def decide_activation(
         return "conditional", "no_host_verified_evidence"
     if decision.activation_category not in PROMOTABLE_CATEGORIES:
         return "conditional", "category_not_promotable"
-    if decision.applicability == "scoped":
-        return "conditional", "scoped_preference"
     if decision.applicability == "ambiguous":
         return "review", "ambiguous_applicability"
+    if decision.applicability == "scoped" and decision.activation_category != "code_example_language":
+        # A default code-example language is broad by definition; "unless another language is requested"
+        # is the normal shape of that preference, not a scope. Two independent classifier runs on the
+        # fifth split labelled the same sentence broad and scoped; the rule, not the classifier, decides.
+        return "conditional", "scoped_preference"
     if decision.confidence < min_confidence:
         return "review", "low_confidence"
     return "promote", "eligible_broad_preference"
