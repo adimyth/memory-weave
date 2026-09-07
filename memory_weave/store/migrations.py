@@ -121,6 +121,37 @@ def _migration_6(connection: sqlite3.Connection) -> None:
     )
 
 
+def _migration_7(connection: sqlite3.Connection) -> None:
+    """One row per host-policy turn, including turns where gap planning returned nothing and no search ran."""
+
+    connection.execute(
+        """
+        CREATE TABLE IF NOT EXISTS turn_decisions (
+            id                  TEXT PRIMARY KEY,
+            at                  TEXT NOT NULL,
+            session_id          TEXT,
+            turn                TEXT NOT NULL,
+            disposition         TEXT NOT NULL,
+            shadow              INTEGER NOT NULL DEFAULT 0,
+            profile_record_ids  TEXT NOT NULL,
+            inventory           TEXT NOT NULL,
+            gaps                TEXT NOT NULL,
+            gap_status          TEXT NOT NULL,
+            candidate_ids       TEXT NOT NULL,
+            verdicts            TEXT NOT NULL,
+            admitted_ids        TEXT NOT NULL,
+            admission_status    TEXT NOT NULL,
+            requested_budget_ms INTEGER,
+            effective_budget_ms INTEGER,
+            timings_ms          TEXT NOT NULL,
+            failures            TEXT NOT NULL,
+            config              TEXT NOT NULL
+        )
+        """
+    )
+    connection.execute("CREATE INDEX IF NOT EXISTS turn_decisions_session ON turn_decisions(session_id, at)")
+
+
 def _has_column(connection: sqlite3.Connection, table: str, column: str) -> bool:
     return any(row[1] == column for row in connection.execute(f"PRAGMA table_info({table})"))
 
@@ -197,6 +228,7 @@ MIGRATIONS: tuple[tuple[int, Migration], ...] = (
     (4, _migration_4),
     (5, _migration_5),
     (6, _migration_6),
+    (7, _migration_7),
 )
 
 

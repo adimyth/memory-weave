@@ -17,6 +17,18 @@ from .activation import (
     verify_principal_evidence,
 )
 from .grants import private_scope, readable_scopes, writable_scopes
+from .utility_aware import (
+    AdmissionDecision,
+    AdmissionPolicy,
+    CandidateVerdict,
+    Gap,
+    GapDecision,
+    GapPolicy,
+    TurnMemoryDecision,
+    TurnOptions,
+    UtilityAwareConfig,
+    UtilityAwareOrchestrator,
+)
 from .lifecycle import (
     has_authority,
     initial_confidence,
@@ -38,8 +50,18 @@ __all__ = [
     "ActivationDecision",
     "ActivationOperations",
     "ActivationService",
+    "AdmissionDecision",
+    "AdmissionPolicy",
     "BacklogStatus",
+    "CandidateVerdict",
     "CategoryDecision",
+    "Gap",
+    "GapDecision",
+    "GapPolicy",
+    "TurnMemoryDecision",
+    "TurnOptions",
+    "UtilityAwareConfig",
+    "UtilityAwareOrchestrator",
     "CategoryPolicy",
     "ProfileAssembler",
     "ProfileBlock",

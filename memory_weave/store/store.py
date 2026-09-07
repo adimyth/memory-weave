@@ -304,6 +304,51 @@ class Store:
         ).fetchall()
         return [dict(row) for row in rows]
 
+    _TURN_DECISION_JSON = (
+        "profile_record_ids", "inventory", "gaps", "candidate_ids", "verdicts", "admitted_ids", "timings_ms", "failures", "config",
+    )
+
+    def insert_turn_decision(self, row: Mapping[str, Any]) -> None:
+        """Persist one utility-aware turn decision."""
+
+        columns = (
+            "id", "at", "session_id", "turn", "disposition", "shadow", "profile_record_ids", "inventory", "gaps",
+            "gap_status", "candidate_ids", "verdicts", "admitted_ids", "admission_status", "requested_budget_ms",
+            "effective_budget_ms", "timings_ms", "failures", "config",
+        )
+        values: list[object] = []
+        for column in columns:
+            value = row[column]
+            if column == "at":
+                value = _dump_datetime(cast(datetime, value))
+            elif column == "shadow":
+                value = int(bool(value))
+            elif column in self._TURN_DECISION_JSON:
+                value = _dump_json(value)
+            values.append(value)
+        with self.transaction() as connection:
+            connection.execute(
+                f"INSERT INTO turn_decisions({', '.join(columns)}) VALUES ({_placeholders(len(columns))})", tuple(values)
+            )
+
+    def turn_decisions(self, session_id: str | None = None) -> list[dict[str, Any]]:
+        """Return decoded turn decisions, oldest first, optionally for one session."""
+
+        if session_id is None:
+            rows = self.connection.execute("SELECT * FROM turn_decisions ORDER BY at, id").fetchall()
+        else:
+            rows = self.connection.execute(
+                "SELECT * FROM turn_decisions WHERE session_id = ? ORDER BY at, id", (session_id,)
+            ).fetchall()
+        out = []
+        for row in rows:
+            item = dict(row)
+            for column in self._TURN_DECISION_JSON:
+                item[column] = json.loads(cast(str, item[column]))
+            item["shadow"] = bool(item["shadow"])
+            out.append(item)
+        return out
+
     def get_activation_review(self, review_id: str) -> dict[str, Any] | None:
         row = self.connection.execute("SELECT * FROM activation_reviews WHERE id = ?", (review_id,)).fetchone()
         return None if row is None else dict(row)
