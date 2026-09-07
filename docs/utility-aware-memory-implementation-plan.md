@@ -32,6 +32,24 @@ Both gates ran. Full numbers are in `usefulness-gate.md` sections 8c and 8d.
 - Consequence for Phase 1 and Phase 2: Phase 1 proceeds, since the promotion blocker and the ambient categories are settled and none of the recall misses touch it. Phase 2 does not start from the current gap prompt. It needs a structural planner input, a bounded content-free index of the fact categories the store holds for the principal, evaluated on a fourth blind split with the judge's ordinary-turn false-admission rate measured for the first time, because no ordinary turn has yet reached the judge in any run.
 - Blind fourth split, pre-registered, `usefulness-gate.md` section 8f: pass. With the category inventory, the decision-impact admission rule, the real ingestor and retriever, and shadow judging: ordinary injection 1 of 20, explicit recall 9 of 10, implicit recall 7 of 7, no unsafe admission, gap decisions stable on every turn. The planner fired on every memory-needed turn including the no-possessive questions. The shadow judge would have injected an adjacent fact on 3 of 19 ordinary turns and nothing unsafe: the planner carries precision, the judge carries safety.
 
+### Phase 0 verdict, 7 September 2026
+
+Decision: Phase 0 is complete and the design gate is met. Phase 1 starts. Phase 2 starts from the requirements listed below, not from the original gap prompt.
+
+Confidence that the plan is solid and worth pursuing, as stated at each checkpoint:
+
+| Checkpoint | Evidence at that point | Confidence |
+| --- | --- | --- |
+| Plan written, before any Phase 0 run | 18 logged searches from one scripted conversation | 7 of 10 |
+| First held-out split, section 8c | Design gate passed, implicit recall 2 of 6, planner unstable between arms | 8 |
+| Tuning split and confirmation, section 8d | Implicit recall 5 of 6, planner stable, but the prompt had seen the first split's failures | 8.5 |
+| Blind third split, section 8e | Pre-registered run failed both recall thresholds; cause isolated to the planner's reliance on possessives | 8 |
+| Blind fourth split, section 8f | Pre-registered run passed all four criteria through the real pipeline; judge measured alone for the first time | 9 |
+
+The move from 8.5 to 9 is not the same 8.5 recovered. Earlier the uncertainty was unknowns: whether the planner would generalise, whether the real pipeline matched the stand-in, and what the judge would do when reached. Now the uncertainty is knowns: the injection gate was met with no margin on a sample of 20, the judge admits an adjacent fact on about 16% of ordinary turns when it is reached, and the category inventory was hand-assigned for the scenario rather than derived from the store. Fewer things can still surprise, and the ones that can are listed.
+
+What would move it further: the same pre-registered run with a second vendor's models in both roles, which is also the test of the model-agnostic claim, and a fifth split with the inventory generated from the store's activation categories rather than from the scenario file.
+
 ### Requirements Phase 0 adds to Phase 2
 
 - The gap policy receives a bounded, content-free category inventory for the principal's readable conditional store, built from the activation policy's fixed taxonomy and never from extractor attribute slugs or record text. The inventory is part of the turn-decision log.
