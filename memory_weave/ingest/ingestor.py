@@ -34,6 +34,7 @@ from memory_weave.policy import (
     initial_status,
     provisional_expiry,
     rank,
+    recognise_form,
     reinforce,
     writable_scopes,
 )
@@ -532,6 +533,11 @@ class Ingestor:
         verdicts = [(existing, self._judge.judge(existing.content, record.content)) for existing in attribute_records]
         same_attribute = [existing for existing, _ in verdicts if existing.attribute == record.attribute]
 
+        # A temporary statement ("this week, answer in Spanish") is not a new value for a standing fact
+        # ("replies in English"). It coexists as its own record instead of superseding the standing one,
+        # otherwise a passing instruction would silently erase a durable preference from the profile.
+        temporary = recognise_form(record.content) == "temporary"
+
         if same_attribute:
             incumbent = max(same_attribute, key=lambda candidate: _authority_key(candidate, self._config))
             incumbent_verdict = next(verdict for existing, verdict in verdicts if existing is incumbent)
@@ -539,6 +545,10 @@ class Ingestor:
             if incumbent_verdict == "same":
                 timer.mark("supersession")
                 return _WriteDecision("reinforced", incumbent, "same_subject", extra)
+            if temporary and recognise_form(incumbent.content) != "temporary":
+                extra["temporary_coexists_with"] = incumbent.id
+                timer.mark("supersession")
+                return _WriteDecision("created", None, None, extra)
             outcome, _, _ = self._supersession_outcome(record, incumbent, current_time, timer)
             if outcome == "superseded":
                 subsumed = [
@@ -571,6 +581,11 @@ class Ingestor:
         contradictions = [
             existing for existing, verdict in verdicts if verdict == "contradicts" and existing.id in aliasable
         ]
+        if contradictions and temporary:
+            standing = [existing for existing in contradictions if recognise_form(existing.content) != "temporary"]
+            if standing:
+                extra["temporary_coexists_with"] = max(standing, key=lambda c: _authority_key(c, self._config)).id
+                contradictions = [existing for existing in contradictions if existing not in standing]
         if contradictions:
             existing = max(contradictions, key=lambda candidate: _authority_key(candidate, self._config))
             timer.mark("judge")

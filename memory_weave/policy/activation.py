@@ -13,6 +13,7 @@ present in a principal's conditional store form the inventory a gap planner may 
 
 from __future__ import annotations
 
+import re
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Literal, Protocol
@@ -29,7 +30,45 @@ def _principal_entity(store: Store, principal: Principal, actor: str) -> Entity:
 
     return ensure_principal_entity(principal.user_id, store, actor=actor)
 
-POLICY_VERSION = "activation-v1"
+POLICY_VERSION = "activation-v2-frozen"
+
+# Deterministic form recognition. A recognised form decides applicability by rule; the classifier's
+# applicability is used only for sentences no rule recognises. Two independent classifier runs on the
+# fifth scenario split labelled the same global-default sentence broad and scoped, so the classifier
+# cannot be the deciding input for these forms.
+_OVERRIDE_CLAUSE = re.compile(
+    r"\b(unless (?:i|the user|they|you)?\s*(?:ask|asks|request|requests|say|says|tell|tells|specify|specifies|state|states)"
+    r"|unless (?:another|a different|otherwise|asked|requested|told|specified|stated)"
+    r"|by default|default to|as a default)\b",
+    re.IGNORECASE,
+)
+_SCOPE_PREFIX = re.compile(
+    r"^\s*(?:(?:the )?user (?:prefers|wants|likes|asks)[^.]*?\b)?(?:when|whenever|while|during|for|in|on|if)\b\s+"
+    r"(?:writing|reviewing|discussing|working|answering|doing|debugging|dealing|talking|responding|handling|"
+    r"drafting|editing|planning|designing|building|testing|reading|explaining|"
+    r"[a-z][a-z0-9-]*\s+(?:questions|topics|tasks|code|work|reviews|meetings|discussions|threads|requests))",
+    re.IGNORECASE,
+)
+_TEMPORARY = re.compile(
+    r"\b(until|through|for the next|for the coming|for the rest of|this week|this month|this sprint|next week|"
+    r"today only|for now|temporarily|for the time being|during (?:the )?(?:next|coming|current))\b",
+    re.IGNORECASE,
+)
+
+FormKind = Literal["global_default", "scoped", "temporary"]
+
+
+def recognise_form(content: str) -> FormKind | None:
+    """Return the preference form a deterministic rule recognises in the sentence, or None."""
+
+    text = normalize_ws(content)
+    if _TEMPORARY.search(text):
+        return "temporary"
+    if _SCOPE_PREFIX.search(text):
+        return "scoped"
+    if _OVERRIDE_CLAUSE.search(text):
+        return "global_default"
+    return None
 
 RETRIEVAL_CATEGORIES: dict[str, str] = {
     "time_zone": "time zone and working hours",
@@ -130,13 +169,19 @@ def decide_activation(
         return "conditional", "no_host_verified_evidence"
     if decision.activation_category not in PROMOTABLE_CATEGORIES:
         return "conditional", "category_not_promotable"
+    # Recognised forms are decided by rule. The classifier's applicability is consulted only below.
+    form = recognise_form(record.content)
+    if form == "temporary":
+        return "conditional", "temporary_preference"
+    if form == "scoped":
+        return "conditional", "scoped_preference"
+    if form == "global_default":
+        return "promote", "eligible_global_default"
     if decision.applicability == "ambiguous":
         return "review", "ambiguous_applicability"
-    if decision.applicability == "scoped" and decision.activation_category != "code_example_language":
-        # A default code-example language is broad by definition; "unless another language is requested"
-        # is the normal shape of that preference, not a scope. Two independent classifier runs on the
-        # fifth split labelled the same sentence broad and scoped; the rule, not the classifier, decides.
+    if decision.applicability == "scoped":
         return "conditional", "scoped_preference"
+    # Self-reported confidence never promotes; it can only send an unrecognised form to review.
     if decision.confidence < min_confidence:
         return "review", "low_confidence"
     return "promote", "eligible_broad_preference"
@@ -285,3 +330,92 @@ def inventory(store: Store, principal: Principal) -> list[str]:
 
     scopes: Sequence[Scope] = readable_scopes(store, principal.agent_id, principal.user_id)
     return [RETRIEVAL_CATEGORIES.get(key, key) for key in store.active_categories(scopes)]
+
+
+# -- Phase 1B: trusted review and activation operations ---------------------------------------------------
+
+ReviewResolution = Literal["promote", "conditional", "reject"]
+
+
+@dataclass(frozen=True, slots=True)
+class BacklogStatus:
+    open_count: int
+    oldest_age_days: float
+    over_count_limit: bool
+    over_age_limit: bool
+
+    @property
+    def within_limits(self) -> bool:
+        return not (self.over_count_limit or self.over_age_limit)
+
+
+class ActivationOperations:
+    """Trusted host operations: resolve reviews, change activation directly, and check the backlog."""
+
+    def __init__(self, store: Store, *, actor: str = "host") -> None:
+        self._store = store
+        self._actor = actor
+
+    def resolve_review(self, review_id: str, resolution: ReviewResolution, resolver: str, note: str = "") -> str:
+        """Resolve one open review. Only a promote resolution changes activation, and only after the same
+        eligibility checks a rule-based promotion needs."""
+
+        row = self._store.get_activation_review(review_id)
+        if row is None:
+            raise ValueError(f"Review {review_id} was not found.")
+        if row["status"] != "open":
+            raise ValueError(f"Review {review_id} is already {row['status']}.")
+        record_id = str(row["record_id"])
+        if resolution == "promote":
+            self._change_activation(record_id, "ambient", reason=f"review:{review_id}", resolver=resolver)
+        self._store.resolve_activation_review(review_id, resolution=resolution, resolver=resolver)
+        self._store.append_event(
+            "record.activation_reviewed",
+            self._actor,
+            record_id,
+            None,
+            {"review_id": review_id, "resolution": resolution, "resolver": resolver, "note": note, "policy_version": POLICY_VERSION},
+        )
+        return record_id
+
+    def set_activation(self, record_id: str, activation: Literal["ambient", "conditional"], *, resolver: str, reason: str) -> None:
+        """Direct trusted change, subject to the eligibility checks that apply to any promotion."""
+
+        self._change_activation(record_id, activation, reason=reason, resolver=resolver)
+
+    def backlog(self, *, max_open: int, max_age_days: float, at: object = None) -> BacklogStatus:
+        from datetime import datetime
+
+        from memory_weave.util import now as _now
+
+        rows = self._store.open_activation_reviews()
+        current = at if isinstance(at, datetime) else _now()
+        ages = []
+        for row in rows:
+            created = datetime.fromisoformat(str(row["created_at"]))
+            ages.append((current - created).total_seconds() / 86400)
+        oldest = max(ages) if ages else 0.0
+        return BacklogStatus(len(rows), oldest, len(rows) > max_open, oldest > max_age_days)
+
+    def _change_activation(self, record_id: str, activation: str, *, reason: str, resolver: str) -> None:
+        record = self._store.get_record(record_id)
+        if record is None:
+            raise ValueError(f"Record {record_id} was not found.")
+        if activation == "ambient":
+            if record.type != "semantic":
+                raise ValueError("Only semantic records can be ambient.")
+            if record.status not in ("provisional", "confirmed"):
+                raise ValueError(f"A {record.status} record cannot be ambient.")
+            if record.subject_entity_id is None:
+                raise ValueError("Only records about a principal can be ambient.")
+        if record.activation == activation:
+            return
+        with self._store.transaction():
+            self._store.set_activation(record_id, activation)
+            self._store.append_event(
+                "record.activation_changed",
+                self._actor,
+                record_id,
+                None,
+                {"from": record.activation, "to": activation, "reason": reason, "resolver": resolver, "policy_version": POLICY_VERSION},
+            )

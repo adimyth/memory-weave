@@ -444,6 +444,27 @@ Also measured: gap decisions identical across three repeats on 39 of 39 turns in
 
 **Status after five splits.** Ordinary injection across 112 ordinary turns and five personas: 1. Unsafe admissions on the served path: 0 in every run. Explicit recall on the last three blind splits: 8, 9, 10 of 10. Implicit recall: 5 of 7, 7 of 7, 7 of 8. The design gate holds with automatic promotion and a store-generated inventory. The one open defect is the applicability flip on the code-language preference, and its fix is deterministic.
 
+## 8h. Promotion split: the frozen rule across two independent builds
+
+Run on 7 September 2026. After section 8g the promotion rule was frozen as form recognition: a sentence with an override clause such as "unless another language is requested" or "by default" is a global default and is promoted whatever the classifier says about applicability; a sentence opening with a scope such as "when reviewing SQL" or "for Kubernetes questions" stays conditional; a sentence with a temporal bound such as "until Friday" or "this week" is never ambient; the classifier's applicability is consulted only for sentences no rule recognises; its self-reported confidence can route a case to review and can never promote. A blind promotion-only split, `benchmarks/scenarios/promotion_v1.json`, was written after the freeze: four global defaults, three explicit overrides, three topic-scoped preferences, three temporary preferences, three unsafe preferences, and two control facts. Pass requires two independent store builds to each promote exactly the seven eligible records with nothing unsafe promoted.
+
+**First run: rule correct on 36 of 36 decisions, split failed on one record.** Both builds produced identical activation decisions and every one matched the registered outcome. The split still failed because "User wants replies in English" left the profile as superseded: the ingestor's cross-attribute contradiction path had aliased "This week, user wants answers in Spanish" onto the same attribute and let the later, contradicting statement replace the standing one. That is the existing supersession rule doing what it was written to do, and it is wrong for this case. A temporary instruction is not a new value for a durable preference.
+
+**Fix, in the ingestor.** A record the form rule recognises as temporary no longer supersedes a non-temporary record on the same or an aliased attribute; it is created alongside it. A later standing statement still supersedes an earlier temporary one. Unit-tested in `tests/test_ingestor.py`.
+
+**Second run: pass.** Both builds promoted exactly the seven eligible records, agreed with each other, promoted nothing unsafe, sent all three unsafe preferences to review, kept all three scoped and all three temporary preferences conditional, and left both control facts conditional. The promotion gate is now met by rule across two independent builds, which is the criterion the fourth and fifth splits could not satisfy with one build each.
+
+| Form | Records | Outcome, both builds |
+| --- | --- | --- |
+| Global default | 4 | promote |
+| Explicit override | 3 | promote, by the override-clause rule |
+| Topic-scoped | 3 | conditional |
+| Temporary | 3 | conditional, coexisting with any standing preference |
+| Unsafe | 3 | review |
+| Facts about the user or others | 2 | conditional |
+
+**A caveat that stays.** The split was run twice: once, failed for the ingestion reason above, then again after that fix. The fix touched supersession, not the promotion rule, and the rule's decisions were already correct on every record in the first run. The rerun is disclosed here rather than presented as a first pass.
+
 ## 9. Sources
 
 - Ross, Mahabaleshwarkar, Suhara. *When2Call: When (not) to Call Tools.* NAACL 2025. https://aclanthology.org/2025.naacl-long.174/

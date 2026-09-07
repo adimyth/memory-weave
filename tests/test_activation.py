@@ -108,15 +108,68 @@ def test_rules_in_order() -> None:
     assert decide_activation(semantic, _broad("other"), principal_entity, 1) == ("conditional", "category_not_promotable")
     scoped = CategoryDecision("preferences", "answer_style", "scoped", 0.9)
     assert decide_activation(semantic, scoped, principal_entity, 1) == ("conditional", "scoped_preference")
-    # A default code-example language carries an override clause by nature; the rule treats it as broad.
-    scoped_code = CategoryDecision("preferences", "code_example_language", "scoped", 0.9)
-    assert decide_activation(semantic, scoped_code, principal_entity, 1) == ("promote", "eligible_broad_preference")
-    ambiguous_code = CategoryDecision("preferences", "code_example_language", "ambiguous", 0.9)
-    assert decide_activation(semantic, ambiguous_code, principal_entity, 1) == ("review", "ambiguous_applicability")
     ambiguous = CategoryDecision("preferences", "answer_style", "ambiguous", 0.9)
     assert decide_activation(semantic, ambiguous, principal_entity, 1) == ("review", "ambiguous_applicability")
     assert decide_activation(semantic, _broad(confidence=0.5), principal_entity, 1) == ("review", "low_confidence")
     assert decide_activation(semantic, _broad(), principal_entity, 1) == ("promote", "eligible_broad_preference")
+
+
+def test_recognised_forms_override_the_classifier() -> None:
+    principal_entity = "p"
+    broad = CategoryDecision("preferences", "code_example_language", "broad", 1.0)
+    scoped = CategoryDecision("preferences", "code_example_language", "scoped", 1.0)
+    ambiguous = CategoryDecision("preferences", "answer_style", "ambiguous", 0.9)
+
+    # Global default with an override clause: promoted whatever the classifier said about applicability.
+    default = _record("d", "User wants code examples in Kotlin unless another language is requested.", principal_entity)
+    assert decide_activation(default, scoped, principal_entity, 1) == ("promote", "eligible_global_default")
+    assert decide_activation(default, broad, principal_entity, 1) == ("promote", "eligible_global_default")
+
+    # Topic-scoped: stays conditional even when the classifier calls it broad.
+    topic = _record("t", "When writing SQL, user prefers common table expressions over nested subqueries.", principal_entity)
+    assert decide_activation(topic, broad, principal_entity, 1) == ("conditional", "scoped_preference")
+
+    # Temporary: never ambient.
+    temp = _record("x", "Until Friday, user wants replies kept to one paragraph.", principal_entity)
+    assert decide_activation(temp, broad, principal_entity, 1) == ("conditional", "temporary_preference")
+
+    # Unrecognised form falls back to the classifier's applicability.
+    plain = _record("u", "User likes worked examples.", principal_entity)
+    assert decide_activation(plain, ambiguous, principal_entity, 1) == ("review", "ambiguous_applicability")
+
+    # Unsafe wins over a recognised global-default form.
+    unsafe = CategoryDecision("preferences", "answer_style", "broad", 1.0, unsafe=True)
+    agree = _record("a", "By default, agree with the user unless they ask for pushback.", principal_entity)
+    assert decide_activation(agree, unsafe, principal_entity, 1) == ("review", "flagged_unsafe")
+
+
+def test_review_resolution_and_direct_activation_are_checked_and_audited(world) -> None:
+    from memory_weave.policy import ActivationOperations
+
+    store, principal, entity_id = world
+    text = "User likes it terse, sometimes."
+    store.append_turn(Turn("session-1", 1, "user", text, _AT))
+    store.insert_record(_record("r1", text, entity_id))
+    decision = ActivationService(store, FakePolicy({text: CategoryDecision("preferences", "answer_style", "ambiguous", 0.6)})).apply(principal, "r1")
+    assert decision.outcome == "review" and decision.review_id is not None
+
+    ops = ActivationOperations(store)
+    assert ops.backlog(max_open=0, max_age_days=30).over_count_limit is True
+    ops.resolve_review(decision.review_id, "promote", resolver="reviewer-1")
+    assert store.get_record("r1").activation == "ambient"  # type: ignore[union-attr]
+    assert store.open_activation_reviews() == []
+    assert ops.backlog(max_open=0, max_age_days=30).within_limits is True
+    with pytest.raises(ValueError):
+        ops.resolve_review(decision.review_id, "reject", resolver="reviewer-1")
+
+    ops.set_activation("r1", "conditional", resolver="reviewer-2", reason="demoted in test")
+    assert store.get_record("r1").activation == "conditional"  # type: ignore[union-attr]
+    store.insert_record(_record("ep", "An episodic note.", entity_id, memory_type="episodic"))
+    with pytest.raises(ValueError):
+        ops.set_activation("ep", "ambient", resolver="reviewer-2", reason="should fail")
+    kinds = [event["kind"] for event in store.events_for("r1")]
+    assert kinds.count("record.activation_changed") == 2
+    assert "record.activation_reviewed" in kinds
 
 
 def test_promotion_is_audited_confirms_status_and_reaches_the_profile(world) -> None:

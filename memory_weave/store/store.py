@@ -304,6 +304,17 @@ class Store:
         ).fetchall()
         return [dict(row) for row in rows]
 
+    def get_activation_review(self, review_id: str) -> dict[str, Any] | None:
+        row = self.connection.execute("SELECT * FROM activation_reviews WHERE id = ?", (review_id,)).fetchone()
+        return None if row is None else dict(row)
+
+    def resolve_activation_review(self, review_id: str, *, resolution: str, resolver: str, at: datetime | None = None) -> None:
+        with self.transaction() as connection:
+            connection.execute(
+                "UPDATE activation_reviews SET status = 'resolved', resolution = ?, resolver = ?, resolved_at = ? WHERE id = ?",
+                (resolution, resolver, _dump_datetime(at or now()), review_id),
+            )
+
     def ambient_records(self, scope: Scope, subject_entity_id: str, *, at: datetime | None = None) -> list[Record]:
         """Return confirmed, unexpired, semantic ambient records about one subject, newest event first."""
 

@@ -108,6 +108,14 @@ Next steps, in order:
 
 The system has earned implementation confidence. The remaining work is making activation deterministic and proving portability, not rescuing the core retrieval architecture.
 
+**Progress on the next steps, 7 September 2026.**
+
+- Step 1 done: gap-anchored admission is rejected permanently; the prompt remains in the runner only as a record.
+- Step 2 done: the promotion rule is frozen as `activation-v2-frozen`, form recognition first, classifier applicability only for unrecognised forms, confidence never a promotion input.
+- Step 3 done: the blind promotion split passes across two independent builds with identical promoted sets, `usefulness-gate.md` section 8h. It exposed and fixed one ingestion defect: a temporary statement no longer supersedes a standing preference.
+- Step 4, Phase 1B, started: trusted review resolution, direct activation change with the same eligibility checks, and backlog limits are implemented and tested as `ActivationOperations`; the operator surface is not built.
+- Step 7 in progress: the hosted second-vendor keys are not configured in this environment, so the portability matrix runs with the open-weight Llama 3.1 8B Instruct as the second vendor, locally, in each role in turn.
+
 ### Requirements Phase 0 adds to Phase 2
 
 - The gap policy receives a bounded, content-free category inventory for the principal's readable conditional store, built from the activation policy's fixed taxonomy and never from extractor attribute slugs or record text. The inventory is part of the turn-decision log.

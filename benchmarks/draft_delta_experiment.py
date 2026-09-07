@@ -95,8 +95,44 @@ class JudgedSearch:
         self.judge_admitted = [v.record_id for v in self.verdicts if v.verdict in _ADMITTING]
 
 
+class _LocalBackend:
+    """A local open-weight chat model behind the same complete() contract, for vendor-portability runs.
+
+    Model names are given as ``local:<hf repo id>``. Generation is greedy and serialised with a lock, since
+    one process holds one copy of the weights. JSON mode appends an instruction and extracts the first
+    JSON object from the reply, because open-weight chat models have no structured-output switch.
+    """
+
+    def __init__(self, repo: str) -> None:
+        import threading
+
+        import torch
+        from transformers import AutoModelForCausalLM, AutoTokenizer
+
+        self._torch = torch
+        self._device = "mps" if torch.backends.mps.is_available() else "cpu"
+        self._tokenizer = AutoTokenizer.from_pretrained(repo)
+        self._model = AutoModelForCausalLM.from_pretrained(repo, dtype=torch.bfloat16).to(self._device).eval()
+        self._lock = threading.Lock()
+
+    def complete(self, system: str, user: str, *, json_mode: bool) -> tuple[str, int, int]:
+        if json_mode:
+            system = system + "\n\nReply with a single JSON object and nothing else."
+        messages = [{"role": "system", "content": system}, {"role": "user", "content": user}]
+        ids = self._tokenizer.apply_chat_template(messages, add_generation_prompt=True, return_tensors="pt").to(self._device)
+        with self._lock, self._torch.no_grad():
+            out = self._model.generate(ids, do_sample=False, max_new_tokens=700, pad_token_id=self._tokenizer.eos_token_id)
+        generated = out[0, ids.shape[1] :]
+        text = self._tokenizer.decode(generated, skip_special_tokens=True).strip()
+        if json_mode:
+            start, end = text.find("{"), text.rfind("}")
+            if start != -1 and end > start:
+                text = text[start : end + 1]
+        return text, int(ids.shape[1]), int(generated.shape[0])
+
+
 class Models:
-    """Thin wrapper over the OpenAI SDK that records token usage per model."""
+    """Thin wrapper over the OpenAI SDK, plus a local open-weight backend, that records token usage per model."""
 
     def __init__(self) -> None:
         from dotenv import load_dotenv
@@ -107,10 +143,36 @@ class Models:
         self.usage: dict[str, dict[str, int]] = {}
         self.calls: dict[str, int] = {}
         self.latency_s: dict[str, float] = {}
+        self._local: dict[str, _LocalBackend] = {}
+        import threading
+
+        self._local_init_lock = threading.Lock()
+
+    def _complete_local(self, model: str, system: str, user: str, *, json_mode: bool) -> str:
+        repo = model.split(":", 1)[1]
+        # Concurrent turns must share one copy of the weights: two threads racing through a lazy
+        # construction each loaded a 16 GB model, and the second load failed inside the gap call.
+        with self._local_init_lock:
+            backend = self._local.get(repo)
+            if backend is None:
+                backend = self._local[repo] = _LocalBackend(repo)
+        started = time.perf_counter()
+        text, prompt_tokens, completion_tokens = backend.complete(system, user, json_mode=json_mode)
+        elapsed = time.perf_counter() - started
+        bucket = self.usage.setdefault(model, {"prompt": 0, "completion": 0})
+        bucket["prompt"] += prompt_tokens
+        bucket["completion"] += completion_tokens
+        self.calls[model] = self.calls.get(model, 0) + 1
+        self.latency_s[model] = self.latency_s.get(model, 0.0) + elapsed
+        if not text:
+            raise RuntimeError(f"{model} returned an empty message")
+        return text
 
     def complete(
         self, model: str, system: str, user: str, *, json_mode: bool = False, reasoning_effort: str | None = None
     ) -> str:
+        if model.startswith("local:"):
+            return self._complete_local(model, system, user, json_mode=json_mode)
         kwargs: dict[str, object] = {
             "model": model,
             "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],

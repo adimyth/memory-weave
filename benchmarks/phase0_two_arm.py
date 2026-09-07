@@ -245,6 +245,7 @@ class Phase0:
         self.activation_model = activation_model
         self.promoted: dict[str, list[str]] = {}
         self.activation_decisions: dict[str, dict[str, dict[str, Any]]] = {}
+        self.inventory_labels: dict[str, list[str]] = {}
         self._inventory_override: dict[str, str] = {}
         self.gap_repeats = max(1, gap_repeats)
         self.workers = workers
@@ -518,6 +519,7 @@ class Phase0:
                 profile = [self.records[i] for i in promoted]
                 store_ids = [i for i in all_ids if i not in promoted]
                 labels = self._real.inventory_labels(arm)
+                self.inventory_labels[arm] = labels
                 self._inventory_override[arm] = "\n".join(f"- {label}" for label in labels) or "- (no category information available)"
                 print(f"[{arm}] promoted to ambient: {promoted}", flush=True)
                 print(f"[{arm}] store-generated inventory: {labels}", flush=True)
@@ -560,6 +562,7 @@ def summarise(
     records: dict[str, dict[str, Any]],
     promoted: list[str] | None = None,
     decisions: dict[str, dict[str, Any]] | None = None,
+    inventory_labels: list[str] | None = None,
 ) -> dict[str, Any]:
     by_class: dict[str, list[TurnResult]] = {}
     for r in results:
@@ -580,12 +583,29 @@ def summarise(
         scoped = [i for i, r in records.items() if r.get("ambient_truth") is False and r["kind"] == "conditional"]
         truth = {i: r["category_truth"] for i, r in records.items() if r.get("category_truth")}
         assigned = {i: (decisions or {}).get(i, {}).get("retrieval_category") for i in truth}
+        # Inventory coverage: for each memory-needed turn, did the inventory the planner saw contain the true
+        # category of the conditional record it needed? This is the metric that matters; label agreement is not.
+        from memory_weave.policy import RETRIEVAL_CATEGORIES
+
+        covered = 0
+        needed = 0
+        for r in results:
+            if r.turn_class == "ordinary":
+                continue
+            for expected in r.expected:
+                if expected in ambient_ids or expected not in truth:
+                    continue
+                needed += 1
+                label = RETRIEVAL_CATEGORIES.get(truth[expected], truth[expected])
+                if label in (inventory_labels or []):
+                    covered += 1
         promotion = {
             "eligible_preferences_promoted": _pct(sum(1 for i in eligible if i in ambient_ids), len(eligible)),
             "unsafe_promotions": sum(1 for i in unsafe if i in ambient_ids),
             "scoped_preferences_kept_conditional": _pct(sum(1 for i in scoped if i not in ambient_ids), len(scoped)),
             "reviews_opened": sum(1 for d in (decisions or {}).values() if d.get("outcome") == "review"),
-            "retrieval_category_accuracy": _pct(sum(1 for i in truth if assigned.get(i) == truth[i]), len(truth)),
+            "inventory_coverage_of_needed_records": _pct(covered, needed) if inventory_labels is not None else "n/a",
+            "retrieval_category_label_agreement": _pct(sum(1 for i in truth if assigned.get(i) == truth[i]), len(truth)),
         }
 
     def injected(r: TurnResult) -> bool:
@@ -737,14 +757,18 @@ def main(argv: list[str] | None = None) -> int:
         print(f"\n=== arm: {arm} ===", flush=True)
         all_results[arm] = runner.run_arm(arm)
         summaries[arm] = summarise(
-            arm, all_results[arm], runner.records, runner.promoted.get(arm), runner.activation_decisions.get(arm)
+            arm, all_results[arm], runner.records, runner.promoted.get(arm), runner.activation_decisions.get(arm),
+            runner.inventory_labels.get(arm),
         )
 
     runner.save_cache()
     args.out_dir.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     tag = f"-{args.tag}" if args.tag else ""
-    path = args.out_dir / f"{stamp}-{args.scenario.stem}-gap-{gap_model}-{args.gap_prompt}-adm-{admission_model}-{args.admission_prompt}-act-{args.activation}{tag}.json"
+    def _safe(name: str) -> str:
+        return name.replace("local:", "local-").replace("/", "-").replace(":", "-")
+
+    path = args.out_dir / f"{stamp}-{args.scenario.stem}-gap-{_safe(gap_model)}-{args.gap_prompt}-adm-{_safe(admission_model)}-{args.admission_prompt}-act-{args.activation}{tag}.json"
     payload = {
         "scenario": str(args.scenario),
         "draft_model": args.draft_model,
@@ -758,6 +782,7 @@ def main(argv: list[str] | None = None) -> int:
         "activation_model": args.activation_model,
         "promoted": runner.promoted,
         "activation_decisions": runner.activation_decisions,
+        "inventory_labels": runner.inventory_labels,
         "write_logs": runner.write_logs,
         "check_model": args.check_model,
         "gap_repeats": args.gap_repeats,

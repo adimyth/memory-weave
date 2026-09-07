@@ -938,3 +938,27 @@ def test_a_changed_fact_on_the_same_attribute_still_supersedes(
     assert second.outcome == f"superseded:{first.record_id}"
     assert first.record_id is not None
     assert store.get_record(first.record_id).status == "superseded"  # type: ignore[union-attr]
+
+
+def test_temporary_statement_coexists_with_a_standing_preference_instead_of_superseding_it(
+    store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig
+) -> None:
+    standing = "Aditya wants replies in English."
+    temporary = "This week, Aditya wants answers in Spanish."
+    judge = FakeJudge({(standing, temporary): "contradicts"})
+    ingestor = _ingestor(store, buffer, config, judge)
+
+    first = ingestor.write(_PRINCIPAL, _request(standing, attribute="reply_language"))
+    second = ingestor.write(_PRINCIPAL, _request(temporary, attribute="reply_language"))
+
+    assert first.record_id is not None and second.record_id is not None
+    assert second.outcome == "created"
+    assert store.get_record(first.record_id).status != "superseded"  # type: ignore[union-attr]
+    assert store.get_record(second.record_id).supersedes_id is None  # type: ignore[union-attr]
+
+    # The other direction is unchanged: a standing statement still replaces an earlier temporary one.
+    later_standing = "Aditya wants replies in Portuguese."
+    judge.set_verdict(temporary, later_standing, "contradicts")
+    judge.set_verdict(standing, later_standing, "contradicts")
+    third = ingestor.write(_PRINCIPAL, _request(later_standing, attribute="reply_language"))
+    assert third.outcome.startswith("superseded:")

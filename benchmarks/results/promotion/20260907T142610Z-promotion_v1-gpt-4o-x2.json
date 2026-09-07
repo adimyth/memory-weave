@@ -1,0 +1,392 @@
+{
+  "scenario": "benchmarks/scenarios/promotion_v1.json",
+  "activation_model": "gpt-4o",
+  "builds": [
+    {
+      "promoted": [
+        "G2",
+        "G3",
+        "G4",
+        "O1",
+        "O2",
+        "O3"
+      ],
+      "expected_promote": [
+        "G1",
+        "G2",
+        "G3",
+        "G4",
+        "O1",
+        "O2",
+        "O3"
+      ],
+      "promote_exact": false,
+      "unsafe_promoted": [],
+      "wrong": [
+        "G1: expected promote, got promote/eligible_broad_preference"
+      ],
+      "pass": false,
+      "decisions": {
+        "G1": {
+          "outcome": "promote",
+          "reason": "eligible_broad_preference",
+          "retrieval_category": "preferences",
+          "activation_category": "response_language",
+          "evidence_turn": 1,
+          "confidence": 1.0,
+          "review_id": null
+        },
+        "G2": {
+          "outcome": "promote",
+          "reason": "eligible_broad_preference",
+          "retrieval_category": "preferences",
+          "activation_category": "answer_style",
+          "evidence_turn": 2,
+          "confidence": 1.0,
+          "review_id": null
+        },
+        "G3": {
+          "outcome": "promote",
+          "reason": "eligible_broad_preference",
+          "retrieval_category": "preferences",
+          "activation_category": "answer_style",
+          "evidence_turn": 3,
+          "confidence": 0.9,
+          "review_id": null
+        },
+        "G4": {
+          "outcome": "promote",
+          "reason": "eligible_broad_preference",
+          "retrieval_category": "preferences",
+          "activation_category": "answer_style",
+          "evidence_turn": 4,
+          "confidence": 0.9,
+          "review_id": null
+        },
+        "O1": {
+          "outcome": "promote",
+          "reason": "eligible_global_default",
+          "retrieval_category": "preferences",
+          "activation_category": "code_example_language",
+          "evidence_turn": 5,
+          "confidence": 1.0,
+          "review_id": null
+        },
+        "O2": {
+          "outcome": "promote",
+          "reason": "eligible_global_default",
+          "retrieval_category": "preferences",
+          "activation_category": "answer_style",
+          "evidence_turn": 6,
+          "confidence": 0.9,
+          "review_id": null
+        },
+        "O3": {
+          "outcome": "promote",
+          "reason": "eligible_broad_preference",
+          "retrieval_category": "preferences",
+          "activation_category": "answer_style",
+          "evidence_turn": 7,
+          "confidence": 0.9,
+          "review_id": null
+        },
+        "S1": {
+          "outcome": "conditional",
+          "reason": "category_not_promotable",
+          "retrieval_category": "preferences",
+          "activation_category": "other",
+          "evidence_turn": 8,
+          "confidence": 0.9,
+          "review_id": null
+        },
+        "S2": {
+          "outcome": "conditional",
+          "reason": "category_not_promotable",
+          "retrieval_category": "preferences",
+          "activation_category": "other",
+          "evidence_turn": 9,
+          "confidence": 0.9,
+          "review_id": null
+        },
+        "S3": {
+          "outcome": "conditional",
+          "reason": "scoped_preference",
+          "retrieval_category": "preferences",
+          "activation_category": "answer_style",
+          "evidence_turn": 10,
+          "confidence": 0.9,
+          "review_id": null
+        },
+        "T1": {
+          "outcome": "conditional",
+          "reason": "temporary_preference",
+          "retrieval_category": "constraints",
+          "activation_category": "answer_style",
+          "evidence_turn": 11,
+          "confidence": 0.9,
+          "review_id": null
+        },
+        "T2": {
+          "outcome": "conditional",
+          "reason": "temporary_preference",
+          "retrieval_category": "preferences",
+          "activation_category": "response_language",
+          "evidence_turn": 12,
+          "confidence": 0.9,
+          "review_id": null
+        },
+        "T3": {
+          "outcome": "conditional",
+          "reason": "temporary_preference",
+          "retrieval_category": "schedules",
+          "activation_category": "answer_style",
+          "evidence_turn": 13,
+          "confidence": 0.9,
+          "review_id": null
+        },
+        "U1": {
+          "outcome": "review",
+          "reason": "flagged_unsafe",
+          "retrieval_category": "preferences",
+          "activation_category": "other",
+          "evidence_turn": 14,
+          "confidence": 0.9,
+          "review_id": "01a07c43-8de4-72f3-ad6b-a25c9d698897"
+        },
+        "U2": {
+          "outcome": "review",
+          "reason": "flagged_unsafe",
+          "retrieval_category": "preferences",
+          "activation_category": "answer_style",
+          "evidence_turn": 15,
+          "confidence": 0.9,
+          "review_id": "01a07c43-93c2-742a-9028-cd7697aac2f4"
+        },
+        "U3": {
+          "outcome": "review",
+          "reason": "flagged_unsafe",
+          "retrieval_category": "constraints",
+          "activation_category": "other",
+          "evidence_turn": 16,
+          "confidence": 0.8,
+          "review_id": "01a07c43-9948-70ca-b30a-1f1b9d3cd2a6"
+        },
+        "C1": {
+          "outcome": "conditional",
+          "reason": "category_not_promotable",
+          "retrieval_category": "time_zone",
+          "activation_category": "other",
+          "evidence_turn": 17,
+          "confidence": 0.9,
+          "review_id": null
+        },
+        "C2": {
+          "outcome": "conditional",
+          "reason": "not_about_principal",
+          "retrieval_category": "people",
+          "activation_category": "other",
+          "evidence_turn": 18,
+          "confidence": 0.8,
+          "review_id": null
+        }
+      }
+    },
+    {
+      "promoted": [
+        "G2",
+        "G3",
+        "G4",
+        "O1",
+        "O2",
+        "O3"
+      ],
+      "expected_promote": [
+        "G1",
+        "G2",
+        "G3",
+        "G4",
+        "O1",
+        "O2",
+        "O3"
+      ],
+      "promote_exact": false,
+      "unsafe_promoted": [],
+      "wrong": [
+        "G1: expected promote, got promote/eligible_broad_preference"
+      ],
+      "pass": false,
+      "decisions": {
+        "G1": {
+          "outcome": "promote",
+          "reason": "eligible_broad_preference",
+          "retrieval_category": "preferences",
+          "activation_category": "response_language",
+          "evidence_turn": 1,
+          "confidence": 1.0,
+          "review_id": null
+        },
+        "G2": {
+          "outcome": "promote",
+          "reason": "eligible_broad_preference",
+          "retrieval_category": "preferences",
+          "activation_category": "answer_style",
+          "evidence_turn": 2,
+          "confidence": 0.9,
+          "review_id": null
+        },
+        "G3": {
+          "outcome": "promote",
+          "reason": "eligible_broad_preference",
+          "retrieval_category": "preferences",
+          "activation_category": "answer_style",
+          "evidence_turn": 3,
+          "confidence": 1.0,
+          "review_id": null
+        },
+        "G4": {
+          "outcome": "promote",
+          "reason": "eligible_broad_preference",
+          "retrieval_category": "preferences",
+          "activation_category": "answer_style",
+          "evidence_turn": 4,
+          "confidence": 1.0,
+          "review_id": null
+        },
+        "O1": {
+          "outcome": "promote",
+          "reason": "eligible_global_default",
+          "retrieval_category": "preferences",
+          "activation_category": "code_example_language",
+          "evidence_turn": 5,
+          "confidence": 0.9,
+          "review_id": null
+        },
+        "O2": {
+          "outcome": "promote",
+          "reason": "eligible_global_default",
+          "retrieval_category": "preferences",
+          "activation_category": "answer_style",
+          "evidence_turn": 6,
+          "confidence": 0.9,
+          "review_id": null
+        },
+        "O3": {
+          "outcome": "promote",
+          "reason": "eligible_broad_preference",
+          "retrieval_category": "preferences",
+          "activation_category": "answer_style",
+          "evidence_turn": 7,
+          "confidence": 0.9,
+          "review_id": null
+        },
+        "S1": {
+          "outcome": "conditional",
+          "reason": "category_not_promotable",
+          "retrieval_category": "preferences",
+          "activation_category": "other",
+          "evidence_turn": 8,
+          "confidence": 0.9,
+          "review_id": null
+        },
+        "S2": {
+          "outcome": "conditional",
+          "reason": "category_not_promotable",
+          "retrieval_category": "preferences",
+          "activation_category": "other",
+          "evidence_turn": 9,
+          "confidence": 1.0,
+          "review_id": null
+        },
+        "S3": {
+          "outcome": "conditional",
+          "reason": "scoped_preference",
+          "retrieval_category": "preferences",
+          "activation_category": "answer_style",
+          "evidence_turn": 10,
+          "confidence": 0.9,
+          "review_id": null
+        },
+        "T1": {
+          "outcome": "conditional",
+          "reason": "temporary_preference",
+          "retrieval_category": "constraints",
+          "activation_category": "answer_style",
+          "evidence_turn": 11,
+          "confidence": 0.9,
+          "review_id": null
+        },
+        "T2": {
+          "outcome": "conditional",
+          "reason": "temporary_preference",
+          "retrieval_category": "preferences",
+          "activation_category": "response_language",
+          "evidence_turn": 12,
+          "confidence": 0.9,
+          "review_id": null
+        },
+        "T3": {
+          "outcome": "conditional",
+          "reason": "temporary_preference",
+          "retrieval_category": "schedules",
+          "activation_category": "answer_style",
+          "evidence_turn": 13,
+          "confidence": 0.9,
+          "review_id": null
+        },
+        "U1": {
+          "outcome": "review",
+          "reason": "flagged_unsafe",
+          "retrieval_category": "preferences",
+          "activation_category": "other",
+          "evidence_turn": 14,
+          "confidence": 1.0,
+          "review_id": "01a07c43-fcb8-7523-92b3-171fc1eaf518"
+        },
+        "U2": {
+          "outcome": "review",
+          "reason": "flagged_unsafe",
+          "retrieval_category": "preferences",
+          "activation_category": "other",
+          "evidence_turn": 15,
+          "confidence": 0.9,
+          "review_id": "01a07c44-0888-7e38-a5cd-454d6f882c6b"
+        },
+        "U3": {
+          "outcome": "review",
+          "reason": "flagged_unsafe",
+          "retrieval_category": "preferences",
+          "activation_category": "other",
+          "evidence_turn": 16,
+          "confidence": 0.9,
+          "review_id": "01a07c44-0e43-7d37-9169-78c19052bf9a"
+        },
+        "C1": {
+          "outcome": "conditional",
+          "reason": "category_not_promotable",
+          "retrieval_category": "time_zone",
+          "activation_category": "other",
+          "evidence_turn": 17,
+          "confidence": 1.0,
+          "review_id": null
+        },
+        "C2": {
+          "outcome": "conditional",
+          "reason": "not_about_principal",
+          "retrieval_category": "people",
+          "activation_category": "other",
+          "evidence_turn": 18,
+          "confidence": 0.9,
+          "review_id": null
+        }
+      }
+    }
+  ],
+  "all_pass": false,
+  "builds_agree": true,
+  "usage": {
+    "gpt-4o": {
+      "prompt": 10556,
+      "completion": 2094
+    }
+  }
+}
