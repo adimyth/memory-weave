@@ -167,7 +167,7 @@ def _nli_label_indices(model: Any) -> tuple[int, int]:
 def _cross_encoder_factory(model_name: str) -> Callable[[], Any]:
     def load() -> Any:
         try:
-            from sentence_transformers import CrossEncoder  # type: ignore[import-not-found]
+            from sentence_transformers import CrossEncoder
         except ImportError as exc:
             message = "NLI judging requires sentence-transformers. Install it with: uv sync --extra local-models"
             raise RuntimeError(message) from exc

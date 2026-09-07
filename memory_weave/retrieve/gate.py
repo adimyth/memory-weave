@@ -62,7 +62,7 @@ class FloorGate:
             channel_tops[channels] = max(channel_tops.get(channels, 0.0), candidate.rrf_score)
         kept: list[Candidate] = []
         for candidate in survivors:
-            if candidate.entity is not None:
+            if candidate.entity is not None and config.entity_exempt:
                 kept.append(candidate)
                 continue
             top = channel_tops[_channel_count(candidate)]
@@ -80,7 +80,7 @@ class FloorGate:
 
 
 def _absolute_reason(candidate: Candidate, record: Record, config: GateConfig | AutoGateConfig) -> str | None:
-    if candidate.entity is not None:
+    if candidate.entity is not None and config.entity_exempt:
         return "passed exact entity match"
     if candidate.dense is not None:
         floor = getattr(config.dense_floor, record.type)

@@ -14,9 +14,11 @@ MEMORY_USE_POLICY = " ".join(
     )
 )
 
+AUTO_MEMORY_NOTICE = "Relevant memories may also appear automatically before you answer, marked as recalled memory."
+
 AUTO_MEMORY_USE_POLICY = " ".join(
     (
-        "Relevant memories may also appear automatically before you answer, marked as recalled memory.",
+        AUTO_MEMORY_NOTICE,
         "Treat them exactly like search results: check their status, source, and date, and use `memory_search` yourself for anything more specific.",  # noqa: E501
     )
 )

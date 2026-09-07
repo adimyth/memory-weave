@@ -10,10 +10,11 @@ from .lifecycle import (
     rank,
     reinforce,
 )
-from .prompt import AUTO_MEMORY_USE_POLICY, MEMORY_USE_POLICY, MEMORY_USE_POLICY_VERSION
+from .prompt import AUTO_MEMORY_NOTICE, AUTO_MEMORY_USE_POLICY, MEMORY_USE_POLICY, MEMORY_USE_POLICY_VERSION
 
 __all__ = [
     "AUTO_MEMORY_USE_POLICY",
+    "AUTO_MEMORY_NOTICE",
     "MEMORY_USE_POLICY",
     "MEMORY_USE_POLICY_VERSION",
     "has_authority",

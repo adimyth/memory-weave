@@ -199,7 +199,7 @@ class BgeM3Embedder:
 def _sentence_transformer_factory(model_name: str, device: str) -> Callable[[], Any]:
     def load() -> Any:
         try:
-            from sentence_transformers import SentenceTransformer  # type: ignore[import-not-found]
+            from sentence_transformers import SentenceTransformer
         except ImportError as exc:
             message = "BGE-M3 support requires sentence-transformers. Install it with: uv sync --extra local-models"
             raise RuntimeError(message) from exc
