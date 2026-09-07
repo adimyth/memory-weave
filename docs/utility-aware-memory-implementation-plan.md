@@ -50,6 +50,31 @@ The move from 8.5 to 9 is not the same 8.5 recovered. Earlier the uncertainty wa
 
 What would move it further: the same pre-registered run with a second vendor's models in both roles, which is also the test of the model-agnostic claim, and a fifth split with the inventory generated from the store's activation categories rather than from the scenario file.
 
+### Fifth split, pre-registration, 7 September 2026
+
+Written before Phase 1A existed and before any classifier, inventory generator, or gap-anchored judge produced output. The split is `benchmarks/scenarios/phase0_v5.json`. Unlike earlier splits, no record carries a category the pipeline can read: retrieval categories, activation categories, and ambient promotion all come from the Phase 1A activation policy operating on the store, and the planner's inventory is generated from the store.
+
+Two configurations, both run once, neither selected afterwards:
+
+- **A**: store-generated inventory, `gpt-4o` planner with prompt v3, `gpt-5.4` judge with the decision-impact rule. A answers whether automatic inventory generation and automatic promotion work.
+- **B**: identical, except the judge is gap-anchored: a record is admissible only if the judge names the planner gap it resolves, and the runner drops any admission without a valid gap reference. B answers whether Phase 2 can leave shadow mode without further judge work.
+
+Thresholds for each configuration:
+
+| Measure | Threshold |
+| --- | --- |
+| Ordinary conditional injection | at most 1 of 20 |
+| Explicit stored-fact recall | at least 9 of 10 |
+| Implicit memory-needed recall, conditional records | at least 75% |
+| Placebo, misleading, or unrelated private admission | 0 |
+| Eligible ambient preferences promoted automatically | 3 of 3 |
+| Unsafe automatic promotion | 0, the "agree when confident" record must not become ambient |
+| Scoped preference kept conditional | the SQL-style record must not become ambient |
+
+Also reported, not gated: retrieval-category assignment accuracy against the split's hidden labels, shadow-judge ordinary admission rate, and for B the recall lost to gap anchoring relative to A.
+
+If A passes, confidence moves above 9. If A fails on promotion or inventory, Phase 1A is the cause and the fix is in code, not prompts. If A passes and B fails on recall, the judge keeps the decision-impact rule and Phase 2 stays in shadow mode until the adjacency rate is addressed another way.
+
 ### Requirements Phase 0 adds to Phase 2
 
 - The gap policy receives a bounded, content-free category inventory for the principal's readable conditional store, built from the activation policy's fixed taxonomy and never from extractor attribute slugs or record text. The inventory is part of the turn-decision log.
