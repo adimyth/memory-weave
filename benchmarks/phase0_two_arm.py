@@ -16,6 +16,11 @@ any policy; they are used only for scoring.
 Usage:
     HF_HUB_OFFLINE=1 uv run --extra live --extra local-models python benchmarks/phase0_two_arm.py \
         --draft-model gpt-5.6-luna --policy-model gpt-5.4
+
+    HF_HUB_OFFLINE=1 uv run --extra live --extra local-models python benchmarks/phase0_two_arm.py \
+        --scenario benchmarks/scenarios/phase0_tune.json --draft-model gpt-5.6-luna \
+        --gap-model gpt-4o --admission-model openrouter:anthropic/claude-sonnet-4.6 \
+        --check-model gpt-5.4 --gap-prompt v2 --admission-prompt v3 --arms ambient
 """
 
 from __future__ import annotations
@@ -766,7 +771,7 @@ def main(argv: list[str] | None = None) -> int:
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     tag = f"-{args.tag}" if args.tag else ""
     def _safe(name: str) -> str:
-        return name.replace("local:", "local-").replace("/", "-").replace(":", "-")
+        return name.replace("local:", "local-").replace("openrouter:", "openrouter-").replace("/", "-").replace(":", "-")
 
     path = args.out_dir / f"{stamp}-{args.scenario.stem}-gap-{_safe(gap_model)}-{args.gap_prompt}-adm-{_safe(admission_model)}-{args.admission_prompt}-act-{args.activation}{tag}.json"
     payload = {

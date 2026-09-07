@@ -228,7 +228,10 @@ def test_search_rates_count_distinct_turns_not_tool_calls(tmp_path: Path) -> Non
 
 
 @pytest.mark.parametrize("adapter", [OpenAIToolModel, OpenRouterToolModel])
-def test_openai_compatible_adapters_translate_tool_calls_and_results(adapter: Callable[..., object]) -> None:
+def test_openai_compatible_adapters_translate_tool_calls_and_results(
+    adapter: Callable[..., object], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("OPENROUTER_PROVIDER", raising=False)
     client = RecordingOpenAIClient(_openai_response())
     model = adapter("provider/model", client=client)
     reply = model.respond(
@@ -316,6 +319,22 @@ def test_openai_and_openrouter_adapters_configure_the_openai_sdk(monkeypatch: py
             },
         },
     ]
+
+
+def test_openrouter_adapter_pins_configured_host(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OPENROUTER_PROVIDER", "deepinfra")
+    client = RecordingOpenAIClient(_openai_response())
+    model = OpenRouterToolModel("z-ai/glm-5.3-flash", client=client)
+    model.respond(
+        system="Memory policy.",
+        messages=[{"role": "user", "content": "What answer style should you use?"}],
+        tools=tool_schemas(),
+    )
+
+    assert client.request is not None
+    assert client.request["extra_body"] == {
+        "provider": {"only": ["deepinfra"], "allow_fallbacks": False},
+    }
 
 
 def test_subject_stability_requires_an_active_preference_from_each_run(tmp_path: Path) -> None:

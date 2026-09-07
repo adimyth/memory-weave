@@ -271,6 +271,8 @@ Phase 1A was then built: activation and category on every record, host-verified 
 
 The same runs showed that the quality of this path depends on which model fills each role. Small reasoning models failed at both roles: unstable as planners, and as judges they admitted a misleading record and added tens of seconds. A mid-tier non-reasoning model was enough for planning. A frontier model was needed for judging.
 
+The per-role fitness test has now been run across vendors. The planner role passes on a hosted mid-tier model and on an 8B open-weight model run locally. The judge role passes on frontier models from OpenAI, Anthropic, and Google, and fails on every non-frontier candidate tried: judging needs a frontier-class model, not a particular vendor's. Numbers per model and role are in section 8i of the findings.
+
 > [!IMPORTANT]
 > **What model-agnostic means for this system.** It does not mean the path works identically with any model; for a component whose quality depends on a model's judgement, nothing can. It means the contracts, the fail-closed orchestration, the ambient profile, the gap-first retrieval, the turn-decision log, and the acceptance gates are all model-neutral, and any candidate model's fitness for each role can be measured before it is enabled, in about ten minutes and a few dollars, with `benchmarks/phase0_two_arm.py` against the committed scenario sets. That is what vendor-neutrality looks like here: not indifference to the model, but a fixed acceptance test any model must pass. The design already calibrates admission per serving-model family for exactly this reason. Model names in this README are the ones that passed that test on the date given; they are configuration, and the test is the contract.
 

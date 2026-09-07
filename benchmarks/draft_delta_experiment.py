@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sqlite3
 import sys
 import time
@@ -32,6 +33,7 @@ from benchmarks.analyse_gate import Candidate, LoggedSearch  # noqa: E402
 
 _EVAL_CATEGORIES = ("memory_applies", "ordinary")
 _ADMITTING = ("contradicts", "fills_gap")
+_OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
 _DRAFT_SYSTEM = (
     "You are a helpful assistant. Answer the user's message directly and briefly, in under 120 words. "
@@ -132,14 +134,20 @@ class _LocalBackend:
 
 
 class Models:
-    """Thin wrapper over the OpenAI SDK, plus a local open-weight backend, that records token usage per model."""
+    """Route complete() to OpenAI, OpenRouter (``openrouter:<slug>``), or a local Hugging Face repo (``local:<id>``).
+
+    The vertical slice's OPENROUTER_PROVIDER pin is not applied, so a second-vendor judge is not forced onto DeepInfra.
+    """
 
     def __init__(self) -> None:
-        from dotenv import load_dotenv
-        from openai import OpenAI
-
-        load_dotenv()
-        self._client = OpenAI()
+        try:
+            from dotenv import load_dotenv
+        except ImportError:
+            pass
+        else:
+            load_dotenv()
+        self._openai: object | None = None
+        self._openrouter: object | None = None
         self.usage: dict[str, dict[str, int]] = {}
         self.calls: dict[str, int] = {}
         self.latency_s: dict[str, float] = {}
@@ -147,6 +155,34 @@ class Models:
         import threading
 
         self._local_init_lock = threading.Lock()
+
+    def _openai_client(self) -> object:
+        if self._openai is None:
+            from openai import OpenAI
+
+            self._openai = OpenAI()
+        return self._openai
+
+    def _openrouter_client(self) -> object:
+        if self._openrouter is None:
+            from openai import OpenAI
+
+            key = os.environ.get("OPENROUTER_API_KEY")
+            if not key:
+                raise RuntimeError("Set OPENROUTER_API_KEY before using an openrouter: model.")
+            options: dict[str, object] = {"api_key": key, "base_url": _OPENROUTER_BASE_URL}
+            headers = {
+                name: value
+                for name, value in {
+                    "HTTP-Referer": os.environ.get("OPENROUTER_HTTP_REFERER"),
+                    "X-OpenRouter-Title": os.environ.get("OPENROUTER_APP_TITLE"),
+                }.items()
+                if value
+            }
+            if headers:
+                options["default_headers"] = headers
+            self._openrouter = OpenAI(**options)
+        return self._openrouter
 
     def _complete_local(self, model: str, system: str, user: str, *, json_mode: bool) -> str:
         repo = model.split(":", 1)[1]
@@ -173,8 +209,16 @@ class Models:
     ) -> str:
         if model.startswith("local:"):
             return self._complete_local(model, system, user, json_mode=json_mode)
+        if model.startswith("openrouter:"):
+            request_model = model.removeprefix("openrouter:")
+            if not request_model:
+                raise ValueError("openrouter: models need a slug after the prefix.")
+            client = self._openrouter_client()
+        else:
+            request_model = model
+            client = self._openai_client()
         kwargs: dict[str, object] = {
-            "model": model,
+            "model": request_model,
             "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
             "max_completion_tokens": 4000,
         }
@@ -183,7 +227,7 @@ class Models:
         if reasoning_effort:
             kwargs["reasoning_effort"] = reasoning_effort
         started = time.perf_counter()
-        response = self._client.chat.completions.create(**kwargs)  # type: ignore[arg-type]
+        response = client.chat.completions.create(**kwargs)  # type: ignore[arg-type]
         elapsed = time.perf_counter() - started
         usage = response.usage
         bucket = self.usage.setdefault(model, {"prompt": 0, "completion": 0})
@@ -195,7 +239,41 @@ class Models:
         content = response.choices[0].message.content
         if not content:
             raise RuntimeError(f"{model} returned an empty message (finish={response.choices[0].finish_reason})")
+        if json_mode and model.startswith("openrouter:"):
+            # Providers behind OpenRouter do not all honour response_format; some wrap the object in a
+            # code fence or add a sentence around it. Keep the first JSON object so callers can parse it.
+            content = _extract_json_object(content)
         return content
+
+
+def _extract_json_object(text: str) -> str:
+    """Return the first balanced JSON object in ``text``, or ``text`` unchanged if none is found."""
+
+    start = text.find("{")
+    if start == -1:
+        return text
+    depth = 0
+    in_string = False
+    escaped = False
+    for index in range(start, len(text)):
+        char = text[index]
+        if in_string:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == '"':
+                in_string = False
+            continue
+        if char == '"':
+            in_string = True
+        elif char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+            if depth == 0:
+                return text[start : index + 1]
+    return text
 
 
 def _load_with_turns(attempt_dir: Path) -> list[tuple[str, str, LoggedSearch]]:

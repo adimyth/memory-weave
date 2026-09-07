@@ -119,6 +119,31 @@ The system has earned implementation confidence. The remaining work is making ac
 
 **Confidence after these steps: 9.2 of 10, 92%.** Up from 9 because the one open defect at Phase 1A completion, non-deterministic promotion, is now closed by a frozen rule confirmed across two independent builds, and because the planner role has been shown portable. Held short of higher because the judge role is validated on one vendor only, the judge's adjacency rate when reached is unchanged, Phase 2 has not run in shadow on real traffic, and category assignment accuracy is still low even though inventory coverage sufficed.
 
+- Step 7 done, `usefulness-gate.md` section 8i: with an OpenRouter key configured, Claude Sonnet 4.6 and Gemini 2.5 Pro both pass the judge fitness test on the tuning split, 0 of 12 injections, 8 of 8 explicit, 8 of 8 implicit, nothing unsafe. The judge role is validated on frontier models from three vendors and has failed on every non-frontier candidate. Provider neutrality is claimed for both roles with that class caveat. **Confidence: 9.3 of 10, 93%.** The remaining evidence that can move it materially is the live shadow run.
+
+### Phase 2 shadow run, pre-registration, 7 September 2026
+
+Recorded before the hosted adapter or the shadow harness exists.
+
+Pass criteria for the first isolated shadow run on the vertical-slice conversation and on a scripted conversation that includes explicit stored-fact turns:
+
+- Zero effect on served responses: the served transcript, tool schemas, session turns, activation state, and profile are byte-identical with shadow on and off, asserted by the harness on every run.
+- At most 5% hypothetical ordinary-turn injection.
+- At least 90% hypothetical explicit conditional-fact recall.
+- At least 75% hypothetical implicit recall.
+- Zero unsafe admissions, placebo, misleading, or unrelated private.
+- Every unexpected admission reported, including those on memory-needed turns.
+- Policy failures and latency-budget withholds reported separately from recall misses, never folded into them.
+
+Safeguards that apply from the first shadow run:
+
+1. **Causal isolation.** The shadow policy reads a snapshot and writes only its decision log. It never modifies prompts, tool availability, session state, memory activation, or the served response. This is a tested property, not a rule in prose.
+2. **Policy bundle versioning.** Every turn decision records the bundle that produced it: planner model and prompt version, judge model and prompt version, category taxonomy version, inventory-builder version, retrieval configuration hash, and latency budget. A change to any component is a new bundle and requires a fitness-test rerun before it serves.
+3. **Review surface before ambient rollout.** A minimal CLI over `ActivationOperations`, list, resolve, promote, demote, backlog, must exist before the ambient profile reaches real traffic. It may follow the first shadow run.
+4. **Judge comparison on both axes.** When comparing judges on the shadow set, report adjacency admissions and useful recall together, with latency and cost. A judge that removes adjacency by rejecting useful records is a recall loss, not an improvement.
+
+Order: hosted adapter and isolated shadow run; category taxonomy improvements measured by inventory coverage; minimal review-queue CLI; judge comparison across the three frontier vendors on adjacency, recall, latency, and cost; fitness rerun on any bundle change; a small canary only after the pre-registered shadow gates pass.
+
 ### Requirements Phase 0 adds to Phase 2
 
 - The gap policy receives a bounded, content-free category inventory for the principal's readable conditional store, built from the activation policy's fixed taxonomy and never from extractor attribute slugs or record text. The inventory is part of the turn-decision log.

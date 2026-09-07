@@ -479,7 +479,22 @@ Run on 7 September 2026. The hosted second-vendor keys are not configured in thi
 
 **The judge role is not portable to an 8B model.** With Llama 8B judging, implicit recall fell to 3 of 8, twelve unrelated or redundant records were admitted across memory-needed turns, the event-bus decision on a scaffold request, the manager's name on a slot proposal, a kubectl command on a Slack message, one call returned malformed output, and each admission call took about 14 seconds. Nothing unsafe was admitted, which repeats the pattern seen with `gpt-5-nano` and `gpt-4o`: weaker judges fail on adjacency and precision, not on harm. Zero ordinary injection here is entirely the `gpt-4o` planner's silence.
 
-**What this establishes about vendor neutrality.** The fitness test ranked a candidate model per role in about half an hour and a few dollars, and gave different answers for the two roles. That is the mechanism the design relies on. The claim itself is only partly earned: the planner role is validated on two vendors, one hosted and one open-weight; the judge role is validated on one frontier vendor, and every non-frontier candidate tried has failed it. A second frontier vendor's model must pass the judge fitness test before the design can claim provider neutrality for that role.
+**What this establishes about vendor neutrality.** The fitness test ranked a candidate model per role in about half an hour and a few dollars, and gave different answers for the two roles. That is the mechanism the design relies on. With only one frontier vendor tested for the judge, the claim was partly earned at this point; the section below completes it.
+
+### Frontier judges from three vendors
+
+Run later the same day, once an OpenRouter key was configured. Same tuning split, same cached drafts, `gpt-4o` planner held fixed, reference checker held at `gpt-5.4`, so the only variable is the judge. Claude's first run lost 8 of 15 admission calls to a transport defect, the model wrapping its JSON in a code fence that OpenRouter passes through; the wrapper now extracts the first balanced JSON object for any OpenRouter model in JSON mode, and both runs below are after that fix.
+
+| Judge | Ordinary injected, of 12 | Explicit, of 8 | Implicit, of 8 | Unsafe admitted | Usefulness precision | Policy failures | Gap-turn latency p50 and p95 | Judge completion tokens, 16 calls |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `gpt-5.4`, OpenAI, reference | 0 | 8 | 7 | 0 | 16 of 18 | 0 | 3.4 s, 4.8 s | about 2,400 |
+| Claude Sonnet 4.6, Anthropic via OpenRouter | 0 | 8 | 8 | 0 | 17 of 19 | 0 | 6.9 s, 11.0 s | 4,255 |
+| Gemini 2.5 Pro, Google via OpenRouter | 0 | 8 | 8 | 0 | 17 of 19 | 0 | 13.5 s, 29.5 s | 25,348 |
+| Llama 3.1 8B Instruct, open weight, local | 0 | 7 | 3 | 0 | 11 of 23 | 1 | 13.6 s, 25.4 s | 3,223 |
+
+All three frontier judges pass the fitness test; the two OpenRouter judges recover the one implicit turn `gpt-5.4` missed, at higher latency, and Gemini at roughly ten times the completion tokens because it reasons at length. The extra admissions in all three frontier runs are the same defensible time-zone record on turns about times stated in BRT.
+
+**The claim, as now earned.** The design is provider-neutral in the sense that matters: the contracts, orchestration, activation, inventory, logs, and gates are model-neutral, and the fitness test ranks any candidate per role. The planner role is validated on a hosted mid-tier model and an 8B open-weight model. The judge role is validated on frontier models from three vendors, OpenAI, Anthropic, and Google, and has failed on every non-frontier candidate tried, `gpt-5-nano`, `gpt-4o`, and Llama 8B. Judging needs a frontier-class model; it does not need a particular vendor's.
 
 ## 9. Sources
 

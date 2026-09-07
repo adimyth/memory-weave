@@ -89,6 +89,8 @@ the judge on relevance-path candidates for no-gap turns without applying the res
 judge's own ordinary-turn admission rate is measured; `--gap-prompt v3` adds the content-free category
 inventory and `--admission-prompt v3` is the decision-impact rule.
 
+Unprefixed model names go to OpenAI. `openrouter:<slug>` uses `OPENROUTER_API_KEY` (for example `--admission-model openrouter:anthropic/claude-sonnet-4.6` for a second-vendor judge). `local:<hf repo>` loads an open-weight model. The vertical slice's `OPENROUTER_PROVIDER` pin is not applied to these names.
+
 ## Results, 6 September 2026
 
 Model `gpt-5.6-luna`, three runs per mode, reproduced from a deleted store.

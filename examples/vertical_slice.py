@@ -237,6 +237,7 @@ class OpenRouterToolModel(_OpenAICompatibleToolModel):
             model,
             resolved_client,
         )
+        self._extra_options.update(_openrouter_extra_body())
 
 
 def _new_openai_client(
@@ -278,6 +279,15 @@ def _openrouter_headers() -> dict[str, str]:
         "X-OpenRouter-Title": os.environ.get("OPENROUTER_APP_TITLE"),
     }
     return {name: value for name, value in values.items() if value}
+
+
+def _openrouter_extra_body() -> dict[str, object]:
+    """Pin OpenRouter routing to configured host slugs and disable fallbacks."""
+
+    hosts = [part.strip() for part in os.environ.get("OPENROUTER_PROVIDER", "").split(",") if part.strip()]
+    if not hosts:
+        return {}
+    return {"extra_body": {"provider": {"only": hosts, "allow_fallbacks": False}}}
 
 
 def _openai_messages(system: str, messages: Sequence[Mapping[str, object]]) -> list[dict[str, object]]:
