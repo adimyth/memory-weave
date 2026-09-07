@@ -521,6 +521,35 @@ On the slice conversation the activation policy promoted the corrected style pre
 
 **What this establishes.** The orchestrator runs end to end through the real ingestion, activation, retrieval, and admission path with a proven zero effect on what is served, and its shadow log reproduces the recall and injection results of the blind splits. It also produced its first operational finding, a timeout default below measured latency, and handled it the way the design says it should. What it does not establish: behaviour on production traffic with real users and provider drift, which is the canary's job and follows the review CLI.
 
+## 8k. Category taxonomy, measured by inventory coverage, run through the full fitness suite
+
+Run on 7 September 2026, the first step of the execution sequence. The metric is inventory coverage: for every memory-needed turn, whether the true category of each conditional record it needs would appear in the inventory the planner sees. Label agreement with hidden labels is reported as a diagnostic only.
+
+**Baseline, classifier prompt v1.** The prompt listed the eleven category keys with no definitions. On the fourth and fifth splits, coverage was 16 of 19 on each, with the same three records uncovered on both: the document-location record labelled infrastructure instead of locations, and both rate-limit records labelled infrastructure instead of limits. Label agreement was 14 of 23 and 14 of 24.
+
+**Change, classifier prompt v2.** One-line definitions with examples for each category, plus three disambiguation rules: a numeric limit is limits even when it names a service, a place where something is kept is locations even when it names a system, a person's role is people even when it names a document. No taxonomy keys changed. Measured with the classification-only evaluator, `benchmarks/classify_eval.py`, which needs no store:
+
+| Split | Coverage v1 | Coverage v2 | Agreement v1 | Agreement v2 |
+| --- | --- | --- | --- | --- |
+| Fourth | 16 of 19 | 19 of 19 | 14 of 23 | 20 of 23 |
+| Fifth | 16 of 19 | 19 of 19 | 14 of 24 | 22 of 24 |
+
+The remaining disagreements are on public-knowledge records the scenario had labelled decisions, such as "gRPC uses HTTP/2", which the classifier puts under infrastructure or other; those records are redundant by design and the label is arguable.
+
+**Full fitness suite for the new bundle, classifier `gpt-4o/category-v2`, everything else unchanged.**
+
+| Run | Result | Gate |
+| --- | --- | --- |
+| Promotion split, two independent builds | both pass, identical promoted sets, seven eligible promoted, nothing unsafe | pass |
+| Configuration A, fifth split, real activation, three gap repeats | 0 of 20 injected, 10 of 10 explicit, 7 of 8 implicit, no unsafe, 3 of 3 promoted, coverage 19 of 19 | pass |
+| Configuration A, fourth split, real activation, three gap repeats | 1 of 20 injected, 9 of 10 explicit, 6 of 7 implicit, no unsafe, all three preferences promoted including the Rust default by the override-clause rule | pass |
+| Shadow harness, vertical-slice conversation | isolation held, 0 of 4, 1 of 1, nothing unsafe, no failures | pass |
+| Shadow harness, fifth split | isolation held, 0 of 20, 10 of 10, 7 of 8, nothing unsafe, no failures | pass |
+
+Two things to note from the fourth-split run. The one injection is the same "my manager" turn as every previous run. The implicit miss is new and it is a retrieval miss, not a classifier one: the sprint-demo schedule was not in the top eight for the gap query on that run, where it had been on the pre-registered run. Retrieval variance on a single query is now the smallest measured source of noise in the path and is worth a lexical-channel check in Phase 2 monitoring.
+
+**Outcome.** The v2 classifier prompt becomes the default in the harnesses and enters the supported bundle as `classifier: gpt-4o/category-v2`. The change was made in shadow and passed the complete suite before merging, as the sequence requires.
+
 ## 9. Sources
 
 - Ross, Mahabaleshwarkar, Suhara. *When2Call: When (not) to Call Tools.* NAACL 2025. https://aclanthology.org/2025.naacl-long.174/

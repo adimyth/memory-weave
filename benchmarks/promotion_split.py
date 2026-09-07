@@ -57,6 +57,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--scenario", type=Path, default=Path("benchmarks/scenarios/promotion_v1.json"))
     parser.add_argument("--builds", type=int, default=2)
     parser.add_argument("--activation-model", default="gpt-4o")
+    parser.add_argument("--category-prompt", default="category-v2")
     parser.add_argument("--out-dir", type=Path, default=Path("benchmarks/results/promotion"))
     args = parser.parse_args(argv)
 
@@ -65,7 +66,7 @@ def main(argv: list[str] | None = None) -> int:
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     builds: list[dict[str, Any]] = []
     for index in range(1, args.builds + 1):
-        rr = RealRetrieval(scenario, args.out_dir / "stores" / f"{args.scenario.stem}-{stamp}", activation_policy=HostedCategoryPolicy(models, args.activation_model))
+        rr = RealRetrieval(scenario, args.out_dir / "stores" / f"{args.scenario.stem}-{stamp}", activation_policy=HostedCategoryPolicy(models, args.activation_model, args.category_prompt))
         arm = f"build{index}"
         rr.build_arm(arm, [r["id"] for r in scenario["records"]])
         decisions = rr.decisions(arm)
@@ -82,8 +83,8 @@ def main(argv: list[str] | None = None) -> int:
     overall = all(b["pass"] for b in builds)
     agree = all(b["promoted"] == builds[0]["promoted"] for b in builds)
     args.out_dir.mkdir(parents=True, exist_ok=True)
-    path = args.out_dir / f"{stamp}-{args.scenario.stem}-{args.activation_model}-x{args.builds}.json"
-    path.write_text(json.dumps({"scenario": str(args.scenario), "activation_model": args.activation_model, "builds": builds, "all_pass": overall, "builds_agree": agree, "usage": models.usage}, indent=2))
+    path = args.out_dir / f"{stamp}-{args.scenario.stem}-{args.activation_model}-{args.category_prompt}-x{args.builds}.json"
+    path.write_text(json.dumps({"scenario": str(args.scenario), "activation_model": args.activation_model, "category_prompt": args.category_prompt, "builds": builds, "all_pass": overall, "builds_agree": agree, "usage": models.usage}, indent=2))
     print(f"\nwrote {path}")
     print(f"\n== verdict == builds agree on promoted set: {agree}; every build passes: {overall}")
     return 0

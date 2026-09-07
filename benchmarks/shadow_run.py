@@ -77,6 +77,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--gap-model", default="gpt-4o")
     parser.add_argument("--admission-model", default="gpt-5.4")
     parser.add_argument("--activation-model", default="gpt-4o")
+    parser.add_argument("--category-prompt", default="category-v2", help="Classifier prompt version; a change is a new bundle")
     parser.add_argument("--budget-ms", type=int, default=None, help="Per-request latency budget applied to every turn in pass 2")
     parser.add_argument("--gap-timeout-ms", type=int, default=4000, help="Stage timeout for gap planning; set from measured planner latency")
     parser.add_argument("--admission-timeout-ms", type=int, default=8000, help="Stage timeout for admission; set from measured judge p95 with eight candidates")
@@ -90,7 +91,7 @@ def main(argv: list[str] | None = None) -> int:
     models = Models()
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     workdir = args.out_dir / "stores" / f"{args.scenario.stem}-{stamp}"
-    rr = RealRetrieval(scenario, workdir, activation_policy=HostedCategoryPolicy(models, args.activation_model))
+    rr = RealRetrieval(scenario, workdir, activation_policy=HostedCategoryPolicy(models, args.activation_model, args.category_prompt))
     rr.build_arm("shadow", [r["id"] for r in scenario["records"]])
     state = rr._arms["shadow"]  # noqa: SLF001
     store, handlers, principal, id_map = state["store"], state["handlers"], state["principal"], state["id_map"]
@@ -124,7 +125,7 @@ def main(argv: list[str] | None = None) -> int:
     def forbidden_regenerate(records: list[Record]) -> str:
         raise AssertionError("regeneration must never run in shadow mode")
 
-    bundle = policy_bundle(args.gap_model, args.admission_model, rr.config.retrieval, args.budget_ms)
+    bundle = policy_bundle(args.gap_model, args.admission_model, rr.config.retrieval, args.budget_ms, classifier=f"{args.activation_model}/{args.category_prompt}")
     off = UtilityAwareConfig(gap_enabled=False, admission_mode="disabled", shadow=False, bundle=bundle)
     on = UtilityAwareConfig(
         gap_enabled=True, admission_mode="hosted_judge", shadow=True, latency_budget_ms=args.budget_ms,

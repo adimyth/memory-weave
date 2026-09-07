@@ -96,7 +96,13 @@ class HostedAdmissionPolicy:
         return AdmissionDecision(admitted, verdicts, self.policy_id, "ok")
 
 
-def policy_bundle(gap_model: str, admission_model: str, retrieval_config: Any, latency_budget_ms: int | None) -> dict[str, object]:
+def policy_bundle(
+    gap_model: str,
+    admission_model: str,
+    retrieval_config: Any,
+    latency_budget_ms: int | None,
+    classifier: str = "gpt-4o/category-v2",
+) -> dict[str, object]:
     """The versioned bundle recorded with every decision."""
 
     from dataclasses import asdict, is_dataclass
@@ -105,6 +111,7 @@ def policy_bundle(gap_model: str, admission_model: str, retrieval_config: Any, l
     return {
         "planner": f"{gap_model}/{GAP_PROMPT_VERSION}",
         "judge": f"{admission_model}/{ADMISSION_PROMPT_VERSION}",
+        "classifier": classifier,
         "taxonomy": TAXONOMY_VERSION,
         "inventory_builder": INVENTORY_BUILDER_VERSION,
         "retrieval_config_sha256": hashlib.sha256(retrieval_repr.encode()).hexdigest()[:16],

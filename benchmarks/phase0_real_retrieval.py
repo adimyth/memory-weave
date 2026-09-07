@@ -34,6 +34,25 @@ from memory_weave.util import now
 _AGENT_ID = "phase0-agent"
 _USER_ID = "user-phase0"
 
+CATEGORY_PROMPT_VERSIONS = ("category-v1", "category-v2")
+
+_CATEGORY_DEFINITIONS_V2 = (
+    "retrieval_category definitions, choose the single best fit:\n"
+    "- time_zone: the user's working time zone, working hours, or location used for scheduling.\n"
+    "- people: who a named person is or what they own, lead, manage, or are responsible for, including the user's manager.\n"
+    "- infrastructure: names and regions of clusters, environments, services, accounts, or hosts the user operates.\n"
+    "- decisions: a choice the team made between tools, technologies, or approaches, with or without a date.\n"
+    "- constraints: a version pin, compatibility rule, or technical restriction and the reason for it.\n"
+    "- limits: a numeric quota, rate limit, budget, retry count, concurrency cap, or availability target, and tier multipliers on it.\n"
+    "- schedules: a recurring meeting, release train, freeze window, review slot, or on-call rotation.\n"
+    "- locations: where a document, runbook, handbook, checklist, or record set is kept, such as a repository path, wiki, or folder.\n"
+    "- personal: facts about the user's life outside work, such as diet, family, health, hobbies, or tastes.\n"
+    "- preferences: how the user wants replies written, what language or units to use, or what they like or believe.\n"
+    "- other: a fact that fits none of the above.\n"
+    "A record naming a numeric limit is limits even when it mentions a service. A record saying where something lives is "
+    "locations even when it names a system. A record about a person's role is people even when it names a document.\n"
+)
+
 _CATEGORY_SYSTEM = (
     "You classify one stored memory record about a user or their work. Reply with JSON only:\n"
     '{"retrieval_category": "<one of: ' + ", ".join(RETRIEVAL_CATEGORIES) + '>",\n'
@@ -54,17 +73,24 @@ _CATEGORY_SYSTEM = (
 )
 
 
+_CATEGORY_SYSTEM_V2 = _CATEGORY_SYSTEM + "\n" + _CATEGORY_DEFINITIONS_V2
+
+
 class HostedCategoryPolicy:
     """Category policy backed by a hosted model through the benchmark's model wrapper."""
 
-    def __init__(self, models: Any, model: str) -> None:
+    def __init__(self, models: Any, model: str, prompt_version: str = "category-v2") -> None:
+        if prompt_version not in CATEGORY_PROMPT_VERSIONS:
+            raise ValueError(f"Unknown category prompt version {prompt_version!r}")
         self._models = models
         self._model = model
+        self.prompt_version = prompt_version
+        self._system = _CATEGORY_SYSTEM_V2 if prompt_version == "category-v2" else _CATEGORY_SYSTEM
 
     def classify(self, content: str) -> CategoryDecision:
         import json
 
-        raw = self._models.complete(self._model, _CATEGORY_SYSTEM, f"Record:\n{content}", json_mode=True)
+        raw = self._models.complete(self._model, self._system, f"Record:\n{content}", json_mode=True)
         parsed = json.loads(raw)
         retrieval = str(parsed.get("retrieval_category", "other"))
         if retrieval not in RETRIEVAL_CATEGORIES:

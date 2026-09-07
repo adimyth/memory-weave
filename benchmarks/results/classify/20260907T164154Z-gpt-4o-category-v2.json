@@ -1,0 +1,112 @@
+{
+  "model": "gpt-4o",
+  "prompt_version": "category-v2",
+  "results": {
+    "phase0_v4": {
+      "scenario": "Fourth scenario split, written blind on 7 September 2026 bef",
+      "label_agreement": "20/23",
+      "inventory_coverage_by_true_category": "19/19",
+      "uncovered": [],
+      "inventory": [
+        "document and repository locations",
+        "infrastructure and environments",
+        "limits and quotas",
+        "other facts",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "runtime and version constraints",
+        "schedules and recurring events",
+        "time zone and working hours",
+        "tooling and architecture decisions"
+      ],
+      "disagreements": {
+        "decisions->infrastructure": 1,
+        "decisions->other": 1,
+        "decisions->preferences": 1
+      },
+      "unsafe_flagged": "1/2",
+      "assigned": {
+        "A1": "preferences",
+        "A2": "preferences",
+        "A3": "preferences",
+        "S1": "time_zone",
+        "F1": "time_zone",
+        "F2": "people",
+        "F3": "locations",
+        "S2": "infrastructure",
+        "F4": "decisions",
+        "F5": "constraints",
+        "F6": "infrastructure",
+        "F7": "people",
+        "F8": "schedules",
+        "F9": "personal",
+        "F10": "personal",
+        "J1": "limits",
+        "J2": "limits",
+        "R1": "other",
+        "R2": "infrastructure",
+        "P1": "personal",
+        "P2": "personal",
+        "M1": "preferences",
+        "M2": "preferences"
+      }
+    },
+    "phase0_v5": {
+      "scenario": "Fifth scenario split, written blind on 7 September 2026 befo",
+      "label_agreement": "22/24",
+      "inventory_coverage_by_true_category": "19/19",
+      "uncovered": [],
+      "inventory": [
+        "document and repository locations",
+        "infrastructure and environments",
+        "limits and quotas",
+        "other facts",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "runtime and version constraints",
+        "schedules and recurring events",
+        "time zone and working hours",
+        "tooling and architecture decisions"
+      ],
+      "disagreements": {
+        "decisions->infrastructure": 1,
+        "decisions->other": 1
+      },
+      "unsafe_flagged": "1/2",
+      "assigned": {
+        "A1": "preferences",
+        "A2": "preferences",
+        "A3": "preferences",
+        "C1": "preferences",
+        "S1": "time_zone",
+        "F1": "time_zone",
+        "F2": "people",
+        "F3": "locations",
+        "S2": "decisions",
+        "F4": "decisions",
+        "F5": "constraints",
+        "F6": "infrastructure",
+        "F7": "people",
+        "F8": "schedules",
+        "F9": "personal",
+        "F10": "personal",
+        "J1": "limits",
+        "J2": "limits",
+        "R1": "infrastructure",
+        "R2": "infrastructure",
+        "P1": "personal",
+        "P2": "personal",
+        "M1": "other",
+        "M2": "preferences"
+      }
+    }
+  },
+  "usage": {
+    "gpt-4o": {
+      "prompt": 28147,
+      "completion": 2705
+    }
+  }
+}

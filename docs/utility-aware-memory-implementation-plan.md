@@ -167,6 +167,8 @@ The canary does not begin until all of the following hold:
 - Stage timeouts and the per-turn latency budget are configured from measured latency, not from the configuration example.
 - Monitoring distinguishes planner silence, retrieval misses, judge rejection, policy failure, and budget withholding as separate counts, so a change in served injection or recall can be attributed to one stage.
 
+**Steps 1 and 2 done, 7 September 2026, `usefulness-gate.md` section 8k.** Classifier prompt v2 adds definitions and disambiguation rules to the unchanged taxonomy; inventory coverage on memory-needed records rose from 16 of 19 to 19 of 19 on both splits. The bundle with `classifier: gpt-4o/category-v2` passed the complete fitness suite: promotion split across two builds, configuration A on the fourth and fifth splits with real activation, and the shadow harness on both conversations. It is now the default classifier in the harnesses and part of the supported bundle. Next: step 3, the review-queue CLI.
+
 ### Requirements Phase 0 adds to Phase 2
 
 - The gap policy receives a bounded, content-free category inventory for the principal's readable conditional store, built from the activation policy's fixed taxonomy and never from extractor attribute slugs or record text. The inventory is part of the turn-decision log.

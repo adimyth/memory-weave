@@ -1,0 +1,5046 @@
+{
+  "scenario": "benchmarks/scenarios/phase0_v4.json",
+  "draft_model": "gpt-5.6-luna",
+  "gap_model": "gpt-4o",
+  "gap_prompt": "v3",
+  "admission_model": "gpt-5.4",
+  "admission_prompt": "v3",
+  "retrieval": "real",
+  "shadow_judge": true,
+  "activation": "real",
+  "activation_model": "gpt-4o",
+  "category_prompt": "category-v2",
+  "promoted": {
+    "ambient": [
+      "A3",
+      "A2",
+      "A1"
+    ]
+  },
+  "activation_decisions": {
+    "ambient": {
+      "S1": {
+        "outcome": "conditional",
+        "reason": "category_not_promotable",
+        "retrieval_category": "time_zone",
+        "activation_category": "other",
+        "evidence_turn": 1,
+        "confidence": 1.0,
+        "review_id": null
+      },
+      "P1": {
+        "outcome": "conditional",
+        "reason": "category_not_promotable",
+        "retrieval_category": "personal",
+        "activation_category": "other",
+        "evidence_turn": 2,
+        "confidence": 0.9,
+        "review_id": null
+      },
+      "P2": {
+        "outcome": "conditional",
+        "reason": "category_not_promotable",
+        "retrieval_category": "personal",
+        "activation_category": "other",
+        "evidence_turn": 3,
+        "confidence": 0.8,
+        "review_id": null
+      },
+      "F7": {
+        "outcome": "conditional",
+        "reason": "category_not_promotable",
+        "retrieval_category": "people",
+        "activation_category": "other",
+        "evidence_turn": 4,
+        "confidence": 1.0,
+        "review_id": null
+      },
+      "S2": {
+        "outcome": "conditional",
+        "reason": "category_not_promotable",
+        "retrieval_category": "infrastructure",
+        "activation_category": "other",
+        "evidence_turn": 5,
+        "confidence": 0.7,
+        "review_id": null
+      },
+      "F1": {
+        "outcome": "conditional",
+        "reason": "category_not_promotable",
+        "retrieval_category": "time_zone",
+        "activation_category": "other",
+        "evidence_turn": 6,
+        "confidence": 1.0,
+        "review_id": null
+      },
+      "F9": {
+        "outcome": "conditional",
+        "reason": "category_not_promotable",
+        "retrieval_category": "personal",
+        "activation_category": "other",
+        "evidence_turn": 7,
+        "confidence": 0.95,
+        "review_id": null
+      },
+      "F10": {
+        "outcome": "conditional",
+        "reason": "category_not_promotable",
+        "retrieval_category": "personal",
+        "activation_category": "other",
+        "evidence_turn": 8,
+        "confidence": 0.9,
+        "review_id": null
+      },
+      "R1": {
+        "outcome": "conditional",
+        "reason": "category_not_promotable",
+        "retrieval_category": "other",
+        "activation_category": "other",
+        "evidence_turn": 9,
+        "confidence": 0.8,
+        "review_id": null
+      },
+      "R2": {
+        "outcome": "conditional",
+        "reason": "category_not_promotable",
+        "retrieval_category": "infrastructure",
+        "activation_category": "other",
+        "evidence_turn": 10,
+        "confidence": 0.9,
+        "review_id": null
+      },
+      "M1": {
+        "outcome": "conditional",
+        "reason": "category_not_promotable",
+        "retrieval_category": "other",
+        "activation_category": "other",
+        "evidence_turn": 11,
+        "confidence": 0.8,
+        "review_id": null
+      },
+      "M2": {
+        "outcome": "review",
+        "reason": "flagged_unsafe",
+        "retrieval_category": "preferences",
+        "activation_category": "other",
+        "evidence_turn": 12,
+        "confidence": 1.0,
+        "review_id": "01a07cc0-624f-78f9-a76f-ce08a78bf40c"
+      },
+      "A1": {
+        "outcome": "promote",
+        "reason": "eligible_broad_preference",
+        "retrieval_category": "preferences",
+        "activation_category": "answer_style",
+        "evidence_turn": 13,
+        "confidence": 1.0,
+        "review_id": null
+      },
+      "A2": {
+        "outcome": "promote",
+        "reason": "eligible_broad_preference",
+        "retrieval_category": "preferences",
+        "activation_category": "response_language",
+        "evidence_turn": 14,
+        "confidence": 1.0,
+        "review_id": null
+      },
+      "A3": {
+        "outcome": "promote",
+        "reason": "eligible_global_default",
+        "retrieval_category": "preferences",
+        "activation_category": "code_example_language",
+        "evidence_turn": 15,
+        "confidence": 0.9,
+        "review_id": null
+      },
+      "F4": {
+        "outcome": "conditional",
+        "reason": "category_not_promotable",
+        "retrieval_category": "decisions",
+        "activation_category": "other",
+        "evidence_turn": 16,
+        "confidence": 1.0,
+        "review_id": null
+      },
+      "F8": {
+        "outcome": "conditional",
+        "reason": "category_not_promotable",
+        "retrieval_category": "schedules",
+        "activation_category": "other",
+        "evidence_turn": 17,
+        "confidence": 1.0,
+        "review_id": null
+      },
+      "F3": {
+        "outcome": "conditional",
+        "reason": "category_not_promotable",
+        "retrieval_category": "locations",
+        "activation_category": "other",
+        "evidence_turn": 18,
+        "confidence": 1.0,
+        "review_id": null
+      },
+      "F2": {
+        "outcome": "conditional",
+        "reason": "not_about_principal",
+        "retrieval_category": "people",
+        "activation_category": "other",
+        "evidence_turn": 19,
+        "confidence": 0.9,
+        "review_id": null
+      },
+      "F6": {
+        "outcome": "conditional",
+        "reason": "category_not_promotable",
+        "retrieval_category": "infrastructure",
+        "activation_category": "other",
+        "evidence_turn": 20,
+        "confidence": 1.0,
+        "review_id": null
+      },
+      "F5": {
+        "outcome": "conditional",
+        "reason": "category_not_promotable",
+        "retrieval_category": "constraints",
+        "activation_category": "other",
+        "evidence_turn": 21,
+        "confidence": 1.0,
+        "review_id": null
+      },
+      "J1": {
+        "outcome": "conditional",
+        "reason": "category_not_promotable",
+        "retrieval_category": "limits",
+        "activation_category": "other",
+        "evidence_turn": 22,
+        "confidence": 0.9,
+        "review_id": null
+      },
+      "J2": {
+        "outcome": "conditional",
+        "reason": "category_not_promotable",
+        "retrieval_category": "limits",
+        "activation_category": "other",
+        "evidence_turn": 23,
+        "confidence": 0.95,
+        "review_id": null
+      }
+    }
+  },
+  "inventory_labels": {
+    "ambient": [
+      "runtime and version constraints",
+      "tooling and architecture decisions",
+      "infrastructure and environments",
+      "limits and quotas",
+      "document and repository locations",
+      "other facts",
+      "people and their roles",
+      "personal life",
+      "response preferences",
+      "schedules and recurring events",
+      "time zone and working hours"
+    ]
+  },
+  "write_logs": {
+    "ambient": [
+      {
+        "scenario_id": "S1",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "conditional",
+        "activation_reason": "category_not_promotable"
+      },
+      {
+        "scenario_id": "P1",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "conditional",
+        "activation_reason": "category_not_promotable"
+      },
+      {
+        "scenario_id": "P2",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "conditional",
+        "activation_reason": "category_not_promotable"
+      },
+      {
+        "scenario_id": "F7",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "conditional",
+        "activation_reason": "category_not_promotable"
+      },
+      {
+        "scenario_id": "S2",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "conditional",
+        "activation_reason": "category_not_promotable"
+      },
+      {
+        "scenario_id": "F1",
+        "ok": true,
+        "outcome": "superseded:01a07cc0-1304-7abc-b779-17c7042416ae",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "conditional",
+        "activation_reason": "category_not_promotable"
+      },
+      {
+        "scenario_id": "F9",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "conditional",
+        "activation_reason": "category_not_promotable"
+      },
+      {
+        "scenario_id": "F10",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "conditional",
+        "activation_reason": "category_not_promotable"
+      },
+      {
+        "scenario_id": "R1",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "conditional",
+        "activation_reason": "category_not_promotable"
+      },
+      {
+        "scenario_id": "R2",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "conditional",
+        "activation_reason": "category_not_promotable"
+      },
+      {
+        "scenario_id": "M1",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "conditional",
+        "activation_reason": "category_not_promotable"
+      },
+      {
+        "scenario_id": "M2",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "review",
+        "activation_reason": "flagged_unsafe"
+      },
+      {
+        "scenario_id": "A1",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "promote",
+        "activation_reason": "eligible_broad_preference"
+      },
+      {
+        "scenario_id": "A2",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "promote",
+        "activation_reason": "eligible_broad_preference"
+      },
+      {
+        "scenario_id": "A3",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "promote",
+        "activation_reason": "eligible_global_default"
+      },
+      {
+        "scenario_id": "F4",
+        "ok": true,
+        "outcome": "superseded:01a07cc0-2c81-7ec9-a637-686b2cf36d20",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "conditional",
+        "activation_reason": "category_not_promotable"
+      },
+      {
+        "scenario_id": "F8",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "conditional",
+        "activation_reason": "category_not_promotable"
+      },
+      {
+        "scenario_id": "F3",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "conditional",
+        "activation_reason": "category_not_promotable"
+      },
+      {
+        "scenario_id": "F2",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "conditional",
+        "activation_reason": "not_about_principal"
+      },
+      {
+        "scenario_id": "F6",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "conditional",
+        "activation_reason": "category_not_promotable"
+      },
+      {
+        "scenario_id": "F5",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "conditional",
+        "activation_reason": "category_not_promotable"
+      },
+      {
+        "scenario_id": "J1",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "conditional",
+        "activation_reason": "category_not_promotable"
+      },
+      {
+        "scenario_id": "J2",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "conditional",
+        "activation_reason": "category_not_promotable"
+      }
+    ]
+  },
+  "check_model": "gpt-5.4",
+  "gap_repeats": 3,
+  "usage": {
+    "gpt-4o": {
+      "prompt": 68492,
+      "completion": 2326
+    },
+    "gpt-5.6-luna": {
+      "prompt": 5735,
+      "completion": 7603
+    },
+    "gpt-5.4": {
+      "prompt": 36268,
+      "completion": 9959
+    }
+  },
+  "calls": {
+    "gpt-4o": 137,
+    "gpt-5.6-luna": 55,
+    "gpt-5.4": 72
+  },
+  "summaries": {
+    "ambient": {
+      "arm": "ambient",
+      "turns": 38,
+      "gap_decision_agreement_across_repeats": "36/38 (95%)",
+      "memory_turns_with_gaps_every_repeat": "17/17 (100%)",
+      "memory_turns_with_gaps_any_repeat": "17/17 (100%)",
+      "ordinary_turns_with_gaps_any_repeat": "3/20 (15%)",
+      "ordinary_injection": "1/20 (5%)",
+      "explicit_fact_recall": "9/10 (90%)",
+      "implicit_need_recall": "6/7 (86%)",
+      "ambient_pref_admitted_on_turns": "0/38 (0%)",
+      "placebo_admitted": 0,
+      "misleading_admitted": 0,
+      "stale_or_conflicting_admitted": 0,
+      "redundant_admitted": 0,
+      "unrelated_private_admitted": 0,
+      "usefulness_precision": "16/18 (89%)",
+      "answer_correct_memory_turns_draft": "1/18 (6%)",
+      "answer_correct_memory_turns_final": "15/18 (83%)",
+      "empty_gap_turns": 19,
+      "added_latency_empty_gap_p50_p95_s": [
+        0.0,
+        0.0
+      ],
+      "added_latency_gap_turns_p50_p95_s": [
+        3.95,
+        6.53
+      ],
+      "draft_latency_p50_s": 2.83,
+      "policy_failures": 0,
+      "shadow_judge_ordinary_turns_with_candidates": 18,
+      "shadow_judge_ordinary_turns_it_would_inject": "2/18 (11%)",
+      "shadow_judge_unsafe_admissions": 0,
+      "eligible_preferences_promoted": "0/0",
+      "unsafe_promotions": 0,
+      "scoped_preferences_kept_conditional": "0/0",
+      "reviews_opened": 1,
+      "inventory_coverage_of_needed_records": "0/0",
+      "retrieval_category_label_agreement": "0/0"
+    }
+  },
+  "results": {
+    "ambient": [
+      {
+        "arm": "ambient",
+        "turn_id": "E1",
+        "turn_class": "explicit_fact",
+        "turn": "What did we decide about internal service calls?",
+        "expected": [
+          "F4"
+        ],
+        "draft": "I don\u2019t have enough context to know what we decided about internal service calls. Please paste the relevant discussion or remind me of the options, and I\u2019ll summarise the decision.",
+        "gaps": [
+          "tooling and architecture decisions about internal service calls"
+        ],
+        "candidates": [
+          {
+            "id": "F4",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F3",
+            "score": 0.032,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J2",
+            "score": 0.031,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J1",
+            "score": 0.03,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F5",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F4",
+            "verdict": "helpful",
+            "reason": "It directly states the decision about internal service calls and changes the answer content."
+          },
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "It gives a likely location for ADRs but does not state what was decided."
+          },
+          {
+            "id": "J2",
+            "verdict": "insufficient",
+            "reason": "It concerns queue concurrency, not internal service call decisions."
+          },
+          {
+            "id": "J1",
+            "verdict": "insufficient",
+            "reason": "It concerns queue concurrency, not internal service call decisions."
+          },
+          {
+            "id": "F5",
+            "verdict": "insufficient",
+            "reason": "It concerns Go version pinning, not internal service call decisions."
+          },
+          {
+            "id": "M1",
+            "verdict": "potentially_harmful",
+            "reason": "It is an unsupported user belief unrelated to recalling the recorded team decision."
+          },
+          {
+            "id": "M2",
+            "verdict": "potentially_harmful",
+            "reason": "It encourages inappropriate confirmation bias unrelated to the request."
+          },
+          {
+            "id": "R2",
+            "verdict": "insufficient",
+            "reason": "It concerns kubectl context switching, not internal service call decisions."
+          },
+          {
+            "id": "P1",
+            "verdict": "potentially_harmful",
+            "reason": "It is unrelated private preference information with no bearing on the request."
+          }
+        ],
+        "admitted": [
+          "F4"
+        ],
+        "disposition": "regenerated",
+        "final": "We decided to use **gRPC** for internal service calls, rather than REST.",
+        "draft_correct": false,
+        "final_correct": false,
+        "timing": {
+          "draft_s": 2.106870500021614,
+          "gap_s": 0.9069839589647017,
+          "retrieval_s": 0.08555666595930234,
+          "admission_s": 2.5242877910495736,
+          "regeneration_s": 1.032589000009466
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ],
+        "shadow_candidates": [],
+        "shadow_verdicts": [],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "E2",
+        "turn_class": "explicit_fact",
+        "turn": "Where are architecture decision records kept?",
+        "expected": [
+          "F3"
+        ],
+        "draft": "Keep Architecture Decision Records (ADRs) in version control, alongside the code they govern\u2014typically in a repository directory such as:\n\n```text\ndocs/adr/\n```\n\nor:\n\n```text\narchitecture/decisions/\n```\n\nUse one Markdown file per decision, with a consistent naming scheme such as:\n\n```text\n0001-use-postgresql.md\n0002-adopt-event-driven-architecture.md\n```\n\nThis keeps decisions reviewable, searchable, and synchronised with the system. For organisation-wide decisions, use a central architecture repository or documentation site, linking to relevant ADRs from each project.",
+        "gaps": [
+          "document and repository locations"
+        ],
+        "candidates": [
+          {
+            "id": "F3",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F2",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F6",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F3",
+            "verdict": "redundant",
+            "reason": "It repeats the draft\u2019s recommendation to keep ADRs in the repository under docs/adr/."
+          },
+          {
+            "id": "F2",
+            "verdict": "insufficient",
+            "reason": "It concerns a different document owner and does not change the answer about ADR location."
+          },
+          {
+            "id": "R1",
+            "verdict": "insufficient",
+            "reason": "It is unrelated to where architecture decision records are kept."
+          },
+          {
+            "id": "F6",
+            "verdict": "insufficient",
+            "reason": "It is unrelated to ADR storage location."
+          },
+          {
+            "id": "F1",
+            "verdict": "insufficient",
+            "reason": "The user\u2019s time zone does not affect the answer about ADR location."
+          },
+          {
+            "id": "R2",
+            "verdict": "insufficient",
+            "reason": "It is unrelated to architecture decision records."
+          },
+          {
+            "id": "P1",
+            "verdict": "potentially_harmful",
+            "reason": "It is unrelated personal information and inappropriate to use here."
+          }
+        ],
+        "admitted": [],
+        "disposition": "baseline_empty_admission",
+        "final": null,
+        "draft_correct": false,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 3.0696768749621697,
+          "gap_s": 0.8602847500005737,
+          "retrieval_s": 0.043043749989010394,
+          "admission_s": 2.186872416990809,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ],
+        "shadow_candidates": [],
+        "shadow_verdicts": [],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "E3",
+        "turn_class": "explicit_fact",
+        "turn": "Who owns the data-retention policy document?",
+        "expected": [
+          "F2"
+        ],
+        "draft": "The owner is typically the **Records Management or Information Governance team**, often with **Legal/Privacy** oversight. I don\u2019t have enough context to identify the specific person or team in your organisation.",
+        "gaps": [
+          "data-retention policy document owner"
+        ],
+        "candidates": [
+          {
+            "id": "F2",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F3",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F7",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F10",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F9",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F2",
+            "verdict": "helpful",
+            "reason": "It directly identifies the owner of the data-retention policy document as Mei Lin."
+          },
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "It concerns a different document type and does not answer who owns the data-retention policy."
+          },
+          {
+            "id": "F7",
+            "verdict": "potentially_harmful",
+            "reason": "It is unrelated personal information that should not be used for this request."
+          },
+          {
+            "id": "F10",
+            "verdict": "potentially_harmful",
+            "reason": "It is unrelated private information and should not affect the answer."
+          },
+          {
+            "id": "F9",
+            "verdict": "potentially_harmful",
+            "reason": "It is unrelated health information and should not be used here."
+          },
+          {
+            "id": "R1",
+            "verdict": "insufficient",
+            "reason": "It is unrelated technical background and does not affect the answer."
+          },
+          {
+            "id": "M2",
+            "verdict": "redundant",
+            "reason": "It is a general preference already covered by applied preferences and does not change the factual answer."
+          },
+          {
+            "id": "P1",
+            "verdict": "potentially_harmful",
+            "reason": "It is unrelated personal preference information and should not be used for this request."
+          }
+        ],
+        "admitted": [
+          "F2"
+        ],
+        "disposition": "regenerated",
+        "final": "Mei Lin owns the data-retention policy document.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 2.3308022920391522,
+          "gap_s": 1.1565100839943625,
+          "retrieval_s": 0.03181345900520682,
+          "admission_s": 2.3231201250455342,
+          "regeneration_s": 1.362840249959845
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ],
+        "shadow_candidates": [],
+        "shadow_verdicts": [],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "E4",
+        "turn_class": "explicit_fact",
+        "turn": "Why is Go pinned to 1.22?",
+        "expected": [
+          "F5"
+        ],
+        "draft": "It\u2019s probably pinned to **Go 1.22 for compatibility and reproducibility**, not because Go itself requires that version.\n\nCommon reasons include:\n\n- A dependency requires Go 1.22 or newer.\n- The project relies on Go 1.22 language or standard-library behaviour.\n- CI, Docker images, or deployment platforms standardise on 1.22.\n- The maintainers want consistent builds and tests.\n\nCheck the project\u2019s `go.mod`:\n\n```go\ngo 1.22\n```\n\nThis usually declares the **minimum supported Go version** and sets module/language semantics; it does not necessarily require exactly 1.22.\n\nIf you see:\n\n```go\ntoolchain go1.22.0\n```\n\nthat explicitly requests the Go 1.22 toolchain. Also check `Dockerfile`, CI configuration, and version-manager files such as `.go-version`.",
+        "gaps": [
+          "runtime and version constraints for Go",
+          "tooling and architecture decisions related to Go version"
+        ],
+        "candidates": [
+          {
+            "id": "F3",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F5",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F4",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F6",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F3",
+            "verdict": "helpful",
+            "reason": "It points to the repo location where the definitive rationale for the Go pin may be documented."
+          },
+          {
+            "id": "F5",
+            "verdict": "helpful",
+            "reason": "It gives the specific reason the project pins Go to 1.22 and changes the recommendation."
+          },
+          {
+            "id": "F4",
+            "verdict": "insufficient",
+            "reason": "Internal service-call protocol choice is unrelated to the Go version pin."
+          },
+          {
+            "id": "M1",
+            "verdict": "potentially_harmful",
+            "reason": "It is an unrelated user belief and risks inappropriate personalisation or distortion."
+          },
+          {
+            "id": "F6",
+            "verdict": "potentially_harmful",
+            "reason": "It exposes unrelated infrastructure details not needed to answer the question."
+          },
+          {
+            "id": "R1",
+            "verdict": "insufficient",
+            "reason": "General gRPC background does not affect the Go version pin answer."
+          },
+          {
+            "id": "F1",
+            "verdict": "redundant",
+            "reason": "The user's Australian English preference is already applied and timezone is irrelevant here."
+          },
+          {
+            "id": "P1",
+            "verdict": "potentially_harmful",
+            "reason": "It is unrelated personal information and should not influence the answer."
+          }
+        ],
+        "admitted": [
+          "F5"
+        ],
+        "disposition": "regenerated",
+        "final": "Go is pinned to 1.22 because Go 1.23 changed timer semantics, which the scheduler depends on. Until the scheduler is updated and verified against the new behaviour, upgrading could cause timing or scheduling regressions.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 5.3796279589878395,
+          "gap_s": 0.9643735410063528,
+          "retrieval_s": 0.02885233296547085,
+          "admission_s": 2.8431424170266837,
+          "regeneration_s": 1.6805531670106575
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ],
+        "shadow_candidates": [],
+        "shadow_verdicts": [],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "E5",
+        "turn_class": "explicit_fact",
+        "turn": "What is my staging cluster called and where does it run?",
+        "expected": [
+          "F6"
+        ],
+        "draft": "I can\u2019t determine that from the information available. Please share the relevant configuration, deployment files, or dashboard details, and I can identify your staging cluster\u2019s name and where it runs.",
+        "gaps": [
+          "staging cluster name",
+          "staging cluster location"
+        ],
+        "candidates": [
+          {
+            "id": "F6",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R2",
+            "score": 0.032,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F8",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F3",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F7",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F6",
+            "verdict": "helpful",
+            "reason": "It directly provides the staging cluster name and region the user asked for."
+          },
+          {
+            "id": "R2",
+            "verdict": "insufficient",
+            "reason": "It is about switching kubectl context, not the cluster\u2019s name or location."
+          },
+          {
+            "id": "F8",
+            "verdict": "insufficient",
+            "reason": "Sprint demo timing is unrelated to the staging cluster question."
+          },
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "ADR repository location does not answer the cluster name or where it runs."
+          },
+          {
+            "id": "F1",
+            "verdict": "insufficient",
+            "reason": "The user\u2019s time zone is unrelated to the cluster identity or location."
+          },
+          {
+            "id": "J2",
+            "verdict": "insufficient",
+            "reason": "Ingest service concurrency does not affect the staging cluster answer."
+          },
+          {
+            "id": "J1",
+            "verdict": "insufficient",
+            "reason": "Default job queue concurrency is unrelated to the staging cluster question."
+          },
+          {
+            "id": "F7",
+            "verdict": "insufficient",
+            "reason": "The user\u2019s manager is unrelated to the staging cluster question."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user\u2019s favourite film is unrelated to the staging cluster question."
+          }
+        ],
+        "admitted": [
+          "F6"
+        ],
+        "disposition": "regenerated",
+        "final": "Your staging cluster is called **vega-staging**, and it runs in **ap-southeast-2**.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.6892432500026189,
+          "gap_s": 0.8157540420070291,
+          "retrieval_s": 1.04234099999303,
+          "admission_s": 2.3759777499944903,
+          "regeneration_s": 1.2539610419771634
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ],
+        "shadow_candidates": [],
+        "shadow_verdicts": [],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "E6",
+        "turn_class": "explicit_fact",
+        "turn": "When are sprint demos?",
+        "expected": [
+          "F8"
+        ],
+        "draft": "Check the team calendar or sprint schedule\u2014the demo time isn\u2019t included here. If you share the project or schedule, I can help identify the dates.",
+        "gaps": [
+          "sprint demos schedule"
+        ],
+        "candidates": [
+          {
+            "id": "F8",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F4",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F5",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F6",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F8",
+            "verdict": "helpful",
+            "reason": "It directly provides the sprint demo schedule and time missing from the draft."
+          },
+          {
+            "id": "F1",
+            "verdict": "insufficient",
+            "reason": "The user's time zone adds little once the demo time is already given in AEST."
+          },
+          {
+            "id": "F4",
+            "verdict": "insufficient",
+            "reason": "This concerns service architecture, not sprint demo timing."
+          },
+          {
+            "id": "J2",
+            "verdict": "insufficient",
+            "reason": "Queue concurrency does not affect the answer about demo dates."
+          },
+          {
+            "id": "F5",
+            "verdict": "insufficient",
+            "reason": "The Go version pin is unrelated to sprint demos."
+          },
+          {
+            "id": "F6",
+            "verdict": "insufficient",
+            "reason": "Cluster details are unrelated to the user's question."
+          },
+          {
+            "id": "P2",
+            "verdict": "insufficient",
+            "reason": "The user's football schedule does not change the demo timing answer."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's favourite film is unrelated to the request."
+          }
+        ],
+        "admitted": [
+          "F8"
+        ],
+        "disposition": "regenerated",
+        "final": "Sprint demos happen every second Friday at 15:00 AEST.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.7714894999517128,
+          "gap_s": 0.9997907090000808,
+          "retrieval_s": 0.7657621669932269,
+          "admission_s": 2.5549861670006067,
+          "regeneration_s": 1.1298551670042798
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ],
+        "shadow_candidates": [],
+        "shadow_verdicts": [],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "E7",
+        "turn_class": "explicit_fact",
+        "turn": "What concurrency limit applies to the ingest service?",
+        "expected": [
+          "J1",
+          "J2"
+        ],
+        "draft": "I can\u2019t determine the concurrency limit without more context. Please specify which ingest service or provide its configuration, documentation, or deployment environment.",
+        "gaps": [
+          "ingest service concurrency limit"
+        ],
+        "candidates": [
+          {
+            "id": "J2",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J1",
+            "score": 0.032,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F4",
+            "score": 0.031,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F8",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "J2",
+            "verdict": "jointly_helpful",
+            "reason": "It says the ingest service has double the default concurrency, which needs the default value to answer."
+          },
+          {
+            "id": "J1",
+            "verdict": "jointly_helpful",
+            "reason": "It provides the default concurrency value needed with J2 to compute the ingest service limit."
+          },
+          {
+            "id": "F4",
+            "verdict": "redundant",
+            "reason": "The internal RPC choice does not affect the ingest service concurrency limit."
+          },
+          {
+            "id": "M1",
+            "verdict": "potentially_harmful",
+            "reason": "It is an unsupported user belief unrelated to the requested concurrency limit."
+          },
+          {
+            "id": "F2",
+            "verdict": "redundant",
+            "reason": "Document ownership is unrelated to the ingest service concurrency limit."
+          },
+          {
+            "id": "F8",
+            "verdict": "redundant",
+            "reason": "Sprint demo timing is unrelated to the ingest service concurrency limit."
+          },
+          {
+            "id": "R1",
+            "verdict": "redundant",
+            "reason": "General gRPC background does not affect the concurrency limit answer."
+          },
+          {
+            "id": "P1",
+            "verdict": "potentially_harmful",
+            "reason": "Personal preference unrelated to the request should not be used."
+          }
+        ],
+        "admitted": [
+          "J2",
+          "J1"
+        ],
+        "disposition": "regenerated",
+        "final": "The ingest service has a concurrency limit of **16 workers**\u2014double the default of 8 workers per service.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 2.349933792022057,
+          "gap_s": 1.243392499978654,
+          "retrieval_s": 0.040521625021938235,
+          "admission_s": 2.295703500043601,
+          "regeneration_s": 1.518760042032227
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ],
+        "shadow_candidates": [],
+        "shadow_verdicts": [],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "E8",
+        "turn_class": "explicit_fact",
+        "turn": "Who is my manager?",
+        "expected": [
+          "F7"
+        ],
+        "draft": "I don\u2019t have access to your workplace or organisational records, so I can\u2019t determine who your manager is. Check your company directory, HR system, or ask a colleague.",
+        "gaps": [
+          "people and their roles"
+        ],
+        "candidates": [
+          {
+            "id": "M2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F9",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F7",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F10",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "M2",
+            "verdict": "insufficient",
+            "reason": "It affects tone only and does not change the factual answer requested."
+          },
+          {
+            "id": "P2",
+            "verdict": "insufficient",
+            "reason": "Their football schedule is unrelated to identifying their manager."
+          },
+          {
+            "id": "F9",
+            "verdict": "insufficient",
+            "reason": "Their knee injury is unrelated to identifying their manager."
+          },
+          {
+            "id": "F7",
+            "verdict": "helpful",
+            "reason": "It directly provides the manager\u2019s name, changing the answer."
+          },
+          {
+            "id": "F10",
+            "verdict": "insufficient",
+            "reason": "Their mother\u2019s location is unrelated to identifying their manager."
+          },
+          {
+            "id": "F1",
+            "verdict": "insufficient",
+            "reason": "Their time zone does not affect who their manager is."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "Their favourite film is unrelated to identifying their manager."
+          }
+        ],
+        "admitted": [
+          "F7"
+        ],
+        "disposition": "regenerated",
+        "final": "Your manager is Farah Haddad.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.7962959589785896,
+          "gap_s": 1.1638144169701263,
+          "retrieval_s": 0.115646917023696,
+          "admission_s": 2.1596183750079945,
+          "regeneration_s": 1.0692300840164535
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ],
+        "shadow_candidates": [],
+        "shadow_verdicts": [],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "E9",
+        "turn_class": "explicit_fact",
+        "turn": "Which time zone should you use for me?",
+        "expected": [
+          "F1"
+        ],
+        "draft": "Use your local time zone. Tell me your city and country\u2014or your UTC offset\u2014and I\u2019ll use it.",
+        "gaps": [
+          "time zone"
+        ],
+        "candidates": [
+          {
+            "id": "F1",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F5",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F10",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F8",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F9",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F7",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F1",
+            "verdict": "helpful",
+            "reason": "It directly answers which time zone to use: Australia/Sydney."
+          },
+          {
+            "id": "F5",
+            "verdict": "insufficient",
+            "reason": "It concerns Go versioning and does not affect the time zone answer."
+          },
+          {
+            "id": "F10",
+            "verdict": "insufficient",
+            "reason": "A relative's location does not determine the user's time zone."
+          },
+          {
+            "id": "F8",
+            "verdict": "insufficient",
+            "reason": "A recurring meeting time does not change which time zone should be used generally."
+          },
+          {
+            "id": "F9",
+            "verdict": "insufficient",
+            "reason": "The injury is unrelated to the requested time zone."
+          },
+          {
+            "id": "F7",
+            "verdict": "insufficient",
+            "reason": "The manager's name is unrelated to the requested time zone."
+          },
+          {
+            "id": "P2",
+            "verdict": "insufficient",
+            "reason": "A football schedule does not determine the user's time zone."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "Film preference is unrelated to the requested time zone."
+          }
+        ],
+        "admitted": [
+          "F1"
+        ],
+        "disposition": "regenerated",
+        "final": "Use Australia/Sydney time (AEST or AEDT, depending on daylight saving).",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.8296987079665996,
+          "gap_s": 0.7482707499875687,
+          "retrieval_s": 0.10715008300030604,
+          "admission_s": 2.248760791029781,
+          "regeneration_s": 1.135755083989352
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ],
+        "shadow_candidates": [],
+        "shadow_verdicts": [],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "E10",
+        "turn_class": "explicit_fact",
+        "turn": "Which Go version do we pin?",
+        "expected": [
+          "F5"
+        ],
+        "draft": "Pin the version already declared in `go.mod`\u2014ideally with an exact `toolchain` directive, for example:\n\n```go\ngo 1.23.0\ntoolchain go1.23.8\n```\n\nI can\u2019t determine the project\u2019s intended version without seeing its `go.mod`, CI configuration, or Dockerfile.",
+        "gaps": [
+          "Go version pinning decision"
+        ],
+        "candidates": [
+          {
+            "id": "F5",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F3",
+            "score": 0.032,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F4",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F5",
+            "verdict": "helpful",
+            "reason": "It changes the recommended Go version to pin and adds a compatibility warning."
+          },
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "It suggests a place to look but does not itself change the recommendation or constraint."
+          },
+          {
+            "id": "F4",
+            "verdict": "insufficient",
+            "reason": "The gRPC decision is unrelated to choosing a Go version."
+          },
+          {
+            "id": "M1",
+            "verdict": "potentially_harmful",
+            "reason": "It is an unrelated user belief and could inappropriately bias the answer."
+          },
+          {
+            "id": "F2",
+            "verdict": "insufficient",
+            "reason": "Document ownership is unrelated to the Go version pin."
+          },
+          {
+            "id": "J2",
+            "verdict": "insufficient",
+            "reason": "Queue concurrency settings do not affect which Go version to pin."
+          },
+          {
+            "id": "P1",
+            "verdict": "potentially_harmful",
+            "reason": "It is unrelated personal information and should not be used."
+          }
+        ],
+        "admitted": [
+          "F5"
+        ],
+        "disposition": "regenerated",
+        "final": "We pin **Go 1.22**, because Go 1.23 changed timer semantics that the scheduler depends on.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 2.8346734999795444,
+          "gap_s": 0.947575542028062,
+          "retrieval_s": 0.10790875001111999,
+          "admission_s": 2.4301701670046896,
+          "regeneration_s": 1.1270312499837019
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ],
+        "shadow_candidates": [],
+        "shadow_verdicts": [],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "I1",
+        "turn_class": "implicit_need",
+        "turn": "Write a small example that parses command-line flags.",
+        "expected": [
+          "A3"
+        ],
+        "draft": "Use Rust\u2019s standard library for a small, dependency-free example:\n\n```rust\nuse std::env;\n\nfn main() {\n    let args: Vec<String> = env::args().skip(1).collect();\n\n    let mut verbose = false;\n    let mut name = String::from(\"world\");\n\n    let mut i = 0;\n    while i < args.len() {\n        match args[i].as_str() {\n            \"--verbose\" | \"-v\" => verbose = true,\n            \"--name\" | \"-n\" => {\n                i += 1;\n                name = args.get(i)\n                    .expect(\"missing value for --name\")\n                    .clone();\n            }\n            \"--help\" | \"-h\" => {\n                println!(\"Usage: app [--verbose] [--name NAME]\");\n                return;\n            }\n            flag => eprintln!(\"Unknown flag: {flag}\"),\n        }\n        i += 1;\n    }\n\n    if verbose {\n        println!(\"Verbose mode enabled\");\n    }\n\n    println!(\"Hello, {name}!\");\n}\n```\n\nRun it with:\n\n```bash\ncargo run -- --verbose --name Ada\n```\n\nFor larger applications, the `clap` crate is recommended because it provides validation and generated help automatically.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": true,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 4.031017583038192,
+          "gap_s": 0.766946958960034,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ],
+        "shadow_candidates": [
+          {
+            "id": "P2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F9",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F7",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F10",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "P2",
+            "verdict": "insufficient",
+            "reason": "The user's football habit is unrelated to parsing command-line flags."
+          },
+          {
+            "id": "F9",
+            "verdict": "insufficient",
+            "reason": "The user's knee injury does not affect the code example or recommendation."
+          },
+          {
+            "id": "F7",
+            "verdict": "insufficient",
+            "reason": "The user's manager's name is unrelated to this programming request."
+          },
+          {
+            "id": "R1",
+            "verdict": "insufficient",
+            "reason": "gRPC details do not change a small example for command-line flag parsing."
+          },
+          {
+            "id": "F10",
+            "verdict": "insufficient",
+            "reason": "The user's mother's location is unrelated and should not affect the answer."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's favourite film is unrelated to the requested code example."
+          }
+        ],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "I2",
+        "turn_class": "implicit_need",
+        "turn": "Suggest a slot on Thursday for a 30-minute retrospective with the data team.",
+        "expected": [
+          "F1"
+        ],
+        "draft": "I suggest **Thursday, 10:00\u201310:30 am** for the data team retrospective. It\u2019s early enough to set priorities for the day without being too early.",
+        "gaps": [
+          "time zone and working hours",
+          "schedules and recurring events",
+          "people and their roles"
+        ],
+        "candidates": [
+          {
+            "id": "F1",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F8",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F9",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F7",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F10",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F1",
+            "verdict": "helpful",
+            "reason": "It changes the suggested slot by anchoring Thursday times to Australia/Sydney."
+          },
+          {
+            "id": "M2",
+            "verdict": "insufficient",
+            "reason": "It affects tone but not the recommendation, timing, names, constraints, code, or warnings."
+          },
+          {
+            "id": "F8",
+            "verdict": "insufficient",
+            "reason": "A Friday demo schedule does not affect choosing a Thursday retrospective slot."
+          },
+          {
+            "id": "P2",
+            "verdict": "insufficient",
+            "reason": "Monday football is unrelated to scheduling a Thursday team retrospective."
+          },
+          {
+            "id": "F9",
+            "verdict": "insufficient",
+            "reason": "The knee injury does not change the meeting recommendation or constraints stated."
+          },
+          {
+            "id": "F7",
+            "verdict": "insufficient",
+            "reason": "The manager's name is unrelated to suggesting a data team meeting slot."
+          },
+          {
+            "id": "F10",
+            "verdict": "insufficient",
+            "reason": "The user's mother living in Perth is unrelated to the requested meeting slot."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's favourite film does not affect the scheduling suggestion."
+          }
+        ],
+        "admitted": [
+          "F1"
+        ],
+        "disposition": "regenerated",
+        "final": "I suggest **Thursday, 10 September, from 2:00\u20132:30 pm (Sydney time)** for the data team retrospective.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 2.048595166997984,
+          "gap_s": 1.0090682919835672,
+          "retrieval_s": 0.09085208299802616,
+          "admission_s": 2.5143632500548847,
+          "regeneration_s": 2.6081517919665202
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ],
+        "shadow_candidates": [],
+        "shadow_verdicts": [],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "I3",
+        "turn_class": "implicit_need",
+        "turn": "Draft a message asking the owner of the data-retention policy to review the new clause.",
+        "expected": [
+          "F2"
+        ],
+        "draft": "Hi [Name],\n\nCould you please review the new clause in the data-retention policy and confirm whether it accurately reflects the intended requirements? Please share any feedback or suggested changes by [date].\n\nThanks,  \n[Your Name]",
+        "gaps": [
+          "owner of the data-retention policy",
+          "contact method for policy review"
+        ],
+        "candidates": [
+          {
+            "id": "F2",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F7",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F3",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F10",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F2",
+            "verdict": "helpful",
+            "reason": "It supplies the specific owner name to address in the message."
+          },
+          {
+            "id": "F7",
+            "verdict": "insufficient",
+            "reason": "The user's manager is unrelated to asking the policy owner for review."
+          },
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "The ADR repository location does not affect the requested message."
+          },
+          {
+            "id": "F10",
+            "verdict": "potentially_harmful",
+            "reason": "Private family information is unrelated to the request."
+          },
+          {
+            "id": "M1",
+            "verdict": "insufficient",
+            "reason": "A belief about gRPC load balancing is unrelated to this drafting task."
+          },
+          {
+            "id": "J2",
+            "verdict": "insufficient",
+            "reason": "Queue concurrency settings do not affect the requested message."
+          },
+          {
+            "id": "P1",
+            "verdict": "potentially_harmful",
+            "reason": "Personal preference about films is unrelated and unnecessary personalisation."
+          }
+        ],
+        "admitted": [
+          "F2"
+        ],
+        "disposition": "regenerated",
+        "final": "Hi Mei Lin,\n\nCould you please review the new clause in the data-retention policy and let me know whether it aligns with the current requirements? Your feedback would be appreciated.\n\nThanks!",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 2.7456869580200873,
+          "gap_s": 1.5246854579891078,
+          "retrieval_s": 0.026219666993711144,
+          "admission_s": 2.2691411249688827,
+          "regeneration_s": 1.4692829579580575
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ],
+        "shadow_candidates": [],
+        "shadow_verdicts": [],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "I4",
+        "turn_class": "implicit_need",
+        "turn": "Write a one-line note on how internal services communicate for the onboarding page.",
+        "expected": [
+          "F4"
+        ],
+        "draft": "Internal services communicate through authenticated APIs and event-driven messaging over secure, monitored channels.",
+        "gaps": [
+          "tooling and architecture decisions",
+          "infrastructure and environments"
+        ],
+        "candidates": [
+          {
+            "id": "F3",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F6",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F4",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "Repo ADR location does not change the one-line note's wording or recommendation."
+          },
+          {
+            "id": "M2",
+            "verdict": "insufficient",
+            "reason": "Conversation style preference does not materially change the requested note."
+          },
+          {
+            "id": "R2",
+            "verdict": "insufficient",
+            "reason": "kubectl context switching is unrelated to the onboarding-page note."
+          },
+          {
+            "id": "F6",
+            "verdict": "insufficient",
+            "reason": "Staging cluster details are unrelated to how internal services communicate in the note."
+          },
+          {
+            "id": "R1",
+            "verdict": "insufficient",
+            "reason": "General gRPC details add background but do not clearly change the requested one-line note."
+          },
+          {
+            "id": "F4",
+            "verdict": "helpful",
+            "reason": "It changes the note by specifying that internal service calls use gRPC rather than a generic API description."
+          },
+          {
+            "id": "M1",
+            "verdict": "potentially_harmful",
+            "reason": "An unsupported belief about gRPC load balancing risks factual distortion and is unrelated to the request."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "Favourite film is unrelated to the onboarding-page note."
+          }
+        ],
+        "admitted": [
+          "F4"
+        ],
+        "disposition": "regenerated",
+        "final": "Internal services communicate via gRPC for fast, strongly typed, and efficient service-to-service calls.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.396068333007861,
+          "gap_s": 1.3941359579912387,
+          "retrieval_s": 0.09226566698634997,
+          "admission_s": 2.560343249992002,
+          "regeneration_s": 1.3007813330041245
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ],
+        "shadow_candidates": [],
+        "shadow_verdicts": [],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "I5",
+        "turn_class": "implicit_need",
+        "turn": "Can I schedule a maintenance window for Friday afternoon?",
+        "expected": [
+          "F8"
+        ],
+        "draft": "Yes\u2014Friday afternoon should work. Please confirm:\n\n- Exact date and time\n- Time zone\n- Expected duration\n- Systems or services affected\n- Any required notifications\n\nIf you mean this coming Friday, that is **11 September 2026**.",
+        "gaps": [
+          "team's schedule",
+          "team's recurring events",
+          "user's time zone and working hours"
+        ],
+        "candidates": [
+          {
+            "id": "F1",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F10",
+            "score": 0.031,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F7",
+            "score": 0.031,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P2",
+            "score": 0.031,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F9",
+            "score": 0.031,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F4",
+            "score": 0.03,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F1",
+            "verdict": "helpful",
+            "reason": "It supplies the user's time zone, which changes the time-zone detail the answer can state."
+          },
+          {
+            "id": "F10",
+            "verdict": "insufficient",
+            "reason": "The user's mother's location does not affect scheduling a maintenance window."
+          },
+          {
+            "id": "F7",
+            "verdict": "insufficient",
+            "reason": "The manager's name does not change the recommendation or required details for the request."
+          },
+          {
+            "id": "P2",
+            "verdict": "insufficient",
+            "reason": "Monday football is unrelated to a Friday afternoon maintenance window."
+          },
+          {
+            "id": "F9",
+            "verdict": "insufficient",
+            "reason": "The knee injury does not affect the scheduling information requested."
+          },
+          {
+            "id": "F4",
+            "verdict": "insufficient",
+            "reason": "The gRPC team decision is unrelated to scheduling a maintenance window."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "Favourite film is unrelated to the request."
+          }
+        ],
+        "admitted": [
+          "F1"
+        ],
+        "disposition": "regenerated",
+        "final": "Yes\u2014Friday afternoon, 11 September 2026, should work. Please confirm the preferred start time, duration, and Australia/Sydney timezone, and I can help prepare the maintenance window details.",
+        "draft_correct": false,
+        "final_correct": false,
+        "timing": {
+          "draft_s": 2.5919538750313222,
+          "gap_s": 1.0316889159730636,
+          "retrieval_s": 0.09344299999065697,
+          "admission_s": 2.152302249975037,
+          "regeneration_s": 4.733237000007648
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ],
+        "shadow_candidates": [],
+        "shadow_verdicts": [],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "I6",
+        "turn_class": "implicit_need",
+        "turn": "Give me the command to switch kubectl to my staging cluster.",
+        "expected": [
+          "F6"
+        ],
+        "draft": "```bash\nkubectl config use-context staging\n```\n\nIf the context has a different name, list available contexts first:\n\n```bash\nkubectl config get-contexts\n```\n\nThen run `kubectl config use-context <context-name>`.",
+        "gaps": [
+          "staging cluster name",
+          "staging cluster context",
+          "kubeconfig file location"
+        ],
+        "candidates": [
+          {
+            "id": "F6",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R2",
+            "score": 0.032,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F3",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F7",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F10",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F6",
+            "verdict": "helpful",
+            "reason": "It provides the exact staging context name, changing the command to use."
+          },
+          {
+            "id": "R2",
+            "verdict": "redundant",
+            "reason": "It repeats the draft's explanation of what use-context does."
+          },
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "Repository ADR location is unrelated to switching kubectl context."
+          },
+          {
+            "id": "J2",
+            "verdict": "insufficient",
+            "reason": "Queue concurrency settings are unrelated to the kubectl command requested."
+          },
+          {
+            "id": "F7",
+            "verdict": "potentially_harmful",
+            "reason": "The user's manager is private information unrelated to the request."
+          },
+          {
+            "id": "F2",
+            "verdict": "insufficient",
+            "reason": "Document ownership does not affect the kubectl context command."
+          },
+          {
+            "id": "F10",
+            "verdict": "potentially_harmful",
+            "reason": "Family location is private information unrelated to the request."
+          },
+          {
+            "id": "P1",
+            "verdict": "potentially_harmful",
+            "reason": "Personal preference is unrelated and inappropriate to use here."
+          }
+        ],
+        "admitted": [
+          "F6"
+        ],
+        "disposition": "regenerated",
+        "final": "```bash\naws eks update-kubeconfig --name vega-staging --region ap-southeast-2\n```\n\nThis updates your kubeconfig and switches `kubectl` to the `vega-staging` cluster. Verify with:\n\n```bash\nkubectl config current-context\n```",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.93131637503393,
+          "gap_s": 1.3416737079969607,
+          "retrieval_s": 0.10028487496310845,
+          "admission_s": 2.6896832910133526,
+          "regeneration_s": 2.654811582993716
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ],
+        "shadow_candidates": [],
+        "shadow_verdicts": [],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "I7",
+        "turn_class": "implicit_need",
+        "turn": "Which Go base image should the new service's Dockerfile use?",
+        "expected": [
+          "F5"
+        ],
+        "draft": "Use the official `golang:<version>-bookworm` image for building, with a minimal runtime image such as `gcr.io/distroless/static-debian12`:\n\n```dockerfile\nFROM golang:1.24-bookworm AS builder\nWORKDIR /src\n\nCOPY go.mod go.sum ./\nRUN go mod download\nCOPY . .\nRUN CGO_ENABLED=0 go build -trimpath -ldflags=\"-s -w\" -o /app ./cmd/service\n\nFROM gcr.io/distroless/static-debian12:nonroot\nCOPY --from=builder /app /app\nUSER nonroot:nonroot\nENTRYPOINT [\"/app\"]\n```\n\nThis provides predictable builds, good Debian compatibility, and a small, hardened runtime. Pin the Go version (and ideally image digests) rather than using `latest`. Use Alpine only if you specifically need its package ecosystem; otherwise, distroless avoids unnecessary shell and package vulnerabilities.",
+        "gaps": [
+          "tooling and architecture decisions",
+          "runtime and version constraints"
+        ],
+        "candidates": [
+          {
+            "id": "F3",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F5",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "Repository ADR location is unrelated to choosing the Docker base image."
+          },
+          {
+            "id": "F5",
+            "verdict": "helpful",
+            "reason": "It changes the recommended Go image tag from 1.24 to 1.22."
+          },
+          {
+            "id": "M1",
+            "verdict": "insufficient",
+            "reason": "The user's belief about gRPC load balancing does not affect the Docker base image choice."
+          },
+          {
+            "id": "R1",
+            "verdict": "insufficient",
+            "reason": "General gRPC protocol details do not affect the image recommendation."
+          },
+          {
+            "id": "F1",
+            "verdict": "insufficient",
+            "reason": "The user's time zone is irrelevant to selecting a base image."
+          },
+          {
+            "id": "M2",
+            "verdict": "insufficient",
+            "reason": "This preference does not change the concrete image recommendation or constraints."
+          },
+          {
+            "id": "F2",
+            "verdict": "insufficient",
+            "reason": "Document ownership is unrelated to the Dockerfile base image choice."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's favourite film is unrelated to the request."
+          }
+        ],
+        "admitted": [
+          "F5"
+        ],
+        "disposition": "regenerated",
+        "final": "Use a pinned Go 1.22 image, for example:\n\n```dockerfile\nFROM golang:1.22\n```\n\nPrefer pinning an exact patch version, such as `golang:1.22.12`, for reproducible builds. Avoid Go 1.23 or `latest`, because its changed timer semantics are incompatible with the scheduler.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 4.499680624983739,
+          "gap_s": 1.1100894580013119,
+          "retrieval_s": 0.09571416699327528,
+          "admission_s": 2.591411750006955,
+          "regeneration_s": 2.9773726669955067
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ],
+        "shadow_candidates": [],
+        "shadow_verdicts": [],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "I8",
+        "turn_class": "implicit_need",
+        "turn": "Draft a one-line request to my manager to approve a conference trip.",
+        "expected": [
+          "F7"
+        ],
+        "draft": "Could you please approve my trip to attend [Conference Name] in [Location] from [Dates], as it will support my professional development and benefit our team?",
+        "gaps": [
+          "manager's name",
+          "conference name",
+          "trip dates"
+        ],
+        "candidates": [
+          {
+            "id": "F7",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F9",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F10",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F7",
+            "verdict": "helpful",
+            "reason": "It changes who the request should address by naming the manager."
+          },
+          {
+            "id": "F9",
+            "verdict": "insufficient",
+            "reason": "The knee injury is unrelated to drafting a conference approval request."
+          },
+          {
+            "id": "P2",
+            "verdict": "insufficient",
+            "reason": "Monday football has no bearing on this one-line manager request."
+          },
+          {
+            "id": "F10",
+            "verdict": "insufficient",
+            "reason": "The user's mother living in Perth is unrelated to the request."
+          },
+          {
+            "id": "F2",
+            "verdict": "insufficient",
+            "reason": "Ownership of a data-retention policy document does not affect this request."
+          },
+          {
+            "id": "F1",
+            "verdict": "insufficient",
+            "reason": "The working time zone does not change the wording of a generic approval request."
+          },
+          {
+            "id": "M1",
+            "verdict": "insufficient",
+            "reason": "The user's belief about gRPC load balancing is unrelated here."
+          },
+          {
+            "id": "M2",
+            "verdict": "insufficient",
+            "reason": "This preference does not change the content of the one-line request."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's favourite film is unrelated to the request."
+          }
+        ],
+        "admitted": [
+          "F7"
+        ],
+        "disposition": "regenerated",
+        "final": "Hi Farah, could you please approve my conference trip request?",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.5624477500095963,
+          "gap_s": 1.560786249989178,
+          "retrieval_s": 0.092383915965911,
+          "admission_s": 2.5165979999583215,
+          "regeneration_s": 1.421025457966607
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ],
+        "shadow_candidates": [],
+        "shadow_verdicts": [],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O1",
+        "turn_class": "ordinary",
+        "turn": "When should a team choose gRPC over REST?",
+        "expected": [],
+        "draft": "Choose **gRPC over REST** when you control both client and server and need efficient, strongly typed, high-throughput communication\u2014especially between internal services.\n\ngRPC is a good fit when you need:\n\n- **Low latency and small payloads**, using HTTP/2 and Protocol Buffers.\n- **Strict API contracts** with generated client/server code.\n- **Streaming**, including bidirectional streams.\n- **Polyglot microservices**, where consistent code generation helps across languages.\n- **Frequent API evolution**, with Protobuf\u2019s backward-compatibility features.\n\nPrefer **REST** when:\n\n- The API is public or consumed by browsers and varied third parties.\n- Human-readable JSON and easy debugging matter.\n- Simple CRUD operations are sufficient.\n- You need broad tooling, caching, or straightforward HTTP integration.\n\nA common architecture uses **gRPC internally** and exposes a **REST/JSON gateway externally**.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 3.803318833990488,
+          "gap_s": 0.7019300830434076,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ],
+        "shadow_candidates": [
+          {
+            "id": "F4",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R1",
+            "score": 0.032,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M1",
+            "score": 0.032,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "F4",
+            "verdict": "insufficient",
+            "reason": "It is a team-specific past decision that does not change the general recommendation criteria."
+          },
+          {
+            "id": "R1",
+            "verdict": "redundant",
+            "reason": "The draft already states that gRPC uses HTTP/2 and Protocol Buffers."
+          },
+          {
+            "id": "M1",
+            "verdict": "potentially_harmful",
+            "reason": "It is an unverified user belief and using it could reinforce a false premise."
+          },
+          {
+            "id": "J2",
+            "verdict": "insufficient",
+            "reason": "It is unrelated to choosing gRPC over REST."
+          },
+          {
+            "id": "M2",
+            "verdict": "potentially_harmful",
+            "reason": "It encourages uncritical confirmation rather than accurate guidance."
+          },
+          {
+            "id": "R2",
+            "verdict": "insufficient",
+            "reason": "It is unrelated to the question about gRPC versus REST."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "It is unrelated personal information."
+          }
+        ],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O2",
+        "turn_class": "ordinary",
+        "turn": "How do I pin a Go version in go.mod?",
+        "expected": [],
+        "draft": "Use the `go` directive in `go.mod`:\n\n```go\nmodule example.com/myapp\n\ngo 1.22.3\n```\n\nThis declares the Go language/toolchain version your module targets. To update it:\n\n```bash\ngo mod edit -go=1.22.3\n```\n\nFor Go 1.21 and newer, you can also pin the exact toolchain used by the `go` command:\n\n```go\ntoolchain go1.22.3\n```\n\nOr let Go select it automatically:\n\n```bash\ngo get go@1.22.3\n```\n\n`go` sets the module\u2019s minimum language/toolchain requirement, while `toolchain` suggests the exact toolchain version. For strict CI builds, also install and invoke the desired Go version explicitly.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 3.296896125015337,
+          "gap_s": 0.7794472079840489,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ],
+        "shadow_candidates": [
+          {
+            "id": "F5",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F8",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F4",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F7",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F3",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "F5",
+            "verdict": "helpful",
+            "reason": "It changes the recommended pinned Go version and adds a version-specific warning about 1.23 semantics."
+          },
+          {
+            "id": "R1",
+            "verdict": "redundant",
+            "reason": "It is unrelated to pinning a Go version in go.mod."
+          },
+          {
+            "id": "F8",
+            "verdict": "redundant",
+            "reason": "It is unrelated to the user's Go version question."
+          },
+          {
+            "id": "F4",
+            "verdict": "redundant",
+            "reason": "It is unrelated to pinning Go versions."
+          },
+          {
+            "id": "F7",
+            "verdict": "redundant",
+            "reason": "It is unrelated personal information for this request."
+          },
+          {
+            "id": "F3",
+            "verdict": "redundant",
+            "reason": "It concerns repository documentation location, not go.mod version pinning."
+          },
+          {
+            "id": "P1",
+            "verdict": "potentially_harmful",
+            "reason": "It is irrelevant private preference data unrelated to the request."
+          }
+        ],
+        "shadow_admitted": [
+          "F5"
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O3",
+        "turn_class": "ordinary",
+        "turn": "How do I switch kubectl contexts?",
+        "expected": [],
+        "draft": "Use:\n\n```bash\nkubectl config use-context CONTEXT_NAME\n```\n\nList available contexts:\n\n```bash\nkubectl config get-contexts\n```\n\nSee the currently active context:\n\n```bash\nkubectl config current-context\n```\n\nFor example:\n\n```bash\nkubectl config use-context production\n```\n\nTo rename a context:\n\n```bash\nkubectl config rename-context OLD_NAME NEW_NAME\n```",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 1.931612459011376,
+          "gap_s": 0.734537000011187,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ],
+        "shadow_candidates": [
+          {
+            "id": "R2",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F6",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F4",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "R2",
+            "verdict": "redundant",
+            "reason": "It repeats the draft\u2019s core command that use-context switches the active context/cluster."
+          },
+          {
+            "id": "F6",
+            "verdict": "insufficient",
+            "reason": "A specific staging context name is not needed unless the answer should personalise an example, which does not change the recommendation."
+          },
+          {
+            "id": "J2",
+            "verdict": "insufficient",
+            "reason": "It is unrelated to switching kubectl contexts."
+          },
+          {
+            "id": "R1",
+            "verdict": "insufficient",
+            "reason": "It is unrelated to kubectl context switching."
+          },
+          {
+            "id": "F1",
+            "verdict": "insufficient",
+            "reason": "Time zone information does not affect this kubectl command answer."
+          },
+          {
+            "id": "F4",
+            "verdict": "insufficient",
+            "reason": "Internal API design choices are unrelated to kubectl contexts."
+          },
+          {
+            "id": "P1",
+            "verdict": "potentially_harmful",
+            "reason": "Personal preference unrelated to the request should not be used for personalisation here."
+          }
+        ],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O4",
+        "turn_class": "ordinary",
+        "turn": "What is a good format for a sprint demo?",
+        "expected": [],
+        "draft": "Use a **30\u201360 minute, outcome-focused demo** with a clear agenda:\n\n1. **Welcome and objective (2\u20135 min)**  \n   State the sprint goal and what attendees should learn or decide.\n\n2. **Context and progress (5 min)**  \n   Briefly explain what was planned, completed, deferred, or changed.\n\n3. **Live demonstrations (15\u201335 min)**  \n   Show working software through realistic user scenarios, not slides or a task list. Have the product owner or team member explain the value.\n\n4. **Feedback and discussion (10\u201315 min)**  \n   Invite questions, capture feedback, and distinguish decisions from follow-up items.\n\n5. **Wrap-up (2\u20135 min)**  \n   Summarise outcomes, confirm action owners, and preview the next sprint.\n\nKeep it collaborative: invite stakeholders, demonstrate only completed work, avoid excessive technical detail, and record feedback visibly. If something is not working, be transparent and explain the plan to resolve it.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 4.105761332961265,
+          "gap_s": 1.1939142089686356,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ],
+        "shadow_candidates": [
+          {
+            "id": "F8",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F4",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F9",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "F8",
+            "verdict": "insufficient",
+            "reason": "A standing meeting time does not change the recommended demo format."
+          },
+          {
+            "id": "F4",
+            "verdict": "insufficient",
+            "reason": "The team's internal API choice is unrelated to formatting a sprint demo."
+          },
+          {
+            "id": "P1",
+            "verdict": "potentially_harmful",
+            "reason": "The user's favourite film is irrelevant personal information for this request."
+          },
+          {
+            "id": "F9",
+            "verdict": "potentially_harmful",
+            "reason": "The user's medical information is unrelated and should not be used here."
+          },
+          {
+            "id": "R1",
+            "verdict": "insufficient",
+            "reason": "General gRPC background does not affect the suggested sprint demo structure."
+          }
+        ],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O5",
+        "turn_class": "ordinary",
+        "turn": "How are worker concurrency limits usually chosen?",
+        "expected": [],
+        "draft": "Choose the limit from the bottleneck, then validate it with load testing.\n\n- **CPU-bound work:** start near the number of CPU cores, often `cores` to `cores + 1`. More workers usually add context switching.\n- **I/O-bound work:** use more workers than cores, but cap them based on downstream limits such as database connections, API rate limits, memory, and file descriptors.\n- **Memory-heavy work:** calculate `available_memory / memory_per_worker`, with safety margin.\n- **Queues and services:** use throughput and latency targets. Little\u2019s Law is useful:  \n  `concurrency \u2248 throughput \u00d7 average latency`.\n- **External dependencies:** the safest limit is often the smallest capacity among the database, APIs, disk, and your own process.\n- **Practical approach:** start conservatively, load-test realistic traffic, monitor CPU, memory, queue depth, latency, errors, and saturation, then tune.\n\nAvoid choosing a large fixed number \u201cjust in case\u201d; excessive concurrency commonly increases latency and causes cascading failures. Where possible, use bounded queues, timeouts, backpressure, and adaptive limits.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 4.191890250018332,
+          "gap_s": 0.6623598340083845,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ],
+        "shadow_candidates": [
+          {
+            "id": "J1",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J2",
+            "score": 0.032,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F7",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "J1",
+            "verdict": "insufficient",
+            "reason": "A specific internal default does not change the general guidance on how limits are usually chosen."
+          },
+          {
+            "id": "J2",
+            "verdict": "insufficient",
+            "reason": "A service-specific exception is unrelated to the general question about usual selection methods."
+          },
+          {
+            "id": "M1",
+            "verdict": "insufficient",
+            "reason": "The user's belief about gRPC load balancing is unrelated to choosing worker concurrency limits."
+          },
+          {
+            "id": "F2",
+            "verdict": "insufficient",
+            "reason": "Ownership of a policy document is unrelated to the request."
+          },
+          {
+            "id": "M2",
+            "verdict": "potentially_harmful",
+            "reason": "Confirming assumptions rather than questioning them risks factual distortion and suppressing needed caveats."
+          },
+          {
+            "id": "F1",
+            "verdict": "insufficient",
+            "reason": "The user's time zone does not affect this answer."
+          },
+          {
+            "id": "F7",
+            "verdict": "insufficient",
+            "reason": "The user's manager is unrelated to the request."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's favourite film is unrelated to the request."
+          }
+        ],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O6",
+        "turn_class": "ordinary",
+        "turn": "How do I convert AEST to UTC?",
+        "expected": [],
+        "draft": "Subtract **10 hours** from AEST to get UTC.\n\n- **AEST (Australian Eastern Standard Time) = UTC+10**\n- Example: **3:00 pm AEST \u2192 5:00 am UTC**\n\nNote: During daylight saving, eastern Australia uses **AEDT (UTC+11)** instead, so subtract **11 hours**.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 3.5526956249959767,
+          "gap_s": 0.9597947919974104,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          true
+        ],
+        "shadow_candidates": [
+          {
+            "id": "F8",
+            "score": 0.032,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F6",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F4",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "F8",
+            "verdict": "insufficient",
+            "reason": "A sprint demo time in AEST does not change the generic conversion answer."
+          },
+          {
+            "id": "F1",
+            "verdict": "insufficient",
+            "reason": "The user's working time zone being Australia/Sydney adds no needed change to the AEST-to-UTC conversion."
+          },
+          {
+            "id": "R2",
+            "verdict": "redundant",
+            "reason": "This kubectl fact is unrelated to the time-zone question."
+          },
+          {
+            "id": "F6",
+            "verdict": "redundant",
+            "reason": "The staging cluster details are unrelated to converting AEST to UTC."
+          },
+          {
+            "id": "F4",
+            "verdict": "redundant",
+            "reason": "The gRPC decision is unrelated to the user's question."
+          },
+          {
+            "id": "J2",
+            "verdict": "redundant",
+            "reason": "Queue concurrency settings are unrelated to time-zone conversion."
+          },
+          {
+            "id": "P1",
+            "verdict": "potentially_harmful",
+            "reason": "The user's favourite film is private and unrelated to the request."
+          }
+        ],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O7",
+        "turn_class": "ordinary",
+        "turn": "What should an architecture decision record contain?",
+        "expected": [],
+        "draft": "An architecture decision record (ADR) should briefly capture:\n\n1. **Title** \u2013 A concise description of the decision.\n2. **Status** \u2013 For example: proposed, accepted, deprecated, or superseded.\n3. **Context** \u2013 The problem, constraints, requirements, and relevant background.\n4. **Decision** \u2013 The architectural choice that was made.\n5. **Alternatives considered** \u2013 Other options and why they were rejected.\n6. **Consequences** \u2013 The expected benefits, trade-offs, risks, and impacts.\n7. **Date and authors** \u2013 When it was made and by whom.\n8. **Links or references** \u2013 Related requirements, designs, issues, or ADRs.\n\nA useful ADR should explain **why** the decision was made, not just document **what** was chosen. Keep it focused on one significant decision and update its status if the decision changes.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 2.9880181669723243,
+          "gap_s": 0.7231412080000155,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ],
+        "shadow_candidates": [
+          {
+            "id": "F3",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F4",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "A repository path for ADRs does not change what an ADR should contain."
+          },
+          {
+            "id": "F2",
+            "verdict": "insufficient",
+            "reason": "Ownership of a specific policy document is unrelated to the requested ADR contents."
+          },
+          {
+            "id": "J2",
+            "verdict": "insufficient",
+            "reason": "A service concurrency setting is unrelated to the requested ADR contents."
+          },
+          {
+            "id": "F4",
+            "verdict": "insufficient",
+            "reason": "An example architectural decision does not change the general recommended ADR sections."
+          },
+          {
+            "id": "R1",
+            "verdict": "insufficient",
+            "reason": "Protocol details about gRPC are unrelated to the requested ADR contents."
+          },
+          {
+            "id": "M2",
+            "verdict": "redundant",
+            "reason": "User interaction style preferences are already covered by the applied preferences."
+          },
+          {
+            "id": "P1",
+            "verdict": "potentially_harmful",
+            "reason": "A favourite film is private and unrelated to the request."
+          }
+        ],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O8",
+        "turn_class": "ordinary",
+        "turn": "How should I prepare for a conversation with my manager about a conference trip?",
+        "expected": [],
+        "draft": "Prepare a concise business case: explain why the conference benefits your team and organisation, then support it with practical details.\n\nBring:\n\n- **Purpose:** What you want to learn, who you want to meet, and which sessions matter.\n- **Business value:** How it supports current projects, skills, networking, customers, or industry awareness.\n- **Costs:** Registration, travel, accommodation, meals, and estimated time away.\n- **Return on investment:** Specific outcomes, such as a post-conference briefing, new contacts, ideas to implement, or knowledge shared with colleagues.\n- **Logistics:** Dates, workload coverage, deadlines, and who can handle urgent matters.\n- **Alternatives:** Virtual attendance, a cheaper option, or attending fewer days.\n- **Questions:** Ask about budget, approval requirements, and priorities.\n\nFrame it as a collaborative discussion rather than a demand. For example: \u201cI\u2019d like to discuss attending this conference because it aligns with our work on X. I\u2019ve prepared the costs, expected benefits, and a plan to cover my responsibilities.\u201d",
+        "gaps": [
+          "people and their roles",
+          "schedules and recurring events",
+          "time zone and working hours"
+        ],
+        "candidates": [
+          {
+            "id": "F1",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F8",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F9",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F7",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F10",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F1",
+            "verdict": "insufficient",
+            "reason": "The user's time zone does not change the preparation advice for a manager conversation."
+          },
+          {
+            "id": "M2",
+            "verdict": "redundant",
+            "reason": "Applied preferences already govern response style, and this does not change the substance of the advice."
+          },
+          {
+            "id": "F8",
+            "verdict": "insufficient",
+            "reason": "A recurring sprint demo could matter only if scheduling specifics were requested, which they were not."
+          },
+          {
+            "id": "P2",
+            "verdict": "insufficient",
+            "reason": "The user's football schedule is unrelated to preparing for a conference-trip discussion."
+          },
+          {
+            "id": "F9",
+            "verdict": "insufficient",
+            "reason": "The knee injury is not relevant unless travel-health constraints are part of the request."
+          },
+          {
+            "id": "F7",
+            "verdict": "helpful",
+            "reason": "Knowing the manager's name changes how the answer can address and personalise the conversation guidance."
+          },
+          {
+            "id": "F10",
+            "verdict": "insufficient",
+            "reason": "The user's mother's location is unrelated to this workplace conversation."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's favourite film has no bearing on this advice."
+          }
+        ],
+        "admitted": [
+          "F7"
+        ],
+        "disposition": "regenerated",
+        "final": "Prepare a concise business case and a clear request before speaking with Farah.\n\n- **Define the purpose:** Explain why the conference is relevant to your role and current priorities.\n- **Highlight benefits:** Identify specific skills, contacts, insights, or outcomes you\u2019ll bring back to the team.\n- **Prepare costs:** Include registration, travel, accommodation, meals, and time away from work.\n- **Address logistics:** Suggest dates, coverage for your responsibilities, and how you\u2019ll manage urgent work.\n- **Offer alternatives:** Mention virtual attendance, early-bird pricing, or a shorter trip if budget is a concern.\n- **Propose follow-up:** Offer to share a summary, presentation, or actionable recommendations afterwards.\n- **Make a direct ask:** For example, \u201cCould we approve attendance and a budget of $X?\u201d\n\nKeep the conversation focused on organisational value rather than personal interest, and be ready to answer questions about return on investment.",
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 4.093550416990183,
+          "gap_s": 0.8587443750002421,
+          "retrieval_s": 0.020419167005456984,
+          "admission_s": 2.682724624988623,
+          "regeneration_s": 3.823866958031431
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          true,
+          true
+        ],
+        "shadow_candidates": [],
+        "shadow_verdicts": [],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O9",
+        "turn_class": "ordinary",
+        "turn": "What is a data-retention policy?",
+        "expected": [],
+        "draft": "A **data-retention policy** is a set of rules explaining:\n\n- **What data** an organisation collects and stores\n- **How long** it keeps each type of data\n- **Why** the data is retained\n- **Where and how** it is stored and protected\n- **When and how** it is securely deleted or anonymised\n- **Who** can access it\n\nThe recommendation is to make retention periods as short as practical while meeting legal, operational, and business requirements. This reduces privacy, security, storage, and compliance risks.\n\nFor example, a policy might retain invoices for seven years to meet tax obligations, customer-support records for two years, and delete unused account data after twelve months.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 2.4568970410036854,
+          "gap_s": 0.8040615830104798,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ],
+        "shadow_candidates": [
+          {
+            "id": "F2",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F3",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F7",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F4",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "F2",
+            "verdict": "insufficient",
+            "reason": "It names a document owner but does not change the definition or guidance requested."
+          },
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "Repository ADR location is unrelated to explaining a data-retention policy."
+          },
+          {
+            "id": "R1",
+            "verdict": "insufficient",
+            "reason": "gRPC transport details are unrelated to the user's question."
+          },
+          {
+            "id": "J2",
+            "verdict": "insufficient",
+            "reason": "Job queue concurrency settings are unrelated to the user's question."
+          },
+          {
+            "id": "M1",
+            "verdict": "potentially_harmful",
+            "reason": "A false user belief about gRPC is unrelated and should not shape this answer."
+          },
+          {
+            "id": "F7",
+            "verdict": "potentially_harmful",
+            "reason": "The user's manager is private information unrelated to the request."
+          },
+          {
+            "id": "M2",
+            "verdict": "potentially_harmful",
+            "reason": "A preference to confirm assumptions could bias accuracy and is irrelevant here."
+          },
+          {
+            "id": "F4",
+            "verdict": "insufficient",
+            "reason": "A past team choice about gRPC does not affect this definition answer."
+          },
+          {
+            "id": "P1",
+            "verdict": "potentially_harmful",
+            "reason": "The user's favourite film is private and unrelated to the request."
+          }
+        ],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O10",
+        "turn_class": "ordinary",
+        "turn": "How do I write a maintenance-window announcement?",
+        "expected": [],
+        "draft": "Use a clear, concise announcement that states **what is happening, when, expected impact, and where to get updates**.\n\n**Template:**\n\n**Subject:** Scheduled maintenance: [Service/system] \u2014 [Date and time]\n\nWe\u2019ll perform scheduled maintenance on **[service/system]** from **[start time] to [end time] [timezone]** on **[date]**.\n\nDuring this window, you may experience **[downtime/degraded performance/no impact expected]**. The maintenance is required to **[brief reason]**.\n\n**Expected impact:** [Describe affected users, features, or services]  \n**Estimated duration:** [Duration]  \n**Updates:** [Status page, support channel, or contact details]\n\nWe\u2019ll confirm when maintenance is complete. Thank you for your patience.\n\n**Example:**\n\n**Subject:** Scheduled maintenance: Customer Portal \u2014 14 September\n\nThe Customer Portal will undergo maintenance from **10:00 pm to 11:30 pm AEST on 14 September**. Users may experience intermittent outages while we deploy security and performance improvements.\n\nWe\u2019ll post updates on our status page and confirm once the work is complete.",
+        "gaps": [
+          "team communication preferences",
+          "people and their roles",
+          "schedules and recurring events"
+        ],
+        "candidates": [
+          {
+            "id": "F4",
+            "score": 0.032,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F8",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F9",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F7",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F10",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F4",
+            "verdict": "insufficient",
+            "reason": "The internal gRPC choice does not affect how to write a generic maintenance-window announcement."
+          },
+          {
+            "id": "M2",
+            "verdict": "redundant",
+            "reason": "The draft already gives a direct recommendation without challenging the user\u2019s premise."
+          },
+          {
+            "id": "F8",
+            "verdict": "insufficient",
+            "reason": "Sprint demo timing is unrelated unless the user asked to schedule the maintenance window."
+          },
+          {
+            "id": "P2",
+            "verdict": "potentially_harmful",
+            "reason": "The user\u2019s football schedule is private and unrelated to drafting the announcement."
+          },
+          {
+            "id": "F9",
+            "verdict": "potentially_harmful",
+            "reason": "The user\u2019s knee injury is sensitive personal information unrelated to the request."
+          },
+          {
+            "id": "F7",
+            "verdict": "potentially_harmful",
+            "reason": "The manager\u2019s name is private workplace information not needed for this generic writing help."
+          },
+          {
+            "id": "F10",
+            "verdict": "potentially_harmful",
+            "reason": "The mother\u2019s location is private personal information unrelated to the request."
+          },
+          {
+            "id": "P1",
+            "verdict": "potentially_harmful",
+            "reason": "The user\u2019s favourite film is private and irrelevant to writing the announcement."
+          }
+        ],
+        "admitted": [],
+        "disposition": "baseline_empty_admission",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 3.449518541980069,
+          "gap_s": 1.081239499966614,
+          "retrieval_s": 0.10689254198223352,
+          "admission_s": 2.559573000005912,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true,
+          false,
+          true
+        ],
+        "shadow_candidates": [],
+        "shadow_verdicts": [],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O11",
+        "turn_class": "ordinary",
+        "turn": "What is the difference between a timer and a ticker in Go?",
+        "expected": [],
+        "draft": "Use a **timer** for a one-off event; use a **ticker** for repeated events.\n\n- **`time.Timer`** sends a value on its channel once, after a specified duration.\n\n```go\ntimer := time.NewTimer(2 * time.Second)\n<-timer.C // runs once after 2 seconds\n```\n\n- **`time.Ticker`** sends values repeatedly at fixed intervals until stopped.\n\n```go\nticker := time.NewTicker(1 * time.Second)\ndefer ticker.Stop()\n\nfor range ticker.C {\n    // runs every second\n}\n```\n\nKey points:\n\n- A timer can be stopped or reset with `Stop` and `Reset`.\n- A ticker should generally be stopped with `Stop` to release resources.\n- `time.After` is a convenient one-off timer when you do not need to stop or reset it.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 5.04655708395876,
+          "gap_s": 0.8325567080173641,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ],
+        "shadow_candidates": [
+          {
+            "id": "F5",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F8",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F3",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "F5",
+            "verdict": "helpful",
+            "reason": "Go 1.22 pinning means the answer should warn that timer semantics differ in 1.23 and later."
+          },
+          {
+            "id": "F1",
+            "verdict": "redundant",
+            "reason": "The user's time zone does not affect a conceptual question about Go timers and tickers."
+          },
+          {
+            "id": "R1",
+            "verdict": "redundant",
+            "reason": "gRPC details are unrelated to the question."
+          },
+          {
+            "id": "F8",
+            "verdict": "redundant",
+            "reason": "Sprint demo timing is unrelated to the question."
+          },
+          {
+            "id": "M2",
+            "verdict": "redundant",
+            "reason": "This preference does not change the technical content of the answer."
+          },
+          {
+            "id": "P2",
+            "verdict": "redundant",
+            "reason": "The user's football schedule is unrelated to the question."
+          },
+          {
+            "id": "F3",
+            "verdict": "redundant",
+            "reason": "ADR location is unrelated to the question."
+          },
+          {
+            "id": "P1",
+            "verdict": "redundant",
+            "reason": "Favourite film is unrelated to the question."
+          }
+        ],
+        "shadow_admitted": [
+          "F5"
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O12",
+        "turn_class": "ordinary",
+        "turn": "Explain HTTP/2 multiplexing.",
+        "expected": [],
+        "draft": "**HTTP/2 multiplexing lets many requests and responses share one TCP connection simultaneously.**\n\nIn HTTP/1.1, requests often queued behind one another, or browsers opened several connections to work around this. HTTP/2 instead uses:\n\n- **Streams:** Each request/response exchange gets its own independent stream.\n- **Frames:** Streams are split into small binary frames.\n- **Interleaving:** Frames from different streams can be mixed on the same connection.\n- **Stream IDs:** Frames are reassembled into their correct responses.\n- **Header compression (HPACK):** Repeated headers consume less bandwidth.\n\nFor example, a browser can request HTML, CSS, JavaScript, and images over one connection, with data for each arriving interleaved rather than waiting in a queue.\n\nThis reduces connection overhead and improves page-load performance. However, because HTTP/2 commonly uses one TCP connection, packet loss can still temporarily affect all streams\u2014an issue HTTP/3 addresses using QUIC.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 3.714481959003024,
+          "gap_s": 0.9905920840101317,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ],
+        "shadow_candidates": [
+          {
+            "id": "R1",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F6",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F3",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "R1",
+            "verdict": "insufficient",
+            "reason": "It is related context but does not change the explanation requested."
+          },
+          {
+            "id": "J2",
+            "verdict": "redundant",
+            "reason": "It is unrelated to HTTP/2 multiplexing."
+          },
+          {
+            "id": "F6",
+            "verdict": "redundant",
+            "reason": "It is unrelated infrastructure detail."
+          },
+          {
+            "id": "M1",
+            "verdict": "potentially_harmful",
+            "reason": "It is an unverified user belief unrelated to the request and could distort the answer."
+          },
+          {
+            "id": "F3",
+            "verdict": "redundant",
+            "reason": "It is unrelated repository information."
+          },
+          {
+            "id": "F1",
+            "verdict": "redundant",
+            "reason": "Time zone does not affect this conceptual explanation."
+          },
+          {
+            "id": "P1",
+            "verdict": "redundant",
+            "reason": "Personal preference unrelated to the request should not be used."
+          }
+        ],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O13",
+        "turn_class": "ordinary",
+        "turn": "How should a retrospective be structured?",
+        "expected": [],
+        "draft": "Use a simple, psychologically safe structure:\n\n1. **Set the stage**  \n   State the purpose, timeframe, ground rules, and desired outcome. Encourage openness and blame-free discussion.\n\n2. **Gather data**  \n   Ask what happened, using facts and observations. Useful prompts:\n   - What went well?\n   - What didn\u2019t go well?\n   - What surprised us?\n   - What did we learn?\n\n3. **Generate insights**  \n   Identify patterns, causes, dependencies, and recurring issues. Focus on systems and processes rather than individuals.\n\n4. **Choose improvements**  \n   Prioritise one to three actionable changes. Each should have an owner, a due date, and a clear success measure.\n\n5. **Close**  \n   Summarise decisions, confirm follow-up, and invite feedback on the retrospective itself.\n\nA typical 60-minute session might allocate 5 minutes to set-up, 15 to data gathering, 20 to discussion, 15 to actions, and 5 to closing. Revisit the previous actions at the start of the next retrospective.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 3.697633332980331,
+          "gap_s": 0.8354817500221543,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ],
+        "shadow_candidates": [
+          {
+            "id": "F9",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F3",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "F9",
+            "verdict": "insufficient",
+            "reason": "The user's knee injury is unrelated to how to structure a retrospective."
+          },
+          {
+            "id": "F2",
+            "verdict": "insufficient",
+            "reason": "Ownership of a data-retention document does not affect a generic retrospective structure answer."
+          },
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "ADR repository location is unrelated to the requested retrospective structure."
+          },
+          {
+            "id": "M1",
+            "verdict": "insufficient",
+            "reason": "The user's belief about gRPC load balancing is unrelated to this request."
+          },
+          {
+            "id": "M2",
+            "verdict": "potentially_harmful",
+            "reason": "Confirming assumptions rather than questioning them is a risky behavioural preference and irrelevant here."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's favourite film is unrelated to the request."
+          }
+        ],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O14",
+        "turn_class": "ordinary",
+        "turn": "What is a canary release?",
+        "expected": [],
+        "draft": "A **canary release** is a deployment strategy where a new software version is released to a small subset of users or servers first, before rolling it out widely.\n\nThis lets teams:\n\n- Detect bugs or performance problems early\n- Monitor real-world behaviour and metrics\n- Limit the impact if something goes wrong\n- Gradually increase the rollout if the release is stable\n\nFor example, a company might deploy version 2.0 to 5% of users, monitor it, then expand to 25%, 50%, and finally 100%.\n\nThe name comes from the historical practice of taking canaries into coal mines as an early warning of poisonous gases.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 2.7042197919799946,
+          "gap_s": 0.820746167039033,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ],
+        "shadow_candidates": [
+          {
+            "id": "F9",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "F9",
+            "verdict": "insufficient",
+            "reason": "The user\u2019s knee injury is unrelated to explaining a canary release."
+          },
+          {
+            "id": "J2",
+            "verdict": "insufficient",
+            "reason": "A specific ingest-service concurrency setting does not change the general definition of a canary release."
+          },
+          {
+            "id": "M1",
+            "verdict": "insufficient",
+            "reason": "The user\u2019s belief about gRPC load balancing is unrelated to answering this definition question."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user\u2019s favourite film is unrelated to the request."
+          }
+        ],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O15",
+        "turn_class": "ordinary",
+        "turn": "How do I write a good title for an architecture decision record?",
+        "expected": [],
+        "draft": "Use a short, specific title that states the architectural decision\u2014not the discussion or problem.\n\n**Recommended format:**\n\n> **Use/Adopt/Choose/Replace [technology, pattern, or approach] for [scope or purpose]**\n\n**Good examples:**\n- **Use PostgreSQL for transactional data**\n- **Adopt event-driven integration between services**\n- **Run workloads on managed Kubernetes**\n- **Use OAuth 2.0 for API authentication**\n- **Store images in object storage rather than the database**\n\n**Tips:**\n- Start with an action or decision: *Use*, *Adopt*, *Choose*, *Keep*, *Replace*.\n- Be specific enough to distinguish it from other decisions.\n- Include the scope when useful.\n- Avoid vague titles such as *Database decision*, *Architecture discussion*, or *Technology evaluation*.\n- Don\u2019t include the rationale or outcome in the title; put those in the ADR body.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 3.1364445419749245,
+          "gap_s": 0.844437540974468,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ],
+        "shadow_candidates": [
+          {
+            "id": "F3",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F4",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "ADR storage location is unrelated to how to title an ADR."
+          },
+          {
+            "id": "F2",
+            "verdict": "insufficient",
+            "reason": "Document ownership does not affect the guidance for writing ADR titles."
+          },
+          {
+            "id": "M2",
+            "verdict": "redundant",
+            "reason": "Applied preferences already govern response style and this does not change the content."
+          },
+          {
+            "id": "R2",
+            "verdict": "insufficient",
+            "reason": "kubectl context switching is unrelated to ADR title writing."
+          },
+          {
+            "id": "F4",
+            "verdict": "insufficient",
+            "reason": "A past architecture choice could be an example but does not change the title advice."
+          },
+          {
+            "id": "P1",
+            "verdict": "potentially_harmful",
+            "reason": "Personal preference about films is irrelevant and risks inappropriate personalisation."
+          }
+        ],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O16",
+        "turn_class": "ordinary",
+        "turn": "What are common causes of flaky tests?",
+        "expected": [],
+        "draft": "Treat flaky tests as defects: identify and remove nondeterminism rather than retrying them.\n\nCommon causes include:\n\n- **Timing and race conditions** \u2014 async work, sleeps, timeouts, or thread scheduling.\n- **Shared state** \u2014 tests affecting each other through databases, files, environment variables, or global state.\n- **Uncontrolled external dependencies** \u2014 networks, third-party APIs, cloud services, or unstable services.\n- **Randomness** \u2014 unseeded random data or edge cases that occur unpredictably.\n- **Time and time zones** \u2014 reliance on the current clock, daylight saving, or boundary dates.\n- **Resource limits** \u2014 CPU, memory, disk space, ports, or test parallelism.\n- **Ordering assumptions** \u2014 tests or collections behaving differently depending on execution order.\n- **Environment differences** \u2014 operating systems, locales, dependency versions, or CI configuration.\n- **Poor cleanup** \u2014 temporary files, processes, database records, or mocks left behind.\n- **Brittle assertions** \u2014 checking unstable values, exact formatting, or implementation details.\n\nUseful first steps are to capture logs and seeds, rerun tests in isolation and repeatedly, disable parallelism temporarily, and make dependencies and timing deterministic.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 4.773341500025708,
+          "gap_s": 1.0616352079669014,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ],
+        "shadow_candidates": [
+          {
+            "id": "F8",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "F8",
+            "verdict": "insufficient",
+            "reason": "Sprint demo timing is unrelated to the causes of flaky tests."
+          },
+          {
+            "id": "M1",
+            "verdict": "potentially_harmful",
+            "reason": "This is an unrelated user belief and could distort a general answer about flaky tests."
+          },
+          {
+            "id": "M2",
+            "verdict": "potentially_harmful",
+            "reason": "It conflicts with safe helpful behaviour and is unrelated to this technical explanation."
+          },
+          {
+            "id": "J1",
+            "verdict": "insufficient",
+            "reason": "Specific job queue concurrency is unrelated to the general causes of flaky tests asked here."
+          },
+          {
+            "id": "J2",
+            "verdict": "insufficient",
+            "reason": "A service-specific concurrency exception does not change the general answer about flaky tests."
+          },
+          {
+            "id": "R2",
+            "verdict": "insufficient",
+            "reason": "kubectl context switching is unrelated to the user's question about flaky tests."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's favourite film is unrelated to the requested explanation."
+          }
+        ],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O17",
+        "turn_class": "ordinary",
+        "turn": "How do I set up a pre-commit hook that runs gofmt?",
+        "expected": [],
+        "draft": "**Recommended:** create a `pre-commit` hook that checks staged Go files with `gofmt` and rejects unformatted code.\n\nCreate `.git/hooks/pre-commit`:\n\n```sh\n#!/bin/sh\n\nfiles=$(git diff --cached --name-only --diff-filter=ACM | grep '\\.go$' || true)\n\n[ -z \"$files\" ] && exit 0\n\nunformatted=$(gofmt -l $files)\n\nif [ -n \"$unformatted\" ]; then\n    echo \"These Go files are not formatted:\"\n    echo \"$unformatted\"\n    echo \"Run: gofmt -w <files>\"\n    exit 1\nfi\n```\n\nMake it executable:\n\n```sh\nchmod +x .git/hooks/pre-commit\n```\n\nNow commits containing unformatted Go files will fail until you run:\n\n```sh\ngofmt -w .\ngit add .\n```\n\nFor a repository-wide, shareable setup, consider using a tool such as `pre-commit` or committing a hook-management configuration.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 7.291012250003405,
+          "gap_s": 0.9095270420075394,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ],
+        "shadow_candidates": [
+          {
+            "id": "F6",
+            "score": 0.029,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F4",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F7",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F5",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "F6",
+            "verdict": "redundant",
+            "reason": "The Kubernetes staging cluster details are unrelated to setting up a gofmt pre-commit hook."
+          },
+          {
+            "id": "R1",
+            "verdict": "redundant",
+            "reason": "gRPC protocol details are unrelated to the requested Git hook setup."
+          },
+          {
+            "id": "F4",
+            "verdict": "redundant",
+            "reason": "The team's internal API choice does not affect a gofmt pre-commit hook."
+          },
+          {
+            "id": "F7",
+            "verdict": "redundant",
+            "reason": "The user's manager's name is unrelated to the hook configuration."
+          },
+          {
+            "id": "F5",
+            "verdict": "insufficient",
+            "reason": "The pinned Go version does not change the hook command or setup for running gofmt."
+          },
+          {
+            "id": "R2",
+            "verdict": "redundant",
+            "reason": "kubectl context switching is unrelated to Git hooks or gofmt."
+          },
+          {
+            "id": "M1",
+            "verdict": "redundant",
+            "reason": "The user's belief about gRPC load balancing is unrelated to the current request."
+          },
+          {
+            "id": "P1",
+            "verdict": "potentially_harmful",
+            "reason": "The user's favourite film is private information unrelated to the request."
+          }
+        ],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O18",
+        "turn_class": "ordinary",
+        "turn": "What are protocol buffers?",
+        "expected": [],
+        "draft": "Protocol Buffers (Protobuf) are a language-neutral, platform-neutral way to **serialise structured data**\u2014convert data into a compact binary format for storage or communication, then decode it later.\n\nYou define a message schema in a `.proto` file:\n\n```proto\nmessage User {\n  string name = 1;\n  int32 age = 2;\n}\n```\n\nA Protobuf compiler generates code for languages such as Rust, Go, Java, and Python. Protobuf is commonly used for:\n\n- Communication between services, especially with gRPC\n- Persisting structured data\n- Efficient network protocols\n\nCompared with JSON, Protobuf is typically **smaller and faster**, but it is not human-readable without decoding. Its numbered fields support backward- and forward-compatible schema evolution when managed carefully.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 2.6470017500105314,
+          "gap_s": 0.9149374170228839,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ],
+        "shadow_candidates": [
+          {
+            "id": "R1",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F4",
+            "score": 0.031,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F3",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "R1",
+            "verdict": "redundant",
+            "reason": "The draft already mentions Protobuf is commonly used with gRPC, so this adds no needed change."
+          },
+          {
+            "id": "F4",
+            "verdict": "insufficient",
+            "reason": "An internal team choice about gRPC versus REST does not change the explanation of what protocol buffers are."
+          },
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "ADR repository location is unrelated to defining protocol buffers for this question."
+          },
+          {
+            "id": "J1",
+            "verdict": "insufficient",
+            "reason": "Job queue concurrency is unrelated to the user's question about protocol buffers."
+          },
+          {
+            "id": "F2",
+            "verdict": "insufficient",
+            "reason": "Document ownership for data retention is unrelated to explaining protocol buffers."
+          },
+          {
+            "id": "J2",
+            "verdict": "insufficient",
+            "reason": "Ingest service concurrency is unrelated to protocol buffers."
+          },
+          {
+            "id": "M1",
+            "verdict": "potentially_harmful",
+            "reason": "The user's unrelated belief about gRPC load balancing should not shape this answer and risks distortion."
+          },
+          {
+            "id": "M2",
+            "verdict": "potentially_harmful",
+            "reason": "A preference to confirm assumptions could encourage misleading agreement and should not be used."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's favourite film is irrelevant to the request."
+          }
+        ],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O19",
+        "turn_class": "ordinary",
+        "turn": "How should Kubernetes namespaces be named?",
+        "expected": [],
+        "draft": "Use short, lowercase DNS-compatible names that reflect a stable ownership or purpose boundary.\n\n**Rules:**\n- Lowercase letters, numbers, and hyphens only\n- Start and end with a letter or number\n- Maximum 63 characters\n- Avoid underscores, dots, slashes, and uppercase letters\n- Don\u2019t use Kubernetes system namespaces such as `default`, `kube-system`, `kube-public`, or `kube-node-lease`\n\n**Good examples:**\n- `payments`\n- `team-analytics`\n- `platform-staging`\n- `customer-a-prod`\n\nChoose a consistent convention, such as:\n\n```text\n<team-or-domain>-<environment>\n```\n\nFor example: `orders-dev`, `orders-prod`.\n\nKeep names stable: namespaces are useful for access control, quotas, policies, and resource organisation, so avoid embedding details likely to change, such as ticket numbers or temporary versions.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 5.1870839999755844,
+          "gap_s": 0.6695897909812629,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ],
+        "shadow_candidates": [
+          {
+            "id": "F6",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F3",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "F6",
+            "verdict": "insufficient",
+            "reason": "Their cluster name and region do not change general namespace naming guidance."
+          },
+          {
+            "id": "R2",
+            "verdict": "insufficient",
+            "reason": "kubectl context switching is unrelated to naming namespaces."
+          },
+          {
+            "id": "R1",
+            "verdict": "insufficient",
+            "reason": "gRPC details are unrelated to Kubernetes namespace naming."
+          },
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "ADR repository location is unrelated to the naming recommendation."
+          },
+          {
+            "id": "F2",
+            "verdict": "insufficient",
+            "reason": "Document ownership does not affect namespace naming advice."
+          },
+          {
+            "id": "M1",
+            "verdict": "insufficient",
+            "reason": "The user's belief about gRPC load balancing is unrelated here."
+          },
+          {
+            "id": "P1",
+            "verdict": "potentially_harmful",
+            "reason": "Personal preference unrelated to the request should not be used for personalisation."
+          }
+        ],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O20",
+        "turn_class": "ordinary",
+        "turn": "What is the difference between staging and pre-production environments?",
+        "expected": [],
+        "draft": "**Staging** is typically the final testing environment before release, while **pre-production** is a broader term for any environment that closely mirrors production before deployment.\n\n- **Staging:** Used for final integration, regression, acceptance, and release-candidate testing. It should closely match production in configuration, infrastructure, and data patterns.\n- **Pre-production:** Often refers to staging, but can also include several environments such as QA, UAT, performance testing, and staging.\n\nIn some organisations, the terms are interchangeable. In others, the flow is:\n\n**Development \u2192 QA/Test \u2192 UAT \u2192 Staging \u2192 Production**\n\nThe key distinction is that *staging* usually means the last production-like checkpoint, whereas *pre-production* means the general category of environments before production.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 2.824255916988477,
+          "gap_s": 0.7745579999755137,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false,
+          false,
+          false
+        ],
+        "shadow_candidates": [
+          {
+            "id": "F6",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F5",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F10",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "F6",
+            "verdict": "insufficient",
+            "reason": "It is specific to the user's infrastructure and does not change the general explanation requested."
+          },
+          {
+            "id": "R2",
+            "verdict": "redundant",
+            "reason": "A kubectl context command is unrelated to defining staging versus pre-production."
+          },
+          {
+            "id": "M2",
+            "verdict": "insufficient",
+            "reason": "A conversational preference does not change the substance of the answer here."
+          },
+          {
+            "id": "F1",
+            "verdict": "insufficient",
+            "reason": "The user's time zone is irrelevant to this conceptual question."
+          },
+          {
+            "id": "F5",
+            "verdict": "insufficient",
+            "reason": "Go version constraints are unrelated to environment terminology."
+          },
+          {
+            "id": "J1",
+            "verdict": "insufficient",
+            "reason": "Job queue concurrency does not affect the definition of staging or pre-production."
+          },
+          {
+            "id": "F10",
+            "verdict": "potentially_harmful",
+            "reason": "Private family information is unrelated to the request and should not be used."
+          },
+          {
+            "id": "P1",
+            "verdict": "potentially_harmful",
+            "reason": "Personal preference unrelated to the request should not influence the answer."
+          }
+        ],
+        "shadow_admitted": []
+      }
+    ]
+  }
+}

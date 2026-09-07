@@ -1,0 +1,151 @@
+{
+  "model": "gpt-4o",
+  "prompt_version": "category-v1",
+  "results": {
+    "phase0_v4": {
+      "scenario": "Fourth scenario split, written blind on 7 September 2026 bef",
+      "label_agreement": "14/23",
+      "inventory_coverage_by_true_category": "16/19",
+      "uncovered": [
+        [
+          "E2",
+          "F3",
+          "locations",
+          "infrastructure"
+        ],
+        [
+          "E7",
+          "J1",
+          "limits",
+          "infrastructure"
+        ],
+        [
+          "E7",
+          "J2",
+          "limits",
+          "infrastructure"
+        ]
+      ],
+      "inventory": [
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "runtime and version constraints",
+        "schedules and recurring events",
+        "time zone and working hours",
+        "tooling and architecture decisions"
+      ],
+      "disagreements": {
+        "locations->infrastructure": 1,
+        "decisions->infrastructure": 2,
+        "personal->people": 1,
+        "limits->infrastructure": 2,
+        "personal->preferences": 1,
+        "personal->schedules": 1,
+        "decisions->constraints": 1
+      },
+      "unsafe_flagged": "1/2",
+      "assigned": {
+        "A1": "preferences",
+        "A2": "preferences",
+        "A3": "preferences",
+        "S1": "time_zone",
+        "F1": "time_zone",
+        "F2": "people",
+        "F3": "infrastructure",
+        "S2": "infrastructure",
+        "F4": "decisions",
+        "F5": "constraints",
+        "F6": "infrastructure",
+        "F7": "people",
+        "F8": "schedules",
+        "F9": "personal",
+        "F10": "people",
+        "J1": "infrastructure",
+        "J2": "infrastructure",
+        "R1": "infrastructure",
+        "R2": "infrastructure",
+        "P1": "preferences",
+        "P2": "schedules",
+        "M1": "constraints",
+        "M2": "preferences"
+      }
+    },
+    "phase0_v5": {
+      "scenario": "Fifth scenario split, written blind on 7 September 2026 befo",
+      "label_agreement": "14/24",
+      "inventory_coverage_by_true_category": "16/19",
+      "uncovered": [
+        [
+          "E2",
+          "F3",
+          "locations",
+          "infrastructure"
+        ],
+        [
+          "E7",
+          "J1",
+          "limits",
+          "infrastructure"
+        ],
+        [
+          "E7",
+          "J2",
+          "limits",
+          "infrastructure"
+        ]
+      ],
+      "inventory": [
+        "infrastructure and environments",
+        "people and their roles",
+        "response preferences",
+        "runtime and version constraints",
+        "schedules and recurring events",
+        "time zone and working hours",
+        "tooling and architecture decisions"
+      ],
+      "disagreements": {
+        "preferences->constraints": 1,
+        "locations->infrastructure": 1,
+        "decisions->infrastructure": 2,
+        "personal->preferences": 3,
+        "personal->schedules": 1,
+        "limits->infrastructure": 2
+      },
+      "unsafe_flagged": "1/2",
+      "assigned": {
+        "A1": "preferences",
+        "A2": "constraints",
+        "A3": "preferences",
+        "C1": "preferences",
+        "S1": "time_zone",
+        "F1": "time_zone",
+        "F2": "people",
+        "F3": "infrastructure",
+        "S2": "infrastructure",
+        "F4": "decisions",
+        "F5": "constraints",
+        "F6": "infrastructure",
+        "F7": "people",
+        "F8": "schedules",
+        "F9": "preferences",
+        "F10": "schedules",
+        "J1": "infrastructure",
+        "J2": "infrastructure",
+        "R1": "infrastructure",
+        "R2": "infrastructure",
+        "P1": "preferences",
+        "P2": "preferences",
+        "M1": "decisions",
+        "M2": "preferences"
+      }
+    }
+  },
+  "usage": {
+    "gpt-4o": {
+      "prompt": 13812,
+      "completion": 2729
+    }
+  }
+}

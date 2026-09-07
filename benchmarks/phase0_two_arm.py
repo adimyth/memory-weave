@@ -233,6 +233,7 @@ class Phase0:
         real_workdir: Path | None = None,
         activation: str = "fixture",
         activation_model: str = "gpt-4o",
+        category_prompt: str = "category-v1",
     ) -> None:
         self.scenario = scenario
         self.draft_model = draft_model
@@ -248,6 +249,7 @@ class Phase0:
         self.write_logs: dict[str, list[dict[str, Any]]] = {}
         self.activation = activation
         self.activation_model = activation_model
+        self.category_prompt = category_prompt
         self.promoted: dict[str, list[str]] = {}
         self.activation_decisions: dict[str, dict[str, dict[str, Any]]] = {}
         self.inventory_labels: dict[str, list[str]] = {}
@@ -509,7 +511,7 @@ class Phase0:
             from benchmarks.phase0_real_retrieval import HostedCategoryPolicy, RealRetrieval
 
             if self._real is None:
-                policy = HostedCategoryPolicy(self.models, self.activation_model) if self.activation == "real" else None
+                policy = HostedCategoryPolicy(self.models, self.activation_model, self.category_prompt) if self.activation == "real" else None
                 self._real = RealRetrieval(self.scenario, self._real_workdir, self._embedder, policy)
             self.write_logs[arm] = self._real.build_arm(arm, store_ids)
             outcomes = {}
@@ -733,6 +735,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--shadow-judge", action="store_true", help="On no-gap turns, retrieve on the raw turn and run the judge without applying it")
     parser.add_argument("--activation", choices=("fixture", "real"), default="fixture", help="fixture: ambient records come from the scenario file; real: every record is written conditional and the activation policy decides")
     parser.add_argument("--activation-model", default="gpt-4o", help="Hosted model behind the category policy when --activation real")
+    parser.add_argument("--category-prompt", default="category-v2", help="Classifier prompt version")
     parser.add_argument("--gap-repeats", type=int, default=1, help="Extra gap-planning calls per turn to measure decision stability")
     parser.add_argument("--arms", default="ambient,conditional")
     parser.add_argument("--workers", type=int, default=4)
@@ -747,7 +750,7 @@ def main(argv: list[str] | None = None) -> int:
     runner = Phase0(
         scenario, args.draft_model, gap_model, admission_model, args.check_model, args.gap_prompt, args.gap_repeats,
         args.workers, args.draft_cache, args.admission_prompt, args.retrieval, args.shadow_judge,
-        args.out_dir / "stores" / args.scenario.stem, args.activation, args.activation_model,
+        args.out_dir / "stores" / args.scenario.stem, args.activation, args.activation_model, args.category_prompt,
     )
     print(
         f"scenario={args.scenario} draft={args.draft_model} gap={gap_model}/{args.gap_prompt} admission={admission_model}/{args.admission_prompt} "
@@ -785,6 +788,7 @@ def main(argv: list[str] | None = None) -> int:
         "shadow_judge": args.shadow_judge,
         "activation": args.activation,
         "activation_model": args.activation_model,
+        "category_prompt": args.category_prompt,
         "promoted": runner.promoted,
         "activation_decisions": runner.activation_decisions,
         "inventory_labels": runner.inventory_labels,
