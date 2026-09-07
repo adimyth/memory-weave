@@ -17,6 +17,7 @@ EntityRole = Literal["about", "mentions"]
 TurnRole = Literal["user", "assistant", "tool"]
 RewriteStatus = Literal["disabled", "applied", "unchanged", "failed"]
 SearchTrigger = Literal["tool", "auto"]
+MemoryActivation = Literal["ambient", "conditional"]
 PRIVATE_SCOPE_SEPARATOR = "/"
 
 
@@ -57,6 +58,10 @@ class Record:
     entity_ids: list[str]
     subject_entity_id: str | None = None
     attribute: str | None = None
+    # Ambient records sit in the always-present profile; conditional records must pass retrieval and admission.
+    activation: MemoryActivation = "conditional"
+    # Content-free retrieval category assigned by the activation policy; feeds the planner's inventory.
+    category: str | None = None
 
 
 @dataclass(slots=True)

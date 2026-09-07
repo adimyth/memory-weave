@@ -89,6 +89,38 @@ def _migration_5(connection: sqlite3.Connection) -> None:
         connection.execute("ALTER TABLE search_log ADD COLUMN reranked_out TEXT NOT NULL DEFAULT '[]'")
 
 
+def _migration_6(connection: sqlite3.Connection) -> None:
+    """Ambient activation, retrieval category, and a durable queue for activation decisions needing review."""
+
+    if not _has_column(connection, "records", "activation"):
+        connection.execute("ALTER TABLE records ADD COLUMN activation TEXT NOT NULL DEFAULT 'conditional'")
+    if not _has_column(connection, "records", "category"):
+        connection.execute("ALTER TABLE records ADD COLUMN category TEXT")
+    connection.execute(
+        """
+        CREATE TABLE IF NOT EXISTS activation_reviews (
+            id                  TEXT PRIMARY KEY,
+            record_id           TEXT NOT NULL REFERENCES records(id),
+            evidence_turn       INTEGER,
+            retrieval_category  TEXT,
+            activation_category TEXT,
+            proposed            TEXT NOT NULL,
+            reason              TEXT NOT NULL,
+            confidence          REAL,
+            policy_version      TEXT NOT NULL,
+            status              TEXT NOT NULL DEFAULT 'open',
+            created_at          TEXT NOT NULL,
+            resolved_at         TEXT,
+            resolver            TEXT,
+            resolution          TEXT
+        )
+        """
+    )
+    connection.execute(
+        "CREATE INDEX IF NOT EXISTS records_activation ON records(scope_kind, scope_id, activation, status)"
+    )
+
+
 def _has_column(connection: sqlite3.Connection, table: str, column: str) -> bool:
     return any(row[1] == column for row in connection.execute(f"PRAGMA table_info({table})"))
 
@@ -164,6 +196,7 @@ MIGRATIONS: tuple[tuple[int, Migration], ...] = (
     (3, _migration_3),
     (4, _migration_4),
     (5, _migration_5),
+    (6, _migration_6),
 )
 
 

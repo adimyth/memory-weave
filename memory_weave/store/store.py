@@ -208,8 +208,9 @@ class Store:
                 INSERT INTO records(
                     id, type, version, content, subject, scope_kind, scope_id, source_kind, source_ref,
                     creator_agent_id, evidence, created_at, event_at, expires_at, confidence, status,
-                    supersedes_id, reinforcements, last_reinforced_at, index_version, tags, subject_entity_id, attribute
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    supersedes_id, reinforcements, last_reinforced_at, index_version, tags, subject_entity_id, attribute,
+                    activation, category
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     record.id,
@@ -235,8 +236,109 @@ class Store:
                     _dump_json(record.tags),
                     record.subject_entity_id,
                     record.attribute,
+                    record.activation,
+                    record.category,
                 ),
             )
+
+    def set_category(self, record_id: str, category: str | None) -> None:
+        """Set the content-free retrieval category the activation policy assigned."""
+
+        with self.transaction() as connection:
+            connection.execute("UPDATE records SET category = ? WHERE id = ?", (category, record_id))
+
+    def set_activation(self, record_id: str, activation: str) -> None:
+        """Move a record between the ambient profile and conditional retrieval."""
+
+        with self.transaction() as connection:
+            index_version = self._bump_records_version(connection)
+            connection.execute(
+                "UPDATE records SET activation = ?, index_version = ? WHERE id = ?",
+                (activation, index_version, record_id),
+            )
+
+    def insert_activation_review(
+        self,
+        *,
+        record_id: str,
+        evidence_turn: int | None,
+        retrieval_category: str | None,
+        activation_category: str | None,
+        proposed: str,
+        reason: str,
+        confidence: float | None,
+        policy_version: str,
+        created_at: datetime | None = None,
+    ) -> str:
+        """Queue one activation decision that a trusted reviewer must resolve; returns the review id."""
+
+        review_id = uuid7()
+        with self.transaction() as connection:
+            connection.execute(
+                """
+                INSERT INTO activation_reviews(
+                    id, record_id, evidence_turn, retrieval_category, activation_category, proposed, reason,
+                    confidence, policy_version, status, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', ?)
+                """,
+                (
+                    review_id,
+                    record_id,
+                    evidence_turn,
+                    retrieval_category,
+                    activation_category,
+                    proposed,
+                    reason,
+                    confidence,
+                    policy_version,
+                    _dump_datetime(created_at or now()),
+                ),
+            )
+        return review_id
+
+    def open_activation_reviews(self) -> list[dict[str, Any]]:
+        """Return unresolved activation reviews, oldest first."""
+
+        rows = self.connection.execute(
+            "SELECT * FROM activation_reviews WHERE status = 'open' ORDER BY created_at, id"
+        ).fetchall()
+        return [dict(row) for row in rows]
+
+    def ambient_records(self, scope: Scope, subject_entity_id: str, *, at: datetime | None = None) -> list[Record]:
+        """Return confirmed, unexpired, semantic ambient records about one subject, newest event first."""
+
+        current = _dump_datetime(at or now())
+        rows = self.connection.execute(
+            """
+            SELECT * FROM records
+            WHERE scope_kind = ? AND scope_id = ? AND subject_entity_id = ? AND type = 'semantic'
+              AND status = 'confirmed' AND activation = 'ambient'
+              AND (expires_at IS NULL OR expires_at > ?)
+            ORDER BY event_at DESC, created_at DESC, id
+            """,
+            (scope.kind, scope.id, subject_entity_id, current),
+        ).fetchall()
+        return self._records_from_rows(rows)
+
+    def active_categories(self, scopes: Sequence[Scope]) -> list[str]:
+        """Return the distinct retrieval categories of active conditional records in the given scopes."""
+
+        if not scopes:
+            return []
+        clauses = " OR ".join("(scope_kind = ? AND scope_id = ?)" for _ in scopes)
+        params: list[object] = []
+        for scope in scopes:
+            params.extend((scope.kind, scope.id))
+        rows = self.connection.execute(
+            f"""
+            SELECT DISTINCT category FROM records
+            WHERE ({clauses}) AND category IS NOT NULL AND activation = 'conditional'
+              AND status IN ('provisional', 'confirmed')
+            ORDER BY category
+            """,
+            tuple(params),
+        ).fetchall()
+        return [cast(str, row["category"]) for row in rows]
 
     def get_record(self, record_id: str) -> Record | None:
         """Return one record with its linked entity IDs."""
@@ -1091,6 +1193,8 @@ class Store:
             last_reinforced_at=_load_datetime_or_none(cast(str | None, row["last_reinforced_at"])),
             tags=cast(list[str], json.loads(cast(str, row["tags"]))),
             entity_ids=entity_ids,
+            activation=cast(Any, row["activation"]) if "activation" in row.keys() else "conditional",
+            category=cast(str | None, row["category"]) if "category" in row.keys() else None,
         )
 
     def _entity_from_row(self, row: sqlite3.Row) -> Entity:

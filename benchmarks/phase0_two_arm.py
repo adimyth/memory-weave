@@ -153,7 +153,16 @@ _ADMISSION_SYSTEM_V3 = (
     'sentence>"}]}. Include every candidate id exactly once in verdicts.'
 )
 
-_ADMISSION_PROMPTS = {"v1": _ADMISSION_SYSTEM, "v2": _ADMISSION_SYSTEM_V2, "v3": _ADMISSION_SYSTEM_V3}
+_ADMISSION_SYSTEM_V4 = (
+    _ADMISSION_SYSTEM_V3
+    + "\n\nGap anchoring. Before retrieval, a planner named the specific missing facts it was looking for; they "
+    "are listed as numbered gaps in the message. A candidate can be admitted only if it resolves one of those "
+    "gaps. For every candidate you admit, add \"resolves_gap\": <gap number> to its verdict entry. A candidate "
+    "that is useful but does not resolve a listed gap is insufficient, however relevant it seems."
+)
+
+_ADMISSION_PROMPTS = {"v1": _ADMISSION_SYSTEM, "v2": _ADMISSION_SYSTEM_V2, "v3": _ADMISSION_SYSTEM_V3, "v4": _ADMISSION_SYSTEM_V4}
+_GAP_ANCHORED_PROMPTS = {"v4"}
 
 _CORRECTNESS_SYSTEM = (
     "You check whether an assistant's answer contains a set of reference facts. Reply with JSON only: "
@@ -217,6 +226,8 @@ class Phase0:
         retrieval: str = "dense",
         shadow_judge: bool = False,
         real_workdir: Path | None = None,
+        activation: str = "fixture",
+        activation_model: str = "gpt-4o",
     ) -> None:
         self.scenario = scenario
         self.draft_model = draft_model
@@ -230,6 +241,11 @@ class Phase0:
         self._real: Any = None
         self._real_workdir = real_workdir or Path("benchmarks/results/phase0/stores")
         self.write_logs: dict[str, list[dict[str, Any]]] = {}
+        self.activation = activation
+        self.activation_model = activation_model
+        self.promoted: dict[str, list[str]] = {}
+        self.activation_decisions: dict[str, dict[str, dict[str, Any]]] = {}
+        self._inventory_override: dict[str, str] = {}
         self.gap_repeats = max(1, gap_repeats)
         self.workers = workers
         self.models = Models()
@@ -330,23 +346,41 @@ class Phase0:
 
     # -- one turn ---------------------------------------------------------------------------------------
 
-    def _judge(self, profile_text: str, turn_text: str, draft: str, candidates: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[str], float]:
+    def _judge(
+        self, profile_text: str, turn_text: str, draft: str, candidates: list[dict[str, Any]], gaps: list[str] | None = None
+    ) -> tuple[list[dict[str, Any]], list[str], float]:
         """One joint admission call. Returns (verdicts, admitted ids, seconds). Raises on malformed output."""
 
+        anchored = self.admission_prompt in _GAP_ANCHORED_PROMPTS
+        gap_block = ""
+        if anchored:
+            listed = "\n".join(f"{i}. {g}" for i, g in enumerate(gaps or [], start=1)) or "(none)"
+            gap_block = f"\n\nGaps the planner named:\n{listed}"
         admission_user = (
-            f"{profile_text}\n\nUser message:\n{turn_text}\n\nDraft answer written without the candidates:\n{draft}\n\n"
+            f"{profile_text}\n\nUser message:\n{turn_text}{gap_block}\n\nDraft answer written without the candidates:\n{draft}\n\n"
             f"Candidate records:\n{self._candidate_block(candidates)}"
         )
         raw, seconds = self._timed(self.admission_model, _ADMISSION_PROMPTS[self.admission_prompt], admission_user, json_mode=True)
         parsed = json.loads(raw)
         known = {c["id"] for c in candidates}
         verdicts = []
+        resolves: dict[str, int | None] = {}
         for item in parsed.get("verdicts", []):
             verdict = str(item.get("verdict", "")).strip().lower()
             if str(item.get("id")) in known:
-                verdicts.append({"id": str(item["id"]), "verdict": verdict if verdict in _VERDICTS else f"unparsed:{verdict}", "reason": str(item.get("reason", ""))})
+                entry = {"id": str(item["id"]), "verdict": verdict if verdict in _VERDICTS else f"unparsed:{verdict}", "reason": str(item.get("reason", ""))}
+                if anchored:
+                    try:
+                        entry["resolves_gap"] = int(item.get("resolves_gap")) if item.get("resolves_gap") is not None else None
+                    except (TypeError, ValueError):
+                        entry["resolves_gap"] = None
+                    resolves[entry["id"]] = entry["resolves_gap"]
+                verdicts.append(entry)
         admitted = [str(i) for i in parsed.get("admitted", []) if str(i) in known]
         admitted = [i for i in admitted if any(v["id"] == i and v["verdict"] in _ADMITTING for v in verdicts)]
+        if anchored:
+            valid = range(1, len(gaps or []) + 1)
+            admitted = [i for i in admitted if resolves.get(i) in valid]
         return verdicts, admitted, seconds
 
     def run_turn(self, arm: str, turn: dict[str, Any], profile: list[dict[str, Any]], store_ids: list[str]) -> TurnResult:
@@ -358,7 +392,8 @@ class Phase0:
 
         gap_system = _GAP_PROMPTS[self.gap_prompt]
         if "{inventory}" in gap_system:
-            gap_system = gap_system.replace("{inventory}", self._inventory_text(store_ids))
+            override = self._inventory_override.get(arm)
+            gap_system = gap_system.replace("{inventory}", override if override is not None else self._inventory_text(store_ids))
 
         def plan() -> list[str]:
             raw, _ = self._timed(self.gap_model, gap_system, gap_user, json_mode=True)
@@ -411,7 +446,7 @@ class Phase0:
             return result
 
         try:
-            verdicts, admitted, timing.admission_s = self._judge(profile_text, turn["text"], draft, candidates)
+            verdicts, admitted, timing.admission_s = self._judge(profile_text, turn["text"], draft, candidates, gaps)
             result.verdicts = verdicts
             result.admitted = admitted
         except Exception as error:  # noqa: BLE001
@@ -451,24 +486,45 @@ class Phase0:
 
     def run_arm(self, arm: str) -> list[TurnResult]:
         ambient_ids = [r["id"] for r in self.scenario["records"] if r["kind"] == "ambient_eligible"]
-        if arm == "ambient":
+        all_ids = [r["id"] for r in self.scenario["records"]]
+        real_activation = self.retrieval == "real" and self.activation == "real" and arm == "ambient"
+        if real_activation:
+            # Every record is written conditional; the activation policy decides what becomes ambient.
+            profile: list[dict[str, Any]] = []
+            store_ids = list(all_ids)
+        elif arm == "ambient":
             profile = [self.records[i] for i in ambient_ids]
-            store_ids = [r["id"] for r in self.scenario["records"] if r["id"] not in ambient_ids]
+            store_ids = [i for i in all_ids if i not in ambient_ids]
         else:
             profile = []
-            store_ids = [r["id"] for r in self.scenario["records"]]
+            store_ids = list(all_ids)
         self._embed_store(store_ids)
         if self.retrieval == "real":
-            from benchmarks.phase0_real_retrieval import RealRetrieval
+            from benchmarks.phase0_real_retrieval import HostedCategoryPolicy, RealRetrieval
 
             if self._real is None:
-                self._real = RealRetrieval(self.scenario, self._real_workdir, self._embedder)
+                policy = HostedCategoryPolicy(self.models, self.activation_model) if self.activation == "real" else None
+                self._real = RealRetrieval(self.scenario, self._real_workdir, self._embedder, policy)
             self.write_logs[arm] = self._real.build_arm(arm, store_ids)
             outcomes = {}
             for entry in self.write_logs[arm]:
                 key = f"{entry['outcome']}/{entry['status']}"
                 outcomes[key] = outcomes.get(key, 0) + 1
             print(f"[{arm}] real store written: {outcomes}", flush=True)
+            if real_activation:
+                promoted = self._real.promoted(arm)
+                self.promoted[arm] = promoted
+                self.activation_decisions[arm] = self._real.decisions(arm)
+                profile = [self.records[i] for i in promoted]
+                store_ids = [i for i in all_ids if i not in promoted]
+                labels = self._real.inventory_labels(arm)
+                self._inventory_override[arm] = "\n".join(f"- {label}" for label in labels) or "- (no category information available)"
+                print(f"[{arm}] promoted to ambient: {promoted}", flush=True)
+                print(f"[{arm}] store-generated inventory: {labels}", flush=True)
+                summary = {}
+                for d in self.activation_decisions[arm].values():
+                    summary[d["outcome"] + ":" + d["reason"]] = summary.get(d["outcome"] + ":" + d["reason"], 0) + 1
+                print(f"[{arm}] activation decisions: {summary}", flush=True)
         turns = self.scenario["turns"]
         results: list[TurnResult] = []
         with ThreadPoolExecutor(max_workers=self.workers) as pool:
@@ -498,7 +554,13 @@ def _p(values: list[float], q: float) -> float:
     return ordered[index]
 
 
-def summarise(arm: str, results: list[TurnResult], records: dict[str, dict[str, Any]]) -> dict[str, Any]:
+def summarise(
+    arm: str,
+    results: list[TurnResult],
+    records: dict[str, dict[str, Any]],
+    promoted: list[str] | None = None,
+    decisions: dict[str, dict[str, Any]] | None = None,
+) -> dict[str, Any]:
     by_class: dict[str, list[TurnResult]] = {}
     for r in results:
         by_class.setdefault(r.turn_class, []).append(r)
@@ -506,7 +568,25 @@ def summarise(arm: str, results: list[TurnResult], records: dict[str, dict[str, 
     explicit = by_class.get("explicit_fact", [])
     implicit = by_class.get("implicit_need", [])
 
-    ambient_ids = {i for i, r in records.items() if r["kind"] == "ambient_eligible"}
+    if promoted is not None:
+        ambient_ids = set(promoted)
+    else:
+        ambient_ids = {i for i, r in records.items() if r["kind"] == "ambient_eligible"}
+
+    promotion: dict[str, Any] = {}
+    if promoted is not None:
+        eligible = [i for i, r in records.items() if r.get("ambient_truth") is True]
+        unsafe = [i for i, r in records.items() if r.get("unsafe_promotion") is True]
+        scoped = [i for i, r in records.items() if r.get("ambient_truth") is False and r["kind"] == "conditional"]
+        truth = {i: r["category_truth"] for i, r in records.items() if r.get("category_truth")}
+        assigned = {i: (decisions or {}).get(i, {}).get("retrieval_category") for i in truth}
+        promotion = {
+            "eligible_preferences_promoted": _pct(sum(1 for i in eligible if i in ambient_ids), len(eligible)),
+            "unsafe_promotions": sum(1 for i in unsafe if i in ambient_ids),
+            "scoped_preferences_kept_conditional": _pct(sum(1 for i in scoped if i not in ambient_ids), len(scoped)),
+            "reviews_opened": sum(1 for d in (decisions or {}).values() if d.get("outcome") == "review"),
+            "retrieval_category_accuracy": _pct(sum(1 for i in truth if assigned.get(i) == truth[i]), len(truth)),
+        }
 
     def injected(r: TurnResult) -> bool:
         return bool(r.admitted)
@@ -582,6 +662,7 @@ def summarise(arm: str, results: list[TurnResult], records: dict[str, dict[str, 
         "shadow_judge_ordinary_turns_with_candidates": len(shadow_ordinary),
         "shadow_judge_ordinary_turns_it_would_inject": _pct(shadow_ordinary_admit, len(shadow_ordinary)) if shadow_ordinary else "n/a",
         "shadow_judge_unsafe_admissions": shadow_unsafe if shadowed else "n/a",
+        **promotion,
     }
 
 
@@ -625,6 +706,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--admission-prompt", choices=sorted(_ADMISSION_PROMPTS), default="v1")
     parser.add_argument("--retrieval", choices=("dense", "real"), default="dense", help="dense: BGE-M3 top-k stand-in; real: the Memory Weave store, ingestor, and retriever")
     parser.add_argument("--shadow-judge", action="store_true", help="On no-gap turns, retrieve on the raw turn and run the judge without applying it")
+    parser.add_argument("--activation", choices=("fixture", "real"), default="fixture", help="fixture: ambient records come from the scenario file; real: every record is written conditional and the activation policy decides")
+    parser.add_argument("--activation-model", default="gpt-4o", help="Hosted model behind the category policy when --activation real")
     parser.add_argument("--gap-repeats", type=int, default=1, help="Extra gap-planning calls per turn to measure decision stability")
     parser.add_argument("--arms", default="ambient,conditional")
     parser.add_argument("--workers", type=int, default=4)
@@ -639,11 +722,12 @@ def main(argv: list[str] | None = None) -> int:
     runner = Phase0(
         scenario, args.draft_model, gap_model, admission_model, args.check_model, args.gap_prompt, args.gap_repeats,
         args.workers, args.draft_cache, args.admission_prompt, args.retrieval, args.shadow_judge,
-        args.out_dir / "stores" / args.scenario.stem,
+        args.out_dir / "stores" / args.scenario.stem, args.activation, args.activation_model,
     )
     print(
         f"scenario={args.scenario} draft={args.draft_model} gap={gap_model}/{args.gap_prompt} admission={admission_model}/{args.admission_prompt} "
-        f"check={args.check_model} repeats={args.gap_repeats} retrieval={args.retrieval} shadow_judge={args.shadow_judge}",
+        f"check={args.check_model} repeats={args.gap_repeats} retrieval={args.retrieval} shadow_judge={args.shadow_judge} "
+        f"activation={args.activation}/{args.activation_model}",
         flush=True,
     )
     arms = [a.strip() for a in args.arms.split(",") if a.strip()]
@@ -652,13 +736,15 @@ def main(argv: list[str] | None = None) -> int:
     for arm in arms:
         print(f"\n=== arm: {arm} ===", flush=True)
         all_results[arm] = runner.run_arm(arm)
-        summaries[arm] = summarise(arm, all_results[arm], runner.records)
+        summaries[arm] = summarise(
+            arm, all_results[arm], runner.records, runner.promoted.get(arm), runner.activation_decisions.get(arm)
+        )
 
     runner.save_cache()
     args.out_dir.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     tag = f"-{args.tag}" if args.tag else ""
-    path = args.out_dir / f"{stamp}-{args.scenario.stem}-gap-{gap_model}-{args.gap_prompt}-adm-{admission_model}-{args.admission_prompt}{tag}.json"
+    path = args.out_dir / f"{stamp}-{args.scenario.stem}-gap-{gap_model}-{args.gap_prompt}-adm-{admission_model}-{args.admission_prompt}-act-{args.activation}{tag}.json"
     payload = {
         "scenario": str(args.scenario),
         "draft_model": args.draft_model,
@@ -668,6 +754,10 @@ def main(argv: list[str] | None = None) -> int:
         "admission_prompt": args.admission_prompt,
         "retrieval": args.retrieval,
         "shadow_judge": args.shadow_judge,
+        "activation": args.activation,
+        "activation_model": args.activation_model,
+        "promoted": runner.promoted,
+        "activation_decisions": runner.activation_decisions,
         "write_logs": runner.write_logs,
         "check_model": args.check_model,
         "gap_repeats": args.gap_repeats,
