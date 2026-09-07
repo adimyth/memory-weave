@@ -1,0 +1,3064 @@
+{
+  "summary": {
+    "isolation": {
+      "served_responses_identical": true,
+      "records_identical": true,
+      "session_turns_identical": true,
+      "reviews_identical": true
+    },
+    "turns": 39,
+    "hypothetical_ordinary_injection": "0/20",
+    "explicit_recall": "10/10",
+    "implicit_recall": "7/8",
+    "unsafe_admissions": 0,
+    "unexpected_admissions": [
+      [
+        "I5",
+        "F1"
+      ]
+    ],
+    "policy_failures": [],
+    "budget_withholds": [],
+    "promoted": [
+      "A1",
+      "A2",
+      "A3"
+    ],
+    "inventory": [
+      "runtime and version constraints",
+      "tooling and architecture decisions",
+      "infrastructure and environments",
+      "people and their roles",
+      "personal life",
+      "response preferences",
+      "schedules and recurring events",
+      "time zone and working hours"
+    ],
+    "bundle": {
+      "planner": "gpt-4o/gap-v3c",
+      "judge": "gpt-5.4/admission-v3",
+      "taxonomy": "activation-v2-frozen",
+      "inventory_builder": "inventory-v1",
+      "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+      "latency_budget_ms": null
+    },
+    "gates": {
+      "isolation": true,
+      "ordinary_injection_le_5pct": true,
+      "explicit_recall_ge_90pct": true,
+      "implicit_recall_ge_75pct": true,
+      "no_unsafe": true,
+      "all": true
+    }
+  },
+  "decisions": [
+    {
+      "id": "01a07cb5-e4ea-7459-bc0a-ad08c2608a75",
+      "at": "2026-09-07T16:31:33.931953+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "What did we decide about change data capture?",
+      "disposition": "shadow_would_regenerate",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a07cb5-910a-7b62-bc3b-40ff53ae4215",
+        "01a07cb5-8ac8-762e-8c6a-5a2bbea19136",
+        "01a07cb5-8478-7ff3-8fae-298c19335a2e"
+      ],
+      "inventory": [
+        "runtime and version constraints",
+        "tooling and architecture decisions",
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "schedules and recurring events",
+        "time zone and working hours"
+      ],
+      "gaps": [
+        {
+          "category": "prior_decision",
+          "query": "decision on change data capture"
+        }
+      ],
+      "gap_status": "ok",
+      "candidate_ids": [
+        "01a07cb5-ae43-7b42-9550-a9edaff082ae",
+        "01a07cb5-9747-7904-b974-cc3413d0bbe4",
+        "01a07cb5-726d-7a93-9f22-dccc034c532b",
+        "01a07cb5-a32d-7d64-b178-e60bc6dce73a",
+        "01a07cb5-b9d2-72aa-8071-4502aaba53b0",
+        "01a07cb5-7ec2-7fe8-b39c-1785372c8aed"
+      ],
+      "verdicts": [
+        {
+          "reason": "It directly states the prior CDC decision the user is asking about.",
+          "record_id": "01a07cb5-ae43-7b42-9550-a9edaff082ae",
+          "verdict": "helpful"
+        },
+        {
+          "reason": "It is related to CDC but does not answer what was decided.",
+          "record_id": "01a07cb5-9747-7904-b974-cc3413d0bbe4",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "It is unrelated to the request about change data capture.",
+          "record_id": "01a07cb5-726d-7a93-9f22-dccc034c532b",
+          "verdict": "redundant"
+        },
+        {
+          "reason": "It gives background on logical replication but not the decision made.",
+          "record_id": "01a07cb5-a32d-7d64-b178-e60bc6dce73a",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "It is unrelated to the request about change data capture.",
+          "record_id": "01a07cb5-b9d2-72aa-8071-4502aaba53b0",
+          "verdict": "redundant"
+        },
+        {
+          "reason": "It is unrelated to the request about change data capture.",
+          "record_id": "01a07cb5-7ec2-7fe8-b39c-1785372c8aed",
+          "verdict": "redundant"
+        }
+      ],
+      "admitted_ids": [
+        "01a07cb5-ae43-7b42-9550-a9edaff082ae"
+      ],
+      "admission_status": "ok",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "admission": 2313.819999981206,
+        "draft": 1.130125019699335,
+        "gap_overhang": 1055.977999989409,
+        "retrieval": 85.57104197097942
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      }
+    },
+    {
+      "id": "01a07cb5-f22d-7f52-88b3-1ca05e752a43",
+      "at": "2026-09-07T16:31:38.401419+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "Where are the on-call handbooks?",
+      "disposition": "shadow_would_regenerate",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a07cb5-910a-7b62-bc3b-40ff53ae4215",
+        "01a07cb5-8ac8-762e-8c6a-5a2bbea19136",
+        "01a07cb5-8478-7ff3-8fae-298c19335a2e"
+      ],
+      "inventory": [
+        "runtime and version constraints",
+        "tooling and architecture decisions",
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "schedules and recurring events",
+        "time zone and working hours"
+      ],
+      "gaps": [
+        {
+          "category": "relationship_or_event",
+          "query": "location of on-call handbooks"
+        }
+      ],
+      "gap_status": "ok",
+      "candidate_ids": [
+        "01a07cb5-c095-78a6-880d-e0058d17a131",
+        "01a07cb5-c641-764c-bf7e-3612c7f4dcbb",
+        "01a07cb5-9d12-7fc9-b60a-0a9293c6d885",
+        "01a07cb5-b9d2-72aa-8071-4502aaba53b0",
+        "01a07cb5-7ec2-7fe8-b39c-1785372c8aed",
+        "01a07cb5-610a-7b5e-a1e6-9695e79ccfcf",
+        "01a07cb5-deed-724f-a8a6-064edb117f8f"
+      ],
+      "verdicts": [
+        {
+          "reason": "It provides the specific location of the on-call handbooks and changes the answer.",
+          "record_id": "01a07cb5-c095-78a6-880d-e0058d17a131",
+          "verdict": "helpful"
+        },
+        {
+          "reason": "It names an owner for one runbook but does not answer where the handbooks are.",
+          "record_id": "01a07cb5-c641-764c-bf7e-3612c7f4dcbb",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "A preference to agree regardless of correctness risks factual distortion.",
+          "record_id": "01a07cb5-9d12-7fc9-b60a-0a9293c6d885",
+          "verdict": "potentially_harmful"
+        },
+        {
+          "reason": "A meeting time is unrelated to the location of on-call handbooks.",
+          "record_id": "01a07cb5-b9d2-72aa-8071-4502aaba53b0",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "The user's time zone does not affect answering where the handbooks are.",
+          "record_id": "01a07cb5-7ec2-7fe8-b39c-1785372c8aed",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "The user's hobby is unrelated to the request.",
+          "record_id": "01a07cb5-610a-7b5e-a1e6-9695e79ccfcf",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "Webhook retry budget information is unrelated to the request.",
+          "record_id": "01a07cb5-deed-724f-a8a6-064edb117f8f",
+          "verdict": "insufficient"
+        }
+      ],
+      "admitted_ids": [
+        "01a07cb5-c095-78a6-880d-e0058d17a131"
+      ],
+      "admission_status": "ok",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "admission": 3348.310290952213,
+        "draft": 2.2964169620536268,
+        "gap_overhang": 1042.9809580091387,
+        "retrieval": 74.30383301107213
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      }
+    },
+    {
+      "id": "01a07cb6-03a2-761a-a89d-d4e65a02a2b5",
+      "at": "2026-09-07T16:31:42.037377+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "Who owns the fleet-routing runbook?",
+      "disposition": "shadow_would_regenerate",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a07cb5-910a-7b62-bc3b-40ff53ae4215",
+        "01a07cb5-8ac8-762e-8c6a-5a2bbea19136",
+        "01a07cb5-8478-7ff3-8fae-298c19335a2e"
+      ],
+      "inventory": [
+        "runtime and version constraints",
+        "tooling and architecture decisions",
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "schedules and recurring events",
+        "time zone and working hours"
+      ],
+      "gaps": [
+        {
+          "category": "relationship_or_event",
+          "query": "owner of fleet-routing runbook"
+        }
+      ],
+      "gap_status": "ok",
+      "candidate_ids": [
+        "01a07cb5-c641-764c-bf7e-3612c7f4dcbb",
+        "01a07cb5-6718-7c14-a8b2-029f3fcfd734",
+        "01a07cb5-c095-78a6-880d-e0058d17a131",
+        "01a07cb5-deed-724f-a8a6-064edb117f8f",
+        "01a07cb5-cc5a-7824-8b0e-06e27425fd96",
+        "01a07cb5-9747-7904-b974-cc3413d0bbe4",
+        "01a07cb5-610a-7b5e-a1e6-9695e79ccfcf"
+      ],
+      "verdicts": [
+        {
+          "reason": "It directly identifies the owner the user asked for.",
+          "record_id": "01a07cb5-c641-764c-bf7e-3612c7f4dcbb",
+          "verdict": "helpful"
+        },
+        {
+          "reason": "The user's manager does not affect who owns the runbook.",
+          "record_id": "01a07cb5-6718-7c14-a8b2-029f3fcfd734",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "The location of handbooks is related background but does not answer ownership.",
+          "record_id": "01a07cb5-c095-78a6-880d-e0058d17a131",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "Webhook retry budgets are unrelated to the runbook owner question.",
+          "record_id": "01a07cb5-deed-724f-a8a6-064edb117f8f",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "The cluster name and region do not affect runbook ownership.",
+          "record_id": "01a07cb5-cc5a-7824-8b0e-06e27425fd96",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "The user's belief about replication is unrelated to this request.",
+          "record_id": "01a07cb5-9747-7904-b974-cc3413d0bbe4",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "The user's hobby is unrelated and should not affect the answer.",
+          "record_id": "01a07cb5-610a-7b5e-a1e6-9695e79ccfcf",
+          "verdict": "insufficient"
+        }
+      ],
+      "admitted_ids": [
+        "01a07cb5-c641-764c-bf7e-3612c7f4dcbb"
+      ],
+      "admission_status": "ok",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "admission": 2607.093291997444,
+        "draft": 3.6843750276602805,
+        "gap_overhang": 914.3629169557244,
+        "retrieval": 109.20970805454999
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      }
+    },
+    {
+      "id": "01a07cb6-11d7-7876-bcc5-488370fe788c",
+      "at": "2026-09-07T16:31:45.563559+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "Why is Kotlin pinned to 1.9?",
+      "disposition": "shadow_would_regenerate",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a07cb5-910a-7b62-bc3b-40ff53ae4215",
+        "01a07cb5-8ac8-762e-8c6a-5a2bbea19136",
+        "01a07cb5-8478-7ff3-8fae-298c19335a2e"
+      ],
+      "inventory": [
+        "runtime and version constraints",
+        "tooling and architecture decisions",
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "schedules and recurring events",
+        "time zone and working hours"
+      ],
+      "gaps": [
+        {
+          "category": "constraint",
+          "query": "Kotlin version constraint 1.9 why"
+        }
+      ],
+      "gap_status": "ok",
+      "candidate_ids": [
+        "01a07cb5-d332-72a7-93ca-e2e0b9d181d3",
+        "01a07cb5-b36b-72a9-9c26-29b6b5e336e2",
+        "01a07cb5-7ec2-7fe8-b39c-1785372c8aed",
+        "01a07cb5-d8cf-7ccf-97fd-ad2edcca5425",
+        "01a07cb5-b9d2-72aa-8071-4502aaba53b0"
+      ],
+      "verdicts": [
+        {
+          "reason": "It provides the specific cause of the Kotlin 1.9 pin and would make the answer more definite.",
+          "record_id": "01a07cb5-d332-72a7-93ca-e2e0b9d181d3",
+          "verdict": "helpful"
+        },
+        {
+          "reason": "SQL formatting preference is unrelated to explaining a Kotlin version pin.",
+          "record_id": "01a07cb5-b36b-72a9-9c26-29b6b5e336e2",
+          "verdict": "redundant"
+        },
+        {
+          "reason": "The user's time zone does not affect this answer.",
+          "record_id": "01a07cb5-7ec2-7fe8-b39c-1785372c8aed",
+          "verdict": "redundant"
+        },
+        {
+          "reason": "Webhook retry budget is unrelated to the Kotlin version question.",
+          "record_id": "01a07cb5-d8cf-7ccf-97fd-ad2edcca5425",
+          "verdict": "redundant"
+        },
+        {
+          "reason": "A meeting schedule is unrelated to why Kotlin is pinned to 1.9.",
+          "record_id": "01a07cb5-b9d2-72aa-8071-4502aaba53b0",
+          "verdict": "redundant"
+        }
+      ],
+      "admitted_ids": [
+        "01a07cb5-d332-72a7-93ca-e2e0b9d181d3"
+      ],
+      "admission_status": "ok",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "admission": 2443.8974580261856,
+        "draft": 6.359500053804368,
+        "gap_overhang": 962.5044159474783,
+        "retrieval": 110.8568329946138
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      }
+    },
+    {
+      "id": "01a07cb6-1f9d-7de0-b283-b5e162e213ad",
+      "at": "2026-09-07T16:31:50.091708+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "What is my production cluster called and where does it run?",
+      "disposition": "shadow_would_regenerate",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a07cb5-910a-7b62-bc3b-40ff53ae4215",
+        "01a07cb5-8ac8-762e-8c6a-5a2bbea19136",
+        "01a07cb5-8478-7ff3-8fae-298c19335a2e"
+      ],
+      "inventory": [
+        "runtime and version constraints",
+        "tooling and architecture decisions",
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "schedules and recurring events",
+        "time zone and working hours"
+      ],
+      "gaps": [
+        {
+          "category": "task_state",
+          "query": "production cluster name"
+        },
+        {
+          "category": "task_state",
+          "query": "production cluster location"
+        }
+      ],
+      "gap_status": "ok",
+      "candidate_ids": [
+        "01a07cb5-cc5a-7824-8b0e-06e27425fd96",
+        "01a07cb5-a87b-7c26-b3e3-64beb282a60e",
+        "01a07cb5-7ec2-7fe8-b39c-1785372c8aed",
+        "01a07cb5-c095-78a6-880d-e0058d17a131",
+        "01a07cb5-b9d2-72aa-8071-4502aaba53b0",
+        "01a07cb5-6718-7c14-a8b2-029f3fcfd734",
+        "01a07cb5-deed-724f-a8a6-064edb117f8f",
+        "01a07cb5-9747-7904-b974-cc3413d0bbe4"
+      ],
+      "verdicts": [
+        {
+          "reason": "It directly provides the production cluster name and region the user asked for.",
+          "record_id": "01a07cb5-cc5a-7824-8b0e-06e27425fd96",
+          "verdict": "helpful"
+        },
+        {
+          "reason": "It is related to clusters generally but does not identify the user's production cluster or location.",
+          "record_id": "01a07cb5-a87b-7c26-b3e3-64beb282a60e",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "The user's time zone does not affect the cluster name or where it runs.",
+          "record_id": "01a07cb5-7ec2-7fe8-b39c-1785372c8aed",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "Handbook location is unrelated to the requested cluster identity and runtime location.",
+          "record_id": "01a07cb5-c095-78a6-880d-e0058d17a131",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "The meeting schedule does not change the answer to the cluster question.",
+          "record_id": "01a07cb5-b9d2-72aa-8071-4502aaba53b0",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "The user's manager is unrelated to the cluster name or where it runs.",
+          "record_id": "01a07cb5-6718-7c14-a8b2-029f3fcfd734",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "Webhook retry policy does not affect the requested cluster details.",
+          "record_id": "01a07cb5-deed-724f-a8a6-064edb117f8f",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "It is an unrelated belief that could distort future responses if treated as fact.",
+          "record_id": "01a07cb5-9747-7904-b974-cc3413d0bbe4",
+          "verdict": "potentially_harmful"
+        }
+      ],
+      "admitted_ids": [
+        "01a07cb5-cc5a-7824-8b0e-06e27425fd96"
+      ],
+      "admission_status": "ok",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "admission": 3291.142458037939,
+        "draft": 5.143374961335212,
+        "gap_overhang": 1119.1526670008898,
+        "retrieval": 110.62158300774172
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      }
+    },
+    {
+      "id": "01a07cb6-314f-7f76-a532-9d385b8d0698",
+      "at": "2026-09-07T16:31:54.619284+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "When is the release go/no-go meeting?",
+      "disposition": "shadow_would_regenerate",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a07cb5-910a-7b62-bc3b-40ff53ae4215",
+        "01a07cb5-8ac8-762e-8c6a-5a2bbea19136",
+        "01a07cb5-8478-7ff3-8fae-298c19335a2e"
+      ],
+      "inventory": [
+        "runtime and version constraints",
+        "tooling and architecture decisions",
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "schedules and recurring events",
+        "time zone and working hours"
+      ],
+      "gaps": [
+        {
+          "category": "relationship_or_event",
+          "query": "release go/no-go meeting schedule"
+        }
+      ],
+      "gap_status": "ok",
+      "candidate_ids": [
+        "01a07cb5-b9d2-72aa-8071-4502aaba53b0",
+        "01a07cb5-c095-78a6-880d-e0058d17a131",
+        "01a07cb5-7ec2-7fe8-b39c-1785372c8aed",
+        "01a07cb5-a87b-7c26-b3e3-64beb282a60e",
+        "01a07cb5-726d-7a93-9f22-dccc034c532b",
+        "01a07cb5-6718-7c14-a8b2-029f3fcfd734",
+        "01a07cb5-ae43-7b42-9550-a9edaff082ae",
+        "01a07cb5-d8cf-7ccf-97fd-ad2edcca5425"
+      ],
+      "verdicts": [
+        {
+          "reason": "It directly provides the meeting time the user asked for.",
+          "record_id": "01a07cb5-b9d2-72aa-8071-4502aaba53b0",
+          "verdict": "helpful"
+        },
+        {
+          "reason": "It is about on-call handbook location, not the release meeting schedule.",
+          "record_id": "01a07cb5-c095-78a6-880d-e0058d17a131",
+          "verdict": "redundant"
+        },
+        {
+          "reason": "The user's time zone adds little because the meeting record already specifies ET and does not change the answer.",
+          "record_id": "01a07cb5-7ec2-7fe8-b39c-1785372c8aed",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "It concerns kubectl usage, unrelated to the meeting question.",
+          "record_id": "01a07cb5-a87b-7c26-b3e3-64beb282a60e",
+          "verdict": "redundant"
+        },
+        {
+          "reason": "It is private dietary information unrelated to the user's request.",
+          "record_id": "01a07cb5-726d-7a93-9f22-dccc034c532b",
+          "verdict": "potentially_harmful"
+        },
+        {
+          "reason": "It is private workplace information unrelated to the user's request.",
+          "record_id": "01a07cb5-6718-7c14-a8b2-029f3fcfd734",
+          "verdict": "potentially_harmful"
+        },
+        {
+          "reason": "It is about a CDC technology choice, not the release meeting schedule.",
+          "record_id": "01a07cb5-ae43-7b42-9550-a9edaff082ae",
+          "verdict": "redundant"
+        },
+        {
+          "reason": "It concerns webhook retry policy, unrelated to the meeting question.",
+          "record_id": "01a07cb5-d8cf-7ccf-97fd-ad2edcca5425",
+          "verdict": "redundant"
+        }
+      ],
+      "admitted_ids": [
+        "01a07cb5-b9d2-72aa-8071-4502aaba53b0"
+      ],
+      "admission_status": "ok",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "admission": 3217.998665990308,
+        "draft": 6.831999984569848,
+        "gap_overhang": 1196.457583049778,
+        "retrieval": 102.46466600801796
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      }
+    },
+    {
+      "id": "01a07cb6-42fc-739e-9465-41013b8c513e",
+      "at": "2026-09-07T16:31:58.756750+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "What retry budget applies to enterprise tenant webhooks?",
+      "disposition": "shadow_would_regenerate",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a07cb5-910a-7b62-bc3b-40ff53ae4215",
+        "01a07cb5-8ac8-762e-8c6a-5a2bbea19136",
+        "01a07cb5-8478-7ff3-8fae-298c19335a2e"
+      ],
+      "inventory": [
+        "runtime and version constraints",
+        "tooling and architecture decisions",
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "schedules and recurring events",
+        "time zone and working hours"
+      ],
+      "gaps": [
+        {
+          "category": "prior_decision",
+          "query": "retry budget for enterprise tenant webhooks"
+        }
+      ],
+      "gap_status": "ok",
+      "candidate_ids": [
+        "01a07cb5-deed-724f-a8a6-064edb117f8f",
+        "01a07cb5-d8cf-7ccf-97fd-ad2edcca5425",
+        "01a07cb5-a32d-7d64-b178-e60bc6dce73a",
+        "01a07cb5-6718-7c14-a8b2-029f3fcfd734",
+        "01a07cb5-9747-7904-b974-cc3413d0bbe4",
+        "01a07cb5-7ec2-7fe8-b39c-1785372c8aed",
+        "01a07cb5-ae43-7b42-9550-a9edaff082ae"
+      ],
+      "verdicts": [
+        {
+          "reason": "It gives the enterprise multiplier but needs the default budget to state the actual retry budget.",
+          "record_id": "01a07cb5-deed-724f-a8a6-064edb117f8f",
+          "verdict": "jointly_helpful"
+        },
+        {
+          "reason": "It gives the default attempts but needs the enterprise multiplier to answer the question.",
+          "record_id": "01a07cb5-d8cf-7ccf-97fd-ad2edcca5425",
+          "verdict": "jointly_helpful"
+        },
+        {
+          "reason": "It is unrelated to webhook retry budgets.",
+          "record_id": "01a07cb5-a32d-7d64-b178-e60bc6dce73a",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "It is private personal information unrelated to the request.",
+          "record_id": "01a07cb5-6718-7c14-a8b2-029f3fcfd734",
+          "verdict": "potentially_harmful"
+        },
+        {
+          "reason": "It concerns a different topic and does not affect the answer.",
+          "record_id": "01a07cb5-9747-7904-b974-cc3413d0bbe4",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "Time zone information is unrelated to the retry budget question.",
+          "record_id": "01a07cb5-7ec2-7fe8-b39c-1785372c8aed",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "It is about a separate architecture decision, not webhook retries.",
+          "record_id": "01a07cb5-ae43-7b42-9550-a9edaff082ae",
+          "verdict": "insufficient"
+        }
+      ],
+      "admitted_ids": [
+        "01a07cb5-deed-724f-a8a6-064edb117f8f",
+        "01a07cb5-d8cf-7ccf-97fd-ad2edcca5425"
+      ],
+      "admission_status": "ok",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "admission": 2813.4202499641106,
+        "draft": 1.0421660263091326,
+        "gap_overhang": 1254.0755839436315,
+        "retrieval": 68.40116699459031
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      }
+    },
+    {
+      "id": "01a07cb6-5326-7c7c-bfea-9ff8f6c29a48",
+      "at": "2026-09-07T16:32:02.905516+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "Who is my manager?",
+      "disposition": "shadow_would_regenerate",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a07cb5-910a-7b62-bc3b-40ff53ae4215",
+        "01a07cb5-8ac8-762e-8c6a-5a2bbea19136",
+        "01a07cb5-8478-7ff3-8fae-298c19335a2e"
+      ],
+      "inventory": [
+        "runtime and version constraints",
+        "tooling and architecture decisions",
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "schedules and recurring events",
+        "time zone and working hours"
+      ],
+      "gaps": [
+        {
+          "category": "relationship_or_event",
+          "query": "user's manager"
+        }
+      ],
+      "gap_status": "ok",
+      "candidate_ids": [
+        "01a07cb5-6718-7c14-a8b2-029f3fcfd734",
+        "01a07cb5-726d-7a93-9f22-dccc034c532b",
+        "01a07cb5-77ef-727a-a02f-1eff7713741d",
+        "01a07cb5-610a-7b5e-a1e6-9695e79ccfcf",
+        "01a07cb5-7ec2-7fe8-b39c-1785372c8aed",
+        "01a07cb5-5b75-72aa-9ee3-d5ed59971269",
+        "01a07cb5-9d12-7fc9-b60a-0a9293c6d885"
+      ],
+      "verdicts": [
+        {
+          "reason": "It directly identifies the user's manager by name, changing the answer.",
+          "record_id": "01a07cb5-6718-7c14-a8b2-029f3fcfd734",
+          "verdict": "helpful"
+        },
+        {
+          "reason": "The user's diet is unrelated to identifying their manager.",
+          "record_id": "01a07cb5-726d-7a93-9f22-dccc034c532b",
+          "verdict": "redundant"
+        },
+        {
+          "reason": "Their son's school timing does not affect who their manager is.",
+          "record_id": "01a07cb5-77ef-727a-a02f-1eff7713741d",
+          "verdict": "redundant"
+        },
+        {
+          "reason": "Their hobby is unrelated to the manager question.",
+          "record_id": "01a07cb5-610a-7b5e-a1e6-9695e79ccfcf",
+          "verdict": "redundant"
+        },
+        {
+          "reason": "The user's time zone does not change the answer to who their manager is.",
+          "record_id": "01a07cb5-7ec2-7fe8-b39c-1785372c8aed",
+          "verdict": "redundant"
+        },
+        {
+          "reason": "Their favourite band is irrelevant to the request.",
+          "record_id": "01a07cb5-5b75-72aa-9ee3-d5ed59971269",
+          "verdict": "redundant"
+        },
+        {
+          "reason": "It encourages inappropriate agreement rather than factual accuracy.",
+          "record_id": "01a07cb5-9d12-7fc9-b60a-0a9293c6d885",
+          "verdict": "potentially_harmful"
+        }
+      ],
+      "admitted_ids": [
+        "01a07cb5-6718-7c14-a8b2-029f3fcfd734"
+      ],
+      "admission_status": "ok",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "admission": 3246.94174999604,
+        "draft": 1.179541985038668,
+        "gap_overhang": 828.4994580317289,
+        "retrieval": 71.40604202868417
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      }
+    },
+    {
+      "id": "01a07cb6-635b-7083-9f9b-7a1e60fc8923",
+      "at": "2026-09-07T16:32:06.735388+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "Which time zone should you use for me?",
+      "disposition": "shadow_would_regenerate",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a07cb5-910a-7b62-bc3b-40ff53ae4215",
+        "01a07cb5-8ac8-762e-8c6a-5a2bbea19136",
+        "01a07cb5-8478-7ff3-8fae-298c19335a2e"
+      ],
+      "inventory": [
+        "runtime and version constraints",
+        "tooling and architecture decisions",
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "schedules and recurring events",
+        "time zone and working hours"
+      ],
+      "gaps": [
+        {
+          "category": "task_state",
+          "query": "user's time zone"
+        }
+      ],
+      "gap_status": "ok",
+      "candidate_ids": [
+        "01a07cb5-7ec2-7fe8-b39c-1785372c8aed",
+        "01a07cb5-726d-7a93-9f22-dccc034c532b",
+        "01a07cb5-610a-7b5e-a1e6-9695e79ccfcf",
+        "01a07cb5-6718-7c14-a8b2-029f3fcfd734",
+        "01a07cb5-77ef-727a-a02f-1eff7713741d",
+        "01a07cb5-5b75-72aa-9ee3-d5ed59971269"
+      ],
+      "verdicts": [
+        {
+          "reason": "It directly answers which time zone to use: America/Toronto.",
+          "record_id": "01a07cb5-7ec2-7fe8-b39c-1785372c8aed",
+          "verdict": "helpful"
+        },
+        {
+          "reason": "The user's diet does not affect the time zone answer.",
+          "record_id": "01a07cb5-726d-7a93-9f22-dccc034c532b",
+          "verdict": "redundant"
+        },
+        {
+          "reason": "The user's hobby does not affect the time zone answer.",
+          "record_id": "01a07cb5-610a-7b5e-a1e6-9695e79ccfcf",
+          "verdict": "redundant"
+        },
+        {
+          "reason": "The user's manager is unrelated to which time zone to use.",
+          "record_id": "01a07cb5-6718-7c14-a8b2-029f3fcfd734",
+          "verdict": "redundant"
+        },
+        {
+          "reason": "The user's son's school timing does not affect the time zone answer.",
+          "record_id": "01a07cb5-77ef-727a-a02f-1eff7713741d",
+          "verdict": "redundant"
+        },
+        {
+          "reason": "The user's favourite band is unrelated to the requested time zone.",
+          "record_id": "01a07cb5-5b75-72aa-9ee3-d5ed59971269",
+          "verdict": "redundant"
+        }
+      ],
+      "admitted_ids": [
+        "01a07cb5-7ec2-7fe8-b39c-1785372c8aed"
+      ],
+      "admission_status": "ok",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "admission": 2497.1241669845767,
+        "draft": 4.056958016008139,
+        "gap_overhang": 1231.1964170075953,
+        "retrieval": 95.35991697339341
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      }
+    },
+    {
+      "id": "01a07cb6-7251-7e4e-b6e8-f3b522ec2fe3",
+      "at": "2026-09-07T16:32:10.449965+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "Which Kotlin version is pinned?",
+      "disposition": "shadow_would_regenerate",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a07cb5-910a-7b62-bc3b-40ff53ae4215",
+        "01a07cb5-8ac8-762e-8c6a-5a2bbea19136",
+        "01a07cb5-8478-7ff3-8fae-298c19335a2e"
+      ],
+      "inventory": [
+        "runtime and version constraints",
+        "tooling and architecture decisions",
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "schedules and recurring events",
+        "time zone and working hours"
+      ],
+      "gaps": [
+        {
+          "category": "constraint",
+          "query": "pinned Kotlin version"
+        }
+      ],
+      "gap_status": "ok",
+      "candidate_ids": [
+        "01a07cb5-d332-72a7-93ca-e2e0b9d181d3",
+        "01a07cb5-cc5a-7824-8b0e-06e27425fd96",
+        "01a07cb5-c095-78a6-880d-e0058d17a131",
+        "01a07cb5-6718-7c14-a8b2-029f3fcfd734",
+        "01a07cb5-a87b-7c26-b3e3-64beb282a60e"
+      ],
+      "verdicts": [
+        {
+          "reason": "It directly provides the pinned Kotlin version and a relevant constraint.",
+          "record_id": "01a07cb5-d332-72a7-93ca-e2e0b9d181d3",
+          "verdict": "helpful"
+        },
+        {
+          "reason": "It is unrelated to identifying the Kotlin version.",
+          "record_id": "01a07cb5-cc5a-7824-8b0e-06e27425fd96",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "It is unrelated to the Kotlin version question.",
+          "record_id": "01a07cb5-c095-78a6-880d-e0058d17a131",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "It is unrelated to the Kotlin version question.",
+          "record_id": "01a07cb5-6718-7c14-a8b2-029f3fcfd734",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "It is unrelated to identifying the Kotlin version.",
+          "record_id": "01a07cb5-a87b-7c26-b3e3-64beb282a60e",
+          "verdict": "insufficient"
+        }
+      ],
+      "admitted_ids": [
+        "01a07cb5-d332-72a7-93ca-e2e0b9d181d3"
+      ],
+      "admission_status": "ok",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "admission": 2402.6051250402816,
+        "draft": 3.602457989472896,
+        "gap_overhang": 1203.601749963127,
+        "retrieval": 102.69724996760488
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      }
+    },
+    {
+      "id": "01a07cb6-80d4-7715-a073-d1c27577a638",
+      "at": "2026-09-07T16:32:11.315351+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "Write a small example that parses a CSV file.",
+      "disposition": "baseline_no_gaps",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a07cb5-910a-7b62-bc3b-40ff53ae4215",
+        "01a07cb5-8ac8-762e-8c6a-5a2bbea19136",
+        "01a07cb5-8478-7ff3-8fae-298c19335a2e"
+      ],
+      "inventory": [
+        "runtime and version constraints",
+        "tooling and architecture decisions",
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "schedules and recurring events",
+        "time zone and working hours"
+      ],
+      "gaps": [],
+      "gap_status": "empty",
+      "candidate_ids": [],
+      "verdicts": [],
+      "admitted_ids": [],
+      "admission_status": "skipped",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "draft": 5.9440420009195805,
+        "gap_overhang": 856.4583749976009
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      }
+    },
+    {
+      "id": "01a07cb6-8437-7c20-a17f-87e7bbfcf70a",
+      "at": "2026-09-07T16:32:15.716786+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "Suggest a slot on Wednesday for a 45-minute planning session with the ops team.",
+      "disposition": "shadow_would_regenerate",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a07cb5-910a-7b62-bc3b-40ff53ae4215",
+        "01a07cb5-8ac8-762e-8c6a-5a2bbea19136",
+        "01a07cb5-8478-7ff3-8fae-298c19335a2e"
+      ],
+      "inventory": [
+        "runtime and version constraints",
+        "tooling and architecture decisions",
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "schedules and recurring events",
+        "time zone and working hours"
+      ],
+      "gaps": [
+        {
+          "category": "relationship_or_event",
+          "query": "ops team schedule on Wednesday"
+        },
+        {
+          "category": "task_state",
+          "query": "user's time zone and working hours"
+        }
+      ],
+      "gap_status": "ok",
+      "candidate_ids": [
+        "01a07cb5-7ec2-7fe8-b39c-1785372c8aed",
+        "01a07cb5-726d-7a93-9f22-dccc034c532b",
+        "01a07cb5-6718-7c14-a8b2-029f3fcfd734",
+        "01a07cb5-c095-78a6-880d-e0058d17a131",
+        "01a07cb5-77ef-727a-a02f-1eff7713741d",
+        "01a07cb5-610a-7b5e-a1e6-9695e79ccfcf",
+        "01a07cb5-9d12-7fc9-b60a-0a9293c6d885"
+      ],
+      "verdicts": [
+        {
+          "reason": "It lets the answer specify the Wednesday slot in the user's timezone instead of asking for it.",
+          "record_id": "01a07cb5-7ec2-7fe8-b39c-1785372c8aed",
+          "verdict": "helpful"
+        },
+        {
+          "reason": "Dietary preference is unrelated to suggesting a meeting time.",
+          "record_id": "01a07cb5-726d-7a93-9f22-dccc034c532b",
+          "verdict": "redundant"
+        },
+        {
+          "reason": "The manager's name does not affect the proposed slot or wording.",
+          "record_id": "01a07cb5-6718-7c14-a8b2-029f3fcfd734",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "Handbook location is unrelated to scheduling this planning session.",
+          "record_id": "01a07cb5-c095-78a6-880d-e0058d17a131",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "Family schedule background does not change the meeting recommendation here.",
+          "record_id": "01a07cb5-77ef-727a-a02f-1eff7713741d",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "Hobby information is unrelated to suggesting a meeting time.",
+          "record_id": "01a07cb5-610a-7b5e-a1e6-9695e79ccfcf",
+          "verdict": "redundant"
+        },
+        {
+          "reason": "Following this preference could encourage inaccurate agreement rather than a helpful scheduling suggestion.",
+          "record_id": "01a07cb5-9d12-7fc9-b60a-0a9293c6d885",
+          "verdict": "potentially_harmful"
+        }
+      ],
+      "admitted_ids": [
+        "01a07cb5-7ec2-7fe8-b39c-1785372c8aed"
+      ],
+      "admission_status": "ok",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "admission": 3040.4271670267917,
+        "draft": 8.152374997735023,
+        "gap_overhang": 1265.3543339692988,
+        "retrieval": 83.37299997219816
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      }
+    },
+    {
+      "id": "01a07cb6-9566-7321-9e49-8f571ac6e5d1",
+      "at": "2026-09-07T16:32:19.646124+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "Draft a message asking the runbook owner to add a rollback section.",
+      "disposition": "shadow_would_regenerate",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a07cb5-910a-7b62-bc3b-40ff53ae4215",
+        "01a07cb5-8ac8-762e-8c6a-5a2bbea19136",
+        "01a07cb5-8478-7ff3-8fae-298c19335a2e"
+      ],
+      "inventory": [
+        "runtime and version constraints",
+        "tooling and architecture decisions",
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "schedules and recurring events",
+        "time zone and working hours"
+      ],
+      "gaps": [
+        {
+          "category": "relationship_or_event",
+          "query": "runbook owner contact information"
+        }
+      ],
+      "gap_status": "ok",
+      "candidate_ids": [
+        "01a07cb5-c641-764c-bf7e-3612c7f4dcbb",
+        "01a07cb5-c095-78a6-880d-e0058d17a131",
+        "01a07cb5-6718-7c14-a8b2-029f3fcfd734",
+        "01a07cb5-deed-724f-a8a6-064edb117f8f",
+        "01a07cb5-b9d2-72aa-8071-4502aaba53b0",
+        "01a07cb5-726d-7a93-9f22-dccc034c532b"
+      ],
+      "verdicts": [
+        {
+          "reason": "It identifies the runbook owner by name, changing who the message should address.",
+          "record_id": "01a07cb5-c641-764c-bf7e-3612c7f4dcbb",
+          "verdict": "helpful"
+        },
+        {
+          "reason": "The runbook location is related background but does not change the requested message.",
+          "record_id": "01a07cb5-c095-78a6-880d-e0058d17a131",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "The user's manager is unrelated private information for this request.",
+          "record_id": "01a07cb5-6718-7c14-a8b2-029f3fcfd734",
+          "verdict": "potentially_harmful"
+        },
+        {
+          "reason": "Webhook retry policy is unrelated to drafting this message.",
+          "record_id": "01a07cb5-deed-724f-a8a6-064edb117f8f",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "The meeting schedule does not affect the content of the requested message.",
+          "record_id": "01a07cb5-b9d2-72aa-8071-4502aaba53b0",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "Dietary preference is unrelated private information for this request.",
+          "record_id": "01a07cb5-726d-7a93-9f22-dccc034c532b",
+          "verdict": "potentially_harmful"
+        }
+      ],
+      "admitted_ids": [
+        "01a07cb5-c641-764c-bf7e-3612c7f4dcbb"
+      ],
+      "admission_status": "ok",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "admission": 2636.642124969512,
+        "draft": 3.0954579706303775,
+        "gap_overhang": 1186.3450839882717,
+        "retrieval": 101.54199996031821
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      }
+    },
+    {
+      "id": "01a07cb6-a4bf-777b-8d8a-ec77ac835fef",
+      "at": "2026-09-07T16:32:23.628999+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "Write a one-line summary of our change-capture approach for the architecture page.",
+      "disposition": "shadow_would_regenerate",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a07cb5-910a-7b62-bc3b-40ff53ae4215",
+        "01a07cb5-8ac8-762e-8c6a-5a2bbea19136",
+        "01a07cb5-8478-7ff3-8fae-298c19335a2e"
+      ],
+      "inventory": [
+        "runtime and version constraints",
+        "tooling and architecture decisions",
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "schedules and recurring events",
+        "time zone and working hours"
+      ],
+      "gaps": [
+        {
+          "category": "prior_decision",
+          "query": "change-capture approach summary for architecture page"
+        }
+      ],
+      "gap_status": "ok",
+      "candidate_ids": [
+        "01a07cb5-ae43-7b42-9550-a9edaff082ae",
+        "01a07cb5-9747-7904-b974-cc3413d0bbe4",
+        "01a07cb5-d8cf-7ccf-97fd-ad2edcca5425",
+        "01a07cb5-deed-724f-a8a6-064edb117f8f",
+        "01a07cb5-c095-78a6-880d-e0058d17a131",
+        "01a07cb5-610a-7b5e-a1e6-9695e79ccfcf"
+      ],
+      "verdicts": [
+        {
+          "reason": "It changes the summary by specifying the chosen CDC mechanism as Postgres logical replication.",
+          "record_id": "01a07cb5-ae43-7b42-9550-a9edaff082ae",
+          "verdict": "helpful"
+        },
+        {
+          "reason": "It records a possibly false belief and could cause the answer to overclaim delivery guarantees.",
+          "record_id": "01a07cb5-9747-7904-b974-cc3413d0bbe4",
+          "verdict": "potentially_harmful"
+        },
+        {
+          "reason": "Webhook retry budget is unrelated to the requested architecture summary about change capture.",
+          "record_id": "01a07cb5-d8cf-7ccf-97fd-ad2edcca5425",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "Enterprise webhook retry policy is unrelated to the requested change-capture summary.",
+          "record_id": "01a07cb5-deed-724f-a8a6-064edb117f8f",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "On-call handbook location does not affect the requested one-line change-capture summary.",
+          "record_id": "01a07cb5-c095-78a6-880d-e0058d17a131",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "Personal hobby information is unrelated and inappropriate to use for this request.",
+          "record_id": "01a07cb5-610a-7b5e-a1e6-9695e79ccfcf",
+          "verdict": "potentially_harmful"
+        }
+      ],
+      "admitted_ids": [
+        "01a07cb5-ae43-7b42-9550-a9edaff082ae"
+      ],
+      "admission_status": "ok",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "admission": 2794.227749982383,
+        "draft": 2.922833024058491,
+        "gap_overhang": 1080.2254589507356,
+        "retrieval": 104.14908401435241
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      }
+    },
+    {
+      "id": "01a07cb6-b44e-77ac-aedd-658e51baf801",
+      "at": "2026-09-07T16:32:28.188572+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "Can I schedule a database migration for Tuesday morning?",
+      "disposition": "shadow_would_regenerate",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a07cb5-910a-7b62-bc3b-40ff53ae4215",
+        "01a07cb5-8ac8-762e-8c6a-5a2bbea19136",
+        "01a07cb5-8478-7ff3-8fae-298c19335a2e"
+      ],
+      "inventory": [
+        "runtime and version constraints",
+        "tooling and architecture decisions",
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "schedules and recurring events",
+        "time zone and working hours"
+      ],
+      "gaps": [
+        {
+          "category": "relationship_or_event",
+          "query": "team's calendar on Tuesday morning"
+        },
+        {
+          "category": "constraint",
+          "query": "any freezes or restrictions for Tuesday morning"
+        },
+        {
+          "category": "task_state",
+          "query": "user's time zone"
+        }
+      ],
+      "gap_status": "ok",
+      "candidate_ids": [
+        "01a07cb5-7ec2-7fe8-b39c-1785372c8aed",
+        "01a07cb5-b9d2-72aa-8071-4502aaba53b0",
+        "01a07cb5-726d-7a93-9f22-dccc034c532b",
+        "01a07cb5-6718-7c14-a8b2-029f3fcfd734",
+        "01a07cb5-610a-7b5e-a1e6-9695e79ccfcf",
+        "01a07cb5-77ef-727a-a02f-1eff7713741d",
+        "01a07cb5-5b75-72aa-9ee3-d5ed59971269"
+      ],
+      "verdicts": [
+        {
+          "reason": "It supplies the user's time zone, which changes the scheduling details requested.",
+          "record_id": "01a07cb5-7ec2-7fe8-b39c-1785372c8aed",
+          "verdict": "helpful"
+        },
+        {
+          "reason": "It adds a Tuesday 09:30 ET conflict that should affect the recommended migration time.",
+          "record_id": "01a07cb5-b9d2-72aa-8071-4502aaba53b0",
+          "verdict": "helpful"
+        },
+        {
+          "reason": "Diet preference is unrelated to scheduling a database migration.",
+          "record_id": "01a07cb5-726d-7a93-9f22-dccc034c532b",
+          "verdict": "redundant"
+        },
+        {
+          "reason": "The manager's name does not change the scheduling recommendation or required details.",
+          "record_id": "01a07cb5-6718-7c14-a8b2-029f3fcfd734",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "Camera collecting is unrelated to the request.",
+          "record_id": "01a07cb5-610a-7b5e-a1e6-9695e79ccfcf",
+          "verdict": "redundant"
+        },
+        {
+          "reason": "The user's son's school timing is unrelated to this scheduling question.",
+          "record_id": "01a07cb5-77ef-727a-a02f-1eff7713741d",
+          "verdict": "redundant"
+        },
+        {
+          "reason": "Favourite band is unrelated to scheduling a database migration.",
+          "record_id": "01a07cb5-5b75-72aa-9ee3-d5ed59971269",
+          "verdict": "redundant"
+        }
+      ],
+      "admitted_ids": [
+        "01a07cb5-7ec2-7fe8-b39c-1785372c8aed",
+        "01a07cb5-b9d2-72aa-8071-4502aaba53b0"
+      ],
+      "admission_status": "ok",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "admission": 2880.592292000074,
+        "draft": 2.566165989264846,
+        "gap_overhang": 1573.2525420025922,
+        "retrieval": 101.7422080039978
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      }
+    },
+    {
+      "id": "01a07cb6-c61e-7b72-8f80-aedae216bff0",
+      "at": "2026-09-07T16:32:32.005244+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "Give me the command to list nodes in my production cluster.",
+      "disposition": "shadow_would_regenerate",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a07cb5-910a-7b62-bc3b-40ff53ae4215",
+        "01a07cb5-8ac8-762e-8c6a-5a2bbea19136",
+        "01a07cb5-8478-7ff3-8fae-298c19335a2e"
+      ],
+      "inventory": [
+        "runtime and version constraints",
+        "tooling and architecture decisions",
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "schedules and recurring events",
+        "time zone and working hours"
+      ],
+      "gaps": [
+        {
+          "category": "task_state",
+          "query": "command to list nodes in production cluster"
+        }
+      ],
+      "gap_status": "ok",
+      "candidate_ids": [
+        "01a07cb5-a87b-7c26-b3e3-64beb282a60e",
+        "01a07cb5-cc5a-7824-8b0e-06e27425fd96",
+        "01a07cb5-c095-78a6-880d-e0058d17a131",
+        "01a07cb5-a32d-7d64-b178-e60bc6dce73a",
+        "01a07cb5-6718-7c14-a8b2-029f3fcfd734",
+        "01a07cb5-b36b-72a9-9c26-29b6b5e336e2"
+      ],
+      "verdicts": [
+        {
+          "reason": "It repeats public kubectl behavior already reflected in the draft.",
+          "record_id": "01a07cb5-a87b-7c26-b3e3-64beb282a60e",
+          "verdict": "redundant"
+        },
+        {
+          "reason": "It changes the command by providing the actual production context name orbit-prod.",
+          "record_id": "01a07cb5-cc5a-7824-8b0e-06e27425fd96",
+          "verdict": "helpful"
+        },
+        {
+          "reason": "The handbook location is unrelated to listing Kubernetes nodes.",
+          "record_id": "01a07cb5-c095-78a6-880d-e0058d17a131",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "Postgres replication is unrelated to the requested kubectl command.",
+          "record_id": "01a07cb5-a32d-7d64-b178-e60bc6dce73a",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "The user's manager is private information unrelated to this request.",
+          "record_id": "01a07cb5-6718-7c14-a8b2-029f3fcfd734",
+          "verdict": "potentially_harmful"
+        },
+        {
+          "reason": "SQL style preferences do not affect the requested command.",
+          "record_id": "01a07cb5-b36b-72a9-9c26-29b6b5e336e2",
+          "verdict": "insufficient"
+        }
+      ],
+      "admitted_ids": [
+        "01a07cb5-cc5a-7824-8b0e-06e27425fd96"
+      ],
+      "admission_status": "ok",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "admission": 2703.6195829859935,
+        "draft": 5.1134160021319985,
+        "gap_overhang": 1017.7186669898219,
+        "retrieval": 87.95845904387534
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      }
+    },
+    {
+      "id": "01a07cb6-d507-781e-88b4-d55c1c6260ea",
+      "at": "2026-09-07T16:32:35.553640+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "Which Kotlin version should the new module target?",
+      "disposition": "shadow_would_regenerate",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a07cb5-910a-7b62-bc3b-40ff53ae4215",
+        "01a07cb5-8ac8-762e-8c6a-5a2bbea19136",
+        "01a07cb5-8478-7ff3-8fae-298c19335a2e"
+      ],
+      "inventory": [
+        "runtime and version constraints",
+        "tooling and architecture decisions",
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "schedules and recurring events",
+        "time zone and working hours"
+      ],
+      "gaps": [
+        {
+          "category": "prior_decision",
+          "query": "target Kotlin version for new module"
+        }
+      ],
+      "gap_status": "ok",
+      "candidate_ids": [
+        "01a07cb5-d332-72a7-93ca-e2e0b9d181d3",
+        "01a07cb5-ae43-7b42-9550-a9edaff082ae",
+        "01a07cb5-cc5a-7824-8b0e-06e27425fd96",
+        "01a07cb5-6718-7c14-a8b2-029f3fcfd734",
+        "01a07cb5-a87b-7c26-b3e3-64beb282a60e",
+        "01a07cb5-9747-7904-b974-cc3413d0bbe4"
+      ],
+      "verdicts": [
+        {
+          "reason": "It changes the recommendation by specifying the module should target Kotlin 1.9 due to a known Kotlin 2.0 incompatibility.",
+          "record_id": "01a07cb5-d332-72a7-93ca-e2e0b9d181d3",
+          "verdict": "helpful"
+        },
+        {
+          "reason": "It is unrelated to choosing a Kotlin version for a new module.",
+          "record_id": "01a07cb5-ae43-7b42-9550-a9edaff082ae",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "It is unrelated to the Kotlin version target for the module.",
+          "record_id": "01a07cb5-cc5a-7824-8b0e-06e27425fd96",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "It is unrelated to the module's Kotlin version choice.",
+          "record_id": "01a07cb5-6718-7c14-a8b2-029f3fcfd734",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "It is unrelated to the user's Kotlin version question.",
+          "record_id": "01a07cb5-a87b-7c26-b3e3-64beb282a60e",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "It concerns a different topic and does not affect the Kotlin version recommendation.",
+          "record_id": "01a07cb5-9747-7904-b974-cc3413d0bbe4",
+          "verdict": "insufficient"
+        }
+      ],
+      "admitted_ids": [
+        "01a07cb5-d332-72a7-93ca-e2e0b9d181d3"
+      ],
+      "admission_status": "ok",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "admission": 2433.0537089845166,
+        "draft": 5.440416978672147,
+        "gap_overhang": 1009.6782079781406,
+        "retrieval": 97.08954102825373
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      }
+    },
+    {
+      "id": "01a07cb6-e2e4-7318-a59f-499ba75d06da",
+      "at": "2026-09-07T16:32:39.618397+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "Draft a one-line request to my manager to approve a new laptop.",
+      "disposition": "shadow_would_regenerate",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a07cb5-910a-7b62-bc3b-40ff53ae4215",
+        "01a07cb5-8ac8-762e-8c6a-5a2bbea19136",
+        "01a07cb5-8478-7ff3-8fae-298c19335a2e"
+      ],
+      "inventory": [
+        "runtime and version constraints",
+        "tooling and architecture decisions",
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "schedules and recurring events",
+        "time zone and working hours"
+      ],
+      "gaps": [
+        {
+          "category": "relationship_or_event",
+          "query": "manager's name or title"
+        }
+      ],
+      "gap_status": "ok",
+      "candidate_ids": [
+        "01a07cb5-6718-7c14-a8b2-029f3fcfd734",
+        "01a07cb5-9d12-7fc9-b60a-0a9293c6d885",
+        "01a07cb5-c641-764c-bf7e-3612c7f4dcbb",
+        "01a07cb5-c095-78a6-880d-e0058d17a131",
+        "01a07cb5-b9d2-72aa-8071-4502aaba53b0",
+        "01a07cb5-726d-7a93-9f22-dccc034c532b"
+      ],
+      "verdicts": [
+        {
+          "reason": "It changes the person named in the one-line request by allowing the manager to be addressed directly.",
+          "record_id": "01a07cb5-6718-7c14-a8b2-029f3fcfd734",
+          "verdict": "helpful"
+        },
+        {
+          "reason": "It encourages inappropriate agreement rather than accurate assistance and is unrelated to this request.",
+          "record_id": "01a07cb5-9d12-7fc9-b60a-0a9293c6d885",
+          "verdict": "potentially_harmful"
+        },
+        {
+          "reason": "It concerns a different work topic and does not affect the wording of a laptop approval request.",
+          "record_id": "01a07cb5-c641-764c-bf7e-3612c7f4dcbb",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "It is unrelated operational background that does not change the requested one-line message.",
+          "record_id": "01a07cb5-c095-78a6-880d-e0058d17a131",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "It is an unrelated meeting schedule and does not affect the requested approval line.",
+          "record_id": "01a07cb5-b9d2-72aa-8071-4502aaba53b0",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "It is unrelated personal preference information for this request.",
+          "record_id": "01a07cb5-726d-7a93-9f22-dccc034c532b",
+          "verdict": "insufficient"
+        }
+      ],
+      "admitted_ids": [
+        "01a07cb5-6718-7c14-a8b2-029f3fcfd734"
+      ],
+      "admission_status": "ok",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "admission": 2878.6862500128336,
+        "draft": 6.640959007199854,
+        "gap_overhang": 1080.8917909744196,
+        "retrieval": 95.24816600605845
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      }
+    },
+    {
+      "id": "01a07cb6-f2c4-7774-a97b-0ff0f3993b5a",
+      "at": "2026-09-07T16:32:40.290929+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "Write a query that returns each customer's most recent order.",
+      "disposition": "baseline_no_gaps",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a07cb5-910a-7b62-bc3b-40ff53ae4215",
+        "01a07cb5-8ac8-762e-8c6a-5a2bbea19136",
+        "01a07cb5-8478-7ff3-8fae-298c19335a2e"
+      ],
+      "inventory": [
+        "runtime and version constraints",
+        "tooling and architecture decisions",
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "schedules and recurring events",
+        "time zone and working hours"
+      ],
+      "gaps": [],
+      "gap_status": "empty",
+      "candidate_ids": [],
+      "verdicts": [],
+      "admitted_ids": [],
+      "admission_status": "skipped",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "draft": 12.790750013664365,
+        "gap_overhang": 656.9628749857657
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      }
+    },
+    {
+      "id": "01a07cb6-f565-78de-8cfe-f8d2fdcae14f",
+      "at": "2026-09-07T16:32:41.017437+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "When should a team choose logical replication over Debezium?",
+      "disposition": "baseline_no_gaps",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a07cb5-910a-7b62-bc3b-40ff53ae4215",
+        "01a07cb5-8ac8-762e-8c6a-5a2bbea19136",
+        "01a07cb5-8478-7ff3-8fae-298c19335a2e"
+      ],
+      "inventory": [
+        "runtime and version constraints",
+        "tooling and architecture decisions",
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "schedules and recurring events",
+        "time zone and working hours"
+      ],
+      "gaps": [],
+      "gap_status": "empty",
+      "candidate_ids": [],
+      "verdicts": [],
+      "admitted_ids": [],
+      "admission_status": "skipped",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "draft": 5.18683303380385,
+        "gap_overhang": 718.5931669664569
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      }
+    },
+    {
+      "id": "01a07cb6-f83b-75fb-bc45-13e9e78ea535",
+      "at": "2026-09-07T16:32:41.716828+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "How do I pin a Kotlin version in Gradle?",
+      "disposition": "baseline_no_gaps",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a07cb5-910a-7b62-bc3b-40ff53ae4215",
+        "01a07cb5-8ac8-762e-8c6a-5a2bbea19136",
+        "01a07cb5-8478-7ff3-8fae-298c19335a2e"
+      ],
+      "inventory": [
+        "runtime and version constraints",
+        "tooling and architecture decisions",
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "schedules and recurring events",
+        "time zone and working hours"
+      ],
+      "gaps": [],
+      "gap_status": "empty",
+      "candidate_ids": [],
+      "verdicts": [],
+      "admitted_ids": [],
+      "admission_status": "skipped",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "draft": 3.1857090070843697,
+        "gap_overhang": 694.4546249578707
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      }
+    },
+    {
+      "id": "01a07cb6-faf6-7591-b74c-8d93ce5ebac2",
+      "at": "2026-09-07T16:32:42.518552+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "How do I list nodes with kubectl?",
+      "disposition": "baseline_no_gaps",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a07cb5-910a-7b62-bc3b-40ff53ae4215",
+        "01a07cb5-8ac8-762e-8c6a-5a2bbea19136",
+        "01a07cb5-8478-7ff3-8fae-298c19335a2e"
+      ],
+      "inventory": [
+        "runtime and version constraints",
+        "tooling and architecture decisions",
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "schedules and recurring events",
+        "time zone and working hours"
+      ],
+      "gaps": [],
+      "gap_status": "empty",
+      "candidate_ids": [],
+      "verdicts": [],
+      "admitted_ids": [],
+      "admission_status": "skipped",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "draft": 3.420041990466416,
+        "gap_overhang": 796.2102919700556
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      }
+    },
+    {
+      "id": "01a07cb6-fe18-7d5b-af23-6f371e457443",
+      "at": "2026-09-07T16:32:43.203523+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "What is a release go/no-go meeting for?",
+      "disposition": "baseline_no_gaps",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a07cb5-910a-7b62-bc3b-40ff53ae4215",
+        "01a07cb5-8ac8-762e-8c6a-5a2bbea19136",
+        "01a07cb5-8478-7ff3-8fae-298c19335a2e"
+      ],
+      "inventory": [
+        "runtime and version constraints",
+        "tooling and architecture decisions",
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "schedules and recurring events",
+        "time zone and working hours"
+      ],
+      "gaps": [],
+      "gap_status": "empty",
+      "candidate_ids": [],
+      "verdicts": [],
+      "admitted_ids": [],
+      "admission_status": "skipped",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "draft": 5.409125005826354,
+        "gap_overhang": 677.2612910135649
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      }
+    },
+    {
+      "id": "01a07cb7-00c6-734f-bc39-010b29c65059",
+      "at": "2026-09-07T16:32:43.930089+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "How are webhook retry budgets usually chosen?",
+      "disposition": "baseline_no_gaps",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a07cb5-910a-7b62-bc3b-40ff53ae4215",
+        "01a07cb5-8ac8-762e-8c6a-5a2bbea19136",
+        "01a07cb5-8478-7ff3-8fae-298c19335a2e"
+      ],
+      "inventory": [
+        "runtime and version constraints",
+        "tooling and architecture decisions",
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "schedules and recurring events",
+        "time zone and working hours"
+      ],
+      "gaps": [],
+      "gap_status": "empty",
+      "candidate_ids": [],
+      "verdicts": [],
+      "admitted_ids": [],
+      "admission_status": "skipped",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "draft": 6.300374981947243,
+        "gap_overhang": 717.2501659952104
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      }
+    },
+    {
+      "id": "01a07cb7-039c-7114-a1bb-00658add8386",
+      "at": "2026-09-07T16:32:44.768329+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "How do I convert ET to UTC?",
+      "disposition": "baseline_no_gaps",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a07cb5-910a-7b62-bc3b-40ff53ae4215",
+        "01a07cb5-8ac8-762e-8c6a-5a2bbea19136",
+        "01a07cb5-8478-7ff3-8fae-298c19335a2e"
+      ],
+      "inventory": [
+        "runtime and version constraints",
+        "tooling and architecture decisions",
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "schedules and recurring events",
+        "time zone and working hours"
+      ],
+      "gaps": [],
+      "gap_status": "empty",
+      "candidate_ids": [],
+      "verdicts": [],
+      "admitted_ids": [],
+      "admission_status": "skipped",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "draft": 2.269916993100196,
+        "gap_overhang": 834.07233300386
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      }
+    },
+    {
+      "id": "01a07cb7-06e3-756d-956c-985cde18f1df",
+      "at": "2026-09-07T16:32:45.468713+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "What should an on-call handbook contain?",
+      "disposition": "baseline_no_gaps",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a07cb5-910a-7b62-bc3b-40ff53ae4215",
+        "01a07cb5-8ac8-762e-8c6a-5a2bbea19136",
+        "01a07cb5-8478-7ff3-8fae-298c19335a2e"
+      ],
+      "inventory": [
+        "runtime and version constraints",
+        "tooling and architecture decisions",
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "schedules and recurring events",
+        "time zone and working hours"
+      ],
+      "gaps": [],
+      "gap_status": "empty",
+      "candidate_ids": [],
+      "verdicts": [],
+      "admitted_ids": [],
+      "admission_status": "skipped",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "draft": 5.858416960109025,
+        "gap_overhang": 691.1089170025662
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      }
+    },
+    {
+      "id": "01a07cb7-099f-7fbd-97e0-d166c9c6888c",
+      "at": "2026-09-07T16:32:46.268607+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "How should I prepare to ask my manager for a new laptop?",
+      "disposition": "baseline_no_gaps",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a07cb5-910a-7b62-bc3b-40ff53ae4215",
+        "01a07cb5-8ac8-762e-8c6a-5a2bbea19136",
+        "01a07cb5-8478-7ff3-8fae-298c19335a2e"
+      ],
+      "inventory": [
+        "runtime and version constraints",
+        "tooling and architecture decisions",
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "schedules and recurring events",
+        "time zone and working hours"
+      ],
+      "gaps": [],
+      "gap_status": "empty",
+      "candidate_ids": [],
+      "verdicts": [],
+      "admitted_ids": [],
+      "admission_status": "skipped",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "draft": 6.373749987687916,
+        "gap_overhang": 790.080874983687
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      }
+    },
+    {
+      "id": "01a07cb7-0cbf-7567-8b48-c42238bfd81c",
+      "at": "2026-09-07T16:32:47.019472+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "What is a runbook?",
+      "disposition": "baseline_no_gaps",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a07cb5-910a-7b62-bc3b-40ff53ae4215",
+        "01a07cb5-8ac8-762e-8c6a-5a2bbea19136",
+        "01a07cb5-8478-7ff3-8fae-298c19335a2e"
+      ],
+      "inventory": [
+        "runtime and version constraints",
+        "tooling and architecture decisions",
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "schedules and recurring events",
+        "time zone and working hours"
+      ],
+      "gaps": [],
+      "gap_status": "empty",
+      "candidate_ids": [],
+      "verdicts": [],
+      "admitted_ids": [],
+      "admission_status": "skipped",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "draft": 6.188458995893598,
+        "gap_overhang": 741.7268750141375
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      }
+    },
+    {
+      "id": "01a07cb7-0fad-7f64-b613-6c288faad029",
+      "at": "2026-09-07T16:32:48.057311+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "How do I write a database migration announcement?",
+      "disposition": "baseline_no_gaps",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a07cb5-910a-7b62-bc3b-40ff53ae4215",
+        "01a07cb5-8ac8-762e-8c6a-5a2bbea19136",
+        "01a07cb5-8478-7ff3-8fae-298c19335a2e"
+      ],
+      "inventory": [
+        "runtime and version constraints",
+        "tooling and architecture decisions",
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "schedules and recurring events",
+        "time zone and working hours"
+      ],
+      "gaps": [],
+      "gap_status": "empty",
+      "candidate_ids": [],
+      "verdicts": [],
+      "admitted_ids": [],
+      "admission_status": "skipped",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "draft": 5.507584020961076,
+        "gap_overhang": 1030.0772909540683
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      }
+    },
+    {
+      "id": "01a07cb7-13bb-7036-8196-4710c9a8d2c5",
+      "at": "2026-09-07T16:32:48.767228+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "What is the difference between a coroutine and a thread in Kotlin?",
+      "disposition": "baseline_no_gaps",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a07cb5-910a-7b62-bc3b-40ff53ae4215",
+        "01a07cb5-8ac8-762e-8c6a-5a2bbea19136",
+        "01a07cb5-8478-7ff3-8fae-298c19335a2e"
+      ],
+      "inventory": [
+        "runtime and version constraints",
+        "tooling and architecture decisions",
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "schedules and recurring events",
+        "time zone and working hours"
+      ],
+      "gaps": [],
+      "gap_status": "empty",
+      "candidate_ids": [],
+      "verdicts": [],
+      "admitted_ids": [],
+      "admission_status": "skipped",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "draft": 5.7099160039797425,
+        "gap_overhang": 701.4239170239307
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      }
+    },
+    {
+      "id": "01a07cb7-1680-7af8-a353-bcf2faf79721",
+      "at": "2026-09-07T16:32:49.487320+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "Explain write-ahead logging.",
+      "disposition": "baseline_no_gaps",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a07cb5-910a-7b62-bc3b-40ff53ae4215",
+        "01a07cb5-8ac8-762e-8c6a-5a2bbea19136",
+        "01a07cb5-8478-7ff3-8fae-298c19335a2e"
+      ],
+      "inventory": [
+        "runtime and version constraints",
+        "tooling and architecture decisions",
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "schedules and recurring events",
+        "time zone and working hours"
+      ],
+      "gaps": [],
+      "gap_status": "empty",
+      "candidate_ids": [],
+      "verdicts": [],
+      "admitted_ids": [],
+      "admission_status": "skipped",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "draft": 2.684124978259206,
+        "gap_overhang": 715.7185000251047
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      }
+    },
+    {
+      "id": "01a07cb7-1951-7218-a8f3-082fe05286d2",
+      "at": "2026-09-07T16:32:50.249676+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "How should a planning session be structured?",
+      "disposition": "baseline_no_gaps",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a07cb5-910a-7b62-bc3b-40ff53ae4215",
+        "01a07cb5-8ac8-762e-8c6a-5a2bbea19136",
+        "01a07cb5-8478-7ff3-8fae-298c19335a2e"
+      ],
+      "inventory": [
+        "runtime and version constraints",
+        "tooling and architecture decisions",
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "schedules and recurring events",
+        "time zone and working hours"
+      ],
+      "gaps": [],
+      "gap_status": "empty",
+      "candidate_ids": [],
+      "verdicts": [],
+      "admitted_ids": [],
+      "admission_status": "skipped",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "draft": 3.706666990183294,
+        "gap_overhang": 756.3504159916192
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      }
+    },
+    {
+      "id": "01a07cb7-1c4b-7c3e-b83c-b916dbea318f",
+      "at": "2026-09-07T16:32:51.051624+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "What is a feature flag?",
+      "disposition": "baseline_no_gaps",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a07cb5-910a-7b62-bc3b-40ff53ae4215",
+        "01a07cb5-8ac8-762e-8c6a-5a2bbea19136",
+        "01a07cb5-8478-7ff3-8fae-298c19335a2e"
+      ],
+      "inventory": [
+        "runtime and version constraints",
+        "tooling and architecture decisions",
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "schedules and recurring events",
+        "time zone and working hours"
+      ],
+      "gaps": [],
+      "gap_status": "empty",
+      "candidate_ids": [],
+      "verdicts": [],
+      "admitted_ids": [],
+      "admission_status": "skipped",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "draft": 5.0186250009574,
+        "gap_overhang": 794.7601669584401
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      }
+    },
+    {
+      "id": "01a07cb7-1f6d-7a72-9109-5116df700e04",
+      "at": "2026-09-07T16:32:51.768761+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "How do I write a good architecture summary?",
+      "disposition": "baseline_no_gaps",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a07cb5-910a-7b62-bc3b-40ff53ae4215",
+        "01a07cb5-8ac8-762e-8c6a-5a2bbea19136",
+        "01a07cb5-8478-7ff3-8fae-298c19335a2e"
+      ],
+      "inventory": [
+        "runtime and version constraints",
+        "tooling and architecture decisions",
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "schedules and recurring events",
+        "time zone and working hours"
+      ],
+      "gaps": [],
+      "gap_status": "empty",
+      "candidate_ids": [],
+      "verdicts": [],
+      "admitted_ids": [],
+      "admission_status": "skipped",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "draft": 6.0782500077039,
+        "gap_overhang": 709.550958010368
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      }
+    },
+    {
+      "id": "01a07cb7-223a-7d2c-bd89-dcd95b978486",
+      "at": "2026-09-07T16:32:52.681344+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "What are common causes of slow CI pipelines?",
+      "disposition": "baseline_no_gaps",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a07cb5-910a-7b62-bc3b-40ff53ae4215",
+        "01a07cb5-8ac8-762e-8c6a-5a2bbea19136",
+        "01a07cb5-8478-7ff3-8fae-298c19335a2e"
+      ],
+      "inventory": [
+        "runtime and version constraints",
+        "tooling and architecture decisions",
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "schedules and recurring events",
+        "time zone and working hours"
+      ],
+      "gaps": [],
+      "gap_status": "empty",
+      "candidate_ids": [],
+      "verdicts": [],
+      "admitted_ids": [],
+      "admission_status": "skipped",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "draft": 2.8264999855309725,
+        "gap_overhang": 907.9847499961033
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      }
+    },
+    {
+      "id": "01a07cb7-25cb-732d-b87b-8b8f9e6c892e",
+      "at": "2026-09-07T16:32:53.544916+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "How do I set up a pre-commit hook that runs ktlint?",
+      "disposition": "baseline_no_gaps",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a07cb5-910a-7b62-bc3b-40ff53ae4215",
+        "01a07cb5-8ac8-762e-8c6a-5a2bbea19136",
+        "01a07cb5-8478-7ff3-8fae-298c19335a2e"
+      ],
+      "inventory": [
+        "runtime and version constraints",
+        "tooling and architecture decisions",
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "schedules and recurring events",
+        "time zone and working hours"
+      ],
+      "gaps": [],
+      "gap_status": "empty",
+      "candidate_ids": [],
+      "verdicts": [],
+      "admitted_ids": [],
+      "admission_status": "skipped",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "draft": 2.905624976847321,
+        "gap_overhang": 858.8746670284308
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      }
+    },
+    {
+      "id": "01a07cb7-292b-7673-914c-3294f9a12d5c",
+      "at": "2026-09-07T16:32:54.247356+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "What is exactly-once delivery?",
+      "disposition": "baseline_no_gaps",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a07cb5-910a-7b62-bc3b-40ff53ae4215",
+        "01a07cb5-8ac8-762e-8c6a-5a2bbea19136",
+        "01a07cb5-8478-7ff3-8fae-298c19335a2e"
+      ],
+      "inventory": [
+        "runtime and version constraints",
+        "tooling and architecture decisions",
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "schedules and recurring events",
+        "time zone and working hours"
+      ],
+      "gaps": [],
+      "gap_status": "empty",
+      "candidate_ids": [],
+      "verdicts": [],
+      "admitted_ids": [],
+      "admission_status": "skipped",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "draft": 5.467832961585373,
+        "gap_overhang": 693.9419170375913
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      }
+    },
+    {
+      "id": "01a07cb7-2be9-737b-b76d-c1ad50d3631f",
+      "at": "2026-09-07T16:32:54.942041+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "How should Kubernetes clusters be named?",
+      "disposition": "baseline_no_gaps",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a07cb5-910a-7b62-bc3b-40ff53ae4215",
+        "01a07cb5-8ac8-762e-8c6a-5a2bbea19136",
+        "01a07cb5-8478-7ff3-8fae-298c19335a2e"
+      ],
+      "inventory": [
+        "runtime and version constraints",
+        "tooling and architecture decisions",
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "schedules and recurring events",
+        "time zone and working hours"
+      ],
+      "gaps": [],
+      "gap_status": "empty",
+      "candidate_ids": [],
+      "verdicts": [],
+      "admitted_ids": [],
+      "admission_status": "skipped",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "draft": 6.022707966621965,
+        "gap_overhang": 686.0243330011144
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      }
+    },
+    {
+      "id": "01a07cb7-2ea0-74e1-8ac2-23e30dc7060c",
+      "at": "2026-09-07T16:32:55.719697+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "What is the difference between production and disaster-recovery environments?",
+      "disposition": "baseline_no_gaps",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a07cb5-910a-7b62-bc3b-40ff53ae4215",
+        "01a07cb5-8ac8-762e-8c6a-5a2bbea19136",
+        "01a07cb5-8478-7ff3-8fae-298c19335a2e"
+      ],
+      "inventory": [
+        "runtime and version constraints",
+        "tooling and architecture decisions",
+        "infrastructure and environments",
+        "people and their roles",
+        "personal life",
+        "response preferences",
+        "schedules and recurring events",
+        "time zone and working hours"
+      ],
+      "gaps": [],
+      "gap_status": "empty",
+      "candidate_ids": [],
+      "verdicts": [],
+      "admitted_ids": [],
+      "admission_status": "skipped",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "draft": 5.396666994784027,
+        "gap_overhang": 769.9866670300253
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "f1f7b134bcfb7ad9",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      }
+    }
+  ],
+  "id_map": {
+    "01a07cb5-5231-7409-8dc7-6e0ddfbdf531": "S1",
+    "01a07cb5-5b75-72aa-9ee3-d5ed59971269": "P1",
+    "01a07cb5-610a-7b5e-a1e6-9695e79ccfcf": "P2",
+    "01a07cb5-6718-7c14-a8b2-029f3fcfd734": "F7",
+    "01a07cb5-6bfd-73d9-ad3d-9a8a2232ac8e": "S2",
+    "01a07cb5-726d-7a93-9f22-dccc034c532b": "F9",
+    "01a07cb5-77ef-727a-a02f-1eff7713741d": "F10",
+    "01a07cb5-7ec2-7fe8-b39c-1785372c8aed": "F1",
+    "01a07cb5-8478-7ff3-8fae-298c19335a2e": "A1",
+    "01a07cb5-8ac8-762e-8c6a-5a2bbea19136": "A2",
+    "01a07cb5-910a-7b62-bc3b-40ff53ae4215": "A3",
+    "01a07cb5-9747-7904-b974-cc3413d0bbe4": "M1",
+    "01a07cb5-9d12-7fc9-b60a-0a9293c6d885": "M2",
+    "01a07cb5-a32d-7d64-b178-e60bc6dce73a": "R1",
+    "01a07cb5-a87b-7c26-b3e3-64beb282a60e": "R2",
+    "01a07cb5-ae43-7b42-9550-a9edaff082ae": "F4",
+    "01a07cb5-b36b-72a9-9c26-29b6b5e336e2": "C1",
+    "01a07cb5-b9d2-72aa-8071-4502aaba53b0": "F8",
+    "01a07cb5-c095-78a6-880d-e0058d17a131": "F3",
+    "01a07cb5-c641-764c-bf7e-3612c7f4dcbb": "F2",
+    "01a07cb5-cc5a-7824-8b0e-06e27425fd96": "F6",
+    "01a07cb5-d332-72a7-93ca-e2e0b9d181d3": "F5",
+    "01a07cb5-d8cf-7ccf-97fd-ad2edcca5425": "J1",
+    "01a07cb5-deed-724f-a8a6-064edb117f8f": "J2"
+  },
+  "store": "benchmarks/results/shadow/stores/phase0_v5-20260907T163050Z/shadow.sqlite",
+  "usage": {
+    "gpt-4o": {
+      "prompt": 27876,
+      "completion": 1998
+    },
+    "gpt-5.4": {
+      "prompt": 14073,
+      "completion": 6026
+    }
+  }
+}

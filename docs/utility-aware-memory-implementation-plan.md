@@ -144,6 +144,10 @@ Safeguards that apply from the first shadow run:
 
 Order: hosted adapter and isolated shadow run; category taxonomy improvements measured by inventory coverage; minimal review-queue CLI; judge comparison across the three frontier vendors on adjacency, recall, latency, and cost; fitness rerun on any bundle change; a small canary only after the pre-registered shadow gates pass.
 
+**Outcome, 7 September 2026, `usefulness-gate.md` section 8j.** The isolated shadow run passes every pre-registered gate on both the vertical-slice conversation and the fifth split: isolation identical on all four checks, hypothetical ordinary injection 0 of 4 and 0 of 20, explicit recall 1 of 1 and 10 of 10, implicit recall 7 of 8, no unsafe admission, no policy failures, no budget withholds. The first attempt failed on the orchestrator's 2-second default admission timeout, below the judge's measured 2 to 3 seconds with eight candidates; it failed closed with served responses untouched and the failures reported as failures. Stage timeouts are now harness flags set from measurement; the core default is not a serving value and the reference adapter must set it from the Phase 0 numbers.
+
+**Confidence: 9.5 of 10, 95%.** Up from 9.3 because the live shadow evidence the plan named as the next material step is in: the full path runs through the real store with a proven zero effect on what is served and reproduces the blind-split results from its own decision log. What remains is operational rather than architectural: the review CLI before ambient rollout, the taxonomy work, the three-vendor judge comparison on the shadow set, and a canary on production traffic.
+
 ### Requirements Phase 0 adds to Phase 2
 
 - The gap policy receives a bounded, content-free category inventory for the principal's readable conditional store, built from the activation policy's fixed taxonomy and never from extractor attribute slugs or record text. The inventory is part of the turn-decision log.

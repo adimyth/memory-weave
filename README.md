@@ -271,6 +271,8 @@ Phase 1A was then built: activation and category on every record, host-verified 
 
 The same runs showed that the quality of this path depends on which model fills each role. Small reasoning models failed at both roles: unstable as planners, and as judges they admitted a misleading record and added tens of seconds. A mid-tier non-reasoning model was enough for planning. A frontier model was needed for judging.
 
+The utility-aware path has since run end to end in shadow mode through the real ingestion, activation, retrieval, and admission pipeline, with the harness asserting that served responses, record activation, session turns, and the review queue were byte-identical with shadow on and off. Its decision log reproduced the blind-split results: 0 of 20 hypothetical ordinary injections, 10 of 10 explicit and 7 of 8 implicit recall, nothing unsafe. Section 8j of the findings.
+
 The per-role fitness test has now been run across vendors. The planner role passes on a hosted mid-tier model and on an 8B open-weight model run locally. The judge role passes on frontier models from OpenAI, Anthropic, and Google, and fails on every non-frontier candidate tried: judging needs a frontier-class model, not a particular vendor's. Numbers per model and role are in section 8i of the findings.
 
 > [!IMPORTANT]

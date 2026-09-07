@@ -496,6 +496,31 @@ All three frontier judges pass the fitness test; the two OpenRouter judges recov
 
 **The claim, as now earned.** The design is provider-neutral in the sense that matters: the contracts, orchestration, activation, inventory, logs, and gates are model-neutral, and the fitness test ranks any candidate per role. The planner role is validated on a hosted mid-tier model and an 8B open-weight model. The judge role is validated on frontier models from three vendors, OpenAI, Anthropic, and Google, and has failed on every non-frontier candidate tried, `gpt-5-nano`, `gpt-4o`, and Llama 8B. Judging needs a frontier-class model; it does not need a particular vendor's.
 
+## 8j. Phase 2 in shadow mode: the orchestrator beside the served path, isolation asserted
+
+Run on 7 September 2026 with `benchmarks/shadow_run.py`, after the pre-registration in the implementation plan. The core orchestrator, `memory_weave/policy/utility_aware.py`, ran with hosted adapters for the planner and judge against a real store built through the ingestor and the activation policy. Each scenario was replayed twice with identical cached drafts: served-only, with the orchestrator disabled, and shadow-on, with gap planning, real retrieval through `memory_search`, and hosted admission running but never regenerating. The harness asserted that the served responses, every record's status and activation, the session turns, and the review queue were identical across the two passes, then scored the shadow decision log alone. Every decision carries the policy bundle: `gpt-4o/gap-v3c`, `gpt-5.4/admission-v3`, taxonomy `activation-v2-frozen`, `inventory-v1`, a retrieval-config hash, and the budget.
+
+**The first fifth-split run failed on a configuration value and passed the isolation test while doing so.** The orchestrator's default admission timeout was 2 seconds, taken from the architecture document's configuration example. The judge takes 2 to 3 seconds with 7 or 8 real candidates. Every one of the 18 gap turns ended as `baseline_policy_failure` with `admission:TimeoutError`; served responses were untouched; recall as scored was zero; failures were reported as failures, not as recall misses, which is what the pre-registration required. Stage timeouts must be set from measured latency, as the plan already said, and the harness now takes them as flags. The core default is left as written and is not a serving value.
+
+**Results with timeouts set from measurement, gap 4 seconds and admission 8 seconds.**
+
+| Measure | Vertical-slice conversation, 6 turns | Fifth split, 39 turns | Gate |
+| --- | --- | --- | --- |
+| Served responses, record status and activation, session turns, reviews identical across passes | all four identical | all four identical | required |
+| Hypothetical ordinary-turn injection | 0 of 4 | 0 of 20 | at most 5% |
+| Hypothetical explicit stored-fact recall | 1 of 1 | 10 of 10 | at least 90% |
+| Hypothetical implicit recall, conditional records | none applicable | 7 of 8 | at least 75% |
+| Unsafe admissions | 0 | 0 | 0 |
+| Unexpected admissions | none | time zone on the migration-timing turn | reported |
+| Policy failures | none | none | reported separately |
+| Budget withholds | none | none | reported separately |
+| Automatic promotion | style correction and Python examples ambient; the corrected style record superseded the original | all three eligible preferences ambient, including the Kotlin default by the frozen rule | |
+| Verdict | pass | pass | |
+
+On the slice conversation the activation policy promoted the corrected style preference and the Python-examples default, the ingestor superseded the original style statement with its correction as it always has, and the time-zone record was the only conditional admission. On the fifth split the planner fired on every explicit question, the judge admitted the expected record on all ten, the one implicit miss is the SQL-style preference the planner still reads as a generic request, and the one unexpected admission is the time-zone record on a turn about a time stated in ET.
+
+**What this establishes.** The orchestrator runs end to end through the real ingestion, activation, retrieval, and admission path with a proven zero effect on what is served, and its shadow log reproduces the recall and injection results of the blind splits. It also produced its first operational finding, a timeout default below measured latency, and handled it the way the design says it should. What it does not establish: behaviour on production traffic with real users and provider drift, which is the canary's job and follows the review CLI.
+
 ## 9. Sources
 
 - Ross, Mahabaleshwarkar, Suhara. *When2Call: When (not) to Call Tools.* NAACL 2025. https://aclanthology.org/2025.naacl-long.174/
