@@ -148,6 +148,25 @@ Order: hosted adapter and isolated shadow run; category taxonomy improvements me
 
 **Confidence: 9.5 of 10, 95%.** Up from 9.3 because the live shadow evidence the plan named as the next material step is in: the full path runs through the real store with a proven zero effect on what is served and reproduces the blind-split results from its own decision log. What remains is operational rather than architectural: the review CLI before ambient rollout, the taxonomy work, the three-vendor judge comparison on the shadow set, and a canary on production traffic.
 
+### Execution and rollout sequence, agreed 7 September 2026
+
+This is an execution sequence, not further architectural exploration. A change to any policy-bundle component, planner model or prompt, judge model or prompt, taxonomy, inventory builder, retrieval configuration, or budget, is a new bundle: it runs in shadow and passes the complete fitness suite before it is merged into the supported bundle.
+
+1. Improve the category taxonomy and classifier prompt, measured by inventory coverage on memory-needed turns, never by exact label agreement. Run the change in shadow.
+2. Run the updated bundle against the full fitness suite: the tuning split, the held-out and blind splits, the promotion split across two builds, and the shadow harness on both conversations.
+3. Build and test the minimal review-queue CLI over `ActivationOperations`: list open reviews, resolve, promote, demote, backlog status.
+4. Compare the three frontier judges on the shadow set, reporting useful recall, adjacency admissions, unsafe admissions, latency, and cost together.
+5. Select and version one supported policy bundle. Record the alternatives as evaluated configurations with their numbers, not as options.
+6. Require a complete fitness rerun whenever any bundle component changes.
+7. Start a small production canary with independent kill switches per stage and rollback thresholds defined before it starts.
+
+The canary does not begin until all of the following hold:
+
+- Review operations are usable through the CLI.
+- The selected bundle passes the existing injection and recall gates on the full suite.
+- Stage timeouts and the per-turn latency budget are configured from measured latency, not from the configuration example.
+- Monitoring distinguishes planner silence, retrieval misses, judge rejection, policy failure, and budget withholding as separate counts, so a change in served injection or recall can be attributed to one stage.
+
 ### Requirements Phase 0 adds to Phase 2
 
 - The gap policy receives a bounded, content-free category inventory for the principal's readable conditional store, built from the activation policy's fixed taxonomy and never from extractor attribute slugs or record text. The inventory is part of the turn-decision log.
