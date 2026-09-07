@@ -68,6 +68,16 @@ queries, then likelihood gain of the recorded reply), using a local Llama-3.1-8B
 model. Takes about eight minutes on an M4 Pro. Results land in `results/utility-signals/`; findings are in
 [../docs/usefulness-gate.md](../docs/usefulness-gate.md) section 8b.
 
+```bash
+HF_HUB_OFFLINE=1 uv run --extra live --extra local-models python benchmarks/phase0_two_arm.py \
+  --draft-model gpt-5.6-luna --policy-model gpt-5.4
+```
+
+Phase 0 of the utility-aware memory plan: the gap-planning plus draft-relative admission path, run twice
+over the hand-authored scenario set in `scenarios/phase0.json`, once with style and language preferences
+ambient and once with them conditional. Prints the design gate and the promotion gate. Results land in
+`results/phase0/`; findings are in [../docs/usefulness-gate.md](../docs/usefulness-gate.md) section 8c.
+
 ## Results, 6 September 2026
 
 Model `gpt-5.6-luna`, three runs per mode, reproduced from a deleted store.

@@ -247,6 +247,38 @@ The remaining false admits are the two checklist records on the trade-off-format
 
 **What this changes in the recommendation.** Nothing in the direction, two things in the plan. First, Tier A should be built as TRACE Stage 1 specifies: generate gap queries, retrieve on them, and treat an empty list as no host search, since on this data that alone achieves 0 of 12 ordinary injections. Second, Tier C now has a concrete labeler: the TRACE likelihood gain, computed offline with a local model against the reply the serving model actually gave, is a cheaper and less noisy label than the RUMS entropy and needs no sampling. RUMS as a whole is not the fit: its labels need a white-box model, its inference classifier assumes a fixed profile schema, and its signal misreads style preferences.
 
+## 8c. Phase 0 of the implementation plan: two-arm validation on a held-out scenario set
+
+Run on 7 September 2026 with `benchmarks/phase0_two_arm.py` on `benchmarks/scenarios/phase0.json`. The scenario set is hand-authored and was not derived from any model run: 24 records and 36 turns. Records include two ambient-eligible preferences, eleven conditional facts including two unrelated private facts, one jointly useful pair, one superseded and one conflicting record, two redundant public facts, two placebos, and two misleading records. Turns are 10 explicit stored-fact questions, 6 implicit memory-needed turns, and 20 ordinary turns, several of them topically adjacent to stored records. Expected record sets and reference facts were never shown to a policy.
+
+The online path is the one the architecture specifies: draft and gap planning run concurrently, the gap queries drive dense retrieval over the scenario records with the project's BGE-M3 embedder, a placebo is appended to every candidate set, and a hosted judge admits jointly against the draft with EMPTY as the default. Draft and regeneration use `gpt-5.6-luna`; gap planning, admission, and reference checking use `gpt-5.4`. Retrieval is dense-only and stands in for the full candidate pipeline. The result file is under `benchmarks/results/phase0/`.
+
+| Measure | Ambient arm | Conditional arm |
+| --- | --- | --- |
+| Ordinary turns with any conditional injection | 0 of 20 | 0 of 20 |
+| Explicit stored-fact recall | 9 of 10 | 8 of 10 |
+| Implicit memory-needed recall | 2 of 6 | 1 of 6 |
+| Placebo, misleading, stale, redundant, or unrelated private records admitted | 0 | 0 |
+| Usefulness precision, admitted records that were expected | 12 of 12 | 10 of 10 |
+| Memory turns answered correctly, draft alone | 1 of 16 | 1 of 16 |
+| Memory turns answered correctly, after the path | 12 of 16 | 9 of 16 |
+| Style and language preferences reaching the answer | every turn, by construction | 0 of 36 turns |
+| Turns with no gaps, added latency | 24 of 36, 0.0 s | 25 of 36, 0.0 s |
+| Turns with gaps, added latency p50 and p95 | 3.7 s and 4.1 s | 3.1 s and 4.3 s |
+| Policy failures | 0 | 0 |
+
+**Design gate: pass.** Ordinary injection 0 of 20, explicit recall 9 of 10, no placebo or misleading record admitted. Every admission across both arms was an expected record. The two records that share a subject with an ordinary turn but do not answer it, checklist ownership on the review-cadence question and the tabs belief on the tabs-or-spaces question, were never admitted because gap planning returned an empty list on every ordinary turn, so those turns never reached retrieval.
+
+**Promotion gate: blocker confirmed.** In the conditional arm the style and language preferences reached the answer on no turn at all. Gap planning does not ask for how-to-answer preferences, so they are never retrieved and the judge never sees them. Leaving them conditional does not cause injection, it causes total loss. Ambient activation is required for those records to have any effect, which is what Phase 1 builds.
+
+**Where the path is weak.** Every miss but one is gap planning returning no queries. It declined to look anything up for "suggest a time tomorrow for a sync", "draft a message asking for a review of the deployment checklist", "is Thursday afternoon a good time for a migration", and "show me an example that parses a TOML file", each of which a stored record would have changed. The judge was never the cause of a miss on those turns. The one judge miss was the sentence-transformers record on the "why did we pin" question, which it marked stale or conflicting because the record's wording, a pin below 5 explained by a failure in 6, reads as inconsistent. The same record was admitted on the "which constraint" question.
+
+Gap planning was also not stable between arms: the time-zone question produced three queries in the ambient arm and none in the conditional arm, with the only input difference being the applied-preferences text. Explicit recall sits exactly on the 90% threshold with ten questions, so one flip either way changes the verdict.
+
+**Cost of the run.** 149 calls to `gpt-5.4` and 92 to `gpt-5.6-luna` for 72 turn evaluations including reference checks. Per served turn: one gap call always, one admission call on a third of turns, one regeneration on a third of turns. Added latency on turns without gaps was zero because the gap call finished before the draft every time.
+
+**What this means for the plan.** The design gate passes and the promotion blocker is measured rather than assumed. The implicit-need number is the one to carry forward: the gap planner's conservatism is what makes ordinary injection zero, and the same conservatism costs two thirds of the implicit turns. The Phase 2 gap prompt and the choice of gap model should be tuned against the implicit-turn class on a fresh scenario split, not against this set.
+
 ## 9. Sources
 
 - Ross, Mahabaleshwarkar, Suhara. *When2Call: When (not) to Call Tools.* NAACL 2025. https://aclanthology.org/2025.naacl-long.174/
