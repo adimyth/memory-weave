@@ -1,0 +1,5017 @@
+{
+  "scenario": "benchmarks/scenarios/phase0_v5.json",
+  "draft_model": "gpt-5.6-luna",
+  "gap_model": "gpt-4o",
+  "gap_prompt": "v3",
+  "admission_model": "openrouter:google/gemini-2.5-pro",
+  "admission_prompt": "v3",
+  "retrieval": "real",
+  "shadow_judge": true,
+  "activation": "real",
+  "activation_model": "gpt-4o",
+  "category_prompt": "category-v2",
+  "promoted": {
+    "ambient": [
+      "A3",
+      "A2",
+      "A1"
+    ]
+  },
+  "activation_decisions": {
+    "ambient": {
+      "S1": {
+        "outcome": "conditional",
+        "reason": "category_not_promotable",
+        "retrieval_category": "time_zone",
+        "activation_category": "other",
+        "evidence_turn": 1,
+        "confidence": 1.0,
+        "review_id": null
+      },
+      "P1": {
+        "outcome": "conditional",
+        "reason": "category_not_promotable",
+        "retrieval_category": "personal",
+        "activation_category": "other",
+        "evidence_turn": 2,
+        "confidence": 0.9,
+        "review_id": null
+      },
+      "P2": {
+        "outcome": "conditional",
+        "reason": "category_not_promotable",
+        "retrieval_category": "personal",
+        "activation_category": "other",
+        "evidence_turn": 3,
+        "confidence": 0.9,
+        "review_id": null
+      },
+      "F7": {
+        "outcome": "conditional",
+        "reason": "category_not_promotable",
+        "retrieval_category": "people",
+        "activation_category": "other",
+        "evidence_turn": 4,
+        "confidence": 1.0,
+        "review_id": null
+      },
+      "S2": {
+        "outcome": "conditional",
+        "reason": "category_not_promotable",
+        "retrieval_category": "decisions",
+        "activation_category": "other",
+        "evidence_turn": 5,
+        "confidence": 0.9,
+        "review_id": null
+      },
+      "F9": {
+        "outcome": "conditional",
+        "reason": "category_not_promotable",
+        "retrieval_category": "personal",
+        "activation_category": "other",
+        "evidence_turn": 6,
+        "confidence": 1.0,
+        "review_id": null
+      },
+      "F10": {
+        "outcome": "conditional",
+        "reason": "category_not_promotable",
+        "retrieval_category": "personal",
+        "activation_category": "other",
+        "evidence_turn": 7,
+        "confidence": 0.9,
+        "review_id": null
+      },
+      "F1": {
+        "outcome": "conditional",
+        "reason": "category_not_promotable",
+        "retrieval_category": "time_zone",
+        "activation_category": "other",
+        "evidence_turn": 8,
+        "confidence": 1.0,
+        "review_id": null
+      },
+      "A1": {
+        "outcome": "promote",
+        "reason": "eligible_broad_preference",
+        "retrieval_category": "preferences",
+        "activation_category": "answer_style",
+        "evidence_turn": 9,
+        "confidence": 1.0,
+        "review_id": null
+      },
+      "A2": {
+        "outcome": "promote",
+        "reason": "eligible_broad_preference",
+        "retrieval_category": "preferences",
+        "activation_category": "answer_style",
+        "evidence_turn": 10,
+        "confidence": 0.9,
+        "review_id": null
+      },
+      "A3": {
+        "outcome": "promote",
+        "reason": "eligible_global_default",
+        "retrieval_category": "preferences",
+        "activation_category": "code_example_language",
+        "evidence_turn": 11,
+        "confidence": 1.0,
+        "review_id": null
+      },
+      "M1": {
+        "outcome": "review",
+        "reason": "flagged_unsafe",
+        "retrieval_category": "preferences",
+        "activation_category": "other",
+        "evidence_turn": 12,
+        "confidence": 0.7,
+        "review_id": "01a07cc8-a167-74ac-b625-baf8d3d37b98"
+      },
+      "M2": {
+        "outcome": "review",
+        "reason": "flagged_unsafe",
+        "retrieval_category": "preferences",
+        "activation_category": "other",
+        "evidence_turn": 13,
+        "confidence": 0.8,
+        "review_id": "01a07cc8-a6b2-7d1f-8715-47c8ce01d7db"
+      },
+      "R1": {
+        "outcome": "conditional",
+        "reason": "category_not_promotable",
+        "retrieval_category": "other",
+        "activation_category": "other",
+        "evidence_turn": 14,
+        "confidence": 0.9,
+        "review_id": null
+      },
+      "R2": {
+        "outcome": "conditional",
+        "reason": "category_not_promotable",
+        "retrieval_category": "infrastructure",
+        "activation_category": "other",
+        "evidence_turn": 15,
+        "confidence": 0.9,
+        "review_id": null
+      },
+      "F4": {
+        "outcome": "conditional",
+        "reason": "category_not_promotable",
+        "retrieval_category": "decisions",
+        "activation_category": "other",
+        "evidence_turn": 16,
+        "confidence": 1.0,
+        "review_id": null
+      },
+      "C1": {
+        "outcome": "conditional",
+        "reason": "category_not_promotable",
+        "retrieval_category": "preferences",
+        "activation_category": "other",
+        "evidence_turn": 17,
+        "confidence": 1.0,
+        "review_id": null
+      },
+      "F8": {
+        "outcome": "conditional",
+        "reason": "category_not_promotable",
+        "retrieval_category": "schedules",
+        "activation_category": "other",
+        "evidence_turn": 18,
+        "confidence": 1.0,
+        "review_id": null
+      },
+      "F3": {
+        "outcome": "conditional",
+        "reason": "category_not_promotable",
+        "retrieval_category": "locations",
+        "activation_category": "other",
+        "evidence_turn": 19,
+        "confidence": 1.0,
+        "review_id": null
+      },
+      "F2": {
+        "outcome": "conditional",
+        "reason": "not_about_principal",
+        "retrieval_category": "people",
+        "activation_category": "other",
+        "evidence_turn": 20,
+        "confidence": 0.95,
+        "review_id": null
+      },
+      "F6": {
+        "outcome": "conditional",
+        "reason": "category_not_promotable",
+        "retrieval_category": "infrastructure",
+        "activation_category": "other",
+        "evidence_turn": 21,
+        "confidence": 0.9,
+        "review_id": null
+      },
+      "F5": {
+        "outcome": "conditional",
+        "reason": "category_not_promotable",
+        "retrieval_category": "constraints",
+        "activation_category": "other",
+        "evidence_turn": 22,
+        "confidence": 1.0,
+        "review_id": null
+      },
+      "J1": {
+        "outcome": "conditional",
+        "reason": "category_not_promotable",
+        "retrieval_category": "limits",
+        "activation_category": "other",
+        "evidence_turn": 23,
+        "confidence": 0.9,
+        "review_id": null
+      },
+      "J2": {
+        "outcome": "conditional",
+        "reason": "category_not_promotable",
+        "retrieval_category": "limits",
+        "activation_category": "other",
+        "evidence_turn": 24,
+        "confidence": 1.0,
+        "review_id": null
+      }
+    }
+  },
+  "inventory_labels": {
+    "ambient": [
+      "runtime and version constraints",
+      "tooling and architecture decisions",
+      "infrastructure and environments",
+      "limits and quotas",
+      "document and repository locations",
+      "other facts",
+      "people and their roles",
+      "personal life",
+      "response preferences",
+      "schedules and recurring events",
+      "time zone and working hours"
+    ]
+  },
+  "write_logs": {
+    "ambient": [
+      {
+        "scenario_id": "S1",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "conditional",
+        "activation_reason": "category_not_promotable"
+      },
+      {
+        "scenario_id": "P1",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "conditional",
+        "activation_reason": "category_not_promotable"
+      },
+      {
+        "scenario_id": "P2",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "conditional",
+        "activation_reason": "category_not_promotable"
+      },
+      {
+        "scenario_id": "F7",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "conditional",
+        "activation_reason": "category_not_promotable"
+      },
+      {
+        "scenario_id": "S2",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "conditional",
+        "activation_reason": "category_not_promotable"
+      },
+      {
+        "scenario_id": "F9",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "conditional",
+        "activation_reason": "category_not_promotable"
+      },
+      {
+        "scenario_id": "F10",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "conditional",
+        "activation_reason": "category_not_promotable"
+      },
+      {
+        "scenario_id": "F1",
+        "ok": true,
+        "outcome": "superseded:01a07cc8-61bc-79f1-89d9-abc195aab0ca",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "conditional",
+        "activation_reason": "category_not_promotable"
+      },
+      {
+        "scenario_id": "A1",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "promote",
+        "activation_reason": "eligible_broad_preference"
+      },
+      {
+        "scenario_id": "A2",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "promote",
+        "activation_reason": "eligible_broad_preference"
+      },
+      {
+        "scenario_id": "A3",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "promote",
+        "activation_reason": "eligible_global_default"
+      },
+      {
+        "scenario_id": "M1",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "review",
+        "activation_reason": "flagged_unsafe"
+      },
+      {
+        "scenario_id": "M2",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "review",
+        "activation_reason": "flagged_unsafe"
+      },
+      {
+        "scenario_id": "R1",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "conditional",
+        "activation_reason": "category_not_promotable"
+      },
+      {
+        "scenario_id": "R2",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "conditional",
+        "activation_reason": "category_not_promotable"
+      },
+      {
+        "scenario_id": "F4",
+        "ok": true,
+        "outcome": "superseded:01a07cc8-787e-7688-bd59-e3a8d76b9394",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "conditional",
+        "activation_reason": "category_not_promotable"
+      },
+      {
+        "scenario_id": "C1",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "conditional",
+        "activation_reason": "category_not_promotable"
+      },
+      {
+        "scenario_id": "F8",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "conditional",
+        "activation_reason": "category_not_promotable"
+      },
+      {
+        "scenario_id": "F3",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "conditional",
+        "activation_reason": "category_not_promotable"
+      },
+      {
+        "scenario_id": "F2",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "conditional",
+        "activation_reason": "not_about_principal"
+      },
+      {
+        "scenario_id": "F6",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "conditional",
+        "activation_reason": "category_not_promotable"
+      },
+      {
+        "scenario_id": "F5",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "conditional",
+        "activation_reason": "category_not_promotable"
+      },
+      {
+        "scenario_id": "J1",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "conditional",
+        "activation_reason": "category_not_promotable"
+      },
+      {
+        "scenario_id": "J2",
+        "ok": true,
+        "outcome": "created",
+        "status": "confirmed",
+        "note": null,
+        "error": null,
+        "activation": "conditional",
+        "activation_reason": "category_not_promotable"
+      }
+    ]
+  },
+  "check_model": "gpt-5.4",
+  "gap_repeats": 1,
+  "usage": {
+    "gpt-4o": {
+      "prompt": 33012,
+      "completion": 1697
+    },
+    "openrouter:google/gemini-2.5-pro": {
+      "prompt": 32112,
+      "completion": 53660
+    },
+    "gpt-5.6-luna": {
+      "prompt": 677,
+      "completion": 386
+    },
+    "gpt-5.4": {
+      "prompt": 5695,
+      "completion": 1491
+    }
+  },
+  "calls": {
+    "gpt-4o": 63,
+    "openrouter:google/gemini-2.5-pro": 39,
+    "gpt-5.6-luna": 5,
+    "gpt-5.4": 37
+  },
+  "summaries": {
+    "ambient": {
+      "arm": "ambient",
+      "turns": 39,
+      "gap_decision_agreement_across_repeats": "n/a",
+      "memory_turns_with_gaps_every_repeat": "18/18 (100%)",
+      "memory_turns_with_gaps_any_repeat": "18/18 (100%)",
+      "ordinary_turns_with_gaps_any_repeat": "0/20 (0%)",
+      "ordinary_injection": "0/20 (0%)",
+      "explicit_fact_recall": "10/10 (100%)",
+      "implicit_need_recall": "8/8 (100%)",
+      "ambient_pref_admitted_on_turns": "0/39 (0%)",
+      "placebo_admitted": 0,
+      "misleading_admitted": 1,
+      "stale_or_conflicting_admitted": 0,
+      "redundant_admitted": 2,
+      "unrelated_private_admitted": 0,
+      "usefulness_precision": "19/26 (73%)",
+      "answer_correct_memory_turns_draft": "1/19 (5%)",
+      "answer_correct_memory_turns_final": "15/19 (79%)",
+      "empty_gap_turns": 21,
+      "added_latency_empty_gap_p50_p95_s": [
+        0.0,
+        0.0
+      ],
+      "added_latency_gap_turns_p50_p95_s": [
+        12.47,
+        20.03
+      ],
+      "draft_latency_p50_s": 2.61,
+      "policy_failures": 0,
+      "shadow_judge_ordinary_turns_with_candidates": 20,
+      "shadow_judge_ordinary_turns_it_would_inject": "8/20 (40%)",
+      "shadow_judge_unsafe_admissions": 3,
+      "eligible_preferences_promoted": "3/3 (100%)",
+      "unsafe_promotions": 0,
+      "scoped_preferences_kept_conditional": "1/1 (100%)",
+      "reviews_opened": 2,
+      "inventory_coverage_of_needed_records": "19/19 (100%)",
+      "retrieval_category_label_agreement": "22/24 (92%)"
+    }
+  },
+  "results": {
+    "ambient": [
+      {
+        "arm": "ambient",
+        "turn_id": "E1",
+        "turn_class": "explicit_fact",
+        "turn": "What did we decide about change data capture?",
+        "expected": [
+          "F4"
+        ],
+        "draft": "I don\u2019t have enough context to know what we decided about change data capture. Please share the relevant notes or earlier discussion, and I\u2019ll summarize the decision.",
+        "gaps": [
+          "change data capture decision"
+        ],
+        "candidates": [
+          {
+            "id": "F4",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F9",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F8",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F4",
+            "verdict": "helpful",
+            "reason": "This record directly states the decision made about change data capture, which is what the user is asking for."
+          },
+          {
+            "id": "R1",
+            "verdict": "jointly_helpful",
+            "reason": "This record defines the technology chosen in record F4, which is helpful context for the answer."
+          },
+          {
+            "id": "J2",
+            "verdict": "insufficient",
+            "reason": "This record concerns webhook budgets and is unrelated to change data capture."
+          },
+          {
+            "id": "F9",
+            "verdict": "insufficient",
+            "reason": "This record concerns the user's dietary preferences and is unrelated to the topic of change data capture."
+          },
+          {
+            "id": "J1",
+            "verdict": "insufficient",
+            "reason": "This record concerns webhook budgets and is unrelated to change data capture."
+          },
+          {
+            "id": "F8",
+            "verdict": "insufficient",
+            "reason": "This record concerns a meeting schedule and is unrelated to a past decision about change data capture."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "This record concerns the user's taste in music and is unrelated to change data capture."
+          }
+        ],
+        "admitted": [
+          "F4",
+          "R1"
+        ],
+        "disposition": "regenerated",
+        "final": "We decided to use **Postgres logical replication** rather than Debezium for change data capture. It streams write-ahead-log (WAL) changes directly to subscribers.",
+        "draft_correct": false,
+        "final_correct": false,
+        "timing": {
+          "draft_s": 1.7978706249850802,
+          "gap_s": 1.4250856660073623,
+          "retrieval_s": 0.06419125001411885,
+          "admission_s": 12.525084832974244,
+          "regeneration_s": 1.5967998749692924
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true
+        ],
+        "shadow_candidates": [],
+        "shadow_verdicts": [],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "E2",
+        "turn_class": "explicit_fact",
+        "turn": "Where are the on-call handbooks?",
+        "expected": [
+          "F3"
+        ],
+        "draft": "I don\u2019t have access to your organization\u2019s internal documentation. Check your team\u2019s wiki/Notion, the incident-response repository, or the on-call Slack channel; search for **\u201con-call handbook\u201d** or **\u201crunbook.\u201d**",
+        "gaps": [
+          "document and repository locations",
+          "schedules and recurring events",
+          "people and their roles"
+        ],
+        "candidates": [
+          {
+            "id": "M2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F8",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F9",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F7",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F3",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "M2",
+            "verdict": "potentially_harmful",
+            "reason": "Agreeing with a user's confidence can reinforce incorrect information and is unrelated to the request."
+          },
+          {
+            "id": "F8",
+            "verdict": "insufficient",
+            "reason": "The release meeting schedule is not relevant to finding on-call handbooks."
+          },
+          {
+            "id": "F9",
+            "verdict": "insufficient",
+            "reason": "The user's dietary preference is unrelated to the question about on-call handbooks."
+          },
+          {
+            "id": "F7",
+            "verdict": "insufficient",
+            "reason": "Knowing the user's manager is not relevant to finding on-call handbooks."
+          },
+          {
+            "id": "F3",
+            "verdict": "helpful",
+            "reason": "This record directly answers the user's question, changing the answer from a guess to a specific location."
+          },
+          {
+            "id": "M1",
+            "verdict": "potentially_harmful",
+            "reason": "This records a false belief, and using it would spread misinformation; it's also unrelated to the request."
+          },
+          {
+            "id": "P2",
+            "verdict": "insufficient",
+            "reason": "The user's hobby is not relevant to finding work documentation."
+          },
+          {
+            "id": "R1",
+            "verdict": "insufficient",
+            "reason": "This technical information is unrelated to the location of on-call handbooks."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's musical taste is not relevant to finding work documentation."
+          }
+        ],
+        "admitted": [
+          "F3"
+        ],
+        "disposition": "regenerated",
+        "final": "The on-call handbooks are in the GitLab wiki under `ops/handbooks`.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 2.3564179170061834,
+          "gap_s": 0.930804083996918,
+          "retrieval_s": 0.11956629197811708,
+          "admission_s": 12.94427141698543,
+          "regeneration_s": 4.550797833013348
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true
+        ],
+        "shadow_candidates": [],
+        "shadow_verdicts": [],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "E3",
+        "turn_class": "explicit_fact",
+        "turn": "Who owns the fleet-routing runbook?",
+        "expected": [
+          "F2"
+        ],
+        "draft": "I don\u2019t have enough context to identify the owner of the fleet-routing runbook. Check its repository metadata, internal documentation, or the team\u2019s on-call/ownership directory.",
+        "gaps": [
+          "fleet-routing runbook owner"
+        ],
+        "candidates": [
+          {
+            "id": "F2",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F7",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F3",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F6",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F9",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F2",
+            "verdict": "helpful",
+            "reason": "This record directly answers the user's question about the runbook's owner."
+          },
+          {
+            "id": "F7",
+            "verdict": "insufficient",
+            "reason": "The user's manager is not necessarily related to the owner of a specific runbook."
+          },
+          {
+            "id": "J2",
+            "verdict": "insufficient",
+            "reason": "This record about webhook budgets is unrelated to the runbook ownership question."
+          },
+          {
+            "id": "F3",
+            "verdict": "helpful",
+            "reason": "This provides a specific location to find runbooks, improving on the draft's generic advice."
+          },
+          {
+            "id": "F6",
+            "verdict": "insufficient",
+            "reason": "The user's Kubernetes cluster details are irrelevant to runbook ownership."
+          },
+          {
+            "id": "M1",
+            "verdict": "insufficient",
+            "reason": "The user's belief about logical replication is unrelated to the runbook ownership question."
+          },
+          {
+            "id": "F9",
+            "verdict": "insufficient",
+            "reason": "The user's dietary preference is unrelated to the runbook ownership question."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's favorite band is not relevant to who owns a technical document."
+          }
+        ],
+        "admitted": [
+          "F2",
+          "F3"
+        ],
+        "disposition": "regenerated",
+        "final": "Sofia Marin owns the fleet-routing runbook.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.6460279999882914,
+          "gap_s": 0.9163466250174679,
+          "retrieval_s": 0.10666629101615399,
+          "admission_s": 9.272640499984846,
+          "regeneration_s": 1.376547624997329
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true
+        ],
+        "shadow_candidates": [],
+        "shadow_verdicts": [],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "E4",
+        "turn_class": "explicit_fact",
+        "turn": "Why is Kotlin pinned to 1.9?",
+        "expected": [
+          "F5"
+        ],
+        "draft": "Kotlin is usually pinned to 1.9 for build-tool and dependency compatibility, not because newer Kotlin versions are unavailable.\n\nCommon reasons include:\n\n- **Android Gradle Plugin or Gradle compatibility**\n- **Jetpack Compose compiler** requiring Kotlin 1.9\n- **KSP, serialization, or other compiler plugins** not yet supporting Kotlin 2.x\n- **Third-party libraries** compiled or tested only against Kotlin 1.9\n- **Stable, reproducible CI builds**\n- Avoiding migration changes introduced by **Kotlin 2.0**, such as the new K2 compiler\n\nCheck files such as `gradle/libs.versions.toml`, `build.gradle(.kts)`, `settings.gradle(.kts)`, or `gradle.properties` for the pin. The exact reason depends on the project\u2019s Android Gradle Plugin, Compose, and plugin versions.",
+        "gaps": [
+          "runtime and version constraints",
+          "tooling and architecture decisions"
+        ],
+        "candidates": [
+          {
+            "id": "F5",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F7",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F8",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F5",
+            "verdict": "helpful",
+            "reason": "This record gives the specific reason for the Kotlin version pin, making the answer more direct and less speculative."
+          },
+          {
+            "id": "F1",
+            "verdict": "insufficient",
+            "reason": "The user's time zone is not relevant to a question about software dependencies."
+          },
+          {
+            "id": "F7",
+            "verdict": "insufficient",
+            "reason": "The user's manager is not relevant to a technical question about Kotlin."
+          },
+          {
+            "id": "J1",
+            "verdict": "insufficient",
+            "reason": "Information about webhooks is not relevant to the user's question about Kotlin."
+          },
+          {
+            "id": "F8",
+            "verdict": "insufficient",
+            "reason": "A meeting schedule is not relevant to a question about software dependencies."
+          },
+          {
+            "id": "M1",
+            "verdict": "insufficient",
+            "reason": "A user's belief about a different technology is not relevant to this Kotlin question."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's taste in music is irrelevant to their technical question."
+          }
+        ],
+        "admitted": [
+          "F5"
+        ],
+        "disposition": "regenerated",
+        "final": "Kotlin is pinned to 1.9 because the Kotlin 2.0 K2 compiler currently breaks the project\u2019s annotation processor. Kotlin 1.9 is therefore used for compatibility and stable builds.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 3.992314249975607,
+          "gap_s": 0.8165909170056693,
+          "retrieval_s": 0.05662654200568795,
+          "admission_s": 10.018235000025015,
+          "regeneration_s": 1.5197196250082925
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true
+        ],
+        "shadow_candidates": [],
+        "shadow_verdicts": [],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "E5",
+        "turn_class": "explicit_fact",
+        "turn": "What is my production cluster called and where does it run?",
+        "expected": [
+          "F6"
+        ],
+        "draft": "I don\u2019t have enough context to identify your production cluster or where it runs. Please share your deployment configuration, infrastructure dashboard details, or cluster context.",
+        "gaps": [
+          "production cluster name",
+          "production cluster location"
+        ],
+        "candidates": [
+          {
+            "id": "F6",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R2",
+            "score": 0.032,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F3",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F8",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F7",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F6",
+            "verdict": "helpful",
+            "reason": "This record directly answers the user's question about the name and location of their production cluster."
+          },
+          {
+            "id": "R2",
+            "verdict": "insufficient",
+            "reason": "This provides a general command, but does not identify the specific production cluster the user is asking about."
+          },
+          {
+            "id": "F1",
+            "verdict": "insufficient",
+            "reason": "The user's timezone is not relevant to the name or location of their cluster."
+          },
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "This record points to where documentation might be, but does not contain the specific information requested."
+          },
+          {
+            "id": "F8",
+            "verdict": "insufficient",
+            "reason": "A meeting schedule is not relevant to the name or location of a production cluster."
+          },
+          {
+            "id": "F7",
+            "verdict": "insufficient",
+            "reason": "The user's manager is not relevant to the question about the production cluster."
+          },
+          {
+            "id": "J2",
+            "verdict": "insufficient",
+            "reason": "This record concerns a product feature, not infrastructure details."
+          },
+          {
+            "id": "M1",
+            "verdict": "insufficient",
+            "reason": "The user's belief on a technical topic is not relevant to the name of their production cluster."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's musical preference is irrelevant to the question."
+          }
+        ],
+        "admitted": [
+          "F6"
+        ],
+        "disposition": "regenerated",
+        "final": "Your production cluster is called **orbit-prod** and runs in **ca-central-1**.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.8189437909750268,
+          "gap_s": 0.7189599999692291,
+          "retrieval_s": 0.0975641249679029,
+          "admission_s": 14.70366733300034,
+          "regeneration_s": 1.164553624985274
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true
+        ],
+        "shadow_candidates": [],
+        "shadow_verdicts": [],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "E6",
+        "turn_class": "explicit_fact",
+        "turn": "When is the release go/no-go meeting?",
+        "expected": [
+          "F8"
+        ],
+        "draft": "I don\u2019t have the release schedule. Which project or release are you referring to?",
+        "gaps": [
+          "release go/no-go meeting schedule"
+        ],
+        "candidates": [
+          {
+            "id": "F8",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F3",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F9",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F7",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F4",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F8",
+            "verdict": "helpful",
+            "reason": "This record directly answers the user's question about the meeting time."
+          },
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "This record is about on-call handbooks, not the requested meeting schedule."
+          },
+          {
+            "id": "F1",
+            "verdict": "helpful",
+            "reason": "This record provides the user's time zone, which allows the time provided by another record to be personalized."
+          },
+          {
+            "id": "R2",
+            "verdict": "insufficient",
+            "reason": "This record is about a kubectl command and is unrelated to the meeting schedule."
+          },
+          {
+            "id": "F9",
+            "verdict": "insufficient",
+            "reason": "The user's dietary preference is not relevant to a meeting schedule query."
+          },
+          {
+            "id": "F7",
+            "verdict": "insufficient",
+            "reason": "The user's manager is not relevant to the meeting schedule."
+          },
+          {
+            "id": "F4",
+            "verdict": "insufficient",
+            "reason": "A past technical decision is unrelated to a recurring meeting schedule."
+          },
+          {
+            "id": "J1",
+            "verdict": "insufficient",
+            "reason": "This record is about webhook retry budgets, not the requested meeting schedule."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's musical taste is not relevant to the meeting schedule."
+          }
+        ],
+        "admitted": [
+          "F8",
+          "F1"
+        ],
+        "disposition": "regenerated",
+        "final": "The release go/no-go meeting is every Tuesday at 9:30 AM ET.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.5302434579934925,
+          "gap_s": 0.7565341250156052,
+          "retrieval_s": 0.1020715000340715,
+          "admission_s": 16.107130541000515,
+          "regeneration_s": 1.2387910839752294
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true
+        ],
+        "shadow_candidates": [],
+        "shadow_verdicts": [],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "E7",
+        "turn_class": "explicit_fact",
+        "turn": "What retry budget applies to enterprise tenant webhooks?",
+        "expected": [
+          "J1",
+          "J2"
+        ],
+        "draft": "I can\u2019t determine the enterprise-tenant webhook retry budget without the relevant product or configuration context. Please share the service name, documentation link, or webhook policy.",
+        "gaps": [
+          "enterprise tenant webhooks retry budget"
+        ],
+        "candidates": [
+          {
+            "id": "J2",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J1",
+            "score": 0.032,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F7",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F4",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "J2",
+            "verdict": "jointly_helpful",
+            "reason": "This record provides the enterprise multiplier, which is needed along with the base value from J1 to answer the user's question."
+          },
+          {
+            "id": "J1",
+            "verdict": "jointly_helpful",
+            "reason": "This record provides the base retry budget, which is needed along with the multiplier from J2 to answer the user's question."
+          },
+          {
+            "id": "R1",
+            "verdict": "insufficient",
+            "reason": "This record is about Postgres and is not relevant to webhook retry budgets."
+          },
+          {
+            "id": "F7",
+            "verdict": "insufficient",
+            "reason": "The user's manager's name is not relevant to the webhook retry budget."
+          },
+          {
+            "id": "M1",
+            "verdict": "insufficient",
+            "reason": "The user's belief about an unrelated technology is not relevant to this query."
+          },
+          {
+            "id": "F1",
+            "verdict": "insufficient",
+            "reason": "The user's timezone is not relevant to the webhook retry budget."
+          },
+          {
+            "id": "F4",
+            "verdict": "insufficient",
+            "reason": "This record is about a past technology choice and is not relevant to webhook retry budgets."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's musical preference is not relevant to the technical question."
+          }
+        ],
+        "admitted": [
+          "J2",
+          "J1"
+        ],
+        "disposition": "regenerated",
+        "final": "Enterprise tenant webhooks get **triple the default retry budget: 15 attempts**.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.8341417500050738,
+          "gap_s": 0.7940252919797786,
+          "retrieval_s": 0.10154458304168656,
+          "admission_s": 13.573801291990094,
+          "regeneration_s": 1.196509208995849
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true
+        ],
+        "shadow_candidates": [],
+        "shadow_verdicts": [],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "E8",
+        "turn_class": "explicit_fact",
+        "turn": "Who is my manager?",
+        "expected": [
+          "F7"
+        ],
+        "draft": "I don\u2019t have access to your workplace or organizational information, so I can\u2019t determine who your manager is.",
+        "gaps": [
+          "people and their roles"
+        ],
+        "candidates": [
+          {
+            "id": "M2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F9",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F7",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F10",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "M2",
+            "verdict": "insufficient",
+            "reason": "The user is asking a question, not making a confident statement, so this record is not applicable."
+          },
+          {
+            "id": "F9",
+            "verdict": "insufficient",
+            "reason": "The user's dietary needs are unrelated to the identity of their manager."
+          },
+          {
+            "id": "F7",
+            "verdict": "helpful",
+            "reason": "This record directly answers the user's question, changing the response from a refusal to an answer."
+          },
+          {
+            "id": "P2",
+            "verdict": "insufficient",
+            "reason": "The user's hobbies are unrelated to the identity of their manager."
+          },
+          {
+            "id": "M1",
+            "verdict": "insufficient",
+            "reason": "The user's technical beliefs are unrelated to the identity of their manager."
+          },
+          {
+            "id": "F10",
+            "verdict": "insufficient",
+            "reason": "The user's family information is unrelated to the identity of their manager."
+          },
+          {
+            "id": "F1",
+            "verdict": "insufficient",
+            "reason": "The user's time zone is not sufficient to identify their manager."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's musical taste is unrelated to the identity of their manager."
+          }
+        ],
+        "admitted": [
+          "F7"
+        ],
+        "disposition": "regenerated",
+        "final": "Your manager is Kwame Mensah.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.2562134170439094,
+          "gap_s": 0.8310332919936627,
+          "retrieval_s": 0.00864583399379626,
+          "admission_s": 9.698317000002135,
+          "regeneration_s": 1.1322070409660228
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true
+        ],
+        "shadow_candidates": [],
+        "shadow_verdicts": [],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "E9",
+        "turn_class": "explicit_fact",
+        "turn": "Which time zone should you use for me?",
+        "expected": [
+          "F1"
+        ],
+        "draft": "I don\u2019t know your time zone yet. Please tell me your city, region, or UTC offset (for example, **Berlin**, **Pacific Time**, or **UTC+2**).",
+        "gaps": [
+          "time zone"
+        ],
+        "candidates": [
+          {
+            "id": "F1",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F8",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F9",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F10",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F7",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F1",
+            "verdict": "helpful",
+            "reason": "This record directly answers the user's question about their time zone."
+          },
+          {
+            "id": "F8",
+            "verdict": "insufficient",
+            "reason": "This record concerns a specific meeting's time zone, not the user's general preference."
+          },
+          {
+            "id": "F9",
+            "verdict": "insufficient",
+            "reason": "This record is about dietary restrictions and is not relevant to the user's time zone."
+          },
+          {
+            "id": "F10",
+            "verdict": "insufficient",
+            "reason": "This record contains personal information that is not relevant to the user's time zone."
+          },
+          {
+            "id": "F7",
+            "verdict": "insufficient",
+            "reason": "This record is about the user's manager and is not relevant to their time zone."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "This record is about a personal preference and is not relevant to the user's time zone."
+          },
+          {
+            "id": "M2",
+            "verdict": "insufficient",
+            "reason": "This record is about a conversational preference and does not answer the user's question."
+          }
+        ],
+        "admitted": [
+          "F1"
+        ],
+        "disposition": "regenerated",
+        "final": "Your time zone is **America/Toronto**.",
+        "draft_correct": false,
+        "final_correct": false,
+        "timing": {
+          "draft_s": 1.639898292021826,
+          "gap_s": 0.8544059169944376,
+          "retrieval_s": 0.09625312499701977,
+          "admission_s": 8.117858916986734,
+          "regeneration_s": 1.1847560409805737
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true
+        ],
+        "shadow_candidates": [],
+        "shadow_verdicts": [],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "E10",
+        "turn_class": "explicit_fact",
+        "turn": "Which Kotlin version is pinned?",
+        "expected": [
+          "F5"
+        ],
+        "draft": "I can\u2019t determine the pinned Kotlin version without the project configuration. Check `gradle/libs.versions.toml`, `build.gradle(.kts)`, or `gradle.properties` for the Kotlin version.",
+        "gaps": [
+          "Kotlin version"
+        ],
+        "candidates": [
+          {
+            "id": "F5",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F3",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F6",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F5",
+            "verdict": "helpful",
+            "reason": "This record directly answers the user's question about the pinned Kotlin version."
+          },
+          {
+            "id": "F1",
+            "verdict": "insufficient",
+            "reason": "The user's time zone is irrelevant to the question about a Kotlin version."
+          },
+          {
+            "id": "R2",
+            "verdict": "insufficient",
+            "reason": "A kubectl command is irrelevant to the question about a Kotlin version."
+          },
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "The location of on-call handbooks is irrelevant to the question about a Kotlin version."
+          },
+          {
+            "id": "F6",
+            "verdict": "insufficient",
+            "reason": "Details about a Kubernetes cluster are irrelevant to the question about a Kotlin version."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's favorite band is irrelevant to a technical question about Kotlin."
+          }
+        ],
+        "admitted": [
+          "F5"
+        ],
+        "disposition": "regenerated",
+        "final": "Kotlin **1.9** is pinned.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.8498944580205716,
+          "gap_s": 1.1363778329687193,
+          "retrieval_s": 0.10595874994760379,
+          "admission_s": 9.844203166023362,
+          "regeneration_s": 1.417883207963314
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true
+        ],
+        "shadow_candidates": [],
+        "shadow_verdicts": [],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "I1",
+        "turn_class": "implicit_need",
+        "turn": "Write a small example that parses a CSV file.",
+        "expected": [
+          "A3"
+        ],
+        "draft": "A small Kotlin example that reads CSV rows into a list of columns:\n\n```kotlin\nimport java.io.File\n\nfun main() {\n    val rows = File(\"data.csv\").useLines { lines ->\n        lines.map { it.split(\",\") }.toList()\n    }\n\n    rows.forEach { columns ->\n        println(\"Name: ${columns[0]}, Age: ${columns[1]}\")\n    }\n}\n```\n\nFor a file like:\n\n```text\nAlice,30\nBob,25\n```\n\nThis simple approach assumes fields don\u2019t contain quoted commas.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": true,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 2.946255667018704,
+          "gap_s": 0.8301305409986526,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false
+        ],
+        "shadow_candidates": [
+          {
+            "id": "R1",
+            "score": 0.03,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F9",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F10",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "R1",
+            "verdict": "insufficient",
+            "reason": "This record about databases is not relevant to parsing a CSV file."
+          },
+          {
+            "id": "F9",
+            "verdict": "insufficient",
+            "reason": "The user's dietary preference is not relevant to a request for a code example."
+          },
+          {
+            "id": "P2",
+            "verdict": "insufficient",
+            "reason": "The user's hobby is not relevant to a request for a code example."
+          },
+          {
+            "id": "M1",
+            "verdict": "insufficient",
+            "reason": "This record about databases is not relevant to parsing a CSV file."
+          },
+          {
+            "id": "F10",
+            "verdict": "insufficient",
+            "reason": "The user's family information is not relevant to a request for a code example."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's music preference is not relevant to a request for a code example."
+          }
+        ],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "I2",
+        "turn_class": "implicit_need",
+        "turn": "Suggest a slot on Wednesday for a 45-minute planning session with the ops team.",
+        "expected": [
+          "F1"
+        ],
+        "draft": "How about **Wednesday, September 9, from 10:00\u201310:45 AM**? Please confirm the time zone and availability.",
+        "gaps": [
+          "ops team schedule on Wednesday",
+          "user's time zone",
+          "user's working hours"
+        ],
+        "candidates": [
+          {
+            "id": "F1",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F9",
+            "score": 0.031,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F7",
+            "score": 0.031,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P2",
+            "score": 0.031,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F3",
+            "score": 0.03,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F10",
+            "score": 0.03,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": 0.03,
+            "query": "memory_search",
+            "status": "confirmed"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F1",
+            "verdict": "helpful",
+            "reason": "This record provides the user's time zone, which the draft answer explicitly asks for."
+          },
+          {
+            "id": "F9",
+            "verdict": "insufficient",
+            "reason": "The user's dietary preference is not relevant to scheduling a planning session."
+          },
+          {
+            "id": "F7",
+            "verdict": "insufficient",
+            "reason": "Knowing the user's manager does not help in scheduling a meeting with the ops team."
+          },
+          {
+            "id": "P2",
+            "verdict": "insufficient",
+            "reason": "The user's hobby is not relevant to scheduling a work meeting."
+          },
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "The location of a document is not relevant for suggesting a time for a meeting."
+          },
+          {
+            "id": "F10",
+            "verdict": "insufficient",
+            "reason": "This information is too vague to change the proposed meeting time."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's musical taste is not relevant to scheduling a work meeting."
+          }
+        ],
+        "admitted": [
+          "F1"
+        ],
+        "disposition": "regenerated",
+        "final": "How about **Wednesday, September 9, from 2:00\u20132:45 PM ET (Toronto time)**?",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 2.1759020420140587,
+          "gap_s": 1.2462517919484526,
+          "retrieval_s": 0.09939379198476672,
+          "admission_s": 11.280914000002667,
+          "regeneration_s": 2.0591891249641776
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true
+        ],
+        "shadow_candidates": [],
+        "shadow_verdicts": [],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "I3",
+        "turn_class": "implicit_need",
+        "turn": "Draft a message asking the runbook owner to add a rollback section.",
+        "expected": [
+          "F2"
+        ],
+        "draft": "Please add a rollback section to the runbook, including the steps, prerequisites, and validation checks needed to safely revert the change. This will help the team respond quickly if issues arise.",
+        "gaps": [
+          "runbook owner",
+          "runbook title or identifier"
+        ],
+        "candidates": [
+          {
+            "id": "F2",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F3",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F7",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F9",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F10",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F2",
+            "verdict": "helpful",
+            "reason": "This record identifies the runbook owner, which changes the person the draft message is addressed to."
+          },
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "Knowing the location of handbooks does not change the content of a message to the owner."
+          },
+          {
+            "id": "F7",
+            "verdict": "insufficient",
+            "reason": "The user's manager is not relevant to a request directed at a runbook owner."
+          },
+          {
+            "id": "P2",
+            "verdict": "insufficient",
+            "reason": "The user's hobby is not relevant to the request."
+          },
+          {
+            "id": "F9",
+            "verdict": "insufficient",
+            "reason": "The user's dietary information is not relevant to the request."
+          },
+          {
+            "id": "J2",
+            "verdict": "insufficient",
+            "reason": "This technical detail is unrelated to the request to add a rollback section to a runbook."
+          },
+          {
+            "id": "F10",
+            "verdict": "insufficient",
+            "reason": "The user's family information is not relevant to the request."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's musical preference is not relevant to the request."
+          }
+        ],
+        "admitted": [
+          "F2"
+        ],
+        "disposition": "regenerated",
+        "final": "Please add a rollback section to the fleet-routing runbook.\n\nIt would be helpful to include the rollback steps, prerequisites, validation checks, and guidance on when to use them. Thank you.",
+        "draft_correct": false,
+        "final_correct": false,
+        "timing": {
+          "draft_s": 1.5358534169499762,
+          "gap_s": 1.1780399999697693,
+          "retrieval_s": 0.06610166700556874,
+          "admission_s": 14.400821959017776,
+          "regeneration_s": 2.2956391670159064
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true
+        ],
+        "shadow_candidates": [],
+        "shadow_verdicts": [],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "I4",
+        "turn_class": "implicit_need",
+        "turn": "Write a one-line summary of our change-capture approach for the architecture page.",
+        "expected": [
+          "F4"
+        ],
+        "draft": "We capture data changes as events, enabling reliable propagation, auditing, and downstream processing.",
+        "gaps": [
+          "change-capture approach"
+        ],
+        "candidates": [
+          {
+            "id": "F4",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F9",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F4",
+            "verdict": "helpful",
+            "reason": "This record states the specific technology chosen for change capture, which is the core subject of the requested summary."
+          },
+          {
+            "id": "P2",
+            "verdict": "insufficient",
+            "reason": "The user's hobby is not relevant to a technical architecture summary."
+          },
+          {
+            "id": "M1",
+            "verdict": "helpful",
+            "reason": "This record highlights a critical misconception about the chosen technology that an accurate summary should correct."
+          },
+          {
+            "id": "F9",
+            "verdict": "insufficient",
+            "reason": "The user's dietary needs are not relevant to a technical architecture summary."
+          },
+          {
+            "id": "R1",
+            "verdict": "jointly_helpful",
+            "reason": "This record explains how the technology from F4 works, enabling a more descriptive summary, but is only useful in combination with F4."
+          },
+          {
+            "id": "M2",
+            "verdict": "potentially_harmful",
+            "reason": "This record encourages agreeing with a user's false belief (from M1), which is harmful in a technical context."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's musical preference is not relevant to a technical architecture summary."
+          }
+        ],
+        "admitted": [
+          "F4",
+          "M1",
+          "R1"
+        ],
+        "disposition": "regenerated",
+        "final": "We use PostgreSQL logical replication to stream write-ahead-log changes to subscribers for change data capture.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 2.1129451660090126,
+          "gap_s": 3.178715874964837,
+          "retrieval_s": 0.0991686669876799,
+          "admission_s": 29.22411233303137,
+          "regeneration_s": 8.295905375038274
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true
+        ],
+        "shadow_candidates": [],
+        "shadow_verdicts": [],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "I5",
+        "turn_class": "implicit_need",
+        "turn": "Can I schedule a database migration for Tuesday morning?",
+        "expected": [
+          "F8"
+        ],
+        "draft": "Yes\u2014Tuesday morning is **September 8, 2026**, but I can\u2019t schedule it directly from here.\n\nPlease specify:\n- Time and time zone\n- Database/environment\n- Expected downtime\n- Backup and rollback plan\n- Required approvers or notification list\n\nI can then draft a migration runbook or calendar invite.",
+        "gaps": [
+          "time zone and working hours",
+          "team schedules",
+          "team policies regarding database migration timing"
+        ],
+        "candidates": [
+          {
+            "id": "F1",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F4",
+            "score": 0.032,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F8",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F7",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F3",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F1",
+            "verdict": "helpful",
+            "reason": "This record provides the user's time zone, which the draft answer explicitly asks for."
+          },
+          {
+            "id": "F4",
+            "verdict": "insufficient",
+            "reason": "This technical detail about database technology does not help schedule the migration."
+          },
+          {
+            "id": "F8",
+            "verdict": "helpful",
+            "reason": "This record notes a standing Tuesday morning meeting, which is a critical scheduling constraint for the user's request."
+          },
+          {
+            "id": "F7",
+            "verdict": "helpful",
+            "reason": "This record identifies a likely approver, which the draft answer explicitly asks for."
+          },
+          {
+            "id": "J2",
+            "verdict": "insufficient",
+            "reason": "This technical detail about webhook budgets is unrelated to scheduling a database migration."
+          },
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "The location of handbooks does not help schedule a new migration."
+          },
+          {
+            "id": "F2",
+            "verdict": "insufficient",
+            "reason": "This information concerns a different runbook and is not relevant to the requested database migration."
+          },
+          {
+            "id": "M2",
+            "verdict": "insufficient",
+            "reason": "This stylistic preference does not change any of the scheduling details in the answer."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's favorite band is unrelated to the request to schedule a database migration."
+          }
+        ],
+        "admitted": [
+          "F1",
+          "F8",
+          "F7"
+        ],
+        "disposition": "regenerated",
+        "final": "Yes\u2014schedule it for Tuesday morning, but avoid the 09:30 ET release go/no-go meeting. A slot before 09:00 or after 10:30 ET would work better.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 2.93963579100091,
+          "gap_s": 1.196753499971237,
+          "retrieval_s": 0.09887120896019042,
+          "admission_s": 14.161777166009415,
+          "regeneration_s": 5.770982209010981
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true
+        ],
+        "shadow_candidates": [],
+        "shadow_verdicts": [],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "I6",
+        "turn_class": "implicit_need",
+        "turn": "Give me the command to list nodes in my production cluster.",
+        "expected": [
+          "F6"
+        ],
+        "draft": "List nodes in the currently selected Kubernetes cluster:\n\n```bash\nkubectl get nodes\n```\n\nFor a specific production context:\n\n```bash\nkubectl --context=production get nodes\n```",
+        "gaps": [
+          "production cluster system name",
+          "production cluster command syntax",
+          "infrastructure and environments"
+        ],
+        "candidates": [
+          {
+            "id": "F6",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R2",
+            "score": 0.032,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F3",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "C1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F7",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F6",
+            "verdict": "helpful",
+            "reason": "This record changes the generic context name in the draft command to the user's specific context name."
+          },
+          {
+            "id": "R2",
+            "verdict": "redundant",
+            "reason": "The draft already explains what this command does."
+          },
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "This record is about on-call handbooks, not Kubernetes commands."
+          },
+          {
+            "id": "R1",
+            "verdict": "insufficient",
+            "reason": "This record is about Postgres, not Kubernetes."
+          },
+          {
+            "id": "C1",
+            "verdict": "insufficient",
+            "reason": "This record concerns a preference for SQL, which is not the subject of the request."
+          },
+          {
+            "id": "F7",
+            "verdict": "insufficient",
+            "reason": "The user's manager is not relevant to a Kubernetes command."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's favorite band is not relevant to a technical question about Kubernetes."
+          }
+        ],
+        "admitted": [
+          "F6"
+        ],
+        "disposition": "regenerated",
+        "final": "List nodes in your production cluster with:\n\n```bash\nkubectl --context=orbit-prod get nodes\n```",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 2.2647908750222996,
+          "gap_s": 1.0149181670276448,
+          "retrieval_s": 0.10073225002270192,
+          "admission_s": 7.736682999995537,
+          "regeneration_s": 1.3778661250253208
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true
+        ],
+        "shadow_candidates": [],
+        "shadow_verdicts": [],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "I7",
+        "turn_class": "implicit_need",
+        "turn": "Which Kotlin version should the new module target?",
+        "expected": [
+          "F5"
+        ],
+        "draft": "Target the new module to the same Kotlin version used by the existing project, ideally the latest stable version supported by its Gradle and Android plugins. This avoids compatibility issues and keeps dependencies consistent.",
+        "gaps": [
+          "runtime and version constraints",
+          "tooling and architecture decisions"
+        ],
+        "candidates": [
+          {
+            "id": "F5",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F7",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F8",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F5",
+            "verdict": "helpful",
+            "reason": "This record specifies the exact Kotlin version to use and why, which directly answers the user's question and changes the recommendation in the draft."
+          },
+          {
+            "id": "F1",
+            "verdict": "insufficient",
+            "reason": "The user's timezone is not relevant to the technical question about Kotlin versions."
+          },
+          {
+            "id": "F7",
+            "verdict": "insufficient",
+            "reason": "The user's manager is not relevant to the choice of Kotlin version."
+          },
+          {
+            "id": "J1",
+            "verdict": "insufficient",
+            "reason": "Information about webhook retries is not relevant to the Kotlin version."
+          },
+          {
+            "id": "F8",
+            "verdict": "insufficient",
+            "reason": "Meeting schedules are not relevant to the technical question about Kotlin versions."
+          },
+          {
+            "id": "M1",
+            "verdict": "insufficient",
+            "reason": "A user's belief about an unrelated technical topic does not affect the Kotlin version."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's musical preference is not relevant to the choice of Kotlin version."
+          }
+        ],
+        "admitted": [
+          "F5"
+        ],
+        "disposition": "regenerated",
+        "final": "Target **Kotlin 1.9**, since Kotlin 2.0/K2 currently breaks the annotation processor.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 1.404432958981488,
+          "gap_s": 0.7978590839775279,
+          "retrieval_s": 0.003810791007708758,
+          "admission_s": 10.604077583004255,
+          "regeneration_s": 1.8646102090133354
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true
+        ],
+        "shadow_candidates": [],
+        "shadow_verdicts": [],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "I8",
+        "turn_class": "implicit_need",
+        "turn": "Draft a one-line request to my manager to approve a new laptop.",
+        "expected": [
+          "F7"
+        ],
+        "draft": "Could you please approve a new laptop for me to support my work effectively?",
+        "gaps": [
+          "manager's name",
+          "preferred email or messaging platform"
+        ],
+        "candidates": [
+          {
+            "id": "F7",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "C1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F9",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "F7",
+            "verdict": "helpful",
+            "reason": "This record names the user's manager, which allows the draft to be addressed to them directly."
+          },
+          {
+            "id": "M2",
+            "verdict": "insufficient",
+            "reason": "The user is not expressing a confident opinion, so this preference does not apply."
+          },
+          {
+            "id": "C1",
+            "verdict": "insufficient",
+            "reason": "The request is not about SQL or code."
+          },
+          {
+            "id": "F9",
+            "verdict": "insufficient",
+            "reason": "The user's diet is not relevant to a request for a new laptop."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's favorite band is not relevant to a professional request."
+          },
+          {
+            "id": "F2",
+            "verdict": "insufficient",
+            "reason": "This record is about a different work topic and is not relevant to the user's manager or laptop."
+          }
+        ],
+        "admitted": [
+          "F7"
+        ],
+        "disposition": "regenerated",
+        "final": "Could you please approve my request for a new laptop, Kwame?",
+        "draft_correct": false,
+        "final_correct": false,
+        "timing": {
+          "draft_s": 1.2650172080029733,
+          "gap_s": 0.9910155420075171,
+          "retrieval_s": 0.09534699999494478,
+          "admission_s": 10.324579332955182,
+          "regeneration_s": 0.9639592089806683
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true
+        ],
+        "shadow_candidates": [],
+        "shadow_verdicts": [],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "I9",
+        "turn_class": "implicit_need",
+        "turn": "Write a query that returns each customer's most recent order.",
+        "expected": [
+          "C1"
+        ],
+        "draft": "Use `ROW_NUMBER()` to select the latest order per customer:\n\n```sql\nSELECT customer_id, order_id, order_date, total_amount\nFROM (\n    SELECT\n        o.*,\n        ROW_NUMBER() OVER (\n            PARTITION BY customer_id\n            ORDER BY order_date DESC, order_id DESC\n        ) AS rn\n    FROM orders o\n) ranked\nWHERE rn = 1;\n```\n\nThe `order_id DESC` tie-breaker ensures one result when orders share the same date.",
+        "gaps": [
+          "database schema or table names",
+          "primary key for customers and orders",
+          "order timestamp column name"
+        ],
+        "candidates": [
+          {
+            "id": "C1",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F4",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F3",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "verdicts": [
+          {
+            "id": "C1",
+            "verdict": "helpful",
+            "reason": "This record changes the SQL query code from using a subquery to using a common table expression."
+          },
+          {
+            "id": "M1",
+            "verdict": "insufficient",
+            "reason": "This record is about data replication, which is unrelated to the user's request for an SQL query."
+          },
+          {
+            "id": "M2",
+            "verdict": "insufficient",
+            "reason": "The user is asking a question and not stating a belief, so this record is not applicable."
+          },
+          {
+            "id": "F4",
+            "verdict": "insufficient",
+            "reason": "This record is about change data capture tooling, which is unrelated to the user's request for an SQL query."
+          },
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "This record is about on-call handbooks, which is unrelated to the user's request for an SQL query."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "This personal preference is unrelated to the user's request for an SQL query."
+          }
+        ],
+        "admitted": [
+          "C1"
+        ],
+        "disposition": "regenerated",
+        "final": "Use `ROW_NUMBER()` to rank orders per customer, newest first:\n\n```sql\nWITH ranked_orders AS (\n    SELECT\n        o.*,\n        ROW_NUMBER() OVER (\n            PARTITION BY customer_id\n            ORDER BY order_date DESC, order_id DESC\n        ) AS rn\n    FROM orders o\n)\nSELECT *\nFROM ranked_orders\nWHERE rn = 1;\n```\n\nThe `order_id DESC` tie-breaker ensures one order is selected when dates match.",
+        "draft_correct": false,
+        "final_correct": true,
+        "timing": {
+          "draft_s": 3.1250626660184935,
+          "gap_s": 1.1594103339593858,
+          "retrieval_s": 0.09646975004579872,
+          "admission_s": 7.7447107920306735,
+          "regeneration_s": 3.1072435000096448
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          true
+        ],
+        "shadow_candidates": [],
+        "shadow_verdicts": [],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O1",
+        "turn_class": "ordinary",
+        "turn": "When should a team choose logical replication over Debezium?",
+        "expected": [],
+        "draft": "Choose **logical replication** when you need simple, database-native replication; choose **Debezium** when you need an event-streaming CDC platform.\n\nUse logical replication when:\n\n- Source and target use the same database engine.\n- You need a near-real-time read replica, migration, or selective table replication.\n- Low latency and minimal operational complexity matter.\n- Kafka or downstream event processing isn\u2019t required.\n\nUse Debezium when:\n\n- Events must flow to Kafka or multiple heterogeneous systems.\n- You need connectors, filtering, transformations, routing, or replayable change history.\n- You\u2019re integrating databases with data lakes, search indexes, caches, or services.\n- You need a standardized CDC envelope across different database types.\n\nLogical replication is usually simpler and more efficient, but less flexible. Debezium provides broader integration and event-driven capabilities at the cost of additional infrastructure and operations.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 4.548996499972418,
+          "gap_s": 0.5840903330245055,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false
+        ],
+        "shadow_candidates": [
+          {
+            "id": "F4",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M1",
+            "score": 0.032,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R1",
+            "score": 0.031,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "C1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "F4",
+            "verdict": "insufficient",
+            "reason": "This fact about a past team decision does not change the general technical criteria for choosing between the two options."
+          },
+          {
+            "id": "M1",
+            "verdict": "helpful",
+            "reason": "This record reveals a specific user misconception about delivery guarantees that the answer should correct as a warning."
+          },
+          {
+            "id": "R1",
+            "verdict": "redundant",
+            "reason": "This describes the mechanism of logical replication, which is public knowledge and does not change the answer's recommendations."
+          },
+          {
+            "id": "C1",
+            "verdict": "insufficient",
+            "reason": "This record concerns SQL preferences, which is irrelevant to the architectural choice between replication tools."
+          },
+          {
+            "id": "J1",
+            "verdict": "insufficient",
+            "reason": "This record about webhooks is unrelated to the user's question about database replication."
+          },
+          {
+            "id": "M2",
+            "verdict": "potentially_harmful",
+            "reason": "Adhering to this preference would mean agreeing with the user's factual misconception identified in record M1."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's musical preference is not relevant to their technical question."
+          }
+        ],
+        "shadow_admitted": [
+          "M1"
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O2",
+        "turn_class": "ordinary",
+        "turn": "How do I pin a Kotlin version in Gradle?",
+        "expected": [],
+        "draft": "Pin Kotlin explicitly in your Gradle plugin configuration.\n\n**Kotlin DSL (`build.gradle.kts`):**\n```kotlin\nplugins {\n    kotlin(\"jvm\") version \"2.0.21\"\n}\n```\n\n**Or in `settings.gradle.kts` with plugin management:**\n```kotlin\npluginManagement {\n    plugins {\n        id(\"org.jetbrains.kotlin.jvm\") version \"2.0.21\"\n    }\n}\n```\n\nFor multiple modules, declare the version once in the root build file and use `apply false`:\n\n```kotlin\nplugins {\n    kotlin(\"jvm\") version \"2.0.21\" apply false\n}\n```\n\nThen in subprojects:\n\n```kotlin\nplugins {\n    kotlin(\"jvm\")\n}\n```\n\nFor older Gradle projects using `buildscript`, set the Kotlin Gradle plugin dependency version explicitly.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 3.0246834169956855,
+          "gap_s": 0.6689101670053788,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false
+        ],
+        "shadow_candidates": [
+          {
+            "id": "F5",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F3",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F6",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F4",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "F5",
+            "verdict": "helpful",
+            "reason": "This record changes the version number recommended in the code examples and adds a critical warning."
+          },
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "This record is about on-call handbooks and is not relevant to Kotlin or Gradle."
+          },
+          {
+            "id": "F6",
+            "verdict": "insufficient",
+            "reason": "This record concerns Kubernetes infrastructure and is not relevant to the user's coding question."
+          },
+          {
+            "id": "R2",
+            "verdict": "insufficient",
+            "reason": "This record provides information about a Kubernetes command, which is unrelated to Gradle or Kotlin."
+          },
+          {
+            "id": "F4",
+            "verdict": "insufficient",
+            "reason": "This record is about a database technology decision and is unrelated to the user's question."
+          },
+          {
+            "id": "R1",
+            "verdict": "insufficient",
+            "reason": "This record describes a database feature that is not relevant to the user's Gradle question."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "This personal preference is not relevant to the technical question about Gradle."
+          }
+        ],
+        "shadow_admitted": [
+          "F5"
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O3",
+        "turn_class": "ordinary",
+        "turn": "How do I list nodes with kubectl?",
+        "expected": [],
+        "draft": "List all cluster nodes with:\n\n```bash\nkubectl get nodes\n```\n\nUseful variations:\n\n```bash\nkubectl get nodes -o wide       # Include IPs and OS details\nkubectl get nodes --show-labels # Include node labels\nkubectl describe node <name>    # Show detailed information\nkubectl get nodes -l <label>    # Filter by label\n```\n\nTo watch node status changes:\n\n```bash\nkubectl get nodes --watch\n```",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 2.3763747910270467,
+          "gap_s": 1.1032873750082217,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false
+        ],
+        "shadow_candidates": [
+          {
+            "id": "R2",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F6",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "C1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F3",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F7",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F5",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "R2",
+            "verdict": "redundant",
+            "reason": "The draft answer already provides the command 'kubectl get nodes'."
+          },
+          {
+            "id": "F6",
+            "verdict": "insufficient",
+            "reason": "The user's cluster name does not change the general command for listing nodes."
+          },
+          {
+            "id": "C1",
+            "verdict": "insufficient",
+            "reason": "This record is about SQL, not kubectl."
+          },
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "This record is about documentation location, not kubectl commands."
+          },
+          {
+            "id": "F7",
+            "verdict": "insufficient",
+            "reason": "The user's manager is not relevant to this technical query."
+          },
+          {
+            "id": "F5",
+            "verdict": "insufficient",
+            "reason": "This record is about Kotlin, not kubectl."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "This personal preference is not relevant to the user's request."
+          }
+        ],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O4",
+        "turn_class": "ordinary",
+        "turn": "What is a release go/no-go meeting for?",
+        "expected": [],
+        "draft": "A release go/no-go meeting is a final decision point to determine whether a software release should proceed.\n\nThe team typically reviews:\n\n- Test results and unresolved defects\n- Security, performance, and reliability risks\n- Deployment readiness and rollback plans\n- Documentation, support, and monitoring readiness\n- Business or compliance requirements\n- Any last-minute blockers\n\nThe outcome is usually one of:\n\n- **Go:** Release proceeds as planned\n- **No-go:** Release is postponed until risks or blockers are resolved\n- **Conditional go:** Release proceeds only with specified safeguards or fixes",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 2.5577754999976605,
+          "gap_s": 0.6731891249655746,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false
+        ],
+        "shadow_candidates": [
+          {
+            "id": "F8",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F9",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "C1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F3",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "F8",
+            "verdict": "helpful",
+            "reason": "This record provides a specific time for the meeting the user is asking about, changing a value in the answer."
+          },
+          {
+            "id": "F9",
+            "verdict": "insufficient",
+            "reason": "The user's diet is not relevant to the definition of a release meeting."
+          },
+          {
+            "id": "C1",
+            "verdict": "insufficient",
+            "reason": "The user's SQL coding preference is not relevant to the definition of a release meeting."
+          },
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "The location of on-call handbooks is related to operations but doesn't change the definition of a go/no-go meeting."
+          },
+          {
+            "id": "R2",
+            "verdict": "insufficient",
+            "reason": "A kubectl command is not relevant to the definition of a release meeting."
+          },
+          {
+            "id": "J1",
+            "verdict": "insufficient",
+            "reason": "Information about webhook retries is not relevant to the definition of a release meeting."
+          },
+          {
+            "id": "M2",
+            "verdict": "insufficient",
+            "reason": "The user is asking a question, not making an assertion, so this preference is not applicable."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's musical taste is not relevant to the definition of a release meeting."
+          }
+        ],
+        "shadow_admitted": [
+          "F8"
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O5",
+        "turn_class": "ordinary",
+        "turn": "How are webhook retry budgets usually chosen?",
+        "expected": [],
+        "draft": "Webhook retry budgets are usually chosen by balancing delivery reliability against duplicate load and delay.\n\nCommon approach:\n- **Retries:** 5\u201310 attempts, often with exponential backoff and jitter.\n- **Time window:** Retry for 15 minutes to 24 hours, depending on event value and freshness.\n- **Backoff:** For example, 1m, 5m, 15m, 1h, then periodic retries.\n- **Stop conditions:** Treat 2xx as success; usually don\u2019t retry permanent 4xx errors such as authentication or malformed payloads.\n- **Safety:** Require idempotent consumers, cap concurrency, and send exhausted events to a dead-letter queue.\n- **Tune from data:** Use observed outage durations, endpoint latency/error rates, business impact, and provider rate limits.\n\nHigh-value events may get longer budgets; time-sensitive events may expire quickly and be replaced by reconciliation or polling.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 4.067965209018439,
+          "gap_s": 1.0683972920523956,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false
+        ],
+        "shadow_candidates": [
+          {
+            "id": "J1",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J2",
+            "score": 0.032,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F8",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F4",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "J1",
+            "verdict": "insufficient",
+            "reason": "This specific default value is already covered by the general range provided in the draft answer."
+          },
+          {
+            "id": "J2",
+            "verdict": "insufficient",
+            "reason": "This detail about a specific system's business logic does not change the general principles in the draft."
+          },
+          {
+            "id": "R1",
+            "verdict": "insufficient",
+            "reason": "This record is about database replication, not webhooks."
+          },
+          {
+            "id": "M1",
+            "verdict": "insufficient",
+            "reason": "This record is about database replication, not webhooks."
+          },
+          {
+            "id": "F8",
+            "verdict": "insufficient",
+            "reason": "This record about a team meeting is unrelated to the user's question about webhooks."
+          },
+          {
+            "id": "F4",
+            "verdict": "insufficient",
+            "reason": "This record about a past technology choice is unrelated to the user's question about webhooks."
+          },
+          {
+            "id": "P1",
+            "verdict": "potentially_harmful",
+            "reason": "This is personal information that is completely unrelated to the user's technical question."
+          }
+        ],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O6",
+        "turn_class": "ordinary",
+        "turn": "How do I convert ET to UTC?",
+        "expected": [],
+        "draft": "Eastern Time (ET) is:\n\n- **EST (winter): UTC\u22125**\n- **EDT (daylight saving): UTC\u22124**\n\nTo convert **ET to UTC, add 5 hours during EST or 4 hours during EDT**.\n\nExample: **3:00 PM ET \u2192 8:00 PM UTC (EST)** or **7:00 PM UTC (EDT)**.  \nThe exact offset depends on the date.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 2.7203818749985658,
+          "gap_s": 0.8283935830113478,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false
+        ],
+        "shadow_candidates": [
+          {
+            "id": "F8",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "C1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F3",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F7",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F9",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "F8",
+            "verdict": "helpful",
+            "reason": "This record provides a concrete and relevant example time that can be used in the answer."
+          },
+          {
+            "id": "F1",
+            "verdict": "helpful",
+            "reason": "This record provides the user's specific IANA time zone, allowing the answer to give a precise, programmatic solution instead of a general one."
+          },
+          {
+            "id": "C1",
+            "verdict": "insufficient",
+            "reason": "This record is about SQL preferences and is not relevant to a question about time zone conversion."
+          },
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "This record is about documentation location and is unrelated to the user's request."
+          },
+          {
+            "id": "F7",
+            "verdict": "insufficient",
+            "reason": "This record contains personal information that is not relevant to the time zone conversion question."
+          },
+          {
+            "id": "F9",
+            "verdict": "insufficient",
+            "reason": "This record is a dietary preference and is completely unrelated to the user's question."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "This record is a personal preference unrelated to the user's technical question."
+          }
+        ],
+        "shadow_admitted": [
+          "F1",
+          "F8"
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O7",
+        "turn_class": "ordinary",
+        "turn": "What should an on-call handbook contain?",
+        "expected": [],
+        "draft": "An on-call handbook should be a practical guide for detecting, responding to, and resolving incidents.\n\nInclude:\n\n- **Purpose and scope:** Services covered, support hours, and ownership.\n- **On-call responsibilities:** Expected response times, escalation duties, and handoff rules.\n- **Contact information:** Rotation schedule, team channels, stakeholders, and vendors.\n- **Severity levels:** Clear definitions and corresponding response targets.\n- **Alert guidance:** Meaning of each alert, dashboards, logs, and common false positives.\n- **Incident procedures:** A step-by-step process for acknowledgement, mitigation, communication, and resolution.\n- **Runbooks:** Troubleshooting and recovery steps for frequent failure scenarios.\n- **Escalation paths:** When and how to involve specialists, managers, or external providers.\n- **Communication templates:** Internal updates, customer messages, and status-page notices.\n- **Tools and access:** Links, commands, permissions, and security procedures.\n- **Post-incident work:** Incident reports, action items, and follow-up ownership.\n- **Maintenance guidance:** Review cadence, change history, and feedback process.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 3.925300957984291,
+          "gap_s": 0.9240502499742433,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false
+        ],
+        "shadow_candidates": [
+          {
+            "id": "F3",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F8",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "This is a specific location for one organization's handbooks, not general advice on what a handbook should contain."
+          },
+          {
+            "id": "M2",
+            "verdict": "insufficient",
+            "reason": "The user is asking a question and not making a confident statement, so there is nothing to agree with."
+          },
+          {
+            "id": "F2",
+            "verdict": "insufficient",
+            "reason": "This is a specific example of runbook ownership, which is too granular for a general guide on handbook contents."
+          },
+          {
+            "id": "M1",
+            "verdict": "insufficient",
+            "reason": "The user's belief about a specific technology is not relevant to the general contents of an on-call handbook."
+          },
+          {
+            "id": "F8",
+            "verdict": "insufficient",
+            "reason": "This is a specific meeting time for one team, not a general recommendation for what a handbook should include."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's musical taste is irrelevant to the professional topic of on-call handbooks."
+          }
+        ],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O8",
+        "turn_class": "ordinary",
+        "turn": "How should I prepare to ask my manager for a new laptop?",
+        "expected": [],
+        "draft": "**Prepare a clear business case that connects the laptop to your productivity and work needs.**\n\n1. **Document the problem:** Note slow performance, crashes, battery issues, compatibility problems, or security concerns.\n2. **Explain the impact:** Estimate lost time, delayed work, or limitations on required tools.\n3. **Check company policy:** Look for hardware replacement cycles, approved models, and request procedures.\n4. **Suggest a reasonable solution:** Identify a model or specifications that meet your role\u2019s needs\u2014not necessarily the most expensive option.\n5. **Choose the right time:** Ask during a one-on-one or planning discussion, not during a crisis.\n6. **Make a concise request:**  \n   *\u201cMy laptop is affecting my productivity because [specific issues]. I\u2019ve documented [impact], and I\u2019d like to request a replacement that meets [requirements]. Could we discuss the process and timing?\u201d*\n7. **Be ready for alternatives:** Consider upgrades, repairs, a loaner, or a scheduled replacement.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 3.1343278330168687,
+          "gap_s": 0.7435022499994375,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false
+        ],
+        "shadow_candidates": [
+          {
+            "id": "F7",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F10",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F8",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F4",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "F7",
+            "verdict": "helpful",
+            "reason": "This record allows personalizing the sample request by addressing the user's manager by name."
+          },
+          {
+            "id": "M2",
+            "verdict": "insufficient",
+            "reason": "The user is asking a question and not stating a confident belief, so this preference is not applicable."
+          },
+          {
+            "id": "M1",
+            "verdict": "insufficient",
+            "reason": "This record is about a technical belief and is irrelevant to asking for a new laptop."
+          },
+          {
+            "id": "J2",
+            "verdict": "insufficient",
+            "reason": "This technical detail about webhooks is unrelated to the user's request for a new laptop."
+          },
+          {
+            "id": "F10",
+            "verdict": "insufficient",
+            "reason": "This personal information about the user's family is not relevant to a professional request."
+          },
+          {
+            "id": "F8",
+            "verdict": "insufficient",
+            "reason": "This record about a specific meeting does not change the draft's general advice on when to make the request."
+          },
+          {
+            "id": "F4",
+            "verdict": "insufficient",
+            "reason": "This record of a past team decision is not relevant to the user's current hardware needs."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's favorite band is not relevant to a professional request for a new laptop."
+          }
+        ],
+        "shadow_admitted": [
+          "F7"
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O9",
+        "turn_class": "ordinary",
+        "turn": "What is a runbook?",
+        "expected": [],
+        "draft": "A runbook is a documented set of instructions for performing routine tasks or responding to specific incidents.\n\nIt typically includes:\n\n- Step-by-step procedures\n- Required tools and permissions\n- Troubleshooting guidance\n- Escalation contacts\n- Validation and rollback steps\n\nFor example, an IT runbook might explain how to restart a failed service, investigate an outage, or deploy a rollback. Runbooks help teams respond consistently, reduce errors, and enable others to handle tasks without relying on one expert.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 2.4207036660518497,
+          "gap_s": 0.8309835830004886,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false
+        ],
+        "shadow_candidates": [
+          {
+            "id": "F2",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F3",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F10",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F9",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "F2",
+            "verdict": "insufficient",
+            "reason": "This record provides a specific example of a runbook owner, which does not help define what a runbook is."
+          },
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "This record specifies a location for handbooks, which does not help define the general concept of a runbook."
+          },
+          {
+            "id": "F10",
+            "verdict": "potentially_harmful",
+            "reason": "This personal information is completely unrelated to the user's request about runbooks."
+          },
+          {
+            "id": "J2",
+            "verdict": "insufficient",
+            "reason": "This record contains a specific technical detail unrelated to the definition of a runbook."
+          },
+          {
+            "id": "J1",
+            "verdict": "insufficient",
+            "reason": "This record contains a specific technical detail unrelated to the definition of a runbook."
+          },
+          {
+            "id": "F9",
+            "verdict": "potentially_harmful",
+            "reason": "This personal information is completely unrelated to the user's request about runbooks."
+          },
+          {
+            "id": "P1",
+            "verdict": "potentially_harmful",
+            "reason": "This personal information is completely unrelated to the user's request about runbooks."
+          }
+        ],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O10",
+        "turn_class": "ordinary",
+        "turn": "How do I write a database migration announcement?",
+        "expected": [],
+        "draft": "A good database migration announcement clearly explains **what is changing, when, impact, and what people need to do**.\n\nInclude:\n\n1. **Purpose** \u2013 Why the migration is happening  \n2. **Schedule** \u2013 Date, time, and time zone  \n3. **Impact** \u2013 Expected downtime, performance issues, or unaffected services  \n4. **Required action** \u2013 Anything users or teams must do  \n5. **Rollback/support plan** \u2013 What happens if problems occur and whom to contact  \n\n**Example:**\n\n> **Scheduled Database Migration \u2013 April 15**\n>\n> We will migrate the production database to a new infrastructure on **April 15, from 22:00\u201323:00 UTC**.\n>\n> During this window, the application may be unavailable for up to 15 minutes. No action is required from users. We will monitor the migration closely and roll back if critical issues occur.\n>\n> For questions or to report problems after the migration, contact **#platform-support**.\n\nKeep the tone direct, avoid unnecessary technical detail, and send a reminder before the maintenance window.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 3.7947979170130566,
+          "gap_s": 0.732456750003621,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false
+        ],
+        "shadow_candidates": [
+          {
+            "id": "R1",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F4",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "C1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F8",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "R1",
+            "verdict": "insufficient",
+            "reason": "This technical detail about Postgres does not change the advice on how to write an announcement."
+          },
+          {
+            "id": "F4",
+            "verdict": "insufficient",
+            "reason": "A past technical decision does not inform the general process of writing a migration announcement."
+          },
+          {
+            "id": "C1",
+            "verdict": "insufficient",
+            "reason": "The user's SQL preference is not relevant to writing a migration announcement, which involves no SQL."
+          },
+          {
+            "id": "F8",
+            "verdict": "insufficient",
+            "reason": "A specific team meeting schedule does not change the content or structure of a migration announcement."
+          },
+          {
+            "id": "J2",
+            "verdict": "insufficient",
+            "reason": "This specific system configuration detail is not relevant to a general guide on writing announcements."
+          },
+          {
+            "id": "F2",
+            "verdict": "insufficient",
+            "reason": "Knowing a specific person's role does not change the general template for an announcement."
+          },
+          {
+            "id": "J1",
+            "verdict": "insufficient",
+            "reason": "This specific system configuration detail is not relevant to a general guide on writing announcements."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's musical preference is unrelated to the request about technical communication."
+          }
+        ],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O11",
+        "turn_class": "ordinary",
+        "turn": "What is the difference between a coroutine and a thread in Kotlin?",
+        "expected": [],
+        "draft": "**Summary: Coroutines are lightweight, suspending tasks; threads are heavier OS-managed execution units.**\n\n- **Thread:** Managed by the operating system, has its own stack, and can run code in parallel on multiple CPU cores. Creating many threads is expensive.\n- **Coroutine:** Managed by Kotlin, runs within a thread, and can **suspend without blocking** that thread. Thousands of coroutines can share a small thread pool.\n- Coroutines are not automatically parallel; use appropriate dispatchers such as `Dispatchers.Default` or `Dispatchers.IO`.\n- Coroutines support structured concurrency through scopes and jobs.\n\n```kotlin\nfun main() = runBlocking {\n    launch(Dispatchers.IO) {\n        delay(1000) // Suspends; thread is free meanwhile\n        println(\"Done\")\n    }\n}\n```\n\nA thread\u2019s `sleep()` blocks the thread; a coroutine\u2019s `delay()` suspends only the coroutine.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 3.8636002499843016,
+          "gap_s": 0.6017304579727352,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false
+        ],
+        "shadow_candidates": [
+          {
+            "id": "F5",
+            "score": 0.032,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F6",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "F5",
+            "verdict": "insufficient",
+            "reason": "The Kotlin version pin does not affect the fundamental concepts of coroutines vs. threads."
+          },
+          {
+            "id": "F6",
+            "verdict": "insufficient",
+            "reason": "The user's Kubernetes cluster details are not relevant to a question about Kotlin."
+          },
+          {
+            "id": "F2",
+            "verdict": "insufficient",
+            "reason": "Runbook ownership is unrelated to the user's question about Kotlin."
+          },
+          {
+            "id": "R2",
+            "verdict": "insufficient",
+            "reason": "A kubectl command is not relevant to a question about Kotlin."
+          },
+          {
+            "id": "F1",
+            "verdict": "insufficient",
+            "reason": "The user's time zone is not relevant to this conceptual programming question."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's favorite band is not relevant to a technical question about Kotlin."
+          }
+        ],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O12",
+        "turn_class": "ordinary",
+        "turn": "Explain write-ahead logging.",
+        "expected": [],
+        "draft": "**Write-ahead logging (WAL) records changes before applying them to the main data.**\n\nA system first writes an operation to a durable log, then updates its database or files:\n\n1. Append the intended change to the log.\n2. Ensure the log is safely persisted.\n3. Apply the change to the main data.\n4. Mark or discard the log entry when complete.\n\nIf the system crashes:\n\n- **Committed log entries** can be replayed to restore changes.\n- **Incomplete entries** can be ignored or rolled back.\n\nWAL provides **durability** and **crash recovery**, and can improve performance by writing sequentially to a log rather than synchronously updating many scattered data locations. It is used by databases and filesystems such as PostgreSQL, SQLite, and ext4.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 2.8816764160292223,
+          "gap_s": 2.3181073750020005,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false
+        ],
+        "shadow_candidates": [
+          {
+            "id": "R1",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F3",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "C1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F7",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "R1",
+            "verdict": "jointly_helpful",
+            "reason": "This record provides a specific example of what WAL enables, which becomes the basis for a warning prompted by another record."
+          },
+          {
+            "id": "M1",
+            "verdict": "jointly_helpful",
+            "reason": "When combined with the record on logical replication, this record prompts a warning about a user misconception on delivery guarantees."
+          },
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "This record is about on-call handbooks and is not relevant to explaining write-ahead logging."
+          },
+          {
+            "id": "C1",
+            "verdict": "insufficient",
+            "reason": "The user's SQL preference is irrelevant as the request is for an explanation, not for writing SQL code."
+          },
+          {
+            "id": "F1",
+            "verdict": "insufficient",
+            "reason": "The user's time zone is irrelevant for a request to explain a technical concept."
+          },
+          {
+            "id": "F7",
+            "verdict": "insufficient",
+            "reason": "The user's manager is not relevant to an explanation of write-ahead logging."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's favorite band is not relevant to a technical explanation."
+          }
+        ],
+        "shadow_admitted": [
+          "R1",
+          "M1"
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O13",
+        "turn_class": "ordinary",
+        "turn": "How should a planning session be structured?",
+        "expected": [],
+        "draft": "A good planning session moves from alignment to decisions to concrete next steps.\n\n1. **Set the objective** \u2014 Define what must be decided or produced.\n2. **Review context** \u2014 Share relevant facts, constraints, and assumptions.\n3. **Assess the current state** \u2014 Discuss progress, problems, and dependencies.\n4. **Generate options** \u2014 Brainstorm possible approaches without judging too early.\n5. **Prioritize and decide** \u2014 Evaluate options against agreed criteria.\n6. **Create the plan** \u2014 Assign tasks, owners, deadlines, and milestones.\n7. **Identify risks** \u2014 Note obstacles, dependencies, and contingency actions.\n8. **Recap and close** \u2014 Confirm decisions, unresolved questions, and the next check-in.\n\nUse a facilitator, keep discussions timeboxed, and document decisions as they happen.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 3.6692561670206487,
+          "gap_s": 0.6997609160025604,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false
+        ],
+        "shadow_candidates": [
+          {
+            "id": "F8",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "C1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F3",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "F8",
+            "verdict": "insufficient",
+            "reason": "The schedule for a specific meeting does not change the general advice on how to structure one."
+          },
+          {
+            "id": "C1",
+            "verdict": "insufficient",
+            "reason": "A SQL coding preference is not relevant to the structure of a planning session."
+          },
+          {
+            "id": "M2",
+            "verdict": "insufficient",
+            "reason": "This interaction preference does not apply as the user is asking a question, not stating a confident belief."
+          },
+          {
+            "id": "M1",
+            "verdict": "insufficient",
+            "reason": "The user's technical belief about logical replication is not relevant to planning session structure."
+          },
+          {
+            "id": "F2",
+            "verdict": "insufficient",
+            "reason": "Naming a specific person who owns a runbook is not relevant to the general question."
+          },
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "The location of on-call handbooks is not relevant to structuring a planning session."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's favorite band is not relevant to structuring a planning session."
+          }
+        ],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O14",
+        "turn_class": "ordinary",
+        "turn": "What is a feature flag?",
+        "expected": [],
+        "draft": "A **feature flag** is a software setting that lets you enable or disable a feature without deploying new code.\n\nTeams use feature flags to:\n\n- Release features gradually to selected users\n- Test changes in production safely\n- Quickly disable broken functionality\n- Run A/B experiments\n- Separate code deployment from feature release\n\nExample:\n\n```kotlin\nif (featureFlags.isEnabled(\"newCheckout\")) {\n    showNewCheckout()\n} else {\n    showOldCheckout()\n}\n```\n\nThe flag\u2019s value is usually controlled through configuration or a feature-management service.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 2.4293249170295894,
+          "gap_s": 0.6853422499843873,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false
+        ],
+        "shadow_candidates": [
+          {
+            "id": "F2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F9",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "F2",
+            "verdict": "insufficient",
+            "reason": "This record about a runbook owner is not relevant to defining feature flags."
+          },
+          {
+            "id": "M1",
+            "verdict": "insufficient",
+            "reason": "This record about a database concept is unrelated to the user's question about feature flags."
+          },
+          {
+            "id": "P2",
+            "verdict": "insufficient",
+            "reason": "The user's hobby of collecting cameras is not relevant to a technical question about software."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's musical preference is unrelated to the definition of a feature flag."
+          },
+          {
+            "id": "F9",
+            "verdict": "insufficient",
+            "reason": "The user's dietary information has no bearing on a technical software question."
+          }
+        ],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O15",
+        "turn_class": "ordinary",
+        "turn": "How do I write a good architecture summary?",
+        "expected": [],
+        "draft": "A good architecture summary explains **what the system does, how its major parts fit together, and why key decisions were made**.\n\nUse this structure:\n\n1. **Purpose and scope** \u2013 What problem does the system solve?\n2. **High-level design** \u2013 Describe the main components and their relationships.\n3. **Data and request flow** \u2013 Explain how information moves through the system.\n4. **Key technologies** \u2013 Mention frameworks, databases, infrastructure, and integrations.\n5. **Important decisions** \u2013 Explain choices involving scalability, security, reliability, or maintainability.\n6. **Constraints and trade-offs** \u2013 State known limitations and alternatives rejected.\n7. **Operational concerns** \u2013 Briefly cover deployment, monitoring, backups, and failure handling.\n\nKeep it audience-appropriate, use a simple diagram if helpful, and avoid implementation details unless they affect architecture.\n\nExample opening:\n\n> \u201cThe system is a web-based order platform using a modular backend, PostgreSQL for transactional data, and asynchronous messaging for notifications. Requests enter through an API gateway, are processed by domain services, and persist data in PostgreSQL.\u201d",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 4.01757883396931,
+          "gap_s": 1.01710933301365,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false
+        ],
+        "shadow_candidates": [
+          {
+            "id": "R1",
+            "score": 0.031,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "C1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "R1",
+            "verdict": "insufficient",
+            "reason": "This is a specific technical detail that does not change the general advice on how to write an architecture summary."
+          },
+          {
+            "id": "M1",
+            "verdict": "insufficient",
+            "reason": "The user's belief about a database feature is not relevant to their general question about documentation."
+          },
+          {
+            "id": "C1",
+            "verdict": "insufficient",
+            "reason": "The user's preference for SQL syntax is not relevant to writing a high-level architecture summary."
+          },
+          {
+            "id": "F2",
+            "verdict": "insufficient",
+            "reason": "This information about a specific person and document is not relevant to the user's general question."
+          },
+          {
+            "id": "M2",
+            "verdict": "insufficient",
+            "reason": "The user is asking a question, not making a confident statement, so this preference does not apply."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's musical taste is not relevant to the topic of writing an architecture summary."
+          }
+        ],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O16",
+        "turn_class": "ordinary",
+        "turn": "What are common causes of slow CI pipelines?",
+        "expected": [],
+        "draft": "Slow CI pipelines are usually caused by inefficient builds, tests, dependencies, or infrastructure.\n\nCommon causes include:\n\n- **Too many or slow tests**, especially integration, end-to-end, or flaky tests\n- **Running all jobs serially** instead of parallelizing independent work\n- **Poor caching** for dependencies, build outputs, or Docker layers\n- **Repeated dependency downloads** or inefficient package installation\n- **Large Docker images** and slow image builds\n- **Resource-constrained runners** such as low CPU, memory, or disk I/O\n- **Unnecessary work**, like rebuilding unchanged modules\n- **Slow external services** or network-dependent tests\n- **Container and VM startup overhead**\n- **Complex build scripts** with redundant steps\n- **Artifact upload/download bottlenecks**\n- **Manual approval gates or queue times** caused by limited runners\n- **Flaky tests and retries**, which silently extend execution time\n\nMeasure each stage\u2019s duration first; the slowest stage is usually the best optimization target.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 4.136535583995283,
+          "gap_s": 0.8096112500061281,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false
+        ],
+        "shadow_candidates": [
+          {
+            "id": "C1",
+            "score": 0.032,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F5",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F6",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "C1",
+            "verdict": "insufficient",
+            "reason": "The user's SQL preference is not relevant to a question about CI pipelines."
+          },
+          {
+            "id": "F5",
+            "verdict": "insufficient",
+            "reason": "The user's pinned Kotlin version is not relevant as the request does not involve Kotlin code."
+          },
+          {
+            "id": "J1",
+            "verdict": "insufficient",
+            "reason": "This detail about webhook retries is too specific and does not change the general answer about CI slowness."
+          },
+          {
+            "id": "F6",
+            "verdict": "insufficient",
+            "reason": "The user's specific cluster name is not relevant to a general question about CI pipeline performance."
+          },
+          {
+            "id": "M1",
+            "verdict": "insufficient",
+            "reason": "The user's belief about database replication is unrelated to the topic of CI pipelines."
+          },
+          {
+            "id": "J2",
+            "verdict": "insufficient",
+            "reason": "This detail about enterprise webhook retries is too specific and does not change the general answer about CI slowness."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's favorite band is personal information unrelated to the technical request."
+          }
+        ],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O17",
+        "turn_class": "ordinary",
+        "turn": "How do I set up a pre-commit hook that runs ktlint?",
+        "expected": [],
+        "draft": "Set up a Git `pre-commit` hook that runs your Gradle ktlint check before every commit.\n\n1. Configure ktlint in `build.gradle.kts`:\n\n```kotlin\nplugins {\n    id(\"org.jlleitschuh.gradle.ktlint\") version \"<version>\"\n}\n```\n\n2. Create `.git/hooks/pre-commit`:\n\n```sh\n#!/bin/sh\n\necho \"Running ktlint...\"\n./gradlew ktlintCheck\n\nif [ $? -ne 0 ]; then\n  echo \"Commit aborted: ktlint failed.\"\n  exit 1\nfi\n```\n\n3. Make it executable:\n\n```sh\nchmod +x .git/hooks/pre-commit\n```\n\nNow commits are blocked when ktlint reports errors. To automatically fix formatting, run:\n\n```sh\n./gradlew ktlintFormat\n```\n\nFor team-wide hooks, consider managing the script through a Gradle task or a tool such as `pre-commit`, since `.git/hooks` is not committed to the repository.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 5.77640687499661,
+          "gap_s": 0.9265904590138234,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false
+        ],
+        "shadow_candidates": [
+          {
+            "id": "F6",
+            "score": 0.032,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F5",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F3",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F7",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "F6",
+            "verdict": "insufficient",
+            "reason": "The user's Kubernetes cluster details are irrelevant to setting up a local Git hook."
+          },
+          {
+            "id": "F5",
+            "verdict": "insufficient",
+            "reason": "The user's Kotlin version does not change the procedure for setting up a pre-commit hook."
+          },
+          {
+            "id": "J1",
+            "verdict": "insufficient",
+            "reason": "This record concerns webhooks, not the Git pre-commit hooks the user is asking about."
+          },
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "The location of on-call handbooks is unrelated to the user's request about Git hooks."
+          },
+          {
+            "id": "F7",
+            "verdict": "insufficient",
+            "reason": "The user's manager's name is not relevant to this technical software development question."
+          },
+          {
+            "id": "J2",
+            "verdict": "insufficient",
+            "reason": "This record concerns webhooks, not the Git pre-commit hooks the user is asking about."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's favorite band is personal information that is irrelevant to the technical request."
+          }
+        ],
+        "shadow_admitted": []
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O18",
+        "turn_class": "ordinary",
+        "turn": "What is exactly-once delivery?",
+        "expected": [],
+        "draft": "Exactly-once delivery means each message or event is processed **one time and only one time**\u2014never lost and never duplicated.\n\nIn practice, it usually requires two guarantees:\n\n- **At-least-once delivery:** the message isn\u2019t lost.\n- **Deduplication or transactional processing:** retries don\u2019t cause duplicate effects.\n\nFor example, charging a customer exactly once despite network failures requires storing an idempotency key or performing the charge and message acknowledgment atomically.\n\n\u201cExactly once\u201d can be difficult across independent systems; many systems provide **exactly-once processing semantics** only within a limited scope, rather than an absolute end-to-end guarantee.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 2.606616250006482,
+          "gap_s": 1.0134804170229472,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false
+        ],
+        "shadow_candidates": [
+          {
+            "id": "M1",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F8",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F9",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "M1",
+            "verdict": "helpful",
+            "reason": "This record identifies a specific user misconception about the topic that the answer should correct."
+          },
+          {
+            "id": "M2",
+            "verdict": "potentially_harmful",
+            "reason": "This record encourages agreeing with the user even when they are incorrect, which would be detrimental."
+          },
+          {
+            "id": "F8",
+            "verdict": "insufficient",
+            "reason": "This record about a meeting schedule is irrelevant to the technical question."
+          },
+          {
+            "id": "F9",
+            "verdict": "insufficient",
+            "reason": "The user's dietary preference is unrelated to the topic of exactly-once delivery."
+          },
+          {
+            "id": "R1",
+            "verdict": "jointly_helpful",
+            "reason": "This record provides the factual context needed to properly address the user's misconception from M1."
+          },
+          {
+            "id": "F1",
+            "verdict": "insufficient",
+            "reason": "The user's time zone is irrelevant to the definition of a technical concept."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's taste in music is irrelevant to the technical question."
+          }
+        ],
+        "shadow_admitted": [
+          "M1",
+          "R1"
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O19",
+        "turn_class": "ordinary",
+        "turn": "How should Kubernetes clusters be named?",
+        "expected": [],
+        "draft": "Kubernetes cluster names should be **unique, descriptive, and consistent** across your organization.\n\nA common format is:\n\n```text\n<environment>-<region>-<purpose>\n```\n\nExamples:\n\n```text\nprod-us-east1-main\nstaging-eu-west1-api\ndev-local\nprod-ap-southeast1-data\n```\n\nRecommended practices:\n\n- Use lowercase letters, numbers, and hyphens.\n- Include the environment: `dev`, `staging`, or `prod`.\n- Include the region or location when relevant.\n- Include a purpose, team, or workload if you operate multiple clusters.\n- Keep names short and easy to read.\n- Avoid provider-specific details unless they matter operationally.\n- Use a stable naming scheme and document it.\n\nAvoid vague names like `cluster1`, `k8s-prod`, or names containing temporary ticket numbers.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 2.7243923749774694,
+          "gap_s": 0.8274849169538356,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false
+        ],
+        "shadow_candidates": [
+          {
+            "id": "F6",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "C1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F7",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F4",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P2",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "F6",
+            "verdict": "helpful",
+            "reason": "This record provides the user's current cluster name and region, which allows for more specific and relevant examples in the answer."
+          },
+          {
+            "id": "R2",
+            "verdict": "insufficient",
+            "reason": "This fact about a kubectl command is not relevant to the user's question about cluster naming conventions."
+          },
+          {
+            "id": "C1",
+            "verdict": "insufficient",
+            "reason": "The user's SQL preference is unrelated to their question about naming Kubernetes clusters."
+          },
+          {
+            "id": "F7",
+            "verdict": "insufficient",
+            "reason": "Knowing the manager's name does not help answer the question about how to name clusters."
+          },
+          {
+            "id": "F4",
+            "verdict": "insufficient",
+            "reason": "This technical decision about databases is unrelated to Kubernetes cluster naming."
+          },
+          {
+            "id": "P2",
+            "verdict": "insufficient",
+            "reason": "The user's hobby is not relevant to their technical question about Kubernetes."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's musical preference is not relevant to their technical question about Kubernetes."
+          }
+        ],
+        "shadow_admitted": [
+          "F6"
+        ]
+      },
+      {
+        "arm": "ambient",
+        "turn_id": "O20",
+        "turn_class": "ordinary",
+        "turn": "What is the difference between production and disaster-recovery environments?",
+        "expected": [],
+        "draft": "Production is the live environment serving real users and business operations. It is optimized for availability, performance, security, and frequent controlled releases.\n\nA disaster-recovery (DR) environment is a standby environment used to restore operations after a major failure, such as a data-center outage, cyberattack, or hardware failure. It is optimized for resilience and recovery rather than normal day-to-day traffic.\n\nKey differences:\n\n- **Purpose:** Production runs the business; DR restores it after disruption.\n- **Usage:** Production is continuously active; DR may be idle, partially active, or continuously replicated.\n- **Data:** Production holds the primary data; DR maintains replicated backups or copies.\n- **Scale:** DR may be smaller, depending on recovery requirements.\n- **Recovery goals:** DR is designed around **RTO** (how quickly service returns) and **RPO** (how much data loss is acceptable).\n- **Testing:** DR requires regular failover and recovery tests to ensure it actually works.",
+        "gaps": [],
+        "candidates": [],
+        "verdicts": [],
+        "admitted": [],
+        "disposition": "baseline_no_gaps",
+        "final": null,
+        "draft_correct": null,
+        "final_correct": null,
+        "timing": {
+          "draft_s": 3.79386129201157,
+          "gap_s": 1.0443244589841925,
+          "retrieval_s": 0.0,
+          "admission_s": 0.0,
+          "regeneration_s": 0.0
+        },
+        "failures": [],
+        "gap_repeats_nonempty": [
+          false
+        ],
+        "shadow_candidates": [
+          {
+            "id": "F6",
+            "score": 0.033,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "C1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "M1",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "J2",
+            "score": 0.016,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F3",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "F7",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "R1",
+            "score": 0.015,
+            "query": "memory_search",
+            "status": "confirmed"
+          },
+          {
+            "id": "P1",
+            "score": null,
+            "query": "forced placebo"
+          }
+        ],
+        "shadow_verdicts": [
+          {
+            "id": "F6",
+            "verdict": "insufficient",
+            "reason": "The user's question is general, and naming their specific production cluster does not change the explanation."
+          },
+          {
+            "id": "C1",
+            "verdict": "insufficient",
+            "reason": "The user's SQL preference is irrelevant to the question about system environments."
+          },
+          {
+            "id": "M1",
+            "verdict": "insufficient",
+            "reason": "This is a technical detail about replication guarantees, which is too specific for the high-level question being asked."
+          },
+          {
+            "id": "J2",
+            "verdict": "insufficient",
+            "reason": "Details about tenant webhook budgets are unrelated to the difference between production and DR environments."
+          },
+          {
+            "id": "F3",
+            "verdict": "insufficient",
+            "reason": "The location of on-call handbooks is specific operational information, not a general concept."
+          },
+          {
+            "id": "F7",
+            "verdict": "insufficient",
+            "reason": "The user's manager is not relevant to the technical topic of system environments."
+          },
+          {
+            "id": "R1",
+            "verdict": "insufficient",
+            "reason": "This is a technical detail about a specific database's replication method, which is not required for the general explanation."
+          },
+          {
+            "id": "P1",
+            "verdict": "insufficient",
+            "reason": "The user's musical preference is unrelated to the topic of system environments."
+          }
+        ],
+        "shadow_admitted": []
+      }
+    ]
+  }
+}

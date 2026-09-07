@@ -550,6 +550,37 @@ Two things to note from the fourth-split run. The one injection is the same "my 
 
 **Outcome.** The v2 classifier prompt becomes the default in the harnesses and enters the supported bundle as `classifier: gpt-4o/category-v2`. The change was made in shadow and passed the complete suite before merging, as the sequence requires.
 
+## 8l. Three frontier judges on the shadow set: recall, adjacency, safety, latency, and cost together
+
+Run on 7 September 2026, step 4 of the execution sequence. Section 8i compared judges on the tuning split, where candidate pools are small and only gap turns reach the judge, and all three frontier models passed. This comparison uses the harder measurement: the fourth and fifth splits through the real ingestor, activation, and retrieval, with eight-candidate pools that include a forced placebo, and with shadow judging that puts every ordinary turn's relevance-path candidates in front of the judge. Planner `gpt-4o/gap-v3c`, classifier `gpt-4o/category-v2`, reference checker `gpt-5.4`, identical drafts; only the judge varies. The `gpt-5.4` rows are the bundle-v2 fitness runs from section 8k.
+
+| Judge | Served ordinary injection, fourth and fifth | Explicit recall | Implicit recall | Unsafe admissions on the served path | Shadow: ordinary turns it would inject | Shadow: unsafe admissions | Usefulness precision | Gap-turn latency p50 | Judge completion tokens per split |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `gpt-5.4`, OpenAI | 1 of 20, 0 of 20 | 9 of 10, 10 of 10 | 6 of 7, 7 of 8 | 0 | 2 of 18, 1 of 20 | 0, 0 | 16 of 18, 18 of 19 | 3.9 s | about 10,000 over 72 calls including checks |
+| Claude Sonnet 4.6, Anthropic | 1 of 20, 1 of 20 | 10 of 10, 10 of 10 | 6 of 7, 7 of 8 | 1, a misleading record on the fifth split | 9 of 18, 8 of 18 | 2, 4 | 17 of 20, 18 of 22 | 7.3 s | about 12,400 over 38 calls |
+| Gemini 2.5 Pro, Google | 3 of 20, 0 of 20 | 9 of 10, 10 of 10 | 7 of 7, 8 of 8 | 2, an unrelated private record on the fourth split and a misleading record on the fifth | 8 of 17, 8 of 20 | 1, 3 | 17 of 28, 19 of 26 | 12 to 16 s | about 56,000 over 38 calls |
+
+**Reading.** Recall is equal or better on the two OpenRouter judges. Everything else is worse, and two of the differences are disqualifying under the pre-registered gates. Both admitted a misleading record on the served path, which no `gpt-5.4` run has ever done, and Gemini also admitted an unrelated private fact. When ordinary turns reach them, they would inject on 40 to 50 percent of them against 5 to 11 percent for `gpt-5.4`, and they admit placebo or private records in shadow on one to four turns per split. A judge that buys one or two recalls with this much adjacency and any unsafe admission is a recall loss dressed as an improvement, which is the comparison the sequence asked for.
+
+**Why the tuning split missed this.** On the tuning split the judge saw three to six candidates on gap turns only, and all three frontier models were adequate. Precision and safety failures appear with eight-candidate pools, forced placebos, private records, and ordinary turns. The judge fitness test is therefore the shadow-set measurement, not the tuning split, and the suite is updated to say so.
+
+**Revised portability claim.** The design's fitness test ranks judges per role and it just did: it separated three frontier models that looked interchangeable on an easier test. The claim from section 8i that the judge role is portable across three vendors is narrowed. Planning is portable down to an 8B open-weight model. Judging has one model that meets the safety and adjacency bar on the full measurement, `gpt-5.4`, and two frontier alternatives that meet recall but not precision or safety with the current admission prompt. Whether a different prompt or a stricter candidate cap brings them within the bar is a bundle change to be evaluated the same way; it is not assumed.
+
+**Step 5: the supported bundle.** Selected and versioned as `bundle-2026-09-07-a`:
+
+| Component | Version |
+| --- | --- |
+| Planner | `gpt-4o/gap-v3c` |
+| Judge | `gpt-5.4/admission-v3` |
+| Classifier | `gpt-4o/category-v2` |
+| Taxonomy | `activation-v2-frozen` |
+| Inventory builder | `inventory-v1` |
+| Retrieval configuration | recall-oriented host gate, hash `f1f7b134bcfb7ad9` |
+| Stage timeouts | gap 4 s, admission 8 s, from measured latency |
+| Latency budget | unset by default, per request |
+
+Evaluated and not selected, with their numbers above: Claude Sonnet 4.6 and Gemini 2.5 Pro as judge; Llama 3.1 8B as judge, section 8i; gap-anchored admission, section 8g; `gpt-5-nano` and `gpt-4o` as judge, sections 8d and 8f.
+
 ## 9. Sources
 
 - Ross, Mahabaleshwarkar, Suhara. *When2Call: When (not) to Call Tools.* NAACL 2025. https://aclanthology.org/2025.naacl-long.174/
