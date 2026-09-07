@@ -207,3 +207,13 @@ def test_disabled_path_is_the_old_behaviour(world) -> None:
     assert decision.gap_status == "skipped"
     assert calls == ["baseline"]
     assert len(store.turn_decisions("s1")) == 1
+
+
+def test_policy_bundle_is_persisted_with_every_decision(world) -> None:
+    store, principal, _ = world
+    calls: list[str] = []
+    bundle = {"planner": "gpt-4o/v3", "judge": "gpt-5.4/v3", "taxonomy": "activation-v2-frozen", "inventory": "v1", "retrieval": "abc123", "budget_ms": None}
+    config = UtilityAwareConfig(gap_enabled=True, admission_mode="hosted_judge", shadow=True, bundle=bundle)
+    orchestrator = UtilityAwareOrchestrator(store, lambda p, q, c: [], FakeGaps([]), FakeAdmission([]), config)
+    orchestrator.prepare_turn(principal, "q", None, *_generators(calls))
+    assert store.turn_decisions("s1")[-1]["config"]["bundle"] == bundle

@@ -1,0 +1,29 @@
+{
+  "description": "The original twelve-turn vertical-slice conversation expressed as a scenario: the six statement turns become records written through the ingestor in order, and the six evaluation turns keep their original classes. Used for the Phase 2 shadow run so the first shadow numbers include the conversation the whole investigation started from.",
+  "principal": "the user",
+  "user_aliases": ["Aditya", "Aditya Mishra"],
+  "records": [
+    {"id": "A1", "kind": "ambient_eligible", "ambient_truth": true, "recorded": "2026-09-06", "about_user": true, "attribute": "response_style",
+     "text": "User prefers concise technical answers with a short rationale."},
+    {"id": "A2", "kind": "ambient_eligible", "ambient_truth": true, "recorded": "2026-09-06", "about_user": true,
+     "text": "User wants code examples in Python unless another language is requested."},
+    {"id": "F1", "kind": "conditional", "recorded": "2026-09-06", "about_user": true, "attribute": "working_timezone",
+     "text": "User's working time zone is Asia/Kolkata."},
+    {"id": "A1b", "kind": "ambient_eligible", "ambient_truth": true, "recorded": "2026-09-06", "about_user": true, "attribute": "response_style",
+     "text": "User prefers concise answers that include the important trade-off."},
+    {"id": "F2", "kind": "conditional", "recorded": "2026-09-06",
+     "entities": [{"kind": "person", "name": "Priya Nair", "role": "about"}],
+     "text": "Priya Nair owns the deployment checklist."},
+    {"id": "F3", "kind": "conditional", "recorded": "2026-09-06",
+     "entities": [{"kind": "person", "name": "Priya Nair", "role": "mentions"}],
+     "text": "Priya asked the team to keep the deployment checklist in the repository."}
+  ],
+  "turns": [
+    {"id": "T7", "class": "implicit_need", "text": "Show me a small Python example that parses this configuration file.", "expected": ["A2"], "reference": "The example is written in Python."},
+    {"id": "T8", "class": "explicit_fact", "text": "What time zone should you use when suggesting a meeting for me?", "expected": ["F1"], "reference": "Asia/Kolkata (IST)."},
+    {"id": "T9", "class": "ordinary", "text": "Should I use tabs or spaces in Python?", "expected": [], "reference": null},
+    {"id": "T10", "class": "ordinary", "text": "How often should a deployment checklist be reviewed?", "expected": [], "reference": null},
+    {"id": "T11", "class": "ordinary", "text": "What is a clear way to format a trade-off in a design note?", "expected": [], "reference": null},
+    {"id": "T12", "class": "ordinary", "text": "What are common mistakes when naming a Python virtual environment?", "expected": [], "reference": null}
+  ]
+}

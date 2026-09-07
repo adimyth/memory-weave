@@ -117,6 +117,10 @@ class UtilityAwareConfig:
     gap_timeout_ms: int = 2000
     admission_timeout_ms: int = 2000
     latency_budget_ms: int | None = None
+    # The complete policy bundle that produced a decision: planner model and prompt version, judge model and
+    # prompt version, taxonomy version, inventory-builder version, retrieval configuration hash, budget. A
+    # change to any component is a new bundle and needs a fitness-test rerun before it serves.
+    bundle: dict[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True)
