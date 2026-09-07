@@ -16,7 +16,9 @@ from .activation import (
     recognise_form,
     verify_principal_evidence,
 )
+from .bundles import SUITE_VERSION, BundleNotApprovedError, BundleRegistry, FitnessRecord, bundle_hash
 from .grants import private_scope, readable_scopes, writable_scopes
+from .metrics import MetricsReport, RollbackThresholds, aggregate, render, rollback_reasons, stage_outcome
 from .utility_aware import (
     AdmissionDecision,
     AdmissionPolicy,
@@ -28,6 +30,7 @@ from .utility_aware import (
     TurnOptions,
     UtilityAwareConfig,
     UtilityAwareOrchestrator,
+    bundle_components,
 )
 from .lifecycle import (
     has_authority,
@@ -53,6 +56,18 @@ __all__ = [
     "AdmissionDecision",
     "AdmissionPolicy",
     "BacklogStatus",
+    "BundleNotApprovedError",
+    "BundleRegistry",
+    "FitnessRecord",
+    "MetricsReport",
+    "RollbackThresholds",
+    "SUITE_VERSION",
+    "aggregate",
+    "bundle_components",
+    "bundle_hash",
+    "render",
+    "rollback_reasons",
+    "stage_outcome",
     "CandidateVerdict",
     "CategoryDecision",
     "Gap",

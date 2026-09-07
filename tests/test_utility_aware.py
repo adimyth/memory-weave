@@ -81,13 +81,21 @@ def world(tmp_path: Path):
     return store, principal, entity
 
 
-def _orchestrator(store, gaps, admission, **overrides):
-    config = UtilityAwareConfig(gap_enabled=True, admission_mode="hosted_judge", **overrides)
-
+def _retrieve_all(store):
     def retrieve(principal, queries, context):
         return [r for r in (store.get_record("tz"), store.get_record("style")) if r is not None]
 
-    return UtilityAwareOrchestrator(store, retrieve, gaps, admission, config)
+    return retrieve
+
+
+def _orchestrator(store, gaps, admission, *, approved: bool = True, **overrides):
+    from memory_weave.policy import BundleRegistry, bundle_components
+
+    config = UtilityAwareConfig(gap_enabled=True, admission_mode="hosted_judge", **overrides)
+    registry = BundleRegistry(store)
+    if approved and not config.shadow:
+        registry.record(bundle_components(config), passed=True, evidence="tests", recorded_by="pytest")
+    return UtilityAwareOrchestrator(store, _retrieve_all(store), gaps, admission, config, registry=registry)
 
 
 def _generators(calls: list[str]):
@@ -217,3 +225,68 @@ def test_policy_bundle_is_persisted_with_every_decision(world) -> None:
     orchestrator = UtilityAwareOrchestrator(store, lambda p, q, c: [], FakeGaps([]), FakeAdmission([]), config)
     orchestrator.prepare_turn(principal, "q", None, *_generators(calls))
     assert store.turn_decisions("s1")[-1]["config"]["bundle"] == bundle
+
+
+def test_serving_requires_an_approved_bundle_and_shadow_does_not(world) -> None:
+    from memory_weave.policy import BundleNotApprovedError, BundleRegistry, bundle_components
+
+    store, principal, _ = world
+    calls: list[str] = []
+    gaps, admission = FakeGaps([Gap("preference", "tz")]), FakeAdmission(["tz"])
+    serving = UtilityAwareConfig(gap_enabled=True, admission_mode="hosted_judge")
+
+    with pytest.raises(BundleNotApprovedError):
+        UtilityAwareOrchestrator(store, _retrieve_all(store), gaps, admission, serving)
+    with pytest.raises(BundleNotApprovedError):
+        UtilityAwareOrchestrator(store, _retrieve_all(store), gaps, admission, serving, registry=BundleRegistry(store))
+
+    # Shadow needs no approval and logs the same bundle hash it would serve under.
+    shadow = UtilityAwareOrchestrator(store, _retrieve_all(store), gaps, admission, UtilityAwareConfig(gap_enabled=True, admission_mode="hosted_judge", shadow=True))
+    decision = shadow.prepare_turn(principal, "q", None, *_generators(calls))
+    assert decision.disposition == "shadow_would_regenerate"
+    assert decision.bundle_hash is not None
+
+    registry = BundleRegistry(store)
+    registry.record(bundle_components(serving), passed=False, evidence="failed run", recorded_by="pytest")
+    with pytest.raises(BundleNotApprovedError, match="failed"):
+        UtilityAwareOrchestrator(store, _retrieve_all(store), gaps, admission, serving, registry=registry)
+    registry.record(bundle_components(serving), passed=True, evidence="passing run", recorded_by="pytest")
+    served = UtilityAwareOrchestrator(store, _retrieve_all(store), gaps, admission, serving, registry=registry)
+    assert served.prepare_turn(principal, "q", None, *_generators(calls)).disposition == "regenerated"
+
+    # Any component change is a new bundle and is refused until it has its own result.
+    changed = UtilityAwareConfig(gap_enabled=True, admission_mode="hosted_judge", admission_timeout_ms=9000)
+    assert bundle_components(changed) != bundle_components(serving)
+    with pytest.raises(BundleNotApprovedError):
+        UtilityAwareOrchestrator(store, _retrieve_all(store), gaps, admission, changed, registry=registry)
+
+
+def test_metrics_assign_one_stage_outcome_per_decision_and_feed_rollback(world) -> None:
+    from memory_weave.policy import RollbackThresholds, aggregate, rollback_reasons, stage_outcome
+
+    store, principal, _ = world
+    calls: list[str] = []
+    _orchestrator(store, FakeGaps([]), FakeAdmission([])).prepare_turn(principal, "silent", None, *_generators(calls))
+    _orchestrator(store, FakeGaps([Gap("preference", "tz")]), FakeAdmission([])).prepare_turn(principal, "rejected", None, *_generators(calls))
+    _orchestrator(store, FakeGaps(RuntimeError("down")), FakeAdmission([])).prepare_turn(principal, "failed", None, *_generators(calls))
+    _orchestrator(store, FakeGaps([Gap("preference", "tz")]), FakeAdmission(["tz"])).prepare_turn(principal, "served", None, *_generators(calls))
+    _orchestrator(store, FakeGaps([Gap("preference", "tz")]), FakeAdmission(["tz"]), shadow=True).prepare_turn(principal, "shadowed", None, *_generators(calls))
+    _orchestrator(store, FakeGaps([Gap("preference", "tz")]), FakeAdmission(["tz"])).prepare_turn(
+        principal, "budget", None, *_generators(calls), options=TurnOptions(latency_budget_ms=0)
+    )
+
+    rows = store.turn_decisions("s1")
+    assert [stage_outcome(r) for r in rows] == [
+        "planner_silence", "judge_rejection", "policy_failure", "admitted", "admitted", "path_disabled",
+    ]
+    report = aggregate(store)
+    assert report.turns == 6 and report.served_turns == 5 and report.shadow_turns == 1
+    assert report.stages["admitted"] == 2 and report.stages["policy_failure"] == 1
+    assert report.served_admission_rate == pytest.approx(1 / 5)
+    assert report.shadow_admission_rate == 1.0
+    assert set(report.by_bundle) and all(sum(v.values()) >= 1 for v in report.by_bundle.values())
+
+    quiet = rollback_reasons(report, RollbackThresholds(min_turns=100))
+    assert quiet == []
+    loud = rollback_reasons(report, RollbackThresholds(min_turns=1, max_served_admission_rate=0.05, max_policy_failure_rate=0.1))
+    assert any("served admission rate" in r for r in loud) and any("policy failure rate" in r for r in loud)

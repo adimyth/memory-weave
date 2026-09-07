@@ -89,6 +89,19 @@ the judge on relevance-path candidates for no-gap turns without applying the res
 judge's own ordinary-turn admission rate is measured; `--gap-prompt v3` adds the content-free category
 inventory and `--admission-prompt v3` is the decision-impact rule.
 
+```bash
+HF_HUB_OFFLINE=1 uv run --extra live --extra local-models python benchmarks/shadow_run.py \
+  --scenario benchmarks/scenarios/phase0_v5.json --gap-model gpt-4o --admission-model gpt-5.4
+uv run memory-weave --store <store.sqlite> metrics --json --rollback-check
+uv run memory-weave --store <store.sqlite> bundles record benchmarks/bundles/bundle-2026-09-07-a.json \
+  --passed --evidence "docs/usefulness-gate.md 8k,8l" --by <you>
+```
+
+The shadow harness runs the orchestrator beside the served path with isolation asserted; `metrics`
+aggregates any store's turn-decision log into stage outcomes, rates, latency, cost, and backlog; `bundles
+record` writes the supported bundle's fitness result into a store so that store may serve it. Without that
+record the orchestrator refuses to serve and allows shadow only.
+
 Unprefixed model names go to OpenAI. `openrouter:<slug>` uses `OPENROUTER_API_KEY` (for example `--admission-model openrouter:anthropic/claude-sonnet-4.6` for a second-vendor judge). `local:<hf repo>` loads an open-weight model. The vertical slice's `OPENROUTER_PROVIDER` pin is not applied to these names.
 
 ## Results, 6 September 2026

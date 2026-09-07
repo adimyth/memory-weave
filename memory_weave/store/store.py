@@ -305,7 +305,7 @@ class Store:
         return [dict(row) for row in rows]
 
     _TURN_DECISION_JSON = (
-        "profile_record_ids", "inventory", "gaps", "candidate_ids", "verdicts", "admitted_ids", "timings_ms", "failures", "config",
+        "profile_record_ids", "inventory", "gaps", "candidate_ids", "verdicts", "admitted_ids", "timings_ms", "failures", "config", "usage",
     )
 
     def insert_turn_decision(self, row: Mapping[str, Any]) -> None:
@@ -314,11 +314,13 @@ class Store:
         columns = (
             "id", "at", "session_id", "turn", "disposition", "shadow", "profile_record_ids", "inventory", "gaps",
             "gap_status", "candidate_ids", "verdicts", "admitted_ids", "admission_status", "requested_budget_ms",
-            "effective_budget_ms", "timings_ms", "failures", "config",
+            "effective_budget_ms", "timings_ms", "failures", "config", "bundle_hash", "usage",
         )
         values: list[object] = []
         for column in columns:
-            value = row[column]
+            value = row.get(column) if column in ("bundle_hash", "usage") else row[column]
+            if column == "usage" and value is None:
+                value = {}
             if column == "at":
                 value = _dump_datetime(cast(datetime, value))
             elif column == "shadow":
@@ -331,21 +333,77 @@ class Store:
                 f"INSERT INTO turn_decisions({', '.join(columns)}) VALUES ({_placeholders(len(columns))})", tuple(values)
             )
 
-    def turn_decisions(self, session_id: str | None = None) -> list[dict[str, Any]]:
-        """Return decoded turn decisions, oldest first, optionally for one session."""
+    def turn_decisions(
+        self,
+        session_id: str | None = None,
+        *,
+        since: datetime | None = None,
+        until: datetime | None = None,
+        bundle_hash: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """Return decoded turn decisions, oldest first, filtered by session, time window, or bundle."""
 
-        if session_id is None:
-            rows = self.connection.execute("SELECT * FROM turn_decisions ORDER BY at, id").fetchall()
-        else:
-            rows = self.connection.execute(
-                "SELECT * FROM turn_decisions WHERE session_id = ? ORDER BY at, id", (session_id,)
-            ).fetchall()
+        clauses: list[str] = []
+        params: list[object] = []
+        if session_id is not None:
+            clauses.append("session_id = ?")
+            params.append(session_id)
+        if since is not None:
+            clauses.append("at >= ?")
+            params.append(_dump_datetime(since))
+        if until is not None:
+            clauses.append("at < ?")
+            params.append(_dump_datetime(until))
+        if bundle_hash is not None:
+            clauses.append("bundle_hash = ?")
+            params.append(bundle_hash)
+        where = f" WHERE {' AND '.join(clauses)}" if clauses else ""
+        rows = self.connection.execute(f"SELECT * FROM turn_decisions{where} ORDER BY at, id", tuple(params)).fetchall()
         out = []
         for row in rows:
             item = dict(row)
             for column in self._TURN_DECISION_JSON:
-                item[column] = json.loads(cast(str, item[column]))
+                raw = item.get(column)
+                item[column] = json.loads(cast(str, raw)) if raw is not None else ({} if column in ("usage", "timings_ms", "config") else [])
             item["shadow"] = bool(item["shadow"])
+            out.append(item)
+        return out
+
+    def record_bundle_fitness(
+        self,
+        *,
+        bundle_hash: str,
+        bundle: Mapping[str, Any],
+        suite_version: str,
+        passed: bool,
+        evidence: str,
+        recorded_by: str,
+        at: datetime | None = None,
+    ) -> str:
+        """Append one fitness result for a bundle. Results are never edited; the latest one counts."""
+
+        result_id = uuid7()
+        with self.transaction() as connection:
+            connection.execute(
+                "INSERT INTO bundle_fitness(id, bundle_hash, bundle, suite_version, passed, evidence, recorded_by, recorded_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (result_id, bundle_hash, _dump_json(dict(bundle)), suite_version, int(passed), evidence, recorded_by, _dump_datetime(at or now())),
+            )
+        return result_id
+
+    def bundle_fitness(self, bundle_hash: str | None = None) -> list[dict[str, Any]]:
+        """Return fitness results, newest first, optionally for one bundle."""
+
+        if bundle_hash is None:
+            rows = self.connection.execute("SELECT * FROM bundle_fitness ORDER BY recorded_at DESC, id DESC").fetchall()
+        else:
+            rows = self.connection.execute(
+                "SELECT * FROM bundle_fitness WHERE bundle_hash = ? ORDER BY recorded_at DESC, id DESC", (bundle_hash,)
+            ).fetchall()
+        out = []
+        for row in rows:
+            item = dict(row)
+            item["bundle"] = json.loads(cast(str, item["bundle"]))
+            item["passed"] = bool(item["passed"])
             out.append(item)
         return out
 

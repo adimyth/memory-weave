@@ -54,9 +54,30 @@ def main(argv: Sequence[str] | None = None) -> int:
     activation.add_argument("--resolver", required=True)
     activation.add_argument("--reason", required=True)
 
+    metrics = subcommands.add_parser("metrics", help="Aggregate the turn-decision log: stage outcomes, admission rates, latency, cost, backlog.")
+    metrics.add_argument("--since", default=None, help="ISO 8601 start of the window, inclusive.")
+    metrics.add_argument("--until", default=None, help="ISO 8601 end of the window, exclusive.")
+    metrics.add_argument("--bundle", default=None, help="Restrict to one bundle hash.")
+    metrics.add_argument("--json", action="store_true", help="Emit the report as JSON.")
+    metrics.add_argument("--rollback-check", action="store_true", help="Apply default rollback thresholds; exit 4 when any is breached.")
+
+    bundles = subcommands.add_parser("bundles", help="Bundle fitness registry: list results or record one.")
+    bundle_commands = bundles.add_subparsers(dest="bundle_command", required=True)
+    bundle_commands.add_parser("list", help="List recorded fitness results, newest first.")
+    record = bundle_commands.add_parser("record", help="Record a fitness result for a bundle described in a JSON file.")
+    record.add_argument("components_json", help="Path to a JSON object with the bundle components.")
+    record.add_argument("--passed", action="store_true")
+    record.add_argument("--failed", action="store_true")
+    record.add_argument("--evidence", required=True, help="Where the suite results live, e.g. a results path or commit.")
+    record.add_argument("--by", required=True, dest="recorded_by")
+
     args = parser.parse_args(argv)
     store = Store(args.store, allow_migration_issues=args.command == "migrate")
     try:
+        if args.command == "metrics":
+            return _metrics_command(store, args)
+        if args.command == "bundles":
+            return _bundle_commands(store, args)
         if args.command in ("reviews", "activation"):
             return _activation_commands(store, args)
         if args.command == "migrate":
@@ -86,6 +107,55 @@ def main(argv: Sequence[str] | None = None) -> int:
             host.revoke(args.agent_id, scope)
     finally:
         store.close()
+    return 0
+
+
+def _metrics_command(store: Store, args: argparse.Namespace) -> int:
+    import json
+    from datetime import datetime
+
+    from memory_weave.policy import RollbackThresholds, aggregate, render, rollback_reasons
+
+    since = datetime.fromisoformat(args.since) if args.since else None
+    until = datetime.fromisoformat(args.until) if args.until else None
+    report = aggregate(store, since=since, until=until, bundle_hash=args.bundle)
+    reasons = rollback_reasons(report, RollbackThresholds()) if args.rollback_check else []
+    if args.json:
+        payload = report.to_dict()
+        if args.rollback_check:
+            payload["rollback_reasons"] = reasons
+        print(json.dumps(payload, indent=2, default=str))
+    else:
+        print(render(report))
+        if args.rollback_check:
+            print("rollback: " + ("; ".join(reasons) if reasons else "no threshold breached"))
+    return 4 if reasons else 0
+
+
+def _bundle_commands(store: Store, args: argparse.Namespace) -> int:
+    import json
+    from pathlib import Path
+
+    from memory_weave.policy import BundleRegistry
+
+    registry = BundleRegistry(store)
+    if args.bundle_command == "list":
+        rows = registry.all()
+        if not rows:
+            print("no fitness results recorded")
+            return 0
+        for row in rows:
+            print(f"{row.bundle_hash}  {'PASS' if row.passed else 'FAIL'}  {row.suite_version}  {row.recorded_at}  by={row.recorded_by}  {row.evidence}")
+        return 0
+    if args.passed == args.failed:
+        print("refused: pass exactly one of --passed or --failed")
+        return 2
+    components = json.loads(Path(args.components_json).read_text())
+    if not isinstance(components, dict):
+        print("refused: the components file must hold a JSON object")
+        return 2
+    record = registry.record(components, passed=args.passed, evidence=args.evidence, recorded_by=args.recorded_by)
+    print(f"recorded {record.bundle_hash} {'PASS' if record.passed else 'FAIL'}")
     return 0
 
 

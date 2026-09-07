@@ -202,6 +202,23 @@ Pending work, in order:
 2. The canary: needs a serving host that runs the orchestrator, per-stage kill switches, and rollback thresholds written before it starts. This repository holds the vertical-slice harness, not a serving host, so where the canary runs is an open decision.
 3. Optional, behind step 6: refuse to serve a bundle whose hash has no recorded fitness result, turning the rule into a mechanism.
 
+### Step 6 done and step 7 canary-ready, 7 September 2026
+
+**Step 6, monitoring and bundle enforcement, is implemented in the library, not optional.**
+
+- `memory_weave/policy/metrics.py` aggregates the turn-decision table. Every decision receives exactly one stage outcome: `path_disabled`, `planner_silence`, `retrieval_miss`, `judge_rejection`, `policy_failure`, `budget_withheld`, or `admitted`. The report carries served and shadow admission rates, planner fire rate, added latency for all turns and for gap turns at p50 and p95, token usage per model, the admitted-record distribution, harmful verdicts seen, failures, and the review backlog, filtered by time window and bundle hash and broken down per bundle. `rollback_reasons` applies `RollbackThresholds` and returns every breach. `memory-weave metrics [--since] [--until] [--bundle] [--json] [--rollback-check]` exposes it; the same function is callable by a host.
+- `memory_weave/policy/bundles.py` hashes the complete bundle: planner and judge model and prompt, classifier, taxonomy, inventory builder, retrieval configuration, admission mode, gap enablement, caps, stage timeouts, and budget. Shadow versus serving is a mode, not a component, so a result earned in shadow approves the same bundle for serving. `BundleRegistry` records fitness results; the orchestrator's constructor refuses to build a serving configuration whose bundle has no recorded pass, and needs no approval for shadow. Every turn decision records its bundle hash and token usage. `memory-weave bundles list | record <components.json> --passed|--failed --evidence --by` exposes the registry. The supported bundle's components are in `benchmarks/bundles/bundle-2026-09-07-a.json`; a consuming application records its fitness in its own store with one command and cites the suite results as evidence.
+
+**Step 7 stops at canary-ready.** Memory Weave has no consuming application in this repository, and none is invented here. `examples/reference_host.py` is the integration contract a real host must honour, exercised by `tests/test_reference_host.py` with fakes and no network:
+
+- The bundle is declared once; an unapproved bundle can only run in shadow, enforced by the constructor.
+- Stage timeouts default to the measured values, 4 s for planning and 8 s for admission.
+- Four independent kill switches, profile, gap, admission, regeneration; each flip is a distinct bundle hash and is visible in the log.
+- `rollback_check` reads the metrics for the current bundle over a window, and on any threshold breach disables the newest active stage in a fixed order and writes a `host.rollback` event.
+- The per-request latency budget is passed through per turn.
+
+What the consuming application owns: model clients, traffic cohorts, deployment configuration, the baseline and regeneration callables, when to call the rollback check, and the rollback thresholds. Real production evidence begins only when an actual serving host sends real user turns through the shadow path and then the canary path. Until then the numbers in this document are from scripted conversations through the real pipeline, and the plan says so.
+
 ### Requirements Phase 0 adds to Phase 2
 
 - The gap policy receives a bounded, content-free category inventory for the principal's readable conditional store, built from the activation policy's fixed taxonomy and never from extractor attribute slugs or record text. The inventory is part of the turn-decision log.

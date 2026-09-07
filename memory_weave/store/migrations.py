@@ -152,6 +152,31 @@ def _migration_7(connection: sqlite3.Connection) -> None:
     connection.execute("CREATE INDEX IF NOT EXISTS turn_decisions_session ON turn_decisions(session_id, at)")
 
 
+def _migration_8(connection: sqlite3.Connection) -> None:
+    """Bundle hash and token usage on turn decisions, and the registry of bundle fitness results."""
+
+    if not _has_column(connection, "turn_decisions", "bundle_hash"):
+        connection.execute("ALTER TABLE turn_decisions ADD COLUMN bundle_hash TEXT")
+    if not _has_column(connection, "turn_decisions", "usage"):
+        connection.execute("ALTER TABLE turn_decisions ADD COLUMN usage TEXT NOT NULL DEFAULT '{}'")
+    connection.execute("CREATE INDEX IF NOT EXISTS turn_decisions_bundle ON turn_decisions(bundle_hash, at)")
+    connection.execute(
+        """
+        CREATE TABLE IF NOT EXISTS bundle_fitness (
+            id            TEXT PRIMARY KEY,
+            bundle_hash   TEXT NOT NULL,
+            bundle        TEXT NOT NULL,
+            suite_version TEXT NOT NULL,
+            passed        INTEGER NOT NULL,
+            evidence      TEXT NOT NULL,
+            recorded_by   TEXT NOT NULL,
+            recorded_at   TEXT NOT NULL
+        )
+        """
+    )
+    connection.execute("CREATE INDEX IF NOT EXISTS bundle_fitness_hash ON bundle_fitness(bundle_hash, recorded_at)")
+
+
 def _has_column(connection: sqlite3.Connection, table: str, column: str) -> bool:
     return any(row[1] == column for row in connection.execute(f"PRAGMA table_info({table})"))
 
@@ -229,6 +254,7 @@ MIGRATIONS: tuple[tuple[int, Migration], ...] = (
     (5, _migration_5),
     (6, _migration_6),
     (7, _migration_7),
+    (8, _migration_8),
 )
 
 

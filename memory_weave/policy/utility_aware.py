@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import json
 import time
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FuturesTimeout
 from dataclasses import asdict, dataclass, field
@@ -55,6 +55,7 @@ class GapDecision:
     status: PolicyStatus
     elapsed_ms: float = 0.0
     error: str | None = None
+    usage: dict[str, dict[str, int]] = field(default_factory=dict)  # {model: {"prompt": n, "completion": n}}
 
     @staticmethod
     def failed(policy_id: str, error: str, elapsed_ms: float = 0.0) -> GapDecision:
@@ -80,6 +81,7 @@ class AdmissionDecision:
     status: PolicyStatus
     elapsed_ms: float = 0.0
     error: str | None = None
+    usage: dict[str, dict[str, int]] = field(default_factory=dict)
 
     @staticmethod
     def failed(policy_id: str, error: str, elapsed_ms: float = 0.0) -> AdmissionDecision:
@@ -144,14 +146,38 @@ class TurnMemoryDecision:
     timings_ms: dict[str, float] = field(default_factory=dict)
     failures: list[str] = field(default_factory=list)
     shadow: bool = False
+    bundle_hash: str | None = None
+    usage: dict[str, dict[str, int]] = field(default_factory=dict)
 
     @property
     def response(self) -> str:
         return self.final if self.final is not None else self.draft
 
 
+def bundle_components(config: UtilityAwareConfig) -> dict[str, object]:
+    """Everything that changes what the path does. Hashing this identifies a bundle."""
+
+    # Shadow versus serving is a mode, not a component: a fitness result earned in shadow approves the
+    # same bundle for serving. Everything else that changes behaviour is part of the hash.
+    return {
+        **dict(config.bundle),
+        "gap_enabled": config.gap_enabled,
+        "admission_mode": config.admission_mode,
+        "max_gaps": config.max_gaps,
+        "max_candidates": config.max_candidates,
+        "gap_timeout_ms": config.gap_timeout_ms,
+        "admission_timeout_ms": config.admission_timeout_ms,
+        "latency_budget_ms": config.latency_budget_ms,
+    }
+
+
 class UtilityAwareOrchestrator:
-    """Deterministic orchestration of one turn. Fails closed to the draft on every error and budget path."""
+    """Deterministic orchestration of one turn. Fails closed to the draft on every error and budget path.
+
+    Serving, meaning shadow is off and the path is enabled, requires a bundle registry that holds a passing
+    fitness result for this configuration's bundle. Without one the constructor refuses, so a host cannot
+    serve an unapproved bundle by accident. Shadow mode needs no approval.
+    """
 
     def __init__(
         self,
@@ -162,9 +188,12 @@ class UtilityAwareOrchestrator:
         config: UtilityAwareConfig,
         *,
         profile_assembler: ProfileAssembler | None = None,
+        registry: Any = None,
         actor: str = "host",
         clock: Callable[[], float] = time.perf_counter,
     ) -> None:
+        from memory_weave.policy.bundles import BundleNotApprovedError, bundle_hash
+
         self._store = store
         self._retrieve = retrieve
         self._gap_policy = gap_policy
@@ -173,6 +202,15 @@ class UtilityAwareOrchestrator:
         self._profiles = profile_assembler or ProfileAssembler(store)
         self._actor = actor
         self._clock = clock
+        components = bundle_components(config)
+        self._bundle_hash = bundle_hash(components)
+        serving = config.gap_enabled and not config.shadow
+        if serving:
+            if registry is None:
+                raise BundleNotApprovedError(
+                    f"Bundle {self._bundle_hash} cannot serve without a registry holding a passing fitness result; use shadow mode."
+                )
+            registry.require_approved(components)
 
     def prepare_turn(
         self,
@@ -210,6 +248,7 @@ class UtilityAwareOrchestrator:
             timings_ms=timings,
             failures=failures,
             shadow=self._config.shadow,
+            bundle_hash=self._bundle_hash,
         )
 
         path_enabled = self._config.gap_enabled and self._gap_policy is not None and effective != 0
@@ -239,6 +278,7 @@ class UtilityAwareOrchestrator:
 
         decision.gap_status = gap_decision.status
         decision.gaps = list(gap_decision.gaps)[: self._config.max_gaps]
+        _merge_usage(decision.usage, gap_decision.usage)
         if gap_decision.error:
             failures.append(f"gap:{gap_decision.error}")
         if gap_decision.status == "timeout" and gap_decision.error == "budget_exhausted":
@@ -292,6 +332,7 @@ class UtilityAwareOrchestrator:
         timings["admission"] = (self._clock() - admission_started) * 1000
         decision.admission_status = admission.status
         decision.verdicts = list(admission.verdicts)
+        _merge_usage(decision.usage, admission.usage)
         if admission.error:
             failures.append(f"admission:{admission.error}")
         if admission.status in ("failed", "timeout"):
@@ -343,7 +384,7 @@ class UtilityAwareOrchestrator:
                 seen.add(key)
                 unique.append(gap)
         status: PolicyStatus = result.status if result.status in ("failed", "timeout") else ("ok" if unique else "empty")
-        return GapDecision(unique, result.policy_id, status, (self._clock() - started) * 1000, result.error)
+        return GapDecision(unique, result.policy_id, status, (self._clock() - started) * 1000, result.error, dict(result.usage))
 
     def _admit(self, turn: str, public_context: str | None, profile: ProfileBlock, draft: str, candidates: list[Record]) -> AdmissionDecision:
         assert self._admission_policy is not None
@@ -356,7 +397,9 @@ class UtilityAwareOrchestrator:
         verdicts = [v for v in result.verdicts if v.record_id in ids]
         if len({v.record_id for v in verdicts}) != len(ids):
             return AdmissionDecision.failed(result.policy_id, "incomplete_verdicts", (self._clock() - started) * 1000)
-        return AdmissionDecision(list(result.admitted_ids), verdicts, result.policy_id, result.status or "ok", (self._clock() - started) * 1000, result.error)
+        return AdmissionDecision(
+            list(result.admitted_ids), verdicts, result.policy_id, result.status or "ok", (self._clock() - started) * 1000, result.error, dict(result.usage)
+        )
 
     def _persist(self, decision: TurnMemoryDecision) -> TurnMemoryDecision:
         row = {
@@ -379,6 +422,8 @@ class UtilityAwareOrchestrator:
             "timings_ms": decision.timings_ms,
             "failures": decision.failures,
             "config": asdict(self._config),
+            "bundle_hash": decision.bundle_hash,
+            "usage": decision.usage,
         }
         self._store.insert_turn_decision(row)
         self._store.append_event(
@@ -389,6 +434,13 @@ class UtilityAwareOrchestrator:
             {"decision_id": decision.decision_id, "disposition": decision.disposition, "shadow": decision.shadow, "admitted": len(decision.admitted_ids)},
         )
         return decision
+
+
+def _merge_usage(into: dict[str, dict[str, int]], extra: Mapping[str, Mapping[str, int]]) -> None:
+    for model, usage in extra.items():
+        bucket = into.setdefault(model, {"prompt": 0, "completion": 0})
+        bucket["prompt"] += int(usage.get("prompt", 0))
+        bucket["completion"] += int(usage.get("completion", 0))
 
 
 def render_decision(decision: TurnMemoryDecision) -> str:

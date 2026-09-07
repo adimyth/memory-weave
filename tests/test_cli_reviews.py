@@ -74,3 +74,41 @@ def test_direct_activation_is_checked(tmp_path: Path, capsys) -> None:
     assert cli.main(["--store", str(db), "activation", record_id, "conditional", "--resolver", "ops-1", "--reason", "demote"]) == 0
     assert cli.main(["--store", str(db), "activation", "missing", "ambient", "--resolver", "ops-1", "--reason", "x"]) == 2
     assert "refused" in capsys.readouterr().out
+
+
+def test_metrics_and_bundle_commands(tmp_path: Path, capsys) -> None:
+    import json
+
+    from memory_weave.policy import UtilityAwareConfig, UtilityAwareOrchestrator, bundle_components
+
+    db = tmp_path / "m.sqlite"
+    _seed(db)
+    store = Store(db)
+    principal = Principal("agent", "user-1", "s1", None)
+    shadow = UtilityAwareConfig(gap_enabled=True, admission_mode="hosted_judge", shadow=True, bundle={"planner": "p/1"})
+
+    class Gaps:
+        def plan(self, turn, public_context, ambient_profile, inventory):
+            from memory_weave.policy import GapDecision
+
+            return GapDecision([], "fake", "empty")
+
+    UtilityAwareOrchestrator(store, lambda p, q, c: [], Gaps(), None, shadow).prepare_turn(principal, "hello", None, lambda: "draft", lambda r: "final")
+    store.close()
+
+    assert cli.main(["--store", str(db), "metrics"]) == 0
+    out = capsys.readouterr().out
+    assert "planner_silence=1" in out and "turns=1" in out
+    assert cli.main(["--store", str(db), "metrics", "--json", "--rollback-check"]) == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["stages"]["planner_silence"] == 1 and payload["rollback_reasons"] == []
+
+    components = tmp_path / "bundle.json"
+    components.write_text(json.dumps(bundle_components(shadow)))
+    assert cli.main(["--store", str(db), "bundles", "list"]) == 0
+    assert "no fitness results" in capsys.readouterr().out
+    assert cli.main(["--store", str(db), "bundles", "record", str(components), "--passed", "--evidence", "results/x", "--by", "ops"]) == 0
+    assert "PASS" in capsys.readouterr().out
+    assert cli.main(["--store", str(db), "bundles", "record", str(components), "--evidence", "x", "--by", "ops"]) == 2
+    assert cli.main(["--store", str(db), "bundles", "list"]) == 0
+    assert "PASS" in capsys.readouterr().out

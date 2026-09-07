@@ -37,6 +37,18 @@ _GAP_SYSTEM_V3C = (
 )
 
 
+def _usage_delta(models: Any, model: str, before: dict[str, int] | None) -> dict[str, dict[str, int]]:
+    """Token usage of the call just made, from the wrapper's cumulative counters."""
+
+    after = dict((models.usage or {}).get(model, {"prompt": 0, "completion": 0}))
+    prior = before or {"prompt": 0, "completion": 0}
+    return {model: {"prompt": after.get("prompt", 0) - prior.get("prompt", 0), "completion": after.get("completion", 0) - prior.get("completion", 0)}}
+
+
+def _usage_snapshot(models: Any, model: str) -> dict[str, int]:
+    return dict((getattr(models, "usage", {}) or {}).get(model, {"prompt": 0, "completion": 0}))
+
+
 class HostedGapPolicy:
     def __init__(self, models: Any, model: str) -> None:
         self._models = models
@@ -50,7 +62,9 @@ class HostedGapPolicy:
         user = f"{profile_text}\n\nUser message:\n{turn}"
         if public_context:
             user = f"Public context:\n{public_context}\n\n{user}"
+        before = _usage_snapshot(self._models, self.model)
         raw = self._models.complete(self.model, system, user, json_mode=True)
+        usage = _usage_delta(self._models, self.model, before)
         parsed = json.loads(raw)
         gaps: list[Gap] = []
         for item in parsed.get("gaps", []):
@@ -63,7 +77,7 @@ class HostedGapPolicy:
             if category not in GAP_CATEGORIES:
                 category = "task_state"
             gaps.append(Gap(category, query))  # type: ignore[arg-type]
-        return GapDecision(gaps, self.policy_id, "ok" if gaps else "empty")
+        return GapDecision(gaps, self.policy_id, "ok" if gaps else "empty", usage=usage)
 
 
 class HostedAdmissionPolicy:
@@ -81,7 +95,9 @@ class HostedAdmissionPolicy:
             f"{profile_text}\n\nUser message:\n{turn}\n\nDraft answer written without the candidates:\n{draft}\n\n"
             f"Candidate records:\n" + "\n".join(lines)
         )
+        before = _usage_snapshot(self._models, self.model)
         raw = self._models.complete(self.model, _ADMISSION_SYSTEM_V3, user, json_mode=True)
+        usage = _usage_delta(self._models, self.model, before)
         parsed = json.loads(raw)
         known = {record.id for record in candidates}
         verdicts: list[CandidateVerdict] = []
@@ -93,7 +109,7 @@ class HostedAdmissionPolicy:
                 verdict = "insufficient"
             verdicts.append(CandidateVerdict(str(item["id"]), verdict, str(item.get("reason", ""))))  # type: ignore[arg-type]
         admitted = [str(i) for i in parsed.get("admitted", []) if str(i) in known]
-        return AdmissionDecision(admitted, verdicts, self.policy_id, "ok")
+        return AdmissionDecision(admitted, verdicts, self.policy_id, "ok", usage=usage)
 
 
 def policy_bundle(
