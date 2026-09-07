@@ -1,6 +1,6 @@
 # Agent Memory System: High-Level Design
 
-This document is the companion to `agent-memory-research-notes.md` (research and initial design specification) and `agent-memory-lld.md` (implementation detail). It records the current design decisions and why they were made; every deliberately deferred decision names the experiment that will settle it.
+This document is the companion to `agent-memory-research-notes.md` (research and initial design specification), `agent-memory-lld.md` (implementation detail), and [utility-aware-memory-architecture.md](utility-aware-memory-architecture.md) (the authoritative design for ambient profiles and host-issued memory decisions). It records the current design decisions and why they were made; every deliberately deferred decision names the experiment that will settle it.
 
 ## 1. Goals and non-goals
 
@@ -18,7 +18,7 @@ This document is the companion to `agent-memory-research-notes.md` (research and
 - No image, audio, or file-content memory. Text only.
 - No multi-tenant hardening, sharding, or distributed storage. Single process, single database file.
 - No automatic cross-user entity merging.
-- No ambient injection of memory into the system prompt.
+- No per-turn mutation of the system prompt. The evaluation-gated ambient profile is bounded and fixed at session start.
 - No self-optimizing policies (GEPA and friends come after there is a fixed contract and an evaluation set).
 - No periodic cross-session consolidation. New writes still reconcile with existing records through the ingestor; a whole-store consolidation pass remains a later, evaluation-gated phase.
 
@@ -31,7 +31,7 @@ This document is the companion to `agent-memory-research-notes.md` (research and
 
 ## 2. System in brief
 
-Memory uses SQLite as its source of truth and three ways to find the same durable records: a vector index for similar meaning, SQLite FTS5 for words and identifiers, and entity links for exact identities. Agents interact with it only through five tools: `memory_search`, `memory_get`, `memory_write`, `memory_revise`, and `memory_forget`. Nothing is silently injected into the prompt. A record reaches the model only after the agent deliberately searches for it. `memory_write` and `memory_search` are synchronous tool calls; session extraction, candidate review, and due temporal review run asynchronously.
+Memory uses SQLite as its source of truth and three ways to find the same durable records: a vector index for similar meaning, SQLite FTS5 for words and identifiers, and entity links for exact identities. Agents interact with it through five tools: `memory_search`, `memory_get`, `memory_write`, `memory_revise`, and `memory_forget`. The current implementation admits records only after a search. The evaluation-gated design adds a bounded session-stable ambient profile plus gap-conditioned, draft-relative admission for host-issued conditional memory; the complete decision boundary is specified in [utility-aware-memory-architecture.md](utility-aware-memory-architecture.md). `memory_write` and `memory_search` are synchronous tool calls; session extraction, candidate review, and due temporal review run asynchronously.
 
 ### Store, vector index, and FTS
 
@@ -81,7 +81,7 @@ The four CoALA categories are used as engineering categories with different rule
 
 Decision: procedural memory is stored but kept small initially. Automatic promotion of episodes into procedures is out of scope. The agent can write a procedure explicitly, and the evaluation will test whether it retrieves and follows it.
 
-Decision: the current design has no hot, always-present durable-memory tier. Semantic facts are durable, but they are still external and tool-retrieved rather than prompt-resident. A bounded user or project profile block is a deferred experiment because it could reduce missed searches but could also create stale context, over-personalization, and a less stable prompt prefix.
+Decision: the utility-aware architecture adds an explicit `ambient` activation tier for stable response-shaping preferences and keeps every other record `conditional` by default. Ambient activation is trusted or reviewed, the profile is bounded and fixed at session start, and the feature remains disabled until its implementation phase passes the documented acceptance gates. See [utility-aware-memory-architecture.md](utility-aware-memory-architecture.md).
 
 ## 4. The durable record
 
@@ -220,7 +220,7 @@ The scope filter runs before any candidate generator. Dense, lexical, and entity
 
 ### Prompt policy and the retrieval trigger
 
-All durable memory remains external to the prompt prefix. The prefix contains system instructions, tool definitions, and a short memory-use policy. Nothing from the store is ever edited into the prefix.
+Conditional durable memory remains external to the prompt prefix. The prefix contains system instructions, tool definitions, and a short memory-use policy. The evaluation-gated ambient tier adds a bounded profile assembled once at session start; it never rewrites the prefix during a session. See [utility-aware-memory-architecture.md](utility-aware-memory-architecture.md).
 
 Who calls `memory_search` is a separate decision from everything above, and it is the weakest point of a purely tool-mediated design: models search reliably when the user points at the past and unreliably when a stored preference should silently shape an answer. The design therefore treats the trigger as an adapter setting with three modes, all running the identical pipeline.
 
@@ -230,7 +230,7 @@ Who calls `memory_search` is a separate decision from everything above, and it i
 | `auto` | The host, once per user turn (never on assistant or tool turns), appending any non-empty result as a tool-result message. The search tool is not registered. | An experimental control. |
 | `hybrid` | Both: the host's search once per user turn for the silently relevant cases, and the model's tools for targeted follow-ups. | The production candidate for assistants. |
 
-The reason `auto` and `hybrid` are viable here and pollute elsewhere is the gate. Systems that inject memory on every turn inject top-k unconditionally. A host-issued search in this design passes through the same gate as any other, and the expected result on most turns is nothing. Appending results as messages rather than editing the prefix keeps caching intact. The evaluation measures search, no-search, and reject cases with the model in the loop, plus the injection rate on ordinary turns, and `hybrid` becomes the recommended default only when that rate is acceptably low.
+The relevance gate alone did not make `auto` and `hybrid` safe: Phase 9a found overlapping score distributions for ordinary and memory-needed turns. The evaluation-gated replacement generates missing-information gaps, retrieves conditional candidates against those gaps, and admits a subset only when it improves a baseline draft. Conditional results are appended rather than edited into the prefix. `hybrid` becomes the recommended default only after the utility-aware path meets its ordinary-injection, conditional-recall, and safety gates.
 
 ## 8. Entities
 
@@ -323,10 +323,10 @@ Every search writes one log row: raw request; rewritten query and rewrite status
 | Does the reranker earn its latency? | Off. | Compare final-context precision with and without. |
 | Are the gate floors right? | Calibrated once on the eval set. | Sweep floors against the no-memory cases. |
 | Is per-message extraction worth it? | Session-end only. | Compare recall of mid-session facts against pollution rate. |
-| Should anything be ambient? | Nothing. | Add a bounded user profile block; measure search-miss rate against over-personalization. |
+| Should anything be ambient? | Explicit ambient activation is designed but disabled. | Phase 1 of the [utility-aware implementation plan](utility-aware-memory-implementation-plan.md) validates the bounded session profile. |
 | Who triggers retrieval? | `tool_only`. | Agent-in-the-loop run comparing `tool_only`, `auto`, and `hybrid` on search rate when evidence existed, false-search rate, injection rate on ordinary turns, and accuracy. |
-| Is the gate strong enough for host-issued searches? | Per-type dense floors, minimum matched terms for lexical-only passes, and a relative floor. | Three-class calibration sweep on the search log; reranker as the gate if the ordinary-turn rate stays too high. |
-| Can a similarity floor answer "does this turn need memory"? | No. Measured in Phase 9a: the score distributions for ordinary and memory-applicable turns overlap almost completely. | Settled. The remaining work is choosing a different signal; see [gate.md](gate.md). |
+| Is the gate strong enough for host-issued searches? | No. The current relevance gate remains a candidate filter. | Gap-conditioned retrieval and draft-relative admission must pass the [utility-aware architecture](utility-aware-memory-architecture.md) acceptance gates. |
+| Can a similarity floor answer "does this turn need memory"? | No. Measured in Phase 9a: the score distributions for ordinary and memory-applicable turns overlap almost completely. | Settled. The replacement is specified in [utility-aware-memory-architecture.md](utility-aware-memory-architecture.md). |
 | Exact vs approximate vector search? | Exact. | Only revisit above 200K records. |
 
 ## 16. What the evaluation will need from this design

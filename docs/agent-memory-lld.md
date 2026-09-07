@@ -1291,7 +1291,7 @@ The principal's person entity lives in `user:<user_id>` and carries `normalize_a
 
 ## 10. Retrieval pipeline
 
-`memory_search` finds useful memories without leaking ineligible records or returning weak matches. It filters before ranking, combines three retrieval methods, and records enough detail to explain the final response.
+`memory_search` finds relevant memories without leaking ineligible records or returning weak matches. It filters before ranking, combines three retrieval methods, and records enough detail to explain the final response. Host-issued usefulness is a separate, evaluation-gated policy around this pipeline, specified in [utility-aware-memory-architecture.md](utility-aware-memory-architecture.md) and staged in [utility-aware-memory-implementation-plan.md](utility-aware-memory-implementation-plan.md).
 
 | Stage | Input and output | Purpose |
 | --- | --- | --- |
@@ -1481,7 +1481,7 @@ Semantic and procedural records retain their fused score because supersession ha
 
 ### 10.5 Gate
 
-The gate decides whether any candidate is strong enough to reach the agent, and it drops weak candidates even when stronger ones pass. It is the component that makes an empty result common rather than exceptional, and it is what makes host-issued searches (section 14.1) safe. It runs in three steps.
+The gate decides whether any candidate is relevant enough to remain in the retrieval pool, and it drops weak candidates even when stronger ones pass. It makes an empty search result possible but does not establish that a surviving record will improve an answer. Host-issued usefulness is handled by the evaluation-gated orchestration in [utility-aware-memory-architecture.md](utility-aware-memory-architecture.md). The current gate runs in three steps.
 
 **Step 1, absolute floors, per candidate.** Keep a candidate when any one signal holds:
 
@@ -1495,7 +1495,7 @@ An identifier token contains a digit, underscore, dot, or slash, or mixes case i
 
 **Step 2, relative floor, within each channel count.** Group step-1 survivors by the number of contributing channels, then let `top` be the highest fused score in each group. Drop a survivor whose fused score is below `cfg.gate.relative_floor * top` for its own group, except entity hits. With one survivor in a group this is a no-op. This keeps the useful comparison between records with the same evidence shape while preventing a two- or three-channel record from eliminating every strong single-channel record.
 
-For `trigger = auto`, the gate uses `cfg.gate.auto` instead of the normal settings and rejects its excluded source kinds before evaluating the floors. The default excludes `session_summary` from host-issued retrieval. The gate still measures relevance rather than usefulness; the ordinary-turn benchmark decides whether the stricter auto settings are sufficient.
+For `trigger = auto`, the gate uses `cfg.gate.auto` instead of the normal settings and rejects its excluded source kinds before evaluating the floors. The default excludes `session_summary` from host-issued retrieval. The gate still measures relevance rather than usefulness; Phase 9a established that stricter similarity settings are insufficient, so the future host path treats this gate as candidate filtering before draft-relative admission.
 
 **Step 3, the empty decision.** If nothing survives, `results` is empty and `empty_reason` names the best candidate's missed floors, for example `"best dense 0.38 < 0.45 (semantic); best lexical 1/4 terms, 1 matched < 2; no entity match"`. Every dropped candidate carries a `gate_reason` naming the step and floor that dropped it, so the log can be replayed offline with different floors.
 
@@ -1730,7 +1730,7 @@ Both adapters attach current-turn context to every search, even while rewriting 
 
 One host-issued search per user turn, never on assistant or tool turns. The `search_log` row records `trigger = 'auto'`, so every metric in the benchmark can be split by who asked.
 
-**Why the gate is the precondition.** Systems that inject memory on every turn pollute because they inject top-k unconditionally. A host-issued search here is subject to the same three-step gate as any other, and the expected outcome on most turns is empty. The benchmark's ordinary-turn class (section 10.5) measures how often that expectation fails. `hybrid` becomes the recommended default only when that rate is acceptably low and accuracy on the memory-needed cases rises; until then `tool_only` stays the default, which is why it is the initial value.
+**Why utility admission is the precondition.** Systems that inject memory on every turn pollute because they inject top-k unconditionally. Phase 9a showed that the three-step relevance gate cannot reliably distinguish ordinary from memory-needed turns. The future host path therefore generates information gaps and compares the retrieved candidate set with a baseline draft as specified in [utility-aware-memory-architecture.md](utility-aware-memory-architecture.md). `hybrid` becomes the recommended default only when that path meets its acceptance gates; until then `tool_only` stays the default.
 
 **Adapter obligations by mode.**
 

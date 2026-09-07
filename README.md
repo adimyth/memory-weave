@@ -6,6 +6,8 @@ Agent Memory System is a long-term memory layer for AI agents. It does not depen
 
 The transcript is raw material. Each record carries scope, source, evidence, lifecycle metadata, and retrieval context. The design runs locally. SQLite holds the canonical records. Vector, full-text, and entity indexes are rebuilt from that store.
 
+The authoritative design for host-issued memory use is [Utility-aware memory architecture](docs/utility-aware-memory-architecture.md), with delivery stages in the [utility-aware memory implementation plan](docs/utility-aware-memory-implementation-plan.md). The current implementation still defaults to `tool_only`; the new ambient-profile and utility-aware host paths remain evaluation-gated and disabled until their acceptance criteria are met.
+
 ## 2. Why
 
 An LLM call retains nothing. Replaying the transcript keeps one conversation coherent. It costs tokens, mixes temporary chat with durable claims, and does not carry knowledge into a later session or a different agent.
@@ -17,8 +19,8 @@ You need a place for a user's preference, a project convention, or the outcome o
 | Characteristic | What the system guarantees |
 | --- | --- |
 | Durable canonical store | SQLite holds the memory record, metadata, source data, event history, vector payload, and full-text index. You can rebuild the search indexes from it. |
-| Tool-mediated access | Agents use `memory_search`, `memory_get`, `memory_write`, `memory_revise`, and `memory_forget`. Memory enters the conversation after a tool call or a host-issued search that uses the same handler. |
-| Stable prompt prefix | Integrators keep the base prompt stable for provider-side caching. An agent calls a memory tool and receives the result as a tool message. |
+| Tool-mediated access | Agents use `memory_search`, `memory_get`, `memory_write`, `memory_revise`, and `memory_forget`. Conditional memory enters the conversation after a tool call or a utility-aware host decision. |
+| Stable prompt prefix | Integrators keep the base prompt stable for provider-side caching. The planned bounded ambient profile is assembled once per session; conditional memory is appended only after admission. |
 | Isolation | The retriever applies scope, principal identity, grants, lifecycle state, expiration, and record type as filters before ranking. An ineligible record stays out of the result. |
 | Source and evidence | A stored record includes its source, creator, timestamps, confidence, and a supporting transcript or tool quote. A direct user or tool claim must be supported by that quote. |
 | Lifecycle | A record is provisional, confirmed, superseded, expired, or forgotten. A revision stores the reason. |
@@ -213,7 +215,7 @@ In each of these, something is returned on every search. Here, an empty result i
 
 ## 6.4 Known blocker: the gate cannot separate relevance from usefulness
 
-This is the open problem in the design, and it is measured rather than suspected.
+This is the open problem in the design, and it is measured rather than suspected. The section below records the problem as first measured. Section 6.5 records the validated answer to it, which is the utility-aware host path.
 
 One mechanism is being asked two different questions.
 
@@ -256,6 +258,17 @@ asked. A model-issued search keeps the exemption, because there the model named 
 Full treatment, including how every other memory system faces the same problem and three ways to attack
 it that can each be validated offline: [the gate](docs/gate.md). Raw numbers and method:
 [Phase 9a findings](docs/vertical-slice-findings.md).
+
+## 6.5 What the utility-aware path showed, and what model-agnostic means here
+
+The answer to 6.4 is to stop scoring the query against the record and instead ask whether the record would change the answer. The host generates a draft with no conditional memory, a gap planner names the user-specific facts the draft is missing, retrieval runs on those gaps rather than on the turn, and a judge admits a record only if it would change the draft. The design is in [utility-aware memory architecture](docs/utility-aware-memory-architecture.md); the validation is in [usefulness-gate.md](docs/usefulness-gate.md) sections 8c and 8d.
+
+On a held-out scenario set of 36 turns, with `gpt-4o` planning gaps and `gpt-5.4` judging admission, the path produced 0 of 20 ordinary-turn injections, 9 of 10 explicit stored-fact recalls, 5 of 6 implicit recalls, no placebo, misleading, stale, or unrelated private record admitted, and identical gap decisions across three repeats on every turn. Turns that needed no memory added no latency, because gap planning finished before the draft did. Preferences about how to answer never reached the answer unless they were placed in the always-present ambient profile, so ambient activation is a prerequisite for rollout, not an option.
+
+The same runs showed that the quality of this path depends on which model fills each role. Small reasoning models failed at both roles: unstable as planners, and as judges they admitted a misleading record and added tens of seconds. A mid-tier non-reasoning model was enough for planning. A frontier model was needed for judging.
+
+> [!IMPORTANT]
+> **What model-agnostic means for this system.** It does not mean the path works identically with any model; for a component whose quality depends on a model's judgement, nothing can. It means the contracts, the fail-closed orchestration, the ambient profile, the gap-first retrieval, the turn-decision log, and the acceptance gates are all model-neutral, and any candidate model's fitness for each role can be measured before it is enabled, in about ten minutes and a few dollars, with `benchmarks/phase0_two_arm.py` against the committed scenario sets. That is what vendor-neutrality looks like here: not indifference to the model, but a fixed acceptance test any model must pass. The design already calibrates admission per serving-model family for exactly this reason. Model names in this README are the ones that passed that test on the date given; they are configuration, and the test is the contract.
 
 ## 7. Run and test the vertical slice
 
