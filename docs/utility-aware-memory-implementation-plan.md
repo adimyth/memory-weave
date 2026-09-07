@@ -79,6 +79,35 @@ If A passes, confidence moves above 9. If A fails on promotion or inventory, Pha
 
 Consequences. The decision-impact judge is the Phase 2 admission policy. The activation rule now treats `code_example_language` as broad unless the policy flags it ambiguous or unsafe, since the override clause is the normal shape of that preference; this change is unit-tested and must be confirmed on the next blind split before the promotion gate is considered stable. Phase 1B tightens the category taxonomy and prompt, since assignment accuracy was 15 of 24 even though inventory coverage sufficed. Confidence is held at 9 rather than raised, because the promotion gate's pass in A was not reproduced by B's build.
 
+### Phase 1A complete, 7 September 2026
+
+Phase 1A is complete and validated through the real ingestion, storage, and retrieval path on a blind pre-registered split. Confidence that the plan is solid and worth pursuing: **9 of 10, 90%**, held rather than raised because the promotion gate's pass was not reproduced by an independent store build.
+
+Established:
+
+- The activation policy separates ambient, conditional, unsafe, and review outcomes correctly on real records, with host-verified evidence and an audit event for every step.
+- A store-generated inventory preserves the planner improvement: explicit recall 10 of 10, implicit 7 of 8, ordinary injection 0 of 20, no unsafe admission.
+- Gap-anchored admission adds no value and is rejected permanently. It admitted a placebo on the fourth split and cost a recall on the fifth.
+- The decision-impact judge and permanent shadow judging remain.
+
+Open, and narrower than an architectural risk:
+
+- Promotion is not yet deterministic for one form, the global default with an override clause. The fix is a frozen rule that treats recognised global-default forms as broad and uses the classifier's applicability only for forms the rule does not recognise. Self-reported classifier confidence is not a promotion input; it may only route a case to review.
+- Category assignment agreement with hidden labels is low. The metric that matters is inventory coverage: whether the inventory the planner saw contained the assigned category of each record a memory-needed turn required.
+
+Next steps, in order:
+
+1. Reject gap-anchored admission permanently.
+2. Freeze the global-default promotion rule.
+3. Run a small blind promotion-focused split with global defaults, explicit overrides, topic-scoped preferences, temporary preferences, and unsafe preferences; pass requires two independent builds to promote exactly the eligible set with no unsafe promotion.
+4. Proceed with Phase 1B while that validation runs.
+5. Keep the decision-impact judge and permanent shadow judging.
+6. Start Phase 2 only in shadow mode after the promotion rule passes.
+7. Run the second-vendor matrix before claiming provider neutrality.
+8. Monitor planner fire rate and shadow-judge adjacency separately.
+
+The system has earned implementation confidence. The remaining work is making activation deterministic and proving portability, not rescuing the core retrieval architecture.
+
 ### Requirements Phase 0 adds to Phase 2
 
 - The gap policy receives a bounded, content-free category inventory for the principal's readable conditional store, built from the activation policy's fixed taxonomy and never from extractor attribute slugs or record text. The inventory is part of the turn-decision log.
