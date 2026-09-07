@@ -20,6 +20,7 @@ This document is the companion to `agent-memory-research-notes.md` (research and
 - No automatic cross-user entity merging.
 - No ambient injection of memory into the system prompt.
 - No self-optimizing policies (GEPA and friends come after there is a fixed contract and an evaluation set).
+- No periodic cross-session consolidation. New writes still reconcile with existing records through the ingestor; a whole-store consolidation pass remains a later, evaluation-gated phase.
 
 ### Priorities, in order
 
@@ -30,7 +31,7 @@ This document is the companion to `agent-memory-research-notes.md` (research and
 
 ## 2. System in brief
 
-Memory uses SQLite as its source of truth and three ways to find the same durable records: a vector index for similar meaning, SQLite FTS5 for words and identifiers, and entity links for exact identities. Agents interact with it only through five tools: `memory_search`, `memory_get`, `memory_write`, `memory_revise`, and `memory_forget`. Nothing is silently injected into the prompt. A record reaches the model only after the agent deliberately searches for it. `memory_write` and `memory_search` are synchronous tool calls; end-of-session extraction is the only asynchronous background operation.
+Memory uses SQLite as its source of truth and three ways to find the same durable records: a vector index for similar meaning, SQLite FTS5 for words and identifiers, and entity links for exact identities. Agents interact with it only through five tools: `memory_search`, `memory_get`, `memory_write`, `memory_revise`, and `memory_forget`. Nothing is silently injected into the prompt. A record reaches the model only after the agent deliberately searches for it. `memory_write` and `memory_search` are synchronous tool calls; session extraction, candidate review, and due temporal review run asynchronously.
 
 ### Store, vector index, and FTS
 
@@ -49,7 +50,9 @@ On a write, the system persists the record and embedding in SQLite, updates FTS5
 There are only two write paths.
 
 1. An agent deliberately saves something now. For example, after the user says, “I prefer concise answers,” the agent calls `memory_write`, supplies that quote as evidence, and asks to create a semantic preference record. The tool checks that the agent may write to the intended scope, checks for duplicates or contradictions, assigns a status, embeds the text, and returns the new record id.
-2. At the end of a session, a separate extraction model rereads the transcript and suggests possible memories: facts, decisions, outcomes, and an episodic summary of what happened. Every suggestion must carry an exact supporting quote from the transcript. The system does not save suggestions blindly: it verifies the quote exists, checks whether the record already exists, checks whether it contradicts a stronger or newer record, then saves it with the appropriate status.
+2. At the end of a session, a separate extraction model rereads the transcript and suggests possible memories: facts, decisions, outcomes, and an episodic summary of what happened. Every suggestion must carry an exact supporting quote from the transcript. Before persistence, a separate reviewer accepts, rejects, or narrows each candidate using the quote, surrounding turns, and relevant live records. Accepted candidates then pass through the same evidence, scope, entity, duplicate, contradiction, and lifecycle rules as explicit writes.
+
+Time-sensitive candidates may also carry explicit validity bounds and a `review_at` time derived from their evidence. A background maintenance pass flags a record when that time arrives, but it does not infer that a planned event occurred or silently rewrite an evidence-backed fact. The flag and its reason are auditable inputs to later agent or user revision.
 
 The source controls the initial status. A direct, evidenced user statement, trusted system fact, or tool result is confirmed. A conclusion drawn by an agent or extractor is provisional. A provisional record is useful but treated cautiously: it expires after 30 days unless later evidence reinforces it. The system always writes one episodic session summary at session end, even if no durable fact is extracted.
 
@@ -90,7 +93,7 @@ Every record, regardless of type, carries the same envelope. The content varies 
 | Content | `content`, `subject_entity_id`, `attribute`, `subject` | Holds the text the model may read and its system-owned current-fact identity. `subject` is derived from the entity ID and normalized attribute. | Content: “The user prefers concise technical answers.” Attribute: `answer_style` |
 | Scope | `scope_kind`, `scope_id` | States who owns the memory. The separate grant table determines which agents may access that scope. | `user`, `user_123` |
 | Source and evidence | `source_kind`, `source_ref`, `creator_agent_id`, `evidence` | States what supports the record, where that support can be found, and which agent created it. `evidence` is a verbatim source quote. | `user_statement`, `session_456`, `research_agent`, “Please keep answers concise.” |
-| Time | `created_at`, `event_at`, `expires_at` | Separates when the system stored a record, when the underlying event occurred, and when the record should stop being normally retrievable. | Created 4 September; event 3 September; no expiry for a confirmed preference |
+| Time | `created_at`, `event_at`, `expires_at`, `valid_from`, `valid_until`, `review_at`, `review_flagged_at` | Separates storage and event time, lifecycle expiry, explicitly stated world-validity bounds, and scheduled temporal review. Validity bounds do not assert that a planned event occurred. | Created 4 September; planned event in July; review after July |
 | Trust | `confidence`, `status` | States the stored lifecycle confidence and whether the record is active, provisional, superseded, expired, or deleted. Current retrieval does not rank on confidence. | Confidence `0.95`; status `confirmed` |
 | Lineage | `supersedes_id`, `conflicts_with` | Connects a changed fact to the record it replaces and identifies records that disagree. | Supersedes `mem_0091`, which said the user preferred detailed answers |
 | Links | entity links, tags | Supplies explicit handles for exact identity matching and useful filtering. | Linked to the `person:user_123` entity; tag `communication-preference` |
@@ -113,7 +116,17 @@ Scope answers "whose memory is this". Access answers "which agent may see it". T
 
 Agents are principals that act for users. A record has one ownership scope: `agent`, `user`, `project`, or `org`.
 
-Access is a grant table: which agent ID may read or write which scope. The only implicit scope is `agent:<agent_id>/<user_id>`, which is private to one agent-user pair. Agent and user IDs cannot contain `/`, so no two principal pairs share that encoded scope. A plain `agent:<agent_id>` scope and all user, project, and organization scopes require a host-provisioned grant. The host refuses grants on private agent scopes, and policy ignores any direct-store private-scope grant whose user suffix differs from the current principal. The default write target is `user:<user_id>`, so the host must grant each permitted agent access before it starts a session. Every `memory_search` request carries the requesting agent ID and principal user ID; the pipeline computes readable scopes before candidate generation. Scope filtering is a hard SQL predicate, never a ranking signal.
+Access is a grant table: which agent ID may read or write which scope.
+The only implicit scope is `agent:<agent_id>/<user_id>`, which is private to one agent-user pair.
+Agent and user IDs cannot contain `/`, so no two principal pairs share that encoded scope.
+A plain `agent:<agent_id>` scope and all user, project, and organization scopes require a host-provisioned grant.
+The host refuses grants on private agent scopes, and policy ignores any direct-store private-scope grant whose user suffix differs from the current principal.
+Model-facing write inputs never receive these identifiers.
+Instead, the host supplies session-specific symbolic write targets, such as `personal` and, where applicable, `current_project`; the handler resolves those labels to writable scopes.
+The default `personal` target resolves to `user:<user_id>`, so the host must grant each permitted agent access before it starts a session.
+The private scope is not offered by default.
+Every `memory_search` request carries the requesting agent ID and principal user ID; the pipeline computes readable scopes before candidate generation.
+Scope filtering is a hard SQL predicate, never a ranking signal.
 
 Decision: scopes do not inherit. A user grant does not imply a project grant. This requires an explicit grant for each shared scope and makes leakage tests direct to reason about.
 
@@ -123,23 +136,36 @@ Two write paths, and only two.
 
 ### Path A: explicit agent write
 
-The agent calls `memory_write` with a type, content, attribute, optional scope, source kind, and entity mentions. The service resolves the primary `about` entity and derives the subject from its ID and the normalized attribute. In the principal's user scope, it resolves or creates the principal's person entity when a semantic or procedural write lacks an `about` mention. Other scopes require an `about` mention. The tool validates scope permission, runs dedup and contradiction checks against the store, sets the initial status from the source kind, embeds the content, and returns the record ID.
+The agent calls `memory_write` with a type, content, attribute, optional symbolic write target, source kind, and entity mentions.
+The handler resolves that target to a trusted scope after checking the current principal's permissions.
+In the principal's user scope, it resolves or creates the principal's person entity when a semantic or procedural write lacks an `about` mention.
+Other scopes require an `about` mention.
+The tool runs dedup and contradiction checks against the store, sets the initial status from the source kind, embeds the content, and returns the record ID.
 
 The agent cannot claim `user_statement` without an `evidence` quote that the tool can locate in the current session transcript. For direct user and tool claims, the service also checks that the quote entails the stored content. A missing, unsupported, or non-entailing quote downgrades the source kind to `agent_inference`.
 
 ### Path B: session extraction
 
-When the host framework signals session end, the extractor reads the full transcript and proposes candidate records. Each candidate must include a verbatim evidence span. The validator:
+When the host framework signals session end, the extractor reads the full transcript and proposes candidate records. Each candidate must include a verbatim evidence span. Before any candidate reaches the store, a separate reviewer sees the candidate, its evidence, surrounding turns, and relevant live records and returns `accept`, `reject`, or `revise`. A revision may narrow content or temporal metadata but may not strengthen the source kind, invent evidence, change scope, or change the primary entity. The validator then:
 
 1. Rejects any candidate whose evidence span is not found in the transcript.
 2. Rejects candidates that are near-duplicates of existing records (reinforces the existing record instead).
 3. Detects contradictions with existing records on the same subject and applies the supersession rule.
-4. Assigns status from source kind.
-5. Writes an episodic session summary record regardless of whether any facts were extracted.
+4. Assigns status from source kind rather than from reviewer confidence.
+5. Validates temporal metadata against expressions in the evidence, resolving relative dates against the turn timestamp.
+6. Writes an episodic session summary record regardless of whether any facts were extracted.
 
 Extraction is asynchronous and has no latency budget. It uses a separate, cheap structured-output model, not the serving model.
 
+The reviewer fails closed. If it times out or returns invalid structured output, the extraction run writes neither candidates nor summary and remains retryable through the extraction claim timeout.
+
 Decision: extraction runs after a session ends, rather than after each message. Per-message extraction multiplies cost and increases the chance that a half-formed inference becomes durable. Session-end extraction plus explicit agent writes covers the intended cases, and the evaluation will show what it misses.
+
+### Path C: time-driven review
+
+The extractor may attach `valid_from`, `valid_until`, and `review_at` only when the supporting turn contains the corresponding temporal expression, interpreted relative to the session timestamp when necessary. A scheduled worker claims records whose `review_at` is due and `review_flagged_at` is empty, sets `review_flagged_at`, and appends a `record.review_due` event. The event flags the dated claim for reconsideration; it does not rewrite content, promote an inference, or claim that a plan happened. Repeated workers are harmless because the claim is atomic.
+
+Decision: the first version observes time-driven staleness without automatically changing semantic truth. Automatic temporal rewriting requires evidence that due-review flags are useful and a policy for cancellations, delayed plans, and historical queries.
 
 ### Reinforcement and expiry
 
@@ -300,6 +326,7 @@ Every search writes one log row: raw request; rewritten query and rewrite status
 | Should anything be ambient? | Nothing. | Add a bounded user profile block; measure search-miss rate against over-personalization. |
 | Who triggers retrieval? | `tool_only`. | Agent-in-the-loop run comparing `tool_only`, `auto`, and `hybrid` on search rate when evidence existed, false-search rate, injection rate on ordinary turns, and accuracy. |
 | Is the gate strong enough for host-issued searches? | Per-type dense floors, minimum matched terms for lexical-only passes, and a relative floor. | Three-class calibration sweep on the search log; reranker as the gate if the ordinary-turn rate stays too high. |
+| Can a similarity floor answer "does this turn need memory"? | No. Measured in Phase 9a: the score distributions for ordinary and memory-applicable turns overlap almost completely. | Settled. The remaining work is choosing a different signal; see [gate.md](gate.md). |
 | Exact vs approximate vector search? | Exact. | Only revisit above 200K records. |
 
 ## 16. What the evaluation will need from this design

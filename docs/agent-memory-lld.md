@@ -187,10 +187,13 @@ ingestion:
     min_words: 3
     entail_floor: 0.70
   provisional_ttl_days: 30
+  summary_ttl_days: 180
   reinforcements_to_confirm: 2
   max_entity_attributes: 64
   extraction_model: claude-haiku-4-5-20251001
   extraction_max_candidates: 20
+  review_model: claude-haiku-4-5-20251001
+  temporal_review_batch_size: 100
 ```
 
 - `dedup_candidate_cosine` is the similarity threshold for comparing active records in the same scope and type but about different entities. At or above this cosine, the ingestor asks the equivalence judge whether the claims are the same, contradictory, or distinct.
@@ -199,9 +202,12 @@ ingestion:
 - `evidence.min_characters` and `evidence.min_words` make a quote substantial enough to support a direct claim.
 - `evidence.entail_floor` is the minimum score when the judge compares the evidence quote with a direct user or tool claim. It is calibrated separately from the equivalence floors because it answers a different question.
 - `provisional_ttl_days` sets the lifetime for every provisional record, including an unsupported inference and a lower-authority conflict; refer sections 6.2 and 6.4. An independent reinforcement extends the expiry date.
+- `summary_ttl_days` sets the lifetime of generated session summaries, which are broad and excluded from host-issued retrieval by default.
 - `reinforcements_to_confirm` sets the reinforcement count that promotes a provisional record to `confirmed`; refer section 6.4.
 - `max_entity_attributes` bounds the active attributes that the ingestor asks the judge to compare for one entity. It starts with the most recently reinforced attributes and records `attribute_scan_truncated` when it reaches the cap.
 - `extraction_max_candidates` caps the candidates from one session extraction; refer section 8.2.
+- `review_model` is the separate structured-output model that accepts, rejects, or narrows extractor candidates before persistence; refer section 8.2.
+- `temporal_review_batch_size` bounds one atomic-claim pass over due records; refer section 8.4.
 
 ### 2.5 Policy
 
@@ -252,6 +258,10 @@ CREATE TABLE records (
   created_at      TEXT NOT NULL,
   event_at        TEXT NOT NULL,              -- defaults to created_at
   expires_at      TEXT,                       -- NULL means never
+  valid_from      TEXT,                       -- explicit world-validity bound from evidence
+  valid_until     TEXT,                       -- explicit world-validity bound from evidence
+  review_at       TEXT,                       -- time when this record should be reconsidered
+  review_flagged_at TEXT,                     -- time when the due-review flag was claimed
   confidence      REAL NOT NULL,              -- 0..1
   status          TEXT NOT NULL CHECK (status IN ('provisional','confirmed','superseded','expired','deleted')),
   supersedes_id   TEXT REFERENCES records(id),
@@ -263,6 +273,7 @@ CREATE TABLE records (
 CREATE INDEX records_scope ON records(scope_kind, scope_id, status);
 CREATE INDEX records_subject ON records(scope_kind, scope_id, subject_entity_id, attribute, status);
 CREATE INDEX records_event ON records(type, event_at);
+CREATE INDEX records_temporal_review ON records(review_at, review_flagged_at, status);
 CREATE INDEX records_index_version ON records(index_version);
 
 CREATE TABLE migration_issues (
@@ -361,8 +372,8 @@ CREATE TABLE session_turns (
 CREATE TABLE events (                         -- append-only audit log, never updated or deleted
   id          TEXT PRIMARY KEY,
   at          TEXT NOT NULL,
-  kind        TEXT NOT NULL,                  -- record.created | record.reinforced | record.superseded | record.status | entity.created | entity.merged | grant.changed | extraction.run
-  actor       TEXT NOT NULL,                  -- agent id, 'extractor', 'admin', or a user id
+  kind        TEXT NOT NULL,                  -- record.created | record.reinforced | record.superseded | record.status | record.review_due | entity.created | entity.merged | grant.changed | extraction.run
+  actor       TEXT NOT NULL,                  -- agent id, 'extractor', 'temporal_reviewer', 'admin', or a user id
   record_id   TEXT,
   entity_id   TEXT,
   payload     TEXT NOT NULL                   -- JSON
@@ -428,6 +439,9 @@ CREATE TABLE search_log (
 | `created_at` | Time when Memory Weave stored the row. |
 | `event_at` | Time when the fact or event occurred. Defaults to `created_at`. |
 | `expires_at` | Time after which normal retrieval excludes the row. `NULL` means no expiry. |
+| `valid_from`, `valid_until` | Optional world-validity bounds copied from an explicit temporal statement. They do not control ordinary retrieval in the first version. |
+| `review_at` | Optional time when a background worker should flag the record for reconsideration. |
+| `review_flagged_at` | Time when a worker atomically claimed and emitted the due-review flag. `NULL` means no flag has been emitted; it does not imply that a human or model completed a review. |
 | `confidence` | Confidence value from 0 to 1. |
 | `status` | `provisional`, `confirmed`, `superseded`, `expired`, or `deleted`. |
 | `supersedes_id` | Record replaced by this record. |
@@ -619,6 +633,10 @@ class Record:
     created_at: datetime
     event_at: datetime
     expires_at: datetime | None
+    valid_from: datetime | None
+    valid_until: datetime | None
+    review_at: datetime | None
+    review_flagged_at: datetime | None
     confidence: float
     status: Literal["provisional", "confirmed", "superseded", "expired", "deleted"]
     supersedes_id: str | None
@@ -790,7 +808,8 @@ class SearchResponse:
 | `Entity`, `EntityMention`, `Resolution` | Entity resolver, ingestion, retrieval | Represent a named subject, a proposed mention, and the resolver outcome. |
 | `Turn` | Session buffer, evidence, extraction | Represents one transcript turn. |
 | `ExtractionContext` | Extraction | Gives the extractor the principal, readable entities, existing subjects, and prompt version. |
-| `CandidateRecord`, `SessionSummary`, `ExtractionOutput` | Extraction, ingestion | Represent extractor output before the ingestor validates it. |
+| `CandidateRecord`, `SessionSummary`, `ExtractionOutput` | Extraction, ingestion | Represent extractor output before the reviewer and ingestor validate it. |
+| `ReviewContext`, `ReviewDecision` | Candidate review | Bound what the reviewer may inspect and express its accept, reject, or constrained-revision decision. |
 | `EvidenceCheck` | Explicit writes, extraction | Records whether a quote exists and which source kind it supports. |
 | `SearchRequest` | Tools, adapters, retrieval | Carries raw queries and caller-selected filters. The adapter owns `context`. |
 | `GeneratorHit`, `LexicalTerm`, `LexicalMatch`, `Candidate` | Retrieval | Preserve generator ranks, scores, and exact lexical evidence through fusion, gating, dedupe, and reranking. |
@@ -827,13 +846,21 @@ class EquivalenceJudge(Protocol):
 class Extractor(Protocol):
     def extract(self, transcript: list[Turn], context: ExtractionContext) -> ExtractionOutput: ...
 
+class CandidateReviewer(Protocol):
+    def review(self, candidate: CandidateRecord, context: ReviewContext) -> ReviewDecision: ...
+
 class Adapter(Protocol):
-    def register_tools(self, handlers: ToolHandlers) -> None: ...
+    def register_tools(self, handlers: ToolHandlers, principal: Principal) -> None: ...
     def principal_from_run(self, run_ctx: Any) -> Principal: ...
     def on_session_start(self, ...) -> None: ...
     def on_turn(self, ...) -> None: ...
     def on_session_end(self, ...) -> None: ...
 ```
+
+Before the adapter registers model tools for a session, it derives the `Principal` and calls `handlers.tool_schemas(principal)`.
+It must not call the static `tool_schemas()` helper for a model session, because that helper has no principal and cannot constrain `write_target`.
+The host supplies the optional symbolic target map when it creates `ToolHandlers`; the handler filters it against current write grants and resolves a selected label on every write.
+If grants change during a session, the adapter re-registers the schemas before the next model turn.
 
 `ExtractionOutput` contains candidate records plus one session summary:
 
@@ -848,7 +875,26 @@ class CandidateRecord:
     evidence_turn: int
     entity_mentions: list[EntityMention]  # (kind, text, role)
     event_at: datetime | None
+    valid_from: datetime | None
+    valid_until: datetime | None
+    review_at: datetime | None
     confidence: float
+
+
+@dataclass(frozen=True)
+class ReviewContext:
+    transcript_window: list[Turn]
+    destination_scope: Scope
+    primary_entity_id: str
+    live_records: list[Record]  # same entity and destination scope only
+    prompt_version: str
+
+
+@dataclass(frozen=True)
+class ReviewDecision:
+    action: Literal["accept", "reject", "revise"]
+    candidate: CandidateRecord | None  # required only for revise
+    reason: str
 
 
 @dataclass
@@ -865,6 +911,7 @@ class SessionSummary:
 | `QueryRewriter` | `HostedLLMQueryRewriter` | `FakeRewriter` | Returns the same number of standalone queries or a failed status. |
 | `EquivalenceJudge` | `NLICrossEncoderJudge` | `FakeJudge` | Labels two claims as `same`, `contradicts`, or `distinct`, and scores evidence-to-claim entailment. |
 | `Extractor` | `StructuredLLMExtractor` | `FakeExtractor` | Produces `ExtractionOutput` from a transcript and extraction context. |
+| `CandidateReviewer` | `StructuredLLMCandidateReviewer` | `FakeCandidateReviewer` | Returns `accept`, `reject`, or a constrained revision before a candidate reaches the ingestor. |
 | `Adapter` | Deep Agents or CrewAI adapter | Adapter fixture | Registers tools, derives the principal, records turns, and closes sessions. |
 
 ## 6. Policy
@@ -898,7 +945,11 @@ def initial_confidence(source_kind) -> float:
 
 
 def initial_expiry(source_kind, now) -> datetime | None:
-    return now + timedelta(days=cfg.provisional_ttl_days) if source_kind == "agent_inference" else None
+    if source_kind == "agent_inference":
+        return now + timedelta(days=cfg.provisional_ttl_days)
+    if source_kind == "session_summary":
+        return now + timedelta(days=cfg.summary_ttl_days)
+    return None
 ```
 
 | Source kind | Rank | Initial status | Initial confidence | Expiry |
@@ -906,7 +957,7 @@ def initial_expiry(source_kind, now) -> datetime | None:
 | `user_statement` | 4 | `confirmed` | 0.95 | None |
 | `system` | 3 | `confirmed` | 0.90 | None |
 | `tool_result` | 2 | `confirmed` | 0.85 | None |
-| `session_summary` | 2 | `confirmed` | 0.80 | None |
+| `session_summary` | 2 | `confirmed` | 0.80 | `summary_ttl_days` after creation |
 | `agent_inference` | 1 | `provisional` | 0.60 | `provisional_ttl_days` after creation |
 
 The policy assigns `session_summary` its status and expiry rules. The summary references the whole transcript through `source_ref = "session:<id>"`. The extractor writes it as an episodic record with the principal's person entity and `attribute = "-"`; it does not supersede or reinforce another record. The summary describes a dated session. Store a user fact through a separate evidenced candidate.
@@ -924,8 +975,16 @@ The scan is limited by `ingestion.max_entity_attributes`. The cap is applied to 
 The ingestor judges every scanned record before it decides anything, then applies the rules in this order:
 
 1. If active records share the candidate's attribute, the authority incumbent among them (highest source rank, then latest `event_at`, then latest `created_at`) receives the decision. A `same` verdict reinforces it. Any other verdict runs the supersession rule against it. When the candidate supersedes the incumbent, every same-attribute sibling the judge called `same` is marked superseded as well and listed in the event as `also_superseded`, so a provisional conflict that agrees with the new fact cannot outlive the fact it contradicted.
-2. Otherwise, if any record under another attribute is `same`, the ingestor reinforces the highest-authority one and records the candidate attribute in `attribute_aliased_from`.
-3. Otherwise, if a record under another attribute `contradicts` the candidate, the attributes describe one current fact. The supersession rule runs against the highest-authority such record, the survivor keeps the incumbent attribute, and the event records `attribute_aliased_from`.
+2. Otherwise, if any record under another attribute is `same` **and sits at or above `ingestion.attribute_alias_cosine` from the candidate**, the ingestor reinforces the highest-authority one and records the candidate attribute in `attribute_aliased_from`.
+3. Otherwise, if a record under another attribute `contradicts` the candidate **and clears the same cosine floor**, the attributes describe one current fact. The supersession rule runs against the highest-authority such record, the survivor keeps the incumbent attribute, and the event records `attribute_aliased_from`.
+
+Collapsing two attributes requires both signals. The judge says the claims disagree; the cosine says they
+are about the same thing. A verdict alone is not sufficient, because an NLI cross-encoder routinely
+returns `contradicts` for two unrelated claims about one person, neither entailing the other. Acting on
+the verdict alone let any new fact supersede any older fact about the same entity, so a person could hold
+exactly one live semantic record. The cosine requirement makes the failure safe in the other direction:
+an alias that embeddings do not catch leaves two records live under different attribute names, which is
+the attribute-drift limitation already recorded in [next-phases.md](next-phases.md).
 4. Otherwise the nearby-record dedup search runs as for any record type.
 
 Rule 1 runs before rule 2 on purpose. A `same` verdict against a provisional sibling must never short-circuit the decision the confirmed incumbent is owed; before this ordering, a user statement that agreed with a provisional conflict promoted the conflict and left the contradicted confirmed record active.
@@ -1075,7 +1134,14 @@ Use this path when the agent has one memory worth saving and can provide the sup
 #### Steps
 
 1. **Validate the request.** The handler validates the tool arguments and derives the caller's `Principal`.
-2. **Choose and authorize the scope.** The requested scope wins. If the request omits it, the handler uses `Scope("user", principal.user_id)`. The host must first grant the agent read and write access to that user scope. Otherwise the handler returns `scope_not_writable`. The only implicit scope is `Scope("agent", f"{agent_id}/{user_id}")`.
+2. **Choose and authorize the scope.** The model-facing write contract never accepts a raw scope ID.
+   The host gives the handler a session-specific map of symbolic `write_target` names to trusted `Scope` values.
+   The default map offers `personal`, which resolves to `Scope("user", principal.user_id)` and requires a host-provisioned read-write grant.
+   A host may offer `current_project` only when the principal has a current project and can write that project scope.
+   The private `Scope("agent", f"{agent_id}/{user_id}")` remains absent unless the host deliberately gives it a symbolic name.
+   The handler removes non-writable targets before registering the model schema, resolves a supplied target itself, and returns `invalid_write_target` for an unavailable name.
+   If there are no writable targets, it does not register `memory_write`.
+   Trusted host and extraction APIs may still pass a concrete `Scope`.
 3. **Validate evidence.** `validate_evidence` checks the quote against the current session, assigns the supported `source_kind`, and returns the matching turn. The handler stores that turn as `source_ref = "session:<session_id><turn:n>"`. For a claimed user or tool source, it also scores whether the quote entails the content. A score below `ingestion.evidence.entail_floor` downgrades the claim to `agent_inference`. The tool rejects `session_summary`, and the host reserves `system` for its separate API.
 4. **Resolve entities.** The handler resolves each entity mention in the requested scope. An ambiguous `about` entity stops the write and returns `entity_ambiguous` with candidate entity IDs. An ambiguous `mentions` entity drops that link and adds a note.
 5. **Set the structured subject.** The writer supplies an `attribute` hint, not a subject string. The handler normalizes it and combines it with the resolved primary `about` entity as `<entity_id>/<attribute>`. Semantic and procedural records require an attribute. Without an `about` entity, they are valid only in the principal's user scope, where the handler resolves or creates that principal's `person` entity. Other scopes return `invalid_subject` with `about entity required`. An episodic record may use `<entity_id>/-`; that form is never a supersession key.
@@ -1095,6 +1161,7 @@ Use this path when the agent has one memory worth saving and can provide the sup
 | `superseded_on_arrival:<old_id>` | The candidate has the same rank as a newer active fact, so the handler stores it as history without making it active. |
 | `conflict:<old_id>` | The handler stored a lower-authority contradiction as provisional and linked both records as conflicts. |
 | `scope_not_writable` | The caller cannot write to the requested scope. |
+| `invalid_write_target` | The model supplied a symbolic target that this session does not offer. |
 | `entity_ambiguous` | The handler could not safely identify the record's primary entity. This includes the principal's own person entity when more than one person entity in the user scope carries the principal alias, which an entity merge can produce. |
 | `invalid_source_kind` | The caller attempted to write a host- or extractor-owned source kind. |
 | `invalid_subject` | A semantic or procedural request omitted its attribute (`note` is `attribute normalizes to nothing` when a hint was given but reduced to an empty slug), or an out-of-user scope omitted its primary `about` entity (`note` is `about entity required`). |
@@ -1114,9 +1181,11 @@ The response records the complete timing sequence: `permission`, `evidence`, `en
 1. **Read the session.** The worker loads the session turns. A session with fewer than two turns skips candidate extraction and writes the summary only.
 2. **Build extraction context.** The worker gives the extractor the caller's principal, entity aliases visible to that caller, active subjects in writable scopes, and the extractor prompt version.
 3. **Request candidates.** The extractor returns `ExtractionOutput`, which contains candidate records and one session summary. The worker considers at most `ingestion.extraction_max_candidates` candidates.
-4. **Validate each candidate.** The worker validates evidence against the declared turn, resolves entities, and then reuses the explicit-write logic from steps 5 through 8 above. It records accepted, reinforced, superseded, conflicting, and rejected candidates.
-5. **Write the session summary.** The worker writes one episodic record from `out.summary` with the principal's person entity as `subject_entity_id`, `attribute = "-"`, `event_at = session.ended_at`, `source_kind = "session_summary"`, and `source_ref = "session:<session_id>"`. Policy assigns the summary `confirmed` status, confidence `0.8`, and no expiry. The worker records other summary entities as `mentions`; it drops ambiguous aliases.
-6. **Finish the run.** The worker sets `sessions.extracted_at` and appends one `extraction.run` event.
+4. **Validate the immutable envelope.** The worker locates the declared evidence, resolves the destination scope and primary entity, and rejects ambiguous or unauthorized candidates before exposing context to the reviewer.
+5. **Review before apply.** For each surviving candidate, the reviewer receives the candidate, its evidence turn plus adjacent turns, and active records for the same entity in the destination scope only. It returns `accept`, `reject`, or `revise`. A revision may narrow content, the attribute hint, or temporal metadata; it may not strengthen `source_kind`, replace the evidence quote or turn, change scope, or substitute the primary entity. The worker records the review decision and model version.
+6. **Revalidate and ingest.** The worker revalidates every accepted or revised candidate, including evidence entailment and temporal support, and then reuses the explicit-write logic from steps 5 through 8 above. It records accepted, reinforced, superseded, conflicting, and rejected candidates.
+7. **Write the session summary.** The worker writes one episodic record from `out.summary` with the principal's person entity as `subject_entity_id`, `attribute = "-"`, `event_at = session.ended_at`, `source_kind = "session_summary"`, `source_ref = "session:<session_id>"`, and an expiry of `ingestion.summary_ttl_days`. Policy assigns confirmed status and confidence `0.8`. The worker records other summary entities as `mentions`; it drops ambiguous aliases.
+8. **Finish the run.** The worker sets `sessions.extracted_at` and appends one `extraction.run` event.
 
 #### Candidate validation
 
@@ -1127,8 +1196,12 @@ The response records the complete timing sequence: `permission`, `evidence`, `en
 | Primary (`about`) entity is ambiguous. | Reject the candidate and record the candidate entity IDs. |
 | Mention-only entity is ambiguous. | Write the record without that link and record the ambiguity. |
 | Candidate passes validation. | Reuse the explicit-write subject, duplicate, contradiction, persistence, index, and event steps. |
+| Reviewer rejects a candidate. | Do not call the ingestor; record `review_rejected` and the review reason in `extraction.run`. |
+| Reviewer revises a forbidden field or introduces unsupported temporal metadata. | Reject the candidate with `invalid_review_revision`. |
 
-The `extraction.run` event records counts for `proposed`, `written`, `reinforced`, `superseded`, `rejected`, and rejection reasons. Its `timings_ms` payload contains `transcript_prep`, `extractor_model`, `validation`, `dedup_and_contradiction`, per-record `writes`, `summary_write`, and `total`. Rejected candidate content and reasons stay in this event so evaluation can measure extractor precision separately from validator precision.
+The `extraction.run` event records counts for `proposed`, `review_accepted`, `review_revised`, `review_rejected`, `written`, `reinforced`, `superseded`, `rejected`, and rejection reasons. Its `timings_ms` payload contains `transcript_prep`, `extractor_model`, `candidate_review`, `validation`, `dedup_and_contradiction`, per-record `writes`, `summary_write`, and `total`. Rejected candidate content and reasons stay in this event so evaluation can measure extractor, reviewer, and validator precision separately.
+
+A reviewer timeout, invalid structured response, or provider failure fails the extraction run closed: no candidate or summary is written, `extracted_at` remains empty, and the timed claim may be reclaimed. The failure event records no transcript or candidate content beyond the repository's existing controlled extraction audit policy.
 
 ### 8.3 Extractor contract
 
@@ -1140,12 +1213,21 @@ The extractor receives numbered transcript turns, readable entity aliases, activ
 | Candidate scope | Put one fact in each candidate. Do not combine facts. |
 | Content | Write one standalone declarative sentence that remains clear without the transcript. |
 | Evidence | Copy a verbatim quote from one specified turn. Do not paraphrase. |
+| Temporal metadata | Set `valid_from`, `valid_until`, or `review_at` only when the evidence supplies the corresponding temporal expression; resolve relative expressions against the turn timestamp. Do not infer that a planned event will occur. |
 | Attribute | Reuse an existing attribute for the same fact when one is known. Otherwise propose a short attribute hint. The ingestor resolves the primary entity and normalizes the final key. |
 | Source kind | Use `user_statement` for the user's own words. Use `agent_inference` for an assistant conclusion. |
 | Third-party facts | Propose them only when the user stated them. |
 | Episodes | Capture decisions, rationale, outcomes, and failures. Put routine progress in the session summary. |
 
 The repository versions the extractor prompt. Each `extraction.run` event records that prompt version.
+
+### 8.4 Time-driven review
+
+Time-driven review is a bounded maintenance pass over active records, not a whole-store semantic consolidation pass. It selects at most `ingestion.temporal_review_batch_size` rows where `review_at <= now`, `review_flagged_at IS NULL`, and status is `provisional` or `confirmed`. Each row is claimed atomically by setting `review_flagged_at` and appending `record.review_due` in the same transaction; only the worker whose conditional update affects the row emits the event. The event carries the record ID, explicit temporal bounds, scheduled time, and actor `temporal_reviewer`.
+
+The first version does not rewrite content or lifecycle state. A future plan may have been cancelled, delayed, or merely described as an intention, so the passage of time is not evidence that it happened. The due event makes the record inspectable by an agent, user, or later policy while preserving the original claim and evidence.
+
+`review_at` is independent of `expires_at`: expiry controls ordinary retrieval, while review time requests reconsideration. `valid_from` and `valid_until` describe the time stated by the source and remain available for historical reasoning; they are not retrieval filters until an evaluation defines the desired current-versus-historical behavior.
 
 ## 9. Entity resolution
 
@@ -1427,7 +1509,10 @@ For `trigger = auto`, the gate uses `cfg.gate.auto` instead of the normal settin
 
 Because `search_log` keeps every candidate's scores, floor sweeps run offline against logged searches without re-executing them. Pick per-type dense floors and the relative floor that maximize F1 on classes 1 and 2, subject to an injection rate on class 3 below the target the benchmark sets. Record the chosen values with `embedding.version` in `config.py`.
 
-**What the gate does not do.** It judges relevance, not need. A record about the user's coffee habit passes on any coffee query, and whether that is personalization or pollution depends on the task. In `tool_only` mode the model absorbs that judgement by deciding to search. In `auto` and `hybrid` modes, the ordinary-turn class is how it is measured, and the reranker, which is better calibrated than cosine, is the next lever if the class-3 rate is too high.
+**What the gate does not do.** It judges relevance, not need. Phase 9a measured the consequence: on
+host-issued searches the dense-score distributions for "memory applies" and "ordinary turn" overlap
+almost completely, so no `dense_floor` separates them. This is a property of the signal, not of the
+chosen number. See [gate.md](gate.md) for the measurement and the three candidate fixes. A record about the user's coffee habit passes on any coffee query, and whether that is personalization or pollution depends on the task. In `tool_only` mode the model absorbs that judgement by deciding to search. In `auto` and `hybrid` modes, the ordinary-turn class is how it is measured, and the reranker, which is better calibrated than cosine, is the next lever if the class-3 rate is too high.
 
 A returned provisional record that has an eligible conflicting counterpart is paired with it, and the pair is admitted or rejected by the budget as a unit so the caller never sees one half. The counterpart keeps its own rank when it already ranks above the provisional record: moving a stronger record down to sit beside a weaker one would demote it and, under a small `k`, drop the best match from the response. Only a counterpart that ranks below the provisional record is pulled forward, and a counterpart already in the candidate list contributes its real generator evidence rather than a synthetic entry.
 
@@ -1482,6 +1567,7 @@ The memory layer exposes five framework-neutral tools. They use plain JSON Schem
 An operation on a record or entity the caller cannot read answers exactly as it does for an id that never existed. `memory_get`, `memory_revise`, and `memory_forget` return `not_found` with the same message shape, and entity errors collapse missing, unreadable, and unwritable ids into one `not_found`. Authorization is therefore checked before any validation whose message would describe the target, so no error text confirms that a foreign id exists or reveals its kind, status, or merge target.
 
 Every handler rejects a payload that is not a JSON object with the structured `invalid_input` error rather than raising, and rejects blank `content` or `evidence` so a whitespace-only memory cannot be created.
+Tool input never supplies an agent identity, authorization decision, or raw scope ID.
 
 The agent should use search before work that may depend on prior context. It should use write only for information that changes a future action. Every handler derives the `Principal` from the adapter; tool input never supplies an agent identity.
 
@@ -1523,7 +1609,7 @@ It returns the full records, including superseded lineage and conflicts. An agen
   "type": {"enum": ["semantic", "episodic", "procedural"]},
   "content": {"type": "string", "maxLength": 1000},
   "attribute": {"type": "string", "description": "Current-fact attribute such as 'timezone'. Required for semantic and procedural memories. Any entity prefix is ignored."},
-  "scope": {"type": "object", "properties": {"kind": {...}, "id": {...}}, "description": "Defaults to the principal user's scope. The host must provision a grant for it."},
+  "write_target": {"type": "string", "enum": ["personal", "current_project"], "description": "Optional symbolic destination. The handler creates this enum for the current session and omits targets that the principal cannot write. Omit this field to use personal memory."},
   "source_kind": {"enum": ["user_statement", "tool_result", "agent_inference"]},
   "evidence": {"type": "string", "description": "Verbatim quote from this session. Required for user_statement."},
   "event_at": {"type": "string", "format": "date-time"},
@@ -1533,7 +1619,10 @@ It returns the full records, including superseded lineage and conflicts. An agen
 }
 ```
 
-The description tells the agent to write one fact per call and only information that would change a future action. It cannot write `system` or `session_summary`: the host and extractor own those source kinds, and the input enum excludes them.
+The description tells the agent to write one fact per call and only information that would change a future action.
+It cannot write `system` or `session_summary`: the host and extractor own those source kinds, and the input enum excludes them.
+`write_target` values are labels, not scope IDs.
+The host resolves them after validation, so the model never needs to supply `user:<id>`, `project:<id>`, or a private agent scope identifier.
 
 When an `about` entity is ambiguous, the error returns the candidate IDs, kinds, canonical names, and scopes. The agent either retries with one `entity_id` or asks the user to disambiguate.
 
@@ -1594,11 +1683,12 @@ The adapter adds the following policy to the agent's prompt prefix. Keep the wor
 
 > You have long-term memory available through tools. Before acting on anything that could depend on the user's preferences, earlier decisions, or previous sessions, call `memory_search` with one to three specific phrases. Do not search for general knowledge or for facts already visible in this conversation. When results come back, check their status, source, and date before relying on them; a provisional or old record may be wrong, and you can ask the user. When the user states a preference, a fact about themselves, or a decision, save it with `memory_write` and quote their words as evidence. Save decisions you make together as episodic records with the reason. Do not save guesses as facts.
 
-In `auto` and `hybrid` modes (section 14.1) the adapter appends one more sentence pair, since the model needs to know that some memory arrives without asking:
+In `hybrid` mode (section 14.1) the adapter appends one more sentence pair, since the model needs to know that some memory arrives without asking:
 
 > Relevant memories may also appear automatically before you answer, marked as recalled memory. Treat them exactly like search results: check their status, source, and date, and use `memory_search` yourself for anything more specific.
 
-In `auto` mode the sentence about calling `memory_search` is removed, because the tool is not registered.
+In `auto` mode the adapter appends only the first sentence, which announces recalled memory.
+It removes the sentence about calling `memory_search` from the base policy and does not append the sentence that tells the model to search for something more specific, because the tool is not registered.
 
 The policy text is versioned with the extractor prompt. Evaluation records both versions on every run, so a behavior change can be tied to the instructions that produced it.
 
@@ -1699,7 +1789,8 @@ The CLI supports maintenance, debugging, and reproducible evaluation. It is not 
 | `memory-weave reembed --model M --version V` | Re-embed every record, then swap the index. Refuses to run until gate floors are reset. |
 | `memory-weave erase <id>` | Erase durable content and append an event. |
 | `memory-weave grant A user:U --read --write` | Create or update a scope grant. |
-| `memory-weave extract <session_id>` | Re-run extraction for one session. It is idempotent because deduplication absorbs repeats. |
+| `memory-weave extract <session_id>` | Re-run extraction for one session through candidate review. Atomic session claiming and source-reference idempotency prevent duplicate effects. |
+| `memory-weave review-due` | Atomically flag one bounded batch of records whose `review_at` has arrived. |
 | `memory-weave snapshot save|load <path>` | Copy the SQLite database for evaluation fixtures. |
 
 ## 17. Test plan for the implementation
@@ -1712,6 +1803,7 @@ The test suite proves policy and retrieval behavior with deterministic fakes fir
 | --- | --- | --- |
 | `FakeEmbedder` | Unit tests for dense search, duplicate collapse, and gating. | Hash-based vectors with controllable similarity. |
 | `FakeExtractor` | Unit tests for session extraction. | Returns predefined candidates and summaries. |
+| `FakeCandidateReviewer` | Unit tests for review-before-apply. | Returns predefined accept, reject, and constrained-revision decisions. |
 | `FakeJudge` | Unit tests for reinforcement and contradiction. | Table-driven `same`, `contradicts`, and `distinct` results. |
 | `FakeRewriter` | Unit tests for query rewriting. | Captures inputs and returns a predefined rewrite or failure. |
 | `FakeReranker` | Unit tests for reranker ordering and limits. | Returns known query-record scores. |
@@ -1769,8 +1861,12 @@ Run one parameterized suite through both `memory_write` and session extraction. 
 #### Session extraction
 
 - A candidate with missing evidence is rejected and logged.
-- The worker writes a session summary even when extraction returns no candidates. It has `source_kind = session_summary`, `confirmed` status, and no expiry.
+- Reviewer accept, reject, and constrained-revision outcomes are logged; rejection never reaches the ingestor, and revision cannot strengthen authority or replace evidence, scope, or primary entity.
+- Accepted and revised candidates repeat evidence, temporal, scope, and entity validation after review.
+- A reviewer timeout or malformed response writes no candidates or summary, leaves `extracted_at` empty, and permits timeout-based claim recovery.
+- The worker writes a session summary even when extraction returns no candidates. It has `source_kind = session_summary`, `confirmed` status, and the configured summary expiry.
 - A candidate with an ambiguous `about` entity is rejected with the candidate entity IDs.
+- Two temporal workers racing on one due record emit one `record.review_due` event, set `review_flagged_at` once, and do not change the record's content, source, evidence, or lifecycle status.
 
 #### Entities
 
@@ -1884,3 +1980,5 @@ These choices do not block the initial implementation. Each has a safe default a
 | Gate floors | Per-type dense floors, two matched terms for lexical-only passes, relative floor 0.5. | The three-class calibration sweep in section 10.5 picks different values, or the reranker proves a better gate for host-issued searches. |
 | `search_log.trigger` column | Added as schema migration 2 when phase 8 first writes the log. | Never; it is required by the benchmark split. |
 | Confidence | Store it for lifecycle and audit only; do not use it in ranking or gating. | Phase 15 data shows that a ranking prior helps, or confirms the field should be removed. |
+| Cross-session consolidation | Do not run periodic whole-store semantic consolidation; reconcile incrementally through the ingestor. | Evaluation finds persistent duplicate, conflict, entity, or attribute fragmentation that new writes do not repair. |
+| Automatic temporal rewriting | Emit an auditable due-review flag only; do not rewrite a dated claim because time passed. | Due-review evaluation establishes safe decisions for completed, cancelled, delayed, and historically queried events. |

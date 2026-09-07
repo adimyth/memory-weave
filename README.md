@@ -25,11 +25,11 @@ You need a place for a user's preference, a project convention, or the outcome o
 | Explainable retrieval | A result includes matched terms or entity, contributing channels, score components, and final rank. |
 | Entity linking | The service links records through entity aliases. It leaves an ambiguous name unmerged for review. |
 | Model and framework | The storage contract and tool schemas do not depend on one provider or framework. Framework adapters are planned; none is included yet. |
-| Background work | An agent waits for `memory_write` to finish. Session extraction runs after the session, off the message path. |
+| Background work | An agent waits for `memory_write` to finish. Session extraction, pre-apply candidate review, and due temporal review run off the message path. |
 
 ## 4. Ingestion
 
-An agent can write a memory during a session. After the session ends, an extractor can propose more records from the transcript. Both routes go through the same validation and persistence rules.
+An agent can write a memory during a session. After the session ends, an extractor can propose more records from the transcript. A separate reviewer accepts, rejects, or narrows extracted candidates before accepted candidates enter the shared validation and persistence path. Time-sensitive records can later be flagged for review when an evidence-backed `review_at` time arrives; the system does not infer that a planned event happened.
 
 ### 4.1 Write paths
 
@@ -45,7 +45,8 @@ flowchart TD
         SessionEnd --> Extractor[Read transcript, session context, and known aliases]
         Candidates[Propose memory candidates with evidence quotes]
         EvidenceCheck[Validate candidate against transcript and existing memories]
-        Extractor --> Candidates --> EvidenceCheck
+        Extractor --> Candidates --> Review[Review candidate before apply]
+        Review --> EvidenceCheck
     end
 
     WritePolicy --> Intake[Shared ingestion service]
@@ -210,9 +211,55 @@ Public interfaces as of September 2026, only where the behaviour is unambiguous 
 
 In each of these, something is returned on every search. Here, an empty result is the expected outcome on an ordinary turn, and every non-empty one carries the reason it got through.
 
-## 7. Integration
+## 6.4 Known blocker: the gate cannot separate relevance from usefulness
 
-Not in this README yet: installation, persistence setup, tool registration, and framework-adapter examples.
+This is the open problem in the design, and it is measured rather than suspected.
+
+One mechanism is being asked two different questions.
+
+**"Is this record about the same subject as this query?"** is a property of a query-record pair, and
+cosine similarity estimates it. That is the question the gate was built for and the one it answers.
+
+**"Does this turn need remembered state?"** is a property of the turn alone. It does not depend on which
+records exist, and no comparison between a query and a record can reveal it.
+
+The two agree most of the time, which is why the design held together until it was measured. They come
+apart on exactly the case the gate exists to catch: a turn whose subject matter overlaps the store but
+whose answer does not depend on anything remembered. The store holds "use Python for code examples"; the
+user asks "should I use tabs or spaces in Python?". Cosine is right that they are related. Nothing about
+the answer changes because of what is remembered.
+
+The Phase 9a hybrid run measured it. Across 36 host-issued searches, the best dense score per search was:
+
+| Turn class | min | median | max |
+| --- | --- | --- | --- |
+| Ordinary, no memory needed | 0.44 | 0.56 | 0.63 |
+| Memory genuinely applies | 0.50 | 0.57 | 0.62 |
+
+The distributions overlap almost completely, and the ordinary turns reach a *higher* maximum. No dense
+floor separates the two classes: every threshold trades a useful recall for an unwanted injection at
+roughly one to one. Sweeping the floor from 0.55 to 0.65 takes ordinary injections from 6 of 12 down to
+3 of 12, but useful recall falls from 3 of 6 to 0 of 6.
+
+So the ordinary-turn injection target of under 5 percent is not reachable by tuning `dense_floor`. The
+gate needs a different signal, not a better threshold. Candidates, in the order the evidence supports
+them: the cross-encoder reranker as the final gate for host-issued searches, since it scores a
+query-record pair rather than a vector distance; a usefulness judgement distinct from the relevance
+gate; or accepting that `tool_only` is the supported mode and treating host-issued search as
+experimental until one of the above is measured.
+
+One change the data did justify and which is now the default: a host-issued search no longer exempts
+exact entity matches from the gate. Those matches admitted memory on 3 of 12 ordinary turns and on 0 of
+6 turns where memory applied, so the exemption was pure injection when the host, rather than the model,
+asked. A model-issued search keeps the exemption, because there the model named the entity on purpose.
+
+Full treatment, including how every other memory system faces the same problem and three ways to attack
+it that can each be validated offline: [the gate](docs/gate.md). Raw numbers and method:
+[Phase 9a findings](docs/vertical-slice-findings.md).
+
+## 7. Run and test the vertical slice
+
+The repository includes a provider-neutral integration harness for Anthropic, OpenAI, and OpenRouter. It replays a fixed conversation through a hosted model and the memory tools, saves one SQLite store per run, and writes a durable JSON result report. See [the vertical-slice guide](docs/vertical-slice-findings.md) for provider setup, deterministic checks, live-run commands, and saved-result locations.
 
 ## 8. Tunables
 
