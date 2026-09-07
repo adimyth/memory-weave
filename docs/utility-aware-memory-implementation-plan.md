@@ -20,6 +20,15 @@ Report both arms separately and side by side. Include ordinary conditional-injec
 
 This phase has two gates. The design gate passes when the ambient arm has at most 5% ordinary conditional injection, at least 90% recall on explicit stored-fact questions, no admitted placebo or misleading memory, and no regression on implicit memory-needed turns. The promotion gate is the measured difference between the ambient and conditional arms: if leaving style and language conditional either breaches the 5% injection limit or loses their recall, reliable promotion is a blocker for rollout. Record both failures without tuning against the held-out set.
 
+### Phase 0 outcome, 7 September 2026
+
+Both gates ran. Full numbers are in `usefulness-gate.md` sections 8c and 8d.
+
+- Design gate: pass on the held-out set with gap planner `gpt-4o` and gap prompt v2, admission `gpt-5.4`. Ordinary injection 0 of 20, explicit stored-fact recall 9 of 10, implicit memory-needed recall 5 of 6, no placebo, misleading, stale, redundant, or unrelated private record admitted, gap decisions identical across three repeats on every turn.
+- Promotion gate: blocker. With style and language preferences left conditional they reached the answer on no turn, because gap planning never asks for how-to-answer preferences. Phase 1 is required before rollout.
+- Model selection was made on a separate tuning split and confirmed once on the held-out set. `gpt-5-nano` is excluded from both roles: unstable and slow as a planner, and it admitted a misleading record as a judge. `gpt-4o` is the cost fallback for admission with a measured recall penalty on implicit turns.
+- Carried into Phase 2: tighten the admission prompt's definition of helpful against a third split, because the judge over-admitted "useful for the next action" records when candidate pools were larger; keep the sentence-transformers style of record wording, a constraint explained by a failure in a later version, in the scenario set as a known hard case.
+
 ## Phase 1: ambient profile foundation
 
 Add `MemoryActivation = Literal["ambient", "conditional"]` and `Record.activation`, with `conditional` as the default. Add a schema migration that backfills every existing record to `conditional`, update record persistence and serialization, and include activation in inspection responses.
@@ -44,7 +53,7 @@ Add `Gap`, `GapDecision`, and `GapPolicy` to a provider-neutral policy module. A
 
 Add `AdmissionVerdict`, `CandidateVerdict`, `AdmissionDecision`, and `AdmissionPolicy`. Verdicts are `helpful`, `redundant`, `insufficient`, `stale_or_conflicting`, `potentially_harmful`, and `jointly_helpful`. Admission evaluates the complete bounded candidate set jointly and supports an explicit `EMPTY` result.
 
-Add hosted reference adapters and fakes for both policies. The gap prompt asks only for user-specific or prior-interaction information that could materially change the answer after accounting for public context and the ambient profile. The admission prompt compares at most eight source-traceable candidates against the baseline draft and defaults to `EMPTY` when improvement is uncertain.
+Add hosted reference adapters and fakes for both policies. The gap prompt is the v2 prompt selected in Phase 0: it asks whether two users in different situations would receive different correct answers, treats explanations of general concepts as gap-free, and treats tasks tailored to the user's situation as having that task's user-specific inputs as gaps. The reference adapter defaults to `gpt-4o` for gap planning and `gpt-5.4` for admission, with `gpt-4o` admission available as a cost option; both defaults are configuration, not code. The admission prompt compares at most eight source-traceable candidates against the baseline draft and defaults to `EMPTY` when improvement is uncertain. Any change to either prompt or model reruns the tuning and held-out scenario sets before merge.
 
 Add disabled-by-default gap and admission configuration. In the reference turn loop, run baseline generation and gap planning concurrently. Empty or failed gaps return the baseline. For non-empty gaps, issue one host search with gap queries, preserve the original turn as context, exclude ambient records, and retain `trigger="auto"`. Empty candidates, admission timeout, malformed verdicts, unknown IDs, and inconclusive decisions return the baseline. A non-empty admitted subset causes exactly one final regeneration.
 

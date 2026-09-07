@@ -58,6 +58,27 @@ _GAP_SYSTEM = (
     'empty list. Reply with JSON only: {"queries": ["...", "..."]}'
 )
 
+_GAP_SYSTEM_V2 = (
+    "You help a memory system decide what to look up before answering a user. You see the user's message "
+    "and the preferences already applied. Decide whether the correct or appropriate response depends on "
+    "facts specific to this user that public knowledge cannot supply. Ask: would two users in different "
+    "situations receive different correct responses?\n"
+    "- If the message asks for an explanation of a general concept, a best practice, how a tool works, or a "
+    "generic how-to, the answer is the same for everyone. Return an empty list, even if the user's "
+    "organisation might hold related records.\n"
+    "- If the message asks the assistant to act on the user's behalf or produce something tailored to their "
+    "situation, such as proposing or scheduling a time, writing a message to a specific person or role, "
+    "producing a command or code for their own systems or project, checking a plan against their team's "
+    "calendar, freezes, or policies, or stating what their team decided, uses, or owns, then the user-specific "
+    "inputs to that task are gaps: their time zone, the people and roles involved, system and environment "
+    "names, team schedules, prior decisions, and tooling or language choices for their project.\n"
+    "List up to 3 gaps as short search queries that name the missing fact, not the topic. Do not ask for "
+    "public facts or for anything already covered by the applied preferences. Reply with JSON only: "
+    '{"queries": ["...", "..."]}'
+)
+
+_GAP_PROMPTS = {"v1": _GAP_SYSTEM, "v2": _GAP_SYSTEM_V2}
+
 _ADMISSION_SYSTEM = (
     "You decide which stored memory records, if any, should be given to an assistant before it answers. You "
     "see the user's message, the preferences already applied, a draft answer written without any of the "
@@ -117,18 +138,46 @@ class TurnResult:
     final_correct: bool | None
     timing: Timing
     failures: list[str] = field(default_factory=list)
+    gap_repeats_nonempty: list[bool] = field(default_factory=list)
 
 
 class Phase0:
-    def __init__(self, scenario: dict[str, Any], draft_model: str, policy_model: str, workers: int) -> None:
+    def __init__(
+        self,
+        scenario: dict[str, Any],
+        draft_model: str,
+        gap_model: str,
+        admission_model: str,
+        check_model: str,
+        gap_prompt: str,
+        gap_repeats: int,
+        workers: int,
+        draft_cache: Path | None,
+    ) -> None:
         self.scenario = scenario
         self.draft_model = draft_model
-        self.policy_model = policy_model
+        self.gap_model = gap_model
+        self.admission_model = admission_model
+        self.check_model = check_model
+        self.gap_prompt = gap_prompt
+        self.gap_repeats = max(1, gap_repeats)
         self.workers = workers
         self.models = Models()
         self.records = {r["id"]: r for r in scenario["records"]}
         self._embedder = None
         self._doc_vectors: dict[str, Any] = {}
+        self._draft_cache_path = draft_cache
+        self._draft_cache: dict[str, list[Any]] = {}
+        if draft_cache and draft_cache.exists():
+            self._draft_cache = json.loads(draft_cache.read_text())
+        import threading
+
+        self._cache_lock = threading.Lock()
+
+    def save_cache(self) -> None:
+        if self._draft_cache_path:
+            self._draft_cache_path.parent.mkdir(parents=True, exist_ok=True)
+            self._draft_cache_path.write_text(json.dumps(self._draft_cache))
 
     # -- embeddings -------------------------------------------------------------------------------------
 
@@ -172,6 +221,21 @@ class Phase0:
         text = self.models.complete(model, system, user, json_mode=json_mode)
         return text, time.perf_counter() - started
 
+    def _draft(self, system: str, user: str) -> tuple[str, float]:
+        """Draft calls are cached on disk so every configuration is judged against the same drafts."""
+
+        import hashlib
+
+        key = hashlib.sha256(f"{self.draft_model}\n{system}\n{user}".encode()).hexdigest()
+        with self._cache_lock:
+            hit = self._draft_cache.get(key)
+        if hit is not None:
+            return str(hit[0]), float(hit[1])
+        text, elapsed = self._timed(self.draft_model, system, user)
+        with self._cache_lock:
+            self._draft_cache[key] = [text, elapsed]
+        return text, elapsed
+
     def _candidate_block(self, candidates: list[dict[str, Any]]) -> str:
         lines = []
         for c in candidates:
@@ -189,9 +253,15 @@ class Phase0:
         draft_user = turn["text"]
         gap_user = f"{profile_text}\n\nUser message:\n{turn['text']}"
 
+        gap_system = _GAP_PROMPTS[self.gap_prompt]
+
+        def plan() -> list[str]:
+            raw, _ = self._timed(self.gap_model, gap_system, gap_user, json_mode=True)
+            return [str(q).strip() for q in json.loads(raw).get("queries", []) if str(q).strip()][:3]
+
         with ThreadPoolExecutor(max_workers=2) as pool:
-            draft_future = pool.submit(self._timed, self.draft_model, f"{_DRAFT_SYSTEM}\n\n{profile_text}", draft_user)
-            gap_future = pool.submit(self._timed, self.policy_model, _GAP_SYSTEM, gap_user, json_mode=True)
+            draft_future = pool.submit(self._draft, f"{_DRAFT_SYSTEM}\n\n{profile_text}", draft_user)
+            gap_future = pool.submit(self._timed, self.gap_model, gap_system, gap_user, json_mode=True)
             draft, timing.draft_s = draft_future.result()
             try:
                 gap_raw, timing.gap_s = gap_future.result()
@@ -200,7 +270,14 @@ class Phase0:
                 failures.append(f"gap:{type(error).__name__}")
                 gaps = []
 
-        result = TurnResult(arm, turn["id"], turn["class"], turn["text"], list(turn["expected"]), draft, gaps, [], [], [], "baseline_no_gaps", None, None, None, timing, failures)
+        repeats = [bool(gaps)]
+        for _ in range(self.gap_repeats - 1):
+            try:
+                repeats.append(bool(plan()))
+            except Exception:  # noqa: BLE001
+                repeats.append(False)
+
+        result = TurnResult(arm, turn["id"], turn["class"], turn["text"], list(turn["expected"]), draft, gaps, [], [], [], "baseline_no_gaps", None, None, None, timing, failures, repeats)
         if not gaps:
             self._score_correctness(result, turn)
             return result
@@ -221,7 +298,7 @@ class Phase0:
             f"Candidate records:\n{self._candidate_block(candidates)}"
         )
         try:
-            raw, timing.admission_s = self._timed(self.policy_model, _ADMISSION_SYSTEM, admission_user, json_mode=True)
+            raw, timing.admission_s = self._timed(self.admission_model, _ADMISSION_SYSTEM, admission_user, json_mode=True)
             parsed = json.loads(raw)
             known = {c["id"] for c in candidates}
             verdicts = []
@@ -246,7 +323,7 @@ class Phase0:
 
         evidence = "\n".join(f"- {self.records[i]['text']}" for i in admitted)
         final_system = f"{_DRAFT_SYSTEM}\n\n{profile_text}\n\nRelevant facts recalled from memory:\n{evidence}"
-        result.final, timing.regeneration_s = self._timed(self.draft_model, final_system, draft_user)
+        result.final, timing.regeneration_s = self._draft(final_system, draft_user)
         result.disposition = "regenerated"
         self._score_correctness(result, turn)
         return result
@@ -261,7 +338,7 @@ class Phase0:
 
     def _contains(self, question: str, reference: str, answer: str) -> bool | None:
         try:
-            raw, _ = self._timed(self.policy_model, _CORRECTNESS_SYSTEM, f"Question:\n{question}\n\nReference facts:\n{reference}\n\nAnswer:\n{answer}", json_mode=True)
+            raw, _ = self._timed(self.check_model, _CORRECTNESS_SYSTEM, f"Question:\n{question}\n\nReference facts:\n{reference}\n\nAnswer:\n{answer}", json_mode=True)
             return bool(json.loads(raw).get("contains_reference"))
         except Exception:  # noqa: BLE001
             return None
@@ -339,9 +416,20 @@ def summarise(arm: str, results: list[TurnResult], records: dict[str, dict[str, 
     def final_or_draft(r: TurnResult) -> bool:
         return bool(r.final_correct) if r.final is not None else bool(r.draft_correct)
 
+    repeated = [r for r in results if len(r.gap_repeats_nonempty) > 1]
+    agree = sum(1 for r in repeated if len(set(r.gap_repeats_nonempty)) == 1)
+    memory_turns = explicit + implicit
+    any_repeat = sum(1 for r in memory_turns if any(r.gap_repeats_nonempty))
+    all_repeat = sum(1 for r in memory_turns if r.gap_repeats_nonempty and all(r.gap_repeats_nonempty))
+    ordinary_any = sum(1 for r in ordinary if any(r.gap_repeats_nonempty))
+
     return {
         "arm": arm,
         "turns": len(results),
+        "gap_decision_agreement_across_repeats": _pct(agree, len(repeated)) if repeated else "n/a",
+        "memory_turns_with_gaps_every_repeat": _pct(all_repeat, len(memory_turns)),
+        "memory_turns_with_gaps_any_repeat": _pct(any_repeat, len(memory_turns)),
+        "ordinary_turns_with_gaps_any_repeat": _pct(ordinary_any, len(ordinary)),
         "ordinary_injection": _pct(sum(injected(r) for r in ordinary), len(ordinary)),
         "explicit_fact_recall": _pct(sum(recalled(r) for r in explicit), len(explicit)),
         "implicit_need_recall": _pct(sum(recalled(r) for r in implicit), len(implicit)),
@@ -394,14 +482,24 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--scenario", type=Path, default=Path("benchmarks/scenarios/phase0.json"))
     parser.add_argument("--draft-model", default="gpt-5.6-luna")
-    parser.add_argument("--policy-model", default="gpt-5.4")
+    parser.add_argument("--policy-model", default="gpt-5.4", help="Default for both gap and admission models")
+    parser.add_argument("--gap-model", default=None)
+    parser.add_argument("--admission-model", default=None)
+    parser.add_argument("--check-model", default="gpt-5.4", help="Reference checker; keep fixed across configurations")
+    parser.add_argument("--gap-prompt", choices=sorted(_GAP_PROMPTS), default="v1")
+    parser.add_argument("--gap-repeats", type=int, default=1, help="Extra gap-planning calls per turn to measure decision stability")
     parser.add_argument("--arms", default="ambient,conditional")
     parser.add_argument("--workers", type=int, default=4)
+    parser.add_argument("--draft-cache", type=Path, default=None)
+    parser.add_argument("--tag", default="")
     parser.add_argument("--out-dir", type=Path, default=Path("benchmarks/results/phase0"))
     args = parser.parse_args(argv)
 
+    gap_model = args.gap_model or args.policy_model
+    admission_model = args.admission_model or args.policy_model
     scenario = json.loads(args.scenario.read_text())
-    runner = Phase0(scenario, args.draft_model, args.policy_model, args.workers)
+    runner = Phase0(scenario, args.draft_model, gap_model, admission_model, args.check_model, args.gap_prompt, args.gap_repeats, args.workers, args.draft_cache)
+    print(f"scenario={args.scenario} draft={args.draft_model} gap={gap_model}/{args.gap_prompt} admission={admission_model} check={args.check_model} repeats={args.gap_repeats}", flush=True)
     arms = [a.strip() for a in args.arms.split(",") if a.strip()]
     all_results: dict[str, list[TurnResult]] = {}
     summaries: dict[str, dict[str, Any]] = {}
@@ -410,13 +508,19 @@ def main(argv: list[str] | None = None) -> int:
         all_results[arm] = runner.run_arm(arm)
         summaries[arm] = summarise(arm, all_results[arm], runner.records)
 
+    runner.save_cache()
     args.out_dir.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
-    path = args.out_dir / f"{stamp}-draft-{args.draft_model}-policy-{args.policy_model}.json"
+    tag = f"-{args.tag}" if args.tag else ""
+    path = args.out_dir / f"{stamp}-{args.scenario.stem}-gap-{gap_model}-{args.gap_prompt}-adm-{admission_model}{tag}.json"
     payload = {
         "scenario": str(args.scenario),
         "draft_model": args.draft_model,
-        "policy_model": args.policy_model,
+        "gap_model": gap_model,
+        "gap_prompt": args.gap_prompt,
+        "admission_model": admission_model,
+        "check_model": args.check_model,
+        "gap_repeats": args.gap_repeats,
         "usage": runner.models.usage,
         "calls": runner.models.calls,
         "summaries": summaries,

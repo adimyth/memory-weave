@@ -279,6 +279,62 @@ Gap planning was also not stable between arms: the time-zone question produced t
 
 **What this means for the plan.** The design gate passes and the promotion blocker is measured rather than assumed. The implicit-need number is the one to carry forward: the gap planner's conservatism is what makes ordinary injection zero, and the same conservatism costs two thirds of the implicit turns. The Phase 2 gap prompt and the choice of gap model should be tuned against the implicit-turn class on a fresh scenario split, not against this set.
 
+## 8d. Gap-planner tuning on a separate split, and one confirmation on the test set
+
+Run on 7 September 2026. Section 8c showed that every miss but one came from the gap planner returning no queries. This section chooses the gap model and prompt, and checks cheaper admission models, without tuning against the section 8c set.
+
+**Protocol.** A second scenario set, `benchmarks/scenarios/phase0_tune.json`, was hand-authored before any run against it, with a different persona, different systems and people, and 28 turns: 8 explicit stored-fact questions, 8 implicit memory-needed turns, 12 ordinary turns. All selection happened on this split, ambient arm only, since the promotion question was settled in section 8c. Gap planning was run three times per turn to measure decision stability. Drafts were cached so every configuration was judged against identical drafts, and the reference checker was held at `gpt-5.4` throughout. The section 8c set was then run once per surviving configuration, both arms, and is reported without further selection.
+
+A second gap prompt, v2, was written after reading the section 8c misses. It was written from the category of failure, turns that ask the assistant to act on the user's behalf, not from the specific turns, but it has seen that set's failure pattern and the test-set numbers below should be read with that in mind. The prompt asks whether two users in different situations would receive different correct answers, names explanations of general concepts as gap-free, and names tasks tailored to the user's situation as having the user-specific inputs of that task as gaps.
+
+**Gap planner, tuning split, admission held at `gpt-5.4`.**
+
+| Gap model and prompt | Ordinary injected, of 12 | Explicit recall, of 8 | Implicit recall, of 8 | Decision agreement across 3 repeats | Added latency on gap turns, p50 | Safety admissions |
+| --- | --- | --- | --- | --- | --- | --- |
+| `gpt-5.4`, v1 | 0 | 5 | 4 | 86% | 3.4 s | 0 |
+| `gpt-5.4`, v2 | 0 | 7 | 7 | 100% | 3.5 s | 0 |
+| `gpt-4o`, v1 | 0 | 8 | 7 | 89% | 3.2 s | 0 |
+| `gpt-4o`, v2 | 0 | 8 | 7 | 96% | 3.4 s | 0 |
+| `gpt-5-nano`, v1 | 0 | 8 | 5 | 64% | 18.1 s | 0 |
+| `gpt-5-nano`, v2 | 0 | 6 | 5 | 93% | 13.8 s | 0 |
+
+Two things stand out. The v1 prompt on `gpt-5.4`, the configuration from section 8c, drops to 5 of 8 explicit recall on the fresh split, so the 9 of 10 in section 8c was the optimistic end of its range. And `gpt-4o` is less conservative than `gpt-5.4` with the same prompt, which on this task is the missing recall. `gpt-5-nano` is excluded as a gap planner: unstable, fired gaps on 5 of 12 ordinary turns in at least one repeat, and so slow that its reasoning outlasted the draft and added about 2 seconds even on empty-gap turns.
+
+Choice: gap planner `gpt-4o` with prompt v2. It ties the best recall, has the second-best stability, and is the cheapest non-reasoning option.
+
+**Admission model, tuning split, gap planner held at `gpt-4o` v2.**
+
+| Admission model | Ordinary injected, of 12 | Explicit recall, of 8 | Implicit recall, of 8 | Placebo or misleading admitted | Usefulness precision | Added latency on gap turns, p50 |
+| --- | --- | --- | --- | --- | --- | --- |
+| `gpt-5.4` | 0 | 8 | 7 | 0 | 16 of 18 | 3.4 s |
+| `gpt-4o` | 0 | 7 | 6 | 0 | 14 of 16 | 4.4 s |
+| `gpt-5-nano` | 0 | 7 | 6 | 1 misleading | 14 of 19 | 22.0 s |
+
+`gpt-5-nano` is excluded as a judge: it admitted the "do not mention risks" record on a request to a manager, admitted three unrelated records on the Friday-freeze question, and marked the correct Node pin as stale because it disagreed with the draft. `gpt-4o` is within one turn of `gpt-5.4` on each recall metric here, with one visibly wrong reason where it confused the draft's language choice with the user's request.
+
+**Confirmation on the held-out test set, gap planner `gpt-4o` v2, both arms, three gap repeats.**
+
+| Measure | Admission `gpt-5.4`, ambient | Admission `gpt-5.4`, conditional | Admission `gpt-4o`, ambient | Admission `gpt-4o`, conditional |
+| --- | --- | --- | --- | --- |
+| Ordinary injected, of 20 | 0 | 0 | 0 | 0 |
+| Explicit recall, of 10 | 9 | 9 | 9 | 8 |
+| Implicit recall, of 6 | 5 | 5 | 3 | 4 |
+| Placebo, misleading, stale, redundant, or private admitted | 0 | 0 | 0 | 0 |
+| Usefulness precision | 15 of 16 | 15 of 19 | 13 of 14 | 13 of 15 |
+| Memory turns correct after the path, of 16 | 14 | 13 | 12 | 10 |
+| Gap decision agreement | 100% | 100% | 100% | 100% |
+| Added latency, gap turns, p50 and p95 | 3.4 s, 5.4 s | 3.5 s, 5.0 s | 3.7 s, 4.7 s | 3.6 s, 6.0 s |
+| Added latency, empty-gap turns | 0.0 s on 21 | 0.0 s on 21 | 0.0 s on 21 | 0.0 s on 21 |
+| Design gate | pass | | pass | |
+
+Against section 8c, with `gpt-5.4` admission: implicit recall 2 of 6 to 5 of 6, memory turns correct 12 of 16 to 14 of 16, gap decision agreement to 100% in both arms, ordinary injection unchanged at 0 of 20, safety admissions unchanged at 0. The remaining misses are the same two: the sentence-transformers record judged stale because of its wording, and the TOML-example turn where the planner still sees a general request.
+
+`gpt-4o` as judge is weaker on the test set than the tuning split suggested: implicit recall 3 of 6, with reasons such as calling the manager's name potentially harmful on a request that asked for it, and calling the checklist owner insufficient for a message asking for a checklist review. It stays the cost fallback with that recall penalty stated.
+
+**Two things to carry forward.** In the conditional arm with `gpt-5.4`, the judge admitted the checklist owner and location on the migration-timing question as "helpful for the next action". Those were memory-needed turns, so they are not counted as injection, but they are over-admission and they pull usefulness precision to 15 of 19. Larger candidate pools invite this, and the admission prompt's definition of helpful should be tightened before Phase 2 against a third split, not this one. And the two time-zone admissions on questions about times stated in IST or BRT were scored as unexpected because the ground truth did not list them; they are defensible, and the ground truth was left as written rather than edited after the fact.
+
+**Cost per served turn, measured.** One `gpt-4o` gap call on every turn, about 300 prompt tokens and under 10 completion tokens. One `gpt-5.4` admission call on roughly 40% of turns, about 600 prompt and 80 completion tokens. One regeneration on roughly 35% of turns. Nothing else on the request path.
+
 ## 9. Sources
 
 - Ross, Mahabaleshwarkar, Suhara. *When2Call: When (not) to Call Tools.* NAACL 2025. https://aclanthology.org/2025.naacl-long.174/

@@ -78,6 +78,11 @@ over the hand-authored scenario set in `scenarios/phase0.json`, once with style 
 ambient and once with them conditional. Prints the design gate and the promotion gate. Results land in
 `results/phase0/`; findings are in [../docs/usefulness-gate.md](../docs/usefulness-gate.md) section 8c.
 
+`--gap-model`, `--admission-model`, `--gap-prompt v1|v2`, and `--gap-repeats N` vary one stage at a time
+and measure gap-decision stability; `--draft-cache` keeps drafts identical across configurations.
+`scenarios/phase0_tune.json` is the separate tuning split used to choose the gap model and prompt, so
+that `phase0.json` stays a held-out set. That selection is in section 8d of the same document.
+
 ## Results, 6 September 2026
 
 Model `gpt-5.6-luna`, three runs per mode, reproduced from a deleted store.
