@@ -200,3 +200,28 @@ def test_validate_evidence_reads_its_minimum_length_from_config(session_buffer: 
 
     assert evidence.found is True
     assert evidence.source_kind == "user_statement"
+
+
+def test_evidence_matches_when_the_writer_wraps_the_quotation_in_quote_marks(
+    session_buffer: SessionBuffer,
+) -> None:
+    """A model asked for a verbatim quote commonly returns it already quoted; the inner text still must match."""
+
+    plain = validate_evidence(
+        session_buffer, _SESSION_ID, "Please keep every answer concise.", "user_statement", _CONFIG
+    )
+    wrapped = validate_evidence(
+        session_buffer, _SESSION_ID, '"Please keep every answer concise."', "user_statement", _CONFIG
+    )
+    typographic = validate_evidence(
+        session_buffer, _SESSION_ID, "\u201cPlease keep every answer concise.\u201d", "user_statement", _CONFIG
+    )
+    altered = validate_evidence(
+        session_buffer, _SESSION_ID, '"Please keep every answer detailed."', "user_statement", _CONFIG
+    )
+
+    assert plain.found is True
+    assert wrapped.found is True
+    assert wrapped.turn == plain.turn
+    assert typographic.found is True
+    assert altered.found is False

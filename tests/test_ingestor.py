@@ -546,13 +546,13 @@ def test_nearby_different_subject_same_claim_reinforces_the_neighbour(
     assert _event(store, old.record_id)["payload"]["dedup_kind"] == "attribute"  # type: ignore[index]
 
 
-def test_conflicting_attribute_aliases_supersede_even_when_their_vectors_are_dissimilar(
+def test_conflicting_attribute_aliases_supersede_when_the_records_are_about_the_same_thing(
     store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig
 ) -> None:
     first_content = "Aditya prefers concise technical explanations."
     second_content = "Aditya prefers detailed technical explanations."
     embedder = FakeEmbedder(dims=config.embedding.dims)
-    embedder.set_similarity(first_content, second_content, 0.0)
+    embedder.set_similarity(first_content, second_content, 0.95)
     judge = FakeJudge({(first_content, second_content): "contradicts"})
     ingestor = _ingestor(store, buffer, config, judge, embedder=embedder)
 
@@ -799,8 +799,8 @@ def test_attribute_cap_keeps_store_order_so_cosine_never_excludes_a_recent_attri
     editor = "Aditya uses Vim."
     incoming = "Aditya has switched to Emacs."
     embedder = FakeEmbedder(dims=config.embedding.dims)
-    embedder.set_similarity(incoming, location, 0.90)
-    embedder.set_similarity(incoming, editor, 0.30)
+    embedder.set_similarity(incoming, location, 0.30)
+    embedder.set_similarity(incoming, editor, 0.90)
     judge = FakeJudge({(editor, incoming): "contradicts"})
     bounded = replace(config, ingestion=replace(config.ingestion, max_entity_attributes=1))
     ingestor = _ingestor(store, buffer, bounded, judge, embedder=embedder)
@@ -885,3 +885,56 @@ def test_host_provisioned_aliases_make_a_mention_resolve_to_the_principal_entity
     assert database.get_record(first.record_id).subject_entity_id == principal_entity_id  # type: ignore[union-attr]
     assert database.get_record(second.record_id).subject_entity_id == principal_entity_id  # type: ignore[union-attr]
     database.close()
+
+
+def test_an_unrelated_fact_about_one_person_never_supersedes_another(
+    store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig
+) -> None:
+    """A judge verdict alone must not collapse two attributes.
+
+    An NLI cross-encoder routinely labels two unrelated claims about the same person "contradicts",
+    because neither entails the other. Acting on that verdict alone let any new fact supersede any older
+    one, so a person could hold exactly one live semantic record.
+    """
+
+    tests = "Aditya writes tests in pytest"
+    commits = "Aditya keeps commit messages conventional"
+    embedder = FakeEmbedder(dims=config.embedding.dims)
+    embedder.set_similarity(tests, commits, 0.10)
+    judge = FakeJudge({(tests, commits): "contradicts"})
+    ingestor = _ingestor(store, buffer, config, judge, embedder=embedder)
+
+    first = ingestor.write(_PRINCIPAL, _request(tests, attribute="test_runner"))
+    second = ingestor.write(
+        _PRINCIPAL, _request(commits, attribute="commit_style", event_at=_NOW + timedelta(minutes=1))
+    )
+
+    assert first.outcome == "created"
+    assert second.outcome == "created"
+    assert first.record_id is not None and second.record_id is not None
+    stored = {record.attribute: record.status for record in store.get_records([first.record_id, second.record_id])}
+    assert stored == {"test_runner": "confirmed", "commit_style": "confirmed"}
+
+
+def test_a_changed_fact_on_the_same_attribute_still_supersedes(
+    store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig
+) -> None:
+    """The alias guard must not weaken supersession when the caller reuses the attribute."""
+
+    nimbus = "Rohan works at Nimbus"
+    lattice = "Rohan works at Lattice"
+    embedder = FakeEmbedder(dims=config.embedding.dims)
+    embedder.set_similarity(nimbus, lattice, 0.10)
+    judge = FakeJudge({(nimbus, lattice): "contradicts"})
+    ingestor = _ingestor(store, buffer, config, judge, embedder=embedder)
+    mention = [EntityMention(kind="person", text="Rohan", role="about")]
+
+    first = ingestor.write(_PRINCIPAL, _request(nimbus, attribute="employer", entities=mention))
+    second = ingestor.write(
+        _PRINCIPAL,
+        _request(lattice, attribute="employer", entities=mention, event_at=_NOW + timedelta(minutes=1)),
+    )
+
+    assert second.outcome == f"superseded:{first.record_id}"
+    assert first.record_id is not None
+    assert store.get_record(first.record_id).status == "superseded"  # type: ignore[union-attr]

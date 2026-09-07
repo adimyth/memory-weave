@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -39,10 +40,19 @@ def store(tmp_path: Path) -> Store:
 
 @pytest.fixture
 def handlers(store: Store) -> tuple[ToolHandlers, FakeEmbedder]:
+    return _build_handlers(store)
+
+
+def _build_handlers(
+    store: Store,
+    *,
+    write_targets: Callable[[Principal], Mapping[str, Scope]] | None = None,
+    session_id: str = _SESSION,
+) -> tuple[ToolHandlers, FakeEmbedder]:
     embedder = FakeEmbedder(dims=_EMBEDDING.dims)
     vector_index = VectorIndex(_EMBEDDING)
     session_buffer = SessionBuffer(store)
-    session_buffer.append_turn(Turn(_SESSION, 1, "user", "I prefer concise technical explanations.", _NOW))
+    session_buffer.append_turn(Turn(session_id, 1, "user", "I prefer concise technical explanations.", _NOW))
     ingestor = Ingestor(
         store,
         vector_index,
@@ -53,7 +63,7 @@ def handlers(store: Store) -> tuple[ToolHandlers, FakeEmbedder]:
         current_time=lambda: _NOW,
     )
     retriever = Retriever(store, vector_index, embedder, _CONFIG, current_time=lambda: _NOW)
-    return ToolHandlers(retriever, ingestor, store, vector_index), embedder
+    return ToolHandlers(retriever, ingestor, store, vector_index, write_targets=write_targets), embedder
 
 
 def _write_payload(content: str = "The user prefers concise technical explanations.") -> dict[str, object]:
@@ -73,6 +83,9 @@ def test_tool_schemas_expose_only_the_public_contract_and_reject_invalid_payload
     assert "context" not in TOOL_SCHEMAS["memory_search"]["input_schema"]["properties"]  # type: ignore[index]
     source_kinds = TOOL_SCHEMAS["memory_write"]["input_schema"]["properties"]["source_kind"]["enum"]  # type: ignore[index]
     assert source_kinds == ["user_statement", "tool_result", "agent_inference"]
+    write_properties = TOOL_SCHEMAS["memory_write"]["input_schema"]["properties"]  # type: ignore[index]
+    assert "scope" not in write_properties
+    assert "write_target" in write_properties
     assert [schema["name"] for schema in tool_schemas()] == list(TOOL_SCHEMAS)
     copied_schemas = tool_schemas()
     copied_schemas[0]["name"] = "changed"
@@ -89,6 +102,8 @@ def test_tool_schemas_expose_only_the_public_contract_and_reject_invalid_payload
 
     with pytest.raises(ToolInputError, match="unknown field"):
         validate_tool_input("memory_search", {"queries": ["editor"], "context": "must come from adapter"})
+    with pytest.raises(ToolInputError, match="unknown field"):
+        validate_tool_input("memory_write", {**_write_payload(), "scope": {"kind": "user", "id": _USER}})
     with pytest.raises(ToolInputError, match="evidence is required"):
         validate_tool_input(
             "memory_write",
@@ -96,6 +111,71 @@ def test_tool_schemas_expose_only_the_public_contract_and_reject_invalid_payload
         )
     with pytest.raises(ToolInputError, match="supersede.content"):
         validate_tool_input("memory_revise", {"id": "mem-1", "action": "supersede", "reason": "correction"})
+
+
+def test_write_targets_are_model_safe_session_specific_names(
+    handlers: tuple[ToolHandlers, FakeEmbedder], store: Store
+) -> None:
+    """The model sees writable symbolic targets, while the handler alone resolves their real scope IDs."""
+
+    default_handlers, _ = handlers
+    default_schema = next(
+        schema for schema in default_handlers.tool_schemas(_PRINCIPAL) if schema["name"] == "memory_write"
+    )
+    default_properties = default_schema["input_schema"]["properties"]  # type: ignore[index]
+    assert default_properties["write_target"]["enum"] == ["personal"]  # type: ignore[index]
+    assert "scope" not in default_properties
+
+    project = Scope(kind="project", id="memory-weave")
+    project_session = "project-session"
+    store.create_session(project_session, _AGENT, _USER, project.id, _NOW)
+    project_principal = Principal(_AGENT, _USER, project_session, project.id)
+
+    def targets(principal: Principal) -> Mapping[str, Scope]:
+        destinations = {"personal": Scope(kind="user", id=principal.user_id)}
+        if principal.project_id is not None:
+            destinations["current_project"] = Scope(kind="project", id=principal.project_id)
+        return destinations
+
+    scoped_handlers, _ = _build_handlers(store, write_targets=targets, session_id=project_session)
+    before_grant = next(
+        schema for schema in scoped_handlers.tool_schemas(project_principal) if schema["name"] == "memory_write"
+    )
+    assert before_grant["input_schema"]["properties"]["write_target"]["enum"] == ["personal"]  # type: ignore[index]
+
+    store.set_grant(_AGENT, project, can_read=True, can_write=True)
+    after_grant = next(
+        schema for schema in scoped_handlers.tool_schemas(project_principal) if schema["name"] == "memory_write"
+    )
+    assert after_grant["input_schema"]["properties"]["write_target"]["enum"] == [  # type: ignore[index]
+        "personal",
+        "current_project",
+    ]
+
+    payload = _write_payload("The Memory Weave project uses SQLite for durable records.")
+    payload["write_target"] = "current_project"
+    payload["entities"] = [{"kind": "project", "name": "Memory Weave", "role": "about"}]
+    written = scoped_handlers.memory_write(project_principal, payload)
+
+    assert written["ok"] is True
+    record_id = written["record_id"]
+    assert isinstance(record_id, str)
+    assert store.get_record(record_id).scope == project  # type: ignore[union-attr]
+
+
+def test_unknown_or_unwritable_write_target_does_not_expose_a_scope(
+    handlers: tuple[ToolHandlers, FakeEmbedder], store: Store
+) -> None:
+    tool_handlers, _ = handlers
+    no_write_principal = Principal("read-only-agent", _USER, _SESSION, None)
+    store.set_grant(no_write_principal.agent_id, _USER_SCOPE, can_read=True, can_write=False)
+
+    schemas = tool_handlers.tool_schemas(no_write_principal)
+    assert "memory_write" not in [schema["name"] for schema in schemas]
+
+    unavailable = tool_handlers.memory_write(no_write_principal, {**_write_payload(), "write_target": "personal"})
+    assert unavailable["ok"] is False
+    assert unavailable["error"]["code"] == "invalid_write_target"  # type: ignore[index]
 
 
 def test_handlers_write_get_revise_and_forget_a_memory(

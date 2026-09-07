@@ -2,19 +2,9 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from copy import deepcopy
 from typing import cast
-
-_SCOPE_SCHEMA: dict[str, object] = {
-    "type": "object",
-    "additionalProperties": False,
-    "properties": {
-        "kind": {"type": "string", "enum": ["agent", "user", "project", "org"]},
-        "id": {"type": "string", "minLength": 1},
-    },
-    "required": ["kind", "id"],
-}
 
 _ENTITY_SCHEMA: dict[str, object] = {
     "type": "object",
@@ -70,13 +60,16 @@ TOOL_SCHEMAS: dict[str, dict[str, object]] = {
                 "type": {"type": "string", "enum": ["semantic", "episodic", "procedural"]},
                 "content": {"type": "string", "minLength": 1, "maxLength": 1000},
                 "attribute": {"type": "string", "minLength": 1},
-                "scope": _SCOPE_SCHEMA,
+                "write_target": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Optional host-supplied destination. Omit it to use personal memory.",
+                },
                 "source_kind": {"type": "string", "enum": ["user_statement", "tool_result", "agent_inference"]},
                 "evidence": {"type": "string", "minLength": 1},
                 "event_at": {"type": "string", "format": "date-time"},
                 "entities": {"type": "array", "items": _ENTITY_SCHEMA},
                 "tags": {"type": "array", "items": {"type": "string", "minLength": 1}},
-                "evidence_turn": {"type": "integer", "minimum": 1},
             },
             "required": ["type", "content", "source_kind"],
         },
@@ -95,7 +88,6 @@ TOOL_SCHEMAS: dict[str, dict[str, object]] = {
                 "content": {"type": "string", "minLength": 1, "maxLength": 1000},
                 "source_kind": {"type": "string", "enum": ["user_statement", "tool_result", "agent_inference"]},
                 "evidence": {"type": "string", "minLength": 1},
-                "evidence_turn": {"type": "integer", "minimum": 1},
                 "reason": {"type": "string", "minLength": 1},
                 "entity_id": {"type": "string", "minLength": 1},
                 "merge_into": {"type": "string", "minLength": 1},
@@ -114,7 +106,6 @@ TOOL_SCHEMAS: dict[str, dict[str, object]] = {
                             {"required": ["content"]},
                             {"required": ["source_kind"]},
                             {"required": ["evidence"]},
-                            {"required": ["evidence_turn"]},
                         ]
                     },
                 },
@@ -141,10 +132,18 @@ class ToolInputError(ValueError):
     """Raised when a tool payload does not satisfy the public JSON Schema contract."""
 
 
-def tool_schemas() -> list[dict[str, object]]:
-    """Return detached schemas in stable registration order."""
+def tool_schemas(*, write_targets: Sequence[str] | None = None) -> list[dict[str, object]]:
+    """Return detached schemas in stable order, optionally constraining symbolic write targets."""
 
-    return deepcopy([TOOL_SCHEMAS[name] for name in TOOL_SCHEMAS])
+    schemas = deepcopy([TOOL_SCHEMAS[name] for name in TOOL_SCHEMAS])
+    if write_targets is None:
+        return schemas
+    write_schema = next(schema for schema in schemas if schema["name"] == "memory_write")
+    input_schema = cast(dict[str, object], write_schema["input_schema"])
+    properties = cast(dict[str, object], input_schema["properties"])
+    target_schema = cast(dict[str, object], properties["write_target"])
+    target_schema["enum"] = list(dict.fromkeys(write_targets))
+    return schemas
 
 
 def validate_tool_input(tool_name: str, payload: Mapping[str, object]) -> dict[str, object]:
@@ -170,7 +169,6 @@ def _validate_revise(payload: Mapping[str, object]) -> None:
         "content",
         "source_kind",
         "evidence",
-        "evidence_turn",
         "reason",
         "entity_id",
         "merge_into",
@@ -187,7 +185,7 @@ def _validate_revise(payload: Mapping[str, object]) -> None:
     action = payload["action"]
     if action not in {"confirm", "supersede", "expire"}:
         raise ToolInputError("memory_revise.action must be confirm, supersede, or expire.")
-    supersede_only = {"content", "source_kind", "evidence", "evidence_turn"} & set(payload)
+    supersede_only = {"content", "source_kind", "evidence"} & set(payload)
     if action == "supersede":
         _require_strings(payload, ("content",), "memory_revise supersede")
         if payload.get("source_kind") == "user_statement" and "evidence" not in payload:

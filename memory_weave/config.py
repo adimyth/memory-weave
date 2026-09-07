@@ -67,6 +67,7 @@ class GateConfig:
     lexical_min_matched_terms: int = 2
     # Survivors below this fraction of the top fused score are dropped. Entity hits are exempt.
     relative_floor: float = 0.5
+    entity_exempt: bool = True
     auto: AutoGateConfig = field(default_factory=lambda: AutoGateConfig())
 
 
@@ -81,6 +82,10 @@ class AutoGateConfig:
     lexical_min_matched_terms: int = 2
     relative_floor: float = 0.6
     exclude_source_kinds: list[SourceKind] = field(default_factory=lambda: ["session_summary"])
+    # A host-issued search gets no entity exemption. Measured on the Phase 9a hybrid run, exact entity
+    # matches admitted memory on 3 of 12 ordinary turns and on 0 of 6 turns where memory applied, so the
+    # exemption was pure injection. A model-issued search keeps it: there the model asked about the name.
+    entity_exempt: bool = False
 
 
 TriggerMode = Literal["tool_only", "auto", "hybrid"]
@@ -135,6 +140,10 @@ class EvidenceConfig:
 @dataclass(frozen=True, slots=True)
 class IngestionConfig:
     dedup_candidate_cosine: float = 0.85
+    # Two records under different attributes describe the same current fact only when they are also about
+    # the same thing. A judge verdict alone is not enough: an NLI model routinely calls two unrelated
+    # claims about one person "contradicts", which would let any new fact supersede any older one.
+    attribute_alias_cosine: float = 0.80
     equivalence: EquivalenceConfig = field(default_factory=EquivalenceConfig)
     evidence: EvidenceConfig = field(default_factory=EvidenceConfig)
     provisional_ttl_days: int = 30
@@ -376,6 +385,8 @@ def _validate(config: MemoryWeaveConfig) -> None:
         raise ConfigError("retrieval.dedup_cosine must be between 0 and 1.")
     if not 0.0 <= config.ingestion.dedup_candidate_cosine <= 1.0:
         raise ConfigError("ingestion.dedup_candidate_cosine must be between 0 and 1.")
+    if not 0.0 <= config.ingestion.attribute_alias_cosine <= 1.0:
+        raise ConfigError("ingestion.attribute_alias_cosine must be between 0 and 1.")
     _validate_gate(config.retrieval.gate, "retrieval.gate")
     _validate_gate(config.retrieval.gate.auto, "retrieval.gate.auto")
     invalid_source_kinds = sorted(

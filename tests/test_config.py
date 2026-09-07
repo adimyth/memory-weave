@@ -42,7 +42,9 @@ def test_load_config_uses_lld_defaults() -> None:
                 "lexical_min_matched_terms": 2,
                 "relative_floor": 0.6,
                 "exclude_source_kinds": ["session_summary"],
+                "entity_exempt": False,
             },
+            "entity_exempt": True,
         },
         "reranker_floor": None,
     }

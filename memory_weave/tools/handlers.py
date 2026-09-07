@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from datetime import datetime
 from typing import Any, Literal, cast
 
@@ -22,11 +22,13 @@ from memory_weave.policy import readable_scopes, writable_scopes
 from memory_weave.retrieve import Retriever
 from memory_weave.store import Store
 
-from .schemas import ToolInputError, validate_tool_input
+from .schemas import ToolInputError, tool_schemas, validate_tool_input
+
+WriteTargetResolver = Callable[[Principal], Mapping[str, Scope]]
 
 
 class ToolHandlers:
-    """Execute the five memory tools without taking framework identity or authorization from tool input."""
+    """Execute the five memory tools without taking identity, authorization, or raw scope IDs from tool input."""
 
     def __init__(
         self,
@@ -36,12 +38,38 @@ class ToolHandlers:
         vector_index: VectorIndex,
         *,
         default_k: int = 8,
+        write_targets: WriteTargetResolver | None = None,
     ) -> None:
         self._retriever = retriever
         self._ingestor = ingestor
         self._store = store
         self._vector_index = vector_index
         self._default_k = default_k
+        self._write_targets = write_targets or _personal_write_target
+
+    def tool_schemas(self, principal: Principal) -> list[dict[str, object]]:
+        """Return this principal's model-visible tools with only currently writable symbolic destinations."""
+
+        targets = self.available_write_targets(principal)
+        schemas = tool_schemas(write_targets=tuple(targets))
+        if targets:
+            return schemas
+        return [schema for schema in schemas if schema["name"] != "memory_write"]
+
+    def available_write_targets(self, principal: Principal) -> dict[str, Scope]:
+        """Resolve the host's symbolic destinations and discard any scope the principal cannot currently write."""
+
+        configured = self._write_targets(principal)
+        writable = set(writable_scopes(self._store, principal.agent_id, principal.user_id))
+        targets: dict[str, Scope] = {}
+        for name, scope in configured.items():
+            if not isinstance(name, str) or not name:
+                raise ValueError("Write target names must be non-empty strings.")
+            if not isinstance(scope, Scope):
+                raise ValueError("Write targets must resolve to Scope values.")
+            if scope in writable:
+                targets[name] = scope
+        return targets
 
     def memory_search(
         self,
@@ -104,6 +132,9 @@ class ToolHandlers:
         if isinstance(parsed, dict) and "ok" in parsed:
             return parsed
         assert isinstance(parsed, Mapping)
+        scope = self._write_scope(principal, cast(str | None, parsed.get("write_target")))
+        if isinstance(scope, dict):
+            return scope
         try:
             request = WriteRequest(
                 type=cast(Any, parsed["type"]),
@@ -111,11 +142,10 @@ class ToolHandlers:
                 source_kind=cast(Any, parsed["source_kind"]),
                 evidence=cast(str | None, parsed.get("evidence")),
                 attribute=cast(str | None, parsed.get("attribute")),
-                scope=_scope_value(parsed.get("scope")),
+                scope=scope,
                 event_at=_datetime_value(parsed.get("event_at"), "memory_write.event_at"),
                 entities=_entity_mentions(cast(Sequence[Mapping[str, object]], parsed.get("entities", []))),
                 tags=cast(list[str], parsed.get("tags", [])),
-                evidence_turn=cast(int | None, parsed.get("evidence_turn")),
             )
         except ValueError as error:
             return _error("invalid_input", str(error))
@@ -173,7 +203,6 @@ class ToolHandlers:
             content=cast(str | None, parsed.get("content")),
             source_kind=cast(Any, parsed.get("source_kind", "agent_inference")),
             evidence=cast(str | None, parsed.get("evidence")),
-            evidence_turn=cast(int | None, parsed.get("evidence_turn")),
         )
         if result.outcome in {"not_found", "scope_not_writable", "invalid_input", "invalid_source_kind"}:
             return _error(result.outcome, result.note)
@@ -213,6 +242,16 @@ class ToolHandlers:
             return None
         scopes = readable_scopes(self._store, principal.agent_id, principal.user_id)
         return record if record.scope in scopes else None
+
+    def _write_scope(self, principal: Principal, target: str | None) -> Scope | dict[str, object]:
+        """Resolve a model-visible target to a trusted scope while retaining the personal default for direct callers."""
+
+        if target is None:
+            return Scope(kind="user", id=principal.user_id)
+        scope = self.available_write_targets(principal).get(target)
+        if scope is None:
+            return _error("invalid_write_target", "The requested write target is unavailable.")
+        return scope
 
     def _get_payload(self, principal: Principal, record: Record) -> dict[str, object]:
         ancestors = self._ancestors(principal, record)
@@ -259,11 +298,10 @@ class ToolHandlers:
         return successors
 
 
-def _scope_value(value: object) -> Scope | None:
-    if value is None:
-        return None
-    mapping = cast(Mapping[str, object], value)
-    return Scope(kind=cast(Any, mapping["kind"]), id=cast(str, mapping["id"]))
+def _personal_write_target(principal: Principal) -> Mapping[str, Scope]:
+    """Provide the safe default model destination for hosts that do not configure shared targets."""
+
+    return {"personal": Scope(kind="user", id=principal.user_id)}
 
 
 def _entity_mentions(values: Sequence[Mapping[str, object]]) -> list[EntityMention]:

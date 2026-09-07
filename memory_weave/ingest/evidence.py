@@ -16,6 +16,8 @@ _SUPPORTED_SOURCE: dict[TurnRole, EvidenceSourceKind] = {
     "tool": "tool_result",
     "assistant": "agent_inference",
 }
+# One matched pair of these, after NFKC folds the typographic forms, is punctuation the writer added.
+_WRAPPING_QUOTES = {chr(34): chr(34), chr(39): chr(39)}
 _EVIDENCE_FOLD = str.maketrans(
     {
         "‘": "'",
@@ -88,7 +90,23 @@ def _matching_turns(turns: list[Turn], turn_hint: int | None) -> list[Turn]:
 
 
 def _normalize_evidence_quote(value: str) -> str:
-    return normalize_ws(unicodedata.normalize("NFKC", value).translate(_EVIDENCE_FOLD))
+    folded = normalize_ws(unicodedata.normalize("NFKC", value).translate(_EVIDENCE_FOLD))
+    return _strip_wrapping_quotes(folded)
+
+
+def _strip_wrapping_quotes(value: str) -> str:
+    """Drop one matched pair of surrounding quote marks that a writer added around the quotation itself.
+
+    A model asked for a verbatim quote commonly returns it already quoted. The inner text must still match
+    the transcript exactly, so this only removes punctuation the writer wrapped around the evidence.
+    """
+
+    while len(value) >= 2 and value[0] in _WRAPPING_QUOTES and value[-1] == _WRAPPING_QUOTES[value[0]]:
+        stripped = value[1:-1].strip()
+        if not stripped:
+            return value
+        value = stripped
+    return value
 
 
 def _is_substantive_quote(value: str, config: MemoryWeaveConfig) -> bool:
