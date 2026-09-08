@@ -1,0 +1,47 @@
+{
+  "adjudicated_at": "2026-09-08T18:46:10.233595+00:00",
+  "reviewer": "openrouter:anthropic/claude-sonnet-4.6",
+  "blind": "The reviewer saw the turn, the already-expected records, and the disputed record; never the judge's reasoning or the original label.",
+  "prompt_version": "adjudicate-v1",
+  "system_prompt": "You review evaluation labels for an assistant that can draw on stored facts about a user. You are given one user message, the stored facts the assistant will already use when answering it, and one further stored fact under review. Decide how that further fact bears on answering this message well:\n- required: a good answer is wrong or incomplete without it;\n- helpful_optional: a good answer is possible without it, but using it makes the answer more useful, more specific, or saves the user a clarifying exchange;\n- unhelpful: it does not improve the answer, or it distracts.\nJudge only this message and these facts. Reply with a single JSON object: {\"verdict\": \"required\" | \"helpful_optional\" | \"unhelpful\", \"reason\": \"<two sentences at most>\"}",
+  "scoring": {
+    "recall": "against the scenario's expected list only (required records)",
+    "precision": "an admitted record counts as helpful when it is expected or marked required or helpful_optional here"
+  },
+  "adjudications": [
+    {
+      "scenario": "phase0_v5",
+      "turn": "I5",
+      "record": "F1",
+      "turn_text": "Can I schedule a database migration for Tuesday morning?",
+      "original_expected": [
+        "F8"
+      ],
+      "record_text": "User's working time zone is America/Toronto.",
+      "verdict": "helpful_optional",
+      "reason": "America/Toronto uses Eastern Time, the same zone as the go/no-go meeting, so the assistant can confirm the meeting time in the user's local time without ambiguity. It's not strictly required since ET is already given, but it avoids any potential timezone confusion.",
+      "raw_response": "{\"verdict\": \"helpful_optional\", \"reason\": \"America/Toronto uses Eastern Time, the same zone as the go/no-go meeting, so the assistant can confirm the meeting time in the user's local time without ambiguity. It's not strictly required since ET is already given, but it avoids any potential timezone confusion.\"}"
+    },
+    {
+      "scenario": "phase0_v4",
+      "turn": "I5",
+      "record": "F1",
+      "turn_text": "Can I schedule a maintenance window for Friday afternoon?",
+      "original_expected": [
+        "F8"
+      ],
+      "record_text": "User's working time zone is Australia/Sydney.",
+      "verdict": "helpful_optional",
+      "reason": "Knowing the user's timezone (Australia/Sydney, which uses AEST/AEDT) helps the assistant give time-specific advice in the user's local time without needing to ask. However, a reasonable answer is still possible using the already-stored AEST reference from the sprint demo fact.",
+      "raw_response": "{\"verdict\": \"helpful_optional\", \"reason\": \"Knowing the user's timezone (Australia/Sydney, which uses AEST/AEDT) helps the assistant give time-specific advice in the user's local time without needing to ask. However, a reasonable answer is still possible using the already-stored AEST reference from the sprint demo fact.\"}"
+    }
+  ],
+  "allowed": {
+    "phase0_v5/I5": [
+      "F1"
+    ],
+    "phase0_v4/I5": [
+      "F1"
+    ]
+  }
+}

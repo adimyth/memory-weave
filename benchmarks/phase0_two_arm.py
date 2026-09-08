@@ -631,6 +631,20 @@ def _p(values: list[float], q: float) -> float:
     return ordered[index]
 
 
+def load_allowed(overlay: Path | None, scenario_stem: str) -> dict[str, set[str]]:
+    """Records an adjudication overlay allows for precision on each turn of one scenario, or nothing."""
+
+    if overlay is None or not overlay.exists():
+        return {}
+    data = json.loads(overlay.read_text())
+    allowed: dict[str, set[str]] = {}
+    for key, ids in data.get("allowed", {}).items():
+        stem, _, turn_id = key.partition("/")
+        if stem == scenario_stem:
+            allowed.setdefault(turn_id, set()).update(ids)
+    return allowed
+
+
 def summarise(
     arm: str,
     results: list[TurnResult],
@@ -638,7 +652,12 @@ def summarise(
     promoted: list[str] | None = None,
     decisions: dict[str, dict[str, Any]] | None = None,
     inventory_labels: list[str] | None = None,
+    allowed: dict[str, set[str]] | None = None,
 ) -> dict[str, Any]:
+    """Score one arm. Recall counts only the scenario's expected (required) records; precision also counts
+    records an adjudication overlay marks helpful for the turn, and the strict label-only figure is kept."""
+
+    allowed = allowed or {}
     by_class: dict[str, list[TurnResult]] = {}
     for r in results:
         by_class.setdefault(r.turn_class, []).append(r)
@@ -702,7 +721,10 @@ def summarise(
     implicit = [r for r in implicit if conditional_expected(r)]
 
     admitted_total = sum(len(r.admitted) for r in results)
-    admitted_useful = sum(sum(1 for i in r.admitted if i in r.expected) for r in results)
+    admitted_useful_strict = sum(sum(1 for i in r.admitted if i in r.expected) for r in results)
+    admitted_useful = sum(
+        sum(1 for i in r.admitted if i in r.expected or i in allowed.get(r.turn_id, set())) for r in results
+    )
     kinds_admitted: dict[str, int] = {}
     for r in results:
         for i in r.admitted:
@@ -754,6 +776,7 @@ def summarise(
         "redundant_admitted": kinds_admitted.get("redundant", 0),
         "unrelated_private_admitted": leakage,
         "usefulness_precision": _pct(admitted_useful, admitted_total),
+        "usefulness_precision_strict": _pct(admitted_useful_strict, admitted_total),
         "answer_correct_memory_turns_draft": _pct(sum(bool(r.draft_correct) for r in memory_ref), len(memory_ref)),
         "answer_correct_memory_turns_final": _pct(sum(final_or_draft(r) for r in memory_ref), len(memory_ref)),
         "empty_gap_turns": len(empty_gap),
@@ -852,6 +875,12 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--out-dir", type=Path, default=Path("benchmarks/results/phase0"))
     parser.add_argument(
+        "--label-overlay",
+        type=Path,
+        default=Path("benchmarks/scenarios/overlays/label_adjudication.json"),
+        help="Adjudicated labels: records allowed for precision per scenario turn; recall ignores it.",
+    )
+    parser.add_argument(
         "--fail-on-verdict",
         action="store_true",
         help="Exit 1 if the serving arm fails the combination fitness bar. evaluate_combination.py sets this.",
@@ -903,6 +932,7 @@ def main(argv: list[str] | None = None) -> int:
             runner.promoted.get(arm),
             runner.activation_decisions.get(arm),
             runner.inventory_labels.get(arm),
+            allowed=load_allowed(args.label_overlay, args.scenario.stem),
         )
 
     runner.save_cache()

@@ -123,6 +123,19 @@ share of ordinary turns with any survivor, are computed offline for every floor.
 so the bundle hash changes and the run cannot reuse an earlier fitness result. The bundle hash covers the
 `retrieval` and `reranker` sections of the configuration together.
 
+```bash
+uv run --extra live python benchmarks/adjudicate_labels.py --reviewer openrouter:anthropic/claude-sonnet-4.6
+uv run python benchmarks/rescore.py benchmarks/results/phase0/phase11-baseline-v5/*.json
+```
+
+A disputed scenario label is adjudicated blind by an independent reviewer model that sees the turn, the
+records already expected, and the record under review, never the judge's reasoning or the label. The verdicts
+land in `scenarios/overlays/label_adjudication.json`; the blind labels are never edited. Recall counts only
+the expected (required) records; precision also counts records the overlay marks helpful, and `summarise`
+reports both `usefulness_precision` and `usefulness_precision_strict`. `rescore.py` recomputes saved results
+under the overlay with no model call. Findings in [../docs/usefulness-gate.md](../docs/usefulness-gate.md)
+section 8o.
+
 The shadow harness runs the orchestrator beside the served path with isolation asserted; `metrics`
 aggregates any store's turn-decision log into stage outcomes, rates, latency, cost, and backlog; `bundles
 record` writes the supported bundle's fitness result into a store so that store may serve it. Without that

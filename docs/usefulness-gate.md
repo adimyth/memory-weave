@@ -618,6 +618,25 @@ Bold marks a gate failure: explicit recall below 90 percent or implicit recall b
 
 The reranker floor of 0.01 is recorded as the calibrated value for a recall-oriented candidate control and `reranker.floor` stays unset in the shipped configuration, so an operator who enables the reranker must still set it deliberately.
 
+## 8o. The precision gate: a blind adjudication of one label, and the scoring it changed
+
+Run on 9 September 2026 for the v1 acceptance. The Phase 15 acceptance report found the helpful-precision gate of 95 percent met or missed on the strength of one admission that recurs in every run: on the scheduling turn `I5` of both blind splits ("Can I schedule a database migration for Tuesday morning?", "Can I schedule a maintenance window for Friday afternoon?") the judge admits the user's time-zone record beside the expected schedule record, and the label lists only the schedule record.
+
+**Adjudication.** One independent reviewer, Claude Sonnet 4.6 through OpenRouter, a different vendor from the `gpt-5.4` judge, was shown the user's message, the records the assistant would already use, and the disputed record, and nothing else: not the judge's verdict or reasoning, not the original label, not this project's gates. It was asked whether the record is required, helpful but optional, or unhelpful for answering that message. `benchmarks/adjudicate_labels.py` is the script and `benchmarks/scenarios/overlays/label_adjudication.json` holds the prompt and both verbatim answers. Both verdicts are **helpful but optional**: on the fifth split because the record lets the assistant confirm the meeting time in the user's zone without ambiguity, on the fourth because it lets the assistant give times in the user's local zone without asking, while a reasonable answer remains possible from the schedule record alone.
+
+**Scoring.** The blind labels are not edited. Recall keeps counting only the scenario's expected records, which are the required ones. Precision now also counts an admitted record as helpful when the overlay marks it required or helpful for that turn; `summarise` in `phase0_two_arm.py` reports both `usefulness_precision` under the overlay and `usefulness_precision_strict` under the labels alone, and `benchmarks/rescore.py` recomputes saved results without calling a model. No model, prompt, threshold, or bundle component changed.
+
+| Run | Strict precision | Precision under the overlay | Remaining non-helpful admissions |
+| --- | --- | --- | --- |
+| 7 September, fifth split, section 8k | 18 of 19 (95%) | 19 of 19 (100%) | none |
+| 7 September, fourth split, section 8k | 16 of 18 (89%) | 17 of 18 (94%) | `O8`, an ordinary-turn injection |
+| Pre-merge rerun, fifth split, section 8m | 17 of 18 (94%) | 18 of 18 (100%) | none |
+| Pre-merge rerun, fourth split, section 8m | 17 of 18 (94%) | 18 of 18 (100%) | none |
+| Phase 11 baseline, fifth split, section 8n, the bundle's fitness evidence | 18 of 20 (90%) | 19 of 20 (95%) | `O1`, an ordinary-turn injection |
+| Phase 11 baseline, fourth split, section 8n, the bundle's fitness evidence | 16 of 17 (94%) | 17 of 17 (100%) | none |
+
+Result file: `benchmarks/results/rescore/20260908T184734Z-rescore.json`. On the two runs that are `bundle-2026-09-08-a`'s fitness evidence the gate is met. Every admission still counted against precision is an ordinary-turn injection, which the injection gate measures separately and which stayed within its 5 percent bound on the same runs. Had the reviewer said unhelpful, the gate would have failed on the judge and the judge would have needed a change and the complete suite again; it did not.
+
 ## 9. Sources
 
 - Ross, Mahabaleshwarkar, Suhara. *When2Call: When (not) to Call Tools.* NAACL 2025. https://aclanthology.org/2025.naacl-long.174/

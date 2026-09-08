@@ -1,0 +1,138 @@
+{
+ "overlay": "benchmarks/scenarios/overlays/label_adjudication.json",
+ "rescored_at": "2026-09-08T18:47:34.155881+00:00",
+ "runs": [
+  {
+   "result": "benchmarks/results/phase0/bundle-v2-v5/20260907T164439Z-phase0_v5-gap-gpt-4o-v3-adm-gpt-5.4-v3-act-real-bundle-v2.json",
+   "scenario": "phase0_v5",
+   "arms": {
+    "ambient": {
+     "usefulness_precision_strict": "18/19 (95%)",
+     "usefulness_precision": "19/19 (100%)",
+     "recall_of_required": "18/20 (90%)",
+     "non_expected_admissions": [
+      [
+       "I5",
+       "F1"
+      ]
+     ],
+     "non_helpful_admissions": [],
+     "precision_gate_95": true
+    }
+   }
+  },
+  {
+   "result": "benchmarks/results/phase0/bundle-v2-v4/20260907T164518Z-phase0_v4-gap-gpt-4o-v3-adm-gpt-5.4-v3-act-real-bundle-v2.json",
+   "scenario": "phase0_v4",
+   "arms": {
+    "ambient": {
+     "usefulness_precision_strict": "16/18 (89%)",
+     "usefulness_precision": "17/18 (94%)",
+     "recall_of_required": "16/19 (84%)",
+     "non_expected_admissions": [
+      [
+       "I5",
+       "F1"
+      ],
+      [
+       "O8",
+       "F7"
+      ]
+     ],
+     "non_helpful_admissions": [
+      [
+       "O8",
+       "F7"
+      ]
+     ],
+     "precision_gate_95": false
+    }
+   }
+  },
+  {
+   "result": "benchmarks/results/phase0/merge-check-v5/20260908T094152Z-phase0_v5-gap-gpt-4o-v3-adm-gpt-5.4-v3-act-real-merge-check.json",
+   "scenario": "phase0_v5",
+   "arms": {
+    "ambient": {
+     "usefulness_precision_strict": "17/18 (94%)",
+     "usefulness_precision": "18/18 (100%)",
+     "recall_of_required": "17/20 (85%)",
+     "non_expected_admissions": [
+      [
+       "I5",
+       "F1"
+      ]
+     ],
+     "non_helpful_admissions": [],
+     "precision_gate_95": true
+    }
+   }
+  },
+  {
+   "result": "benchmarks/results/phase0/merge-check-v4/20260908T094401Z-phase0_v4-gap-gpt-4o-v3-adm-gpt-5.4-v3-act-real-merge-check.json",
+   "scenario": "phase0_v4",
+   "arms": {
+    "ambient": {
+     "usefulness_precision_strict": "17/18 (94%)",
+     "usefulness_precision": "18/18 (100%)",
+     "recall_of_required": "17/19 (89%)",
+     "non_expected_admissions": [
+      [
+       "I5",
+       "F1"
+      ]
+     ],
+     "non_helpful_admissions": [],
+     "precision_gate_95": true
+    }
+   }
+  },
+  {
+   "result": "benchmarks/results/phase0/phase11-baseline-v5/20260908T101743Z-phase0_v5-gap-gpt-4o-v3-adm-gpt-5.4-v3-act-real-phase11-baseline.json",
+   "scenario": "phase0_v5",
+   "arms": {
+    "ambient": {
+     "usefulness_precision_strict": "18/20 (90%)",
+     "usefulness_precision": "19/20 (95%)",
+     "recall_of_required": "18/20 (90%)",
+     "non_expected_admissions": [
+      [
+       "I5",
+       "F1"
+      ],
+      [
+       "O1",
+       "F4"
+      ]
+     ],
+     "non_helpful_admissions": [
+      [
+       "O1",
+       "F4"
+      ]
+     ],
+     "precision_gate_95": true
+    }
+   }
+  },
+  {
+   "result": "benchmarks/results/phase0/phase11-baseline-v4/20260908T101925Z-phase0_v4-gap-gpt-4o-v3-adm-gpt-5.4-v3-act-real-phase11-baseline.json",
+   "scenario": "phase0_v4",
+   "arms": {
+    "ambient": {
+     "usefulness_precision_strict": "16/17 (94%)",
+     "usefulness_precision": "17/17 (100%)",
+     "recall_of_required": "16/19 (84%)",
+     "non_expected_admissions": [
+      [
+       "I5",
+       "F1"
+      ]
+     ],
+     "non_helpful_admissions": [],
+     "precision_gate_95": true
+    }
+   }
+  }
+ ]
+}
