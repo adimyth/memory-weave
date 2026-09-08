@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field, replace
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Literal, cast
 
 import numpy as np
@@ -39,9 +39,15 @@ from memory_weave.policy import (
     writable_scopes,
 )
 from memory_weave.store import Store
-from memory_weave.util import Timer, normalize_attribute, now, render_subject, uuid7
+from memory_weave.util import Timer, normalize_attribute, normalize_ws, now, render_subject, uuid7
 
-from .entities import PrincipalEntityAmbiguousError, aliases_text, primary_entity_for, resolve_entities
+from .entities import (
+    PrincipalEntityAmbiguousError,
+    aliases_text,
+    ensure_principal_entity,
+    primary_entity_for,
+    resolve_entities,
+)
 from .equivalence import EquivalenceJudge
 from .evidence import session_turn_source_ref, validate_evidence
 from .session import SessionBuffer
@@ -77,6 +83,21 @@ class WriteRequest:
     entities: list[EntityMention] = field(default_factory=list)
     tags: list[str] = field(default_factory=list)
     evidence_turn: int | None = None
+    # Temporal metadata is accepted only from the extraction path, which validates it against the evidence.
+    valid_from: datetime | None = None
+    valid_until: datetime | None = None
+    review_at: datetime | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class SummaryRequest:
+    """One session summary: the extractor's text plus the session it describes."""
+
+    scope: Scope
+    content: str
+    session_id: str
+    ended_at: datetime
+    entities: list[EntityMention] = field(default_factory=list)
 
 
 @dataclass(frozen=True, slots=True)
@@ -477,7 +498,95 @@ class Ingestor:
             last_reinforced_at=None,
             tags=list(request.tags),
             entity_ids=[],
+            valid_from=request.valid_from,
+            valid_until=request.valid_until,
+            review_at=request.review_at,
         )
+
+    def write_session_summary(self, principal: Principal, request: SummaryRequest) -> WriteResult:
+        """Write the one live summary for a session, replacing an earlier summary whose text changed.
+
+        The summary is keyed by ``source_ref = "session:<id>"``, not by neighbour similarity. A re-run with
+        identical text changes nothing; changed text supersedes the earlier summary so its history remains.
+        Mention-role entities are linked when they resolve unambiguously and dropped otherwise.
+        """
+
+        timer = Timer(warm=self._embedder.is_loaded and self._vector_index.is_loaded)
+        current_time = self._current_time()
+        if request.scope not in writable_scopes(self._store, principal.agent_id, principal.user_id):
+            timer.mark("permission")
+            return self._result(None, None, "scope_not_writable", None, timer)
+        timer.mark("permission")
+        source_ref = f"session:{request.session_id}"
+        content = request.content.strip()
+        if not content:
+            return self._result(None, None, "empty_summary", "summary content is empty", timer)
+
+        existing = self._store.active_session_summary(source_ref)
+        if existing is not None and existing.content == content:
+            timer.mark("dedup_search")
+            return self._result(existing.id, existing.status, "already_reinforced", "summary unchanged", timer)
+
+        with self._store.transaction():
+            resolutions = resolve_entities(request.entities, request.scope, principal, self._store)
+            ambiguous = [resolution for resolution in resolutions if resolution.outcome == "ambiguous"]
+            principal_entity = ensure_principal_entity(principal.user_id, self._store, actor=principal.agent_id)
+            entity_ids = [principal_entity.id]
+            entity_ids.extend(
+                resolution.entity.id
+                for resolution in resolutions
+                if resolution.entity is not None and resolution.entity.id != principal_entity.id
+            )
+            entity_ids = list(dict.fromkeys(entity_ids))
+            roles: dict[str, EntityRole] = {entity_id: "mentions" for entity_id in entity_ids}
+            roles[principal_entity.id] = "about"
+            timer.mark("entities")
+
+            record = Record(
+                id=uuid7(),
+                type="episodic",
+                version=1 if existing is None else existing.version + 1,
+                content=content,
+                subject=render_subject(principal_entity.id, "-"),
+                subject_entity_id=principal_entity.id,
+                attribute="-",
+                scope=request.scope,
+                source_kind="session_summary",
+                source_ref=source_ref,
+                creator_agent_id=principal.agent_id,
+                evidence=None,
+                created_at=current_time,
+                event_at=request.ended_at,
+                expires_at=current_time + timedelta(days=self._config.ingestion.summary_ttl_days),
+                confidence=initial_confidence("session_summary"),
+                status=initial_status("session_summary"),
+                supersedes_id=existing.id if existing is not None else None,
+                reinforcements=0,
+                last_reinforced_at=None,
+                tags=[],
+                entity_ids=entity_ids,
+            )
+            vector = self._embedder.embed_documents([record.content])[0]
+            timer.mark("embed")
+            if existing is not None:
+                self._store.update_status(existing.id, "superseded")
+            self._persist_new_record(record, vector, roles)
+            timer.mark("persistence")
+            outcome = "created" if existing is None else "superseded"
+            note = _ambiguous_mentions_note(ambiguous)
+            payload = self._event_payload(
+                record=record,
+                outcome=outcome,
+                note=note,
+                timer=timer,
+                extra={"session_id": request.session_id, **_outcome_event_fields(outcome, existing)},
+            )
+            self._store.append_event(_event_kind(outcome), principal.agent_id, record.id, None, payload)
+            timer.mark("event_log")
+        timer.mark("transaction")
+        self._vector_index.upsert(record.id, vector, index_version=self._store.record_index_version(record.id))
+        timer.mark("index_update")
+        return self._result(record.id, record.status, _outcome_label(outcome, existing), note, timer)
 
     def _subject_for(
         self,
@@ -530,7 +639,7 @@ class Ingestor:
         # Judge every scanned record first. The same-attribute authority incumbent then receives the
         # supersession decision before any reinforcement, so a "same" verdict against a provisional
         # sibling can never leave a contradicted incumbent active.
-        verdicts = [(existing, self._judge.judge(existing.content, record.content)) for existing in attribute_records]
+        verdicts = [(existing, self._verdict(existing, record)) for existing in attribute_records]
         same_attribute = [existing for existing, _ in verdicts if existing.attribute == record.attribute]
 
         # A temporary statement ("this week, answer in Spanish") is not a new value for a standing fact
@@ -592,7 +701,7 @@ class Ingestor:
             return _WriteDecision(outcome, incumbent, "attribute", extra)
 
         for neighbour in neighbours:
-            verdict = self._judge.judge(neighbour.content, record.content)
+            verdict = self._verdict(neighbour, record)
             if verdict == "same":
                 timer.mark("judge")
                 timer.mark("supersession")
@@ -600,6 +709,13 @@ class Ingestor:
         timer.mark("judge")
         timer.mark("supersession")
         return _WriteDecision("created", None, None, extra)
+
+    def _verdict(self, existing: Record, record: Record) -> str:
+        """Identical text is the same claim without a judge; a re-run of the same evidence must reinforce."""
+
+        if normalize_ws(existing.content) == normalize_ws(record.content):
+            return "same"
+        return self._judge.judge(existing.content, record.content)
 
     def _attribute_records(self, record: Record, vector: np.ndarray) -> tuple[list[Record], bool]:
         if not _is_current_fact(record):

@@ -62,6 +62,12 @@ class Record:
     activation: MemoryActivation = "conditional"
     # Content-free retrieval category assigned by the activation policy; feeds the planner's inventory.
     category: str | None = None
+    # World-validity bounds and a reconsideration time, set only from an explicit temporal expression in the
+    # evidence. They do not filter ordinary retrieval; ``review_flagged_at`` records the one due-review flag.
+    valid_from: datetime | None = None
+    valid_until: datetime | None = None
+    review_at: datetime | None = None
+    review_flagged_at: datetime | None = None
 
 
 @dataclass(slots=True)
@@ -241,6 +247,11 @@ class CandidateRecord:
     entity_mentions: list[EntityMention]
     event_at: datetime | None
     confidence: float
+    # Only from a temporal expression in ``evidence``, resolved against the turn timestamp; validation rejects
+    # values the quote does not support.
+    valid_from: datetime | None = None
+    valid_until: datetime | None = None
+    review_at: datetime | None = None
 
 
 @dataclass(slots=True)

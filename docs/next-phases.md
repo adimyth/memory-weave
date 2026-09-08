@@ -4,6 +4,12 @@ Local working note. Written 6 September 2026 after checking the current landscap
 
 ## Where Weave is today
 
+**Updated 8 September 2026.** Phase 10 is built. `ingest/extraction.py` claims a session atomically, runs the extractor and the reviewer before anything is written, validates evidence, temporal support, subject, and entity ambiguity twice, writes every accepted candidate through the same ingestor as `memory_write`, writes one summary keyed by `session:<id>`, and hands written semantic records to the activation service afterwards. `ingest/temporal.py` flags due records once and rewrites nothing. `SessionHooks` in `ingest/session.py` gives adapters the three LLD 12 calls plus the idle split. The hosted extractor and reviewer were run once together against the ten-turn test transcript with `gpt-4o`: two candidates accepted and written, one rejected by the reviewer because the quote did not support the duration the extractor had resolved, one rejected by the temporal validator because the extractor set a validity window from "for now", which the deterministic expression list does not count as temporal support, and the summary written. That is one run on one transcript, enough to show the prompts and parsers work, not an evaluation of extraction precision.
+
+One consequence for the utility-aware bundle: the phase added `retrieval.gate.dense_floor.session_summary`, which changes the retrieval configuration hash the bundle records. Nothing the fitness scenarios exercise touches summaries, but the rule is mechanical: the Phase 11 baseline run, with neither optional stage enabled, re-records the supported bundle under the new hash.
+
+The paragraphs below are the note as written on 6 September, before the build.
+
 Weave has one write path: the chatting agent calls `memory_write` during the session. That is it.
 
 `memory_weave/ingest/session.py` is a `SessionBuffer`, a process-local cache over persisted transcripts. It is not extraction. There is no `ingest/extractor.py` and no `ingest/extraction.py`. Phase 10 in `implementation-plan.md` specifies both and neither is built.

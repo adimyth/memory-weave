@@ -57,6 +57,9 @@ class DenseFloorConfig:
     semantic: float = 0.45
     episodic: float = 0.40
     procedural: float = 0.45
+    # Generated session summaries are long and topically broad, so they get their own floor rather than the
+    # episodic one; refer LLD 8.2.
+    session_summary: float = 0.50
 
 
 @dataclass(frozen=True, slots=True)
@@ -151,6 +154,20 @@ class IngestionConfig:
     max_entity_attributes: int = 64
     extraction_model: str = "claude-haiku-4-5-20251001"
     extraction_max_candidates: int = 20
+    extraction_timeout_ms: int = 60000
+    # Bounded context handed to the extractor: readable entity aliases and active writable subjects.
+    extraction_context_max_entities: int = 200
+    extraction_context_max_subjects: int = 200
+    # A worker's claim on a session expires after this long, so a crashed worker's session can be reclaimed.
+    extraction_claim_timeout_minutes: int = 30
+    review_model: str = "claude-haiku-4-5-20251001"
+    review_timeout_ms: int = 30000
+    hosted_max_output_tokens: int = 4096
+    summary_ttl_days: int = 180
+    summary_max_chars: int = 1200
+    temporal_review_batch_size: int = 100
+    # An adapter that cannot signal session end splits a session after this much idle time; refer LLD 12.
+    session_idle_timeout_minutes: int = 30
 
 
 @dataclass(frozen=True, slots=True)

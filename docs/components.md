@@ -397,13 +397,14 @@ An adapter integrates those tools with an agent framework. It registers the tool
 
 ## 15. Prompts and instructions
 
-Two runtime components turn transcript text into a decision by calling a hosted model: session extraction and query rewriting. Each needs a natural-language prompt that tells the model how to reason, plus a schema that tells it how to answer. Neither prompt exists in the codebase yet.
+Three runtime components turn transcript text into a decision by calling a hosted model: session extraction, candidate review, and query rewriting. Each needs a natural-language prompt that tells the model how to reason, plus a schema that tells it how to answer.
 
-| Component | Config that names the model | Code location once implemented | Status |
+| Component | Config that names the model | Code location | Status |
 | --- | --- | --- | --- |
-| Session extraction | `ingestion.extraction_model` | `ingest/extractor.py`, `StructuredLLMExtractor` | The `Extractor` protocol and its output dataclasses (`ExtractionContext`, `CandidateRecord`, `SessionSummary`) are specified in `models.py`. The implementation and its prompt are not yet written; only `FakeExtractor` exists for tests. |
+| Session extraction | `ingestion.extraction_model` | `ingest/extractor.py`, `StructuredLLMExtractor`, prompt `ingest/prompts/extract_v1.md` | Built. `ExtractionRunner` in `ingest/extraction.py` claims the session, validates, reviews, revalidates, and writes through the ingestor. `FakeExtractor` serves the tests. |
+| Candidate review | `ingestion.review_model` | `ingest/reviewer.py`, `StructuredLLMReviewer`, prompt `ingest/prompts/review_v1.md` | Built. A revision may only narrow content, attribute, temporal metadata, or confidence; `TableReviewer` serves the tests. |
 | Query rewriting | `retrieval.rewrite.model` | `retrieve/rewrite.py`, `HostedLLMQueryRewriter` | Only `NoRewriter` exists today; it returns queries unchanged and never calls a model. The hosted implementation and its prompt are not yet written. |
 
-`ExtractionContext.prompt_version` already anticipates a versioned prompt: it exists so a later change to the extraction prompt can be tracked on the `extraction.run` event the same way an embedding-model change is tracked by `embeddings.version`, rather than silently changing behavior.
+The two extraction prompts are versioned constants recorded on every `extraction.run` event, so a prompt change is tracked the way an embedding-model change is tracked by `embeddings.version` rather than silently changing behaviour. Both hosted components call a provider-neutral `CompletionClient` in `ingest/hosted.py`; the official Anthropic and OpenAI SDKs are chosen by model name and imported only when used.
 
-When these are implemented, the instructions belong next to the code that uses them, not in `config.yaml`. The YAML config holds thresholds and model *names*, values a calibration pass would sweep. Prompt text is reasoning guidance, not a tunable, so it belongs as a module-level constant in `ingest/extractor.py` and `retrieve/rewrite.py` respectively, or a small `ingest/prompts.py` if it grows past one string.
+Prompt text is reasoning guidance, not a tunable, so it lives next to the code that uses it, under `ingest/prompts/`, and not in `config.yaml`. The YAML config holds thresholds and model *names*, values a calibration pass would sweep.

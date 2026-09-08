@@ -7,9 +7,10 @@ import sqlite3
 import threading
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Literal, cast
 
 import numpy as np
 
@@ -29,6 +30,23 @@ from memory_weave.models import (
 from memory_weave.util import normalize_alias, normalize_vector, now, render_subject, uuid7
 
 from .migrations import MigrationIssuesError, MigrationResult, migrate
+
+ExtractionClaim = Literal["claimed", "reclaimed", "already_claimed", "already_extracted", "not_found"]
+
+
+@dataclass(frozen=True, slots=True)
+class SessionRow:
+    """One session's bookkeeping: who ran it, when it ended, and the extraction claim state."""
+
+    id: str
+    agent_id: str
+    user_id: str
+    project_id: str | None
+    started_at: datetime
+    ended_at: datetime | None
+    extracted_at: datetime | None
+    extraction_started_at: datetime | None
+
 
 _ACTIVE_STATUSES: tuple[RecordStatus, ...] = ("provisional", "confirmed")
 # Keep every alias lookup far below SQLite's historical 999 bound-parameter limit once scopes are added.
@@ -168,15 +186,19 @@ class Store:
             del self._local.migration_result
 
     @contextmanager
-    def transaction(self) -> Iterator[sqlite3.Connection]:
-        """Run store operations atomically and nest inner calls with savepoints."""
+    def transaction(self, *, immediate: bool = False) -> Iterator[sqlite3.Connection]:
+        """Run store operations atomically and nest inner calls with savepoints.
+
+        ``immediate`` takes the write lock at the start, so a read inside the transaction cannot be
+        overtaken by another writer before this transaction's own write; nested calls inherit the outer lock.
+        """
 
         connection = self.connection
         depth = getattr(self._local, "transaction_depth", 0)
         owns_transaction = depth == 0 and not connection.in_transaction
         savepoint = f"memory_weave_transaction_{depth}"
         if owns_transaction:
-            connection.execute("BEGIN")
+            connection.execute("BEGIN IMMEDIATE" if immediate else "BEGIN")
         else:
             connection.execute(f"SAVEPOINT {savepoint}")
         self._local.transaction_depth = depth + 1
@@ -210,8 +232,8 @@ class Store:
                     creator_agent_id, evidence, created_at, event_at, expires_at, confidence, status,
                     supersedes_id, reinforcements, last_reinforced_at, index_version, tags, subject_entity_id,
                     attribute,
-                    activation, category
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    activation, category, valid_from, valid_until, review_at, review_flagged_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     record.id,
@@ -239,6 +261,10 @@ class Store:
                     record.attribute,
                     record.activation,
                     record.category,
+                    _dump_datetime(record.valid_from),
+                    _dump_datetime(record.valid_until),
+                    _dump_datetime(record.review_at),
+                    _dump_datetime(record.review_flagged_at),
                 ),
             )
 
@@ -1226,6 +1252,115 @@ class Store:
             "UPDATE sessions SET extracted_at = ? WHERE id = ?", (_dump_datetime(extracted_at), session_id)
         )
 
+    def get_session(self, session_id: str) -> SessionRow | None:
+        """Return one session's bookkeeping row, or ``None`` when it does not exist."""
+
+        row = self.connection.execute("SELECT * FROM sessions WHERE id = ?", (session_id,)).fetchone()
+        if row is None:
+            return None
+        return SessionRow(
+            id=cast(str, row["id"]),
+            agent_id=cast(str, row["agent_id"]),
+            user_id=cast(str, row["user_id"]),
+            project_id=cast(str | None, row["project_id"]),
+            started_at=_load_datetime(cast(str, row["started_at"])),
+            ended_at=_load_datetime_or_none(cast(str | None, row["ended_at"])),
+            extracted_at=_load_datetime_or_none(cast(str | None, row["extracted_at"])),
+            extraction_started_at=_load_datetime_or_none(cast(str | None, row["extraction_started_at"])),
+        )
+
+    def claim_extraction(
+        self, session_id: str, claimed_at: datetime, stale_before: datetime, *, force: bool = False
+    ) -> ExtractionClaim:
+        """Atomically claim one session for extraction.
+
+        Only the caller whose conditional update changed the row proceeds. An unexpired claim by another
+        worker refuses; a claim older than ``stale_before`` is reclaimed. ``force`` bypasses only the
+        completed-extraction check, never the claim.
+        """
+
+        with self.transaction(immediate=True):
+            current = self.get_session(session_id)
+            if current is None:
+                return "not_found"
+            if current.extracted_at is not None and not force:
+                return "already_extracted"
+            if current.extraction_started_at is not None and current.extraction_started_at >= stale_before:
+                return "already_claimed"
+            extracted_clause = "" if force else "AND extracted_at IS NULL "
+            cursor = self.connection.execute(
+                "UPDATE sessions SET extraction_started_at = ? WHERE id = ? "
+                f"{extracted_clause}AND (extraction_started_at IS NULL OR extraction_started_at < ?)",
+                (_dump_datetime(claimed_at), session_id, _dump_datetime(stale_before)),
+            )
+            if cursor.rowcount != 1:
+                return "already_claimed"
+            if current.extracted_at is not None:
+                return "claimed"
+            return "reclaimed" if current.extraction_started_at is not None else "claimed"
+
+    def active_session_summary(self, source_ref: str) -> Record | None:
+        """Return the live session summary written for ``source_ref``, if one exists."""
+
+        rows = self.connection.execute(
+            "SELECT * FROM records WHERE source_kind = 'session_summary' AND source_ref = ? "
+            "AND status IN ('provisional', 'confirmed') ORDER BY created_at DESC LIMIT 1",
+            (source_ref,),
+        ).fetchall()
+        records = self._records_from_rows(rows)
+        return records[0] if records else None
+
+    def due_review_records(self, limit: int, at: datetime) -> list[Record]:
+        """Return active records whose review time has arrived and that carry no flag yet."""
+
+        rows = self.connection.execute(
+            "SELECT * FROM records WHERE review_at IS NOT NULL AND review_at <= ? AND review_flagged_at IS NULL "
+            "AND status IN ('provisional', 'confirmed') ORDER BY review_at, id LIMIT ?",
+            (_dump_datetime(at), limit),
+        ).fetchall()
+        return self._records_from_rows(rows)
+
+    def flag_review_due(self, record_id: str, flagged_at: datetime) -> bool:
+        """Set the due-review flag once; return whether this call was the one that set it."""
+
+        cursor = self.connection.execute(
+            "UPDATE records SET review_flagged_at = ? WHERE id = ? AND review_flagged_at IS NULL "
+            "AND status IN ('provisional', 'confirmed')",
+            (_dump_datetime(flagged_at), record_id),
+        )
+        return cursor.rowcount == 1
+
+    def entities_in_scopes(
+        self, scopes: Sequence[Scope], *, statuses: Sequence[EntityStatus], limit: int
+    ) -> list[Entity]:
+        """Return active entities visible in ``scopes``, oldest first, bounded by ``limit``."""
+
+        if not scopes or not statuses or limit <= 0:
+            return []
+        scope_predicates = " OR ".join("(scope_kind = ? AND scope_id = ?)" for _ in scopes)
+        parameters: list[object] = []
+        for scope in scopes:
+            parameters.extend((scope.kind, scope.id))
+        parameters.extend(statuses)
+        parameters.append(limit)
+        rows = self.connection.execute(
+            f"SELECT * FROM entities WHERE ({scope_predicates}) AND status IN ({_placeholders(len(statuses))}) "
+            "ORDER BY created_at, id LIMIT ?",
+            tuple(parameters),
+        ).fetchall()
+        return [self._entity_from_row(row) for row in rows]
+
+    def active_subjects(self, scope: Scope, *, limit: int) -> list[str]:
+        """Return the distinct current-fact subjects that are active in ``scope``."""
+
+        rows = self.connection.execute(
+            "SELECT DISTINCT subject FROM records WHERE scope_kind = ? AND scope_id = ? "
+            "AND type IN ('semantic', 'procedural') AND status IN ('provisional', 'confirmed') "
+            "AND subject != '' ORDER BY subject LIMIT ?",
+            (scope.kind, scope.id, limit),
+        ).fetchall()
+        return [cast(str, row["subject"]) for row in rows]
+
     def append_event(
         self,
         kind: str,
@@ -1355,6 +1490,10 @@ class Store:
             entity_ids=entity_ids,
             activation=cast(Any, row["activation"]) if "activation" in row.keys() else "conditional",
             category=cast(str | None, row["category"]) if "category" in row.keys() else None,
+            valid_from=_optional_datetime_column(row, "valid_from"),
+            valid_until=_optional_datetime_column(row, "valid_until"),
+            review_at=_optional_datetime_column(row, "review_at"),
+            review_flagged_at=_optional_datetime_column(row, "review_flagged_at"),
         )
 
     def _entity_from_row(self, row: sqlite3.Row) -> Entity:
@@ -1390,6 +1529,12 @@ def _load_datetime(value: str) -> datetime:
     if parsed.tzinfo is None:
         raise ValueError(f"Stored timestamp is not timezone-aware: {value}")
     return parsed
+
+
+def _optional_datetime_column(row: sqlite3.Row, column: str) -> datetime | None:
+    if column not in row.keys():
+        return None
+    return _load_datetime_or_none(cast(str | None, row[column]))
 
 
 def _load_datetime_or_none(value: str | None) -> datetime | None:

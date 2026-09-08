@@ -83,9 +83,9 @@ def _absolute_reason(candidate: Candidate, record: Record, config: GateConfig | 
     if candidate.entity is not None and config.entity_exempt:
         return "passed exact entity match"
     if candidate.dense is not None:
-        floor = getattr(config.dense_floor, record.type)
+        floor = _dense_floor(record, config)
         if candidate.dense.score >= floor:
-            return f"passed dense {candidate.dense.score:.2f} ≥ {floor:.2f} ({record.type})"
+            return f"passed dense {candidate.dense.score:.2f} ≥ {floor:.2f} ({_floor_label(record)})"
     if candidate.lexical is not None and candidate.lexical_terms is not None:
         matched = candidate.lexical_terms.terms
         lexical_pass = candidate.lexical_terms.fraction >= config.lexical_min_term_fraction
@@ -99,8 +99,8 @@ def _absolute_reason(candidate: Candidate, record: Record, config: GateConfig | 
 def _missed_reason(candidate: Candidate, record: Record, config: GateConfig | AutoGateConfig) -> str:
     misses: list[str] = []
     if candidate.dense is not None:
-        floor = getattr(config.dense_floor, record.type)
-        misses.append(f"dense {candidate.dense.score:.2f} < {floor:.2f} ({record.type})")
+        floor = _dense_floor(record, config)
+        misses.append(f"dense {candidate.dense.score:.2f} < {floor:.2f} ({_floor_label(record)})")
     if candidate.lexical is not None and candidate.lexical_terms is not None:
         terms = candidate.lexical_terms
         misses.append(
@@ -108,6 +108,16 @@ def _missed_reason(candidate: Candidate, record: Record, config: GateConfig | Au
             f"or {config.lexical_min_matched_terms} matches"
         )
     return "; ".join(misses) if misses else "no generator evidence"
+
+
+def _dense_floor(record: Record, config: GateConfig | AutoGateConfig) -> float:
+    if record.source_kind == "session_summary":
+        return config.dense_floor.session_summary
+    return float(getattr(config.dense_floor, record.type))
+
+
+def _floor_label(record: Record) -> str:
+    return "session_summary" if record.source_kind == "session_summary" else record.type
 
 
 def _channel_count(candidate: Candidate) -> int:

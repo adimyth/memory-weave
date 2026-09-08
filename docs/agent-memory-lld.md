@@ -129,6 +129,7 @@ retrieval:
       semantic: 0.45
       episodic: 0.40
       procedural: 0.45
+      session_summary: 0.50
     lexical_min_term_fraction: 0.5
     lexical_min_matched_terms: 2
     relative_floor: 0.5
@@ -137,6 +138,7 @@ retrieval:
         semantic: 0.55
         episodic: 0.50
         procedural: 0.55
+        session_summary: 0.50
       lexical_min_term_fraction: 0.6
       lexical_min_matched_terms: 2
       relative_floor: 0.6
@@ -160,7 +162,7 @@ The retriever applies these settings in the order shown. Section 10 defines the 
 - `rrf_k` is the fusion constant. Each list a record appears in adds `1 / (60 + rank)` to its score; refer section 10.3.
 - `freshness.episodic_half_life_days` halves an episodic record's score for every 30 days of event age; refer section 10.4. Semantic and procedural records do not decay.
 - `freshness.floor` is the lowest decay multiplier.
-- `gate.dense_floor.<type>` is the lowest cosine a dense-only candidate of that record type may have; refer section 10.5. Episodic summaries are long, so their cosine against a short query runs lower than a short semantic fact's, and one shared floor would under-retrieve episodes while over-retrieving facts.
+- `gate.dense_floor.<type>` is the lowest cosine a dense-only candidate of that record type may have; refer section 10.5. Episodic summaries are long, so their cosine against a short query runs lower than a short semantic fact's, and one shared floor would under-retrieve episodes while over-retrieving facts. `gate.dense_floor.session_summary` applies to generated session summaries instead of the episodic floor: they are the longest and most topically broad records in the store, which makes them the likeliest pollution source, and they are excluded from host-issued retrieval by default anyway.
 - `gate.lexical_min_term_fraction` is the fraction of query terms a lexical-only candidate must contain.
 - `gate.lexical_min_matched_terms` is the smallest number of matched terms a lexical-only candidate needs, unless one matched term is an entity alias or an identifier token. It stops a one-word query such as "deployment" from admitting every record that mentions deployment.
 - `gate.relative_floor` drops survivors whose fused score is below this fraction of the strongest survivor with the same number of contributing channels. Entity hits are exempt. This preserves strong single-channel candidates when a different record is corroborated by several generators.
@@ -194,6 +196,14 @@ ingestion:
   extraction_max_candidates: 20
   review_model: claude-haiku-4-5-20251001
   temporal_review_batch_size: 100
+  extraction_timeout_ms: 60000
+  review_timeout_ms: 30000
+  hosted_max_output_tokens: 4096
+  extraction_context_max_entities: 200
+  extraction_context_max_subjects: 200
+  extraction_claim_timeout_minutes: 30
+  summary_max_chars: 1200
+  session_idle_timeout_minutes: 30
 ```
 
 - `dedup_candidate_cosine` is the similarity threshold for comparing active records in the same scope and type but about different entities. At or above this cosine, the ingestor asks the equivalence judge whether the claims are the same, contradictory, or distinct.
@@ -208,6 +218,12 @@ ingestion:
 - `extraction_max_candidates` caps the candidates from one session extraction; refer section 8.2.
 - `review_model` is the separate structured-output model that accepts, rejects, or narrows extractor candidates before persistence; refer section 8.2.
 - `temporal_review_batch_size` bounds one atomic-claim pass over due records; refer section 8.4.
+- `extraction_timeout_ms` and `review_timeout_ms` are the per-call limits on the hosted extractor and reviewer. A timeout fails the extraction run closed; refer section 8.2.
+- `hosted_max_output_tokens` caps one structured completion from either model.
+- `extraction_context_max_entities` and `extraction_context_max_subjects` bound the readable aliases and active writable subjects handed to the extractor as context.
+- `extraction_claim_timeout_minutes` is how long a worker's claim on a session lasts. A crashed worker's claim expires after it and the next caller reclaims the session; refer section 8.2.
+- `summary_max_chars` caps one session summary, including its decisions line; refer section 18.
+- `session_idle_timeout_minutes` is the idle gap after which an adapter that cannot signal session end splits the session; refer section 12.
 
 ### 2.5 Policy
 
@@ -566,7 +582,7 @@ The retriever loads eligible record IDs into a temporary SQLite table and joins 
 | --- | --- |
 | `id` | Event identifier. |
 | `at` | Time when the actor made the change. |
-| `kind` | Change type such as `record.created`, `record.reinforced`, `entity.merged`, or `extraction.run`. |
+| `kind` | Change type such as `record.created`, `record.reinforced`, `entity.merged`, or `extraction.run`. Extraction writes `extraction.run` on completion, `extraction.failed` when the extractor or reviewer fails and nothing is written, `extraction.reclaimed` when a stale claim is taken over, and `extraction.rerun` when a forced re-run starts; the temporal worker writes `record.review_due`; the session hooks write `session.split`. |
 | `actor` | Agent ID, `extractor`, `admin`, or user ID that made the change. |
 | `record_id` | Related record when relevant. |
 | `entity_id` | Related entity when relevant. |
@@ -960,7 +976,7 @@ def initial_expiry(source_kind, now) -> datetime | None:
 | `session_summary` | 2 | `confirmed` | 0.80 | `summary_ttl_days` after creation |
 | `agent_inference` | 1 | `provisional` | 0.60 | `provisional_ttl_days` after creation |
 
-The policy assigns `session_summary` its status and expiry rules. The summary references the whole transcript through `source_ref = "session:<id>"`. The extractor writes it as an episodic record with the principal's person entity and `attribute = "-"`; it does not supersede or reinforce another record. The summary describes a dated session. Store a user fact through a separate evidenced candidate.
+The policy assigns `session_summary` its status and expiry rules. The summary references the whole transcript through `source_ref = "session:<id>"`. The extractor writes it as an episodic record with the principal's person entity and `attribute = "-"`; it never supersedes or reinforces a record other than an earlier summary of the same session. `source_ref` is the summary's idempotency key: a partial unique index keeps one live summary per session, a re-run with identical text changes nothing and reports `already_reinforced`, and a re-run with different text supersedes the earlier summary so its history remains. The summary describes a dated session. Store a user fact through a separate evidenced candidate.
 
 `confidence` is stored for audit and lifecycle reporting. The current retriever, gate, and rendering logic do not read it as a ranking signal. Phase 15 data decides whether to make it a ranking prior or remove it.
 
@@ -1186,6 +1202,12 @@ The response records the complete timing sequence: `permission`, `evidence`, `en
 6. **Revalidate and ingest.** The worker revalidates every accepted or revised candidate, including evidence entailment and temporal support, and then reuses the explicit-write logic from steps 5 through 8 above. It records accepted, reinforced, superseded, conflicting, and rejected candidates.
 7. **Write the session summary.** The worker writes one episodic record from `out.summary` with the principal's person entity as `subject_entity_id`, `attribute = "-"`, `event_at = session.ended_at`, `source_kind = "session_summary"`, `source_ref = "session:<session_id>"`, and an expiry of `ingestion.summary_ttl_days`. Policy assigns confirmed status and confidence `0.8`. The worker records other summary entities as `mentions`; it drops ambiguous aliases.
 8. **Finish the run.** The worker sets `sessions.extracted_at` and appends one `extraction.run` event.
+
+#### Destination scope, atomicity, and activation
+
+Candidates and the summary go to the principal's user scope when the agent can write it, and otherwise to the private `agent:<agent_id>/<user_id>` scope. A semantic or procedural candidate with no `about` entity is valid only in the user scope, as for an explicit write. Every write in one run, including the summary and the `extracted_at` update, commits in one transaction, so a failure during the write phase leaves the store as it was. Model calls happen before that transaction opens, so the write lock is never held during a hosted call. When the same evidence proposes the same text again, the ingestor treats identical content as the same claim without consulting the judge, which is what makes a forced re-run report `already_reinforced` rather than superseding a record with itself.
+
+Activation is a separate decision. After the run commits, the worker hands each written semantic record to the activation service, which applies the Phase 1A rules and writes its own events; a reviewer's acceptance says the candidate is worth keeping, not that it may enter the ambient profile.
 
 #### Candidate validation
 
@@ -1675,7 +1697,7 @@ def on_session_end(principal):
     schedule(extract_session, principal.session_id)
 ```
 
-If a framework cannot signal session end reliably, the adapter uses a 30-minute idle timeout. A later turn starts a new session. Every `source_ref` includes the session ID, so a split affects summary quality but does not make evidence point to the wrong transcript.
+If a framework cannot signal session end reliably, the adapter uses the `ingestion.session_idle_timeout_minutes` idle timeout, 30 minutes by default. A later turn ends the idle session, schedules its extraction, and continues under a derived session id, `<session_id>~2`, `~3`, and so on; `on_turn` returns the principal to keep using. Every `source_ref` includes the session ID, so a split affects summary quality but does not make evidence point to the wrong transcript. A write that quotes the earlier segment cannot find its evidence from the new one, so it is downgraded to `agent_inference` by the ordinary evidence rule rather than lost; a cross-session evidence lookback is a section 18 item.
 
 ## 13. Memory-use policy text
 
@@ -1982,3 +2004,5 @@ These choices do not block the initial implementation. Each has a safe default a
 | Confidence | Store it for lifecycle and audit only; do not use it in ranking or gating. | Phase 15 data shows that a ranking prior helps, or confirms the field should be removed. |
 | Cross-session consolidation | Do not run periodic whole-store semantic consolidation; reconcile incrementally through the ingestor. | Evaluation finds persistent duplicate, conflict, entity, or attribute fragmentation that new writes do not repair. |
 | Automatic temporal rewriting | Emit an auditable due-review flag only; do not rewrite a dated claim because time passed. | Due-review evaluation establishes safe decisions for completed, cancelled, delayed, and historically queried events. |
+| Cross-session evidence lookback | A write that quotes an earlier idle-split segment is downgraded to `agent_inference`, not searched for across sessions. | Phase 9a or the benchmark shows the downgrade rate after splits matters. |
+| Temporal support detection | A deterministic expression list decides whether a quote supports `valid_from`, `valid_until`, or `review_at`; anything it misses is rejected, not guessed. | Extraction evaluation shows real temporal statements being rejected often enough to justify a model-backed check. |

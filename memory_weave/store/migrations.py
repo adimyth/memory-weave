@@ -177,6 +177,24 @@ def _migration_8(connection: sqlite3.Connection) -> None:
     connection.execute("CREATE INDEX IF NOT EXISTS bundle_fitness_hash ON bundle_fitness(bundle_hash, recorded_at)")
 
 
+def _migration_9(connection: sqlite3.Connection) -> None:
+    """Temporal metadata, the due-review index, and one live session summary per session."""
+
+    for column in ("valid_from", "valid_until", "review_at", "review_flagged_at"):
+        if not _has_column(connection, "records", column):
+            connection.execute(f"ALTER TABLE records ADD COLUMN {column} TEXT")
+    connection.execute(
+        "CREATE INDEX IF NOT EXISTS records_review_due ON records(review_at) "
+        "WHERE review_at IS NOT NULL AND review_flagged_at IS NULL"
+    )
+    # The summary's idempotency key. A re-run finds the live summary by it and supersedes or keeps it;
+    # superseded summaries stay as history, so uniqueness covers active rows only.
+    connection.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS records_live_session_summary ON records(source_ref) "
+        "WHERE source_kind = 'session_summary' AND status IN ('provisional', 'confirmed')"
+    )
+
+
 def _has_column(connection: sqlite3.Connection, table: str, column: str) -> bool:
     return any(row[1] == column for row in connection.execute(f"PRAGMA table_info({table})"))
 
@@ -255,6 +273,7 @@ MIGRATIONS: tuple[tuple[int, Migration], ...] = (
     (6, _migration_6),
     (7, _migration_7),
     (8, _migration_8),
+    (9, _migration_9),
 )
 
 

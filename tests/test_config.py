@@ -32,12 +32,12 @@ def test_load_config_uses_lld_defaults() -> None:
         "reranker_enabled": False,
         "trigger_mode": "tool_only",
         "gate": {
-            "dense_floor": {"semantic": 0.45, "episodic": 0.40, "procedural": 0.45},
+            "dense_floor": {"semantic": 0.45, "episodic": 0.40, "procedural": 0.45, "session_summary": 0.50},
             "lexical_min_term_fraction": 0.5,
             "lexical_min_matched_terms": 2,
             "relative_floor": 0.5,
             "auto": {
-                "dense_floor": {"semantic": 0.55, "episodic": 0.50, "procedural": 0.55},
+                "dense_floor": {"semantic": 0.55, "episodic": 0.50, "procedural": 0.55, "session_summary": 0.50},
                 "lexical_min_term_fraction": 0.6,
                 "lexical_min_matched_terms": 2,
                 "relative_floor": 0.6,

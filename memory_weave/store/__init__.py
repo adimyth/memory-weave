@@ -1,5 +1,5 @@
 """SQLite persistence for Memory Weave."""
 
-from .store import Store
+from .store import ExtractionClaim, SessionRow, Store
 
-__all__ = ["Store"]
+__all__ = ["ExtractionClaim", "SessionRow", "Store"]
