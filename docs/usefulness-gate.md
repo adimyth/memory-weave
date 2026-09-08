@@ -581,6 +581,20 @@ Run on 7 September 2026, step 4 of the execution sequence. Section 8i compared j
 
 Evaluated and not selected, with their numbers above: Claude Sonnet 4.6 and Gemini 2.5 Pro as judge; Llama 3.1 8B as judge, section 8i; gap-anchored admission, section 8g; `gpt-5-nano` and `gpt-4o` as judge, sections 8d and 8f.
 
+## 8m. Pre-merge rerun of the supported bundle
+
+Run on 8 September 2026 before `feat/utility-aware-memory` was fast-forwarded into `main`, on the same bundle and the same commands as section 8k, with fresh drafts. Result files carry the `merge-check` tag.
+
+| Run | Result | Gate |
+| --- | --- | --- |
+| Promotion split, two independent builds | both pass, identical promoted sets | pass |
+| Configuration A, fifth split, real activation, three gap repeats | 0 of 20 injected, 10 of 10 explicit, 6 of 8 implicit, no placebo, misleading, or unsafe admission, 3 of 3 promoted, coverage 19 of 19 | pass |
+| Configuration A, fourth split, real activation, three gap repeats | 0 of 20 injected, 9 of 10 explicit, 7 of 7 implicit, no placebo, misleading, or unsafe admission, all three preferences promoted | pass |
+| Shadow harness, vertical-slice conversation | isolation held on all four checks, 0 of 4, 1 of 1, nothing unsafe, no failures, no withholds | pass |
+| Shadow harness, fifth split | isolation held on all four checks, 0 of 20, 10 of 10, 7 of 8, nothing unsafe, no failures, no withholds | pass |
+
+Two movements against section 8k, both inside the run-to-run variance already described there. The fifth split's implicit recall through configuration A fell from 7 of 8 to 6 of 8, which sits exactly on the 75 percent floor; the same split through the shadow harness, minutes later with the same bundle, recovered 7 of 8. The fourth split moved the other way: the "my manager" injection that appeared on every earlier run did not appear, and implicit recall rose from 6 of 7 to 7 of 7. The shadow judge's ordinary-turn admission rate on the fourth split was 3 of 18 against 2 of 18, still measured without effect on the served path. Nothing in the bundle changed; the numbers are the bundle's noise band, and the implicit-recall floor is the gate most exposed to it.
+
 ## 9. Sources
 
 - Ross, Mahabaleshwarkar, Suhara. *When2Call: When (not) to Call Tools.* NAACL 2025. https://aclanthology.org/2025.naacl-long.174/
