@@ -13,6 +13,7 @@ from datetime import datetime
 from importlib.resources import files
 from typing import Any, Protocol, cast
 
+from memory_weave.hosted import CompletionClient, StructuredOutputError, parse_json_object
 from memory_weave.models import (
     CandidateRecord,
     EntityKind,
@@ -25,8 +26,6 @@ from memory_weave.models import (
     SessionSummary,
     Turn,
 )
-
-from .hosted import CompletionClient, StructuredOutputError, parse_json_object
 
 EXTRACT_PROMPT_VERSION = "extract-v1"
 

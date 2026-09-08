@@ -15,6 +15,7 @@ from typing import Any
 from memory_weave.config import DenseFloorConfig, MemoryWeaveConfig, load_config
 from memory_weave.host import MemoryHost
 from memory_weave.index.embedder import BgeM3Embedder
+from memory_weave.index.reranker import reranker_from_config
 from memory_weave.index.vector import VectorIndex
 from memory_weave.ingest import Ingestor, NLICrossEncoderJudge, SessionBuffer
 from memory_weave.models import Principal, Scope, Turn
@@ -26,7 +27,7 @@ from memory_weave.policy import (
     ProfileAssembler,
     inventory,
 )
-from memory_weave.retrieve import Retriever
+from memory_weave.retrieve import Retriever, rewriter_from_config
 from memory_weave.store import Store
 from memory_weave.tools import ToolHandlers
 from memory_weave.util import now
@@ -116,16 +117,33 @@ class HostedCategoryPolicy:
         )
 
 
-def recall_oriented_config() -> MemoryWeaveConfig:
-    """Default config with the host-search gate loosened to a candidate control."""
+def recall_oriented_config(
+    *,
+    rewrite_model: str | None = None,
+    rewrite_timeout_ms: int | None = None,
+    rerank_floor: float | None = None,
+) -> MemoryWeaveConfig:
+    """Default config with the host-search gate loosened to a candidate control.
+
+    ``rewrite_model`` enables query rewriting through that hosted model; ``rerank_floor`` enables the
+    cross-encoder reranker with that floor. Either is a new retrieval configuration and so a new bundle.
+    """
 
     config = load_config()
     floors = DenseFloorConfig(semantic=0.30, episodic=0.30, procedural=0.30)
     auto = replace(config.retrieval.gate.auto, dense_floor=floors, relative_floor=0.30)
     gate = replace(config.retrieval.gate, auto=auto)
     trigger = replace(config.retrieval.trigger, auto_k=8, auto_min_query_chars=1)
-    retrieval = replace(config.retrieval, gate=gate, trigger=trigger)
-    return replace(config, retrieval=retrieval)
+    rewrite = config.retrieval.rewrite
+    if rewrite_model is not None:
+        rewrite = replace(
+            rewrite, enabled=True, model=rewrite_model, timeout_ms=rewrite_timeout_ms or rewrite.timeout_ms
+        )
+    retrieval = replace(config.retrieval, gate=gate, trigger=trigger, rewrite=rewrite)
+    reranker = config.reranker
+    if rerank_floor is not None:
+        reranker = replace(reranker, enabled=True, floor=rerank_floor)
+    return replace(config, retrieval=retrieval, reranker=reranker)
 
 
 class RealRetrieval:
@@ -137,12 +155,20 @@ class RealRetrieval:
         workdir: Path,
         embedder: BgeM3Embedder | None = None,
         activation_policy: Any = None,
+        *,
+        rewrite_model: str | None = None,
+        rewrite_timeout_ms: int | None = None,
+        rerank_floor: float | None = None,
     ) -> None:
         self.scenario = scenario
         self.workdir = workdir
-        self.config = recall_oriented_config()
+        self.config = recall_oriented_config(
+            rewrite_model=rewrite_model, rewrite_timeout_ms=rewrite_timeout_ms, rerank_floor=rerank_floor
+        )
         self.embedder = embedder or BgeM3Embedder(self.config.embedding)
         self.judge = NLICrossEncoderJudge(self.config.ingestion.equivalence)
+        self.rewriter = rewriter_from_config(self.config)
+        self.reranker = reranker_from_config(self.config)
         self.activation_policy = activation_policy
         self._arms: dict[str, dict[str, Any]] = {}
 
@@ -178,7 +204,9 @@ class RealRetrieval:
         session_buffer = SessionBuffer(store)
         vector_index = VectorIndex(self.config.embedding)
         ingestor = Ingestor(store, vector_index, self.embedder, self.judge, session_buffer, self.config)
-        retriever = Retriever(store, vector_index, self.embedder, self.config)
+        retriever = Retriever(
+            store, vector_index, self.embedder, self.config, rewriter=self.rewriter, reranker=self.reranker
+        )
         handlers = ToolHandlers(retriever, ingestor, store, vector_index)
 
         records = {r["id"]: r for r in self.scenario["records"]}

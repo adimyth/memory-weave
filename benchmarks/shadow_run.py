@@ -105,6 +105,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--draft-cache", type=Path, default=None)
     parser.add_argument("--out-dir", type=Path, default=Path("benchmarks/results/shadow"))
     parser.add_argument("--tag", default="")
+    parser.add_argument(
+        "--rewrite-model", default=None, help="Enable query rewriting through this hosted model; a new bundle"
+    )
+    parser.add_argument("--rewrite-timeout-ms", type=int, default=None)
+    parser.add_argument(
+        "--rerank-floor",
+        type=float,
+        default=None,
+        help="Enable the cross-encoder reranker with this floor; a new bundle",
+    )
     args = parser.parse_args(argv)
 
     scenario = json.loads(args.scenario.read_text())
@@ -112,7 +122,12 @@ def main(argv: list[str] | None = None) -> int:
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     workdir = args.out_dir / "stores" / f"{args.scenario.stem}-{stamp}"
     rr = RealRetrieval(
-        scenario, workdir, activation_policy=HostedCategoryPolicy(models, args.activation_model, args.category_prompt)
+        scenario,
+        workdir,
+        activation_policy=HostedCategoryPolicy(models, args.activation_model, args.category_prompt),
+        rewrite_model=args.rewrite_model,
+        rewrite_timeout_ms=args.rewrite_timeout_ms,
+        rerank_floor=args.rerank_floor,
     )
     rr.build_arm("shadow", [r["id"] for r in scenario["records"]])
     state = rr._arms["shadow"]  # noqa: SLF001
@@ -150,7 +165,7 @@ def main(argv: list[str] | None = None) -> int:
     bundle = policy_bundle(
         args.gap_model,
         args.admission_model,
-        rr.config.retrieval,
+        rr.config,
         args.budget_ms,
         classifier=f"{args.activation_model}/{args.category_prompt}",
     )

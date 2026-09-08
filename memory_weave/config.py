@@ -40,6 +40,7 @@ class RerankerConfig:
     candidates: int = 30
     floor: float | None = None
     budget_mean_ms: int = 100
+    batch_size: int = 32
 
 
 @dataclass(frozen=True, slots=True)
@@ -48,6 +49,7 @@ class RewriteConfig:
     model: str = "claude-haiku-4-5-20251001"
     max_context_chars: int = 2000
     timeout_ms: int = 800
+    max_output_tokens: int = 512
 
 
 @dataclass(frozen=True, slots=True)

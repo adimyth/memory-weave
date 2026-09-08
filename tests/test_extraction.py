@@ -715,6 +715,40 @@ def test_activation_runs_after_extraction_and_keeps_temporary_preferences_condit
     assert "record.activation_decided" in kinds and "record.created" in kinds
 
 
+def test_extracted_records_serve_both_the_ambient_profile_and_host_issued_retrieval(world: World) -> None:
+    """The utility-aware path reads ambient records from the profile and conditional ones through auto search."""
+
+    from memory_weave.policy import ProfileAssembler
+
+    class Policy:
+        def classify(self, content: str) -> CategoryDecision:
+            return CategoryDecision("preferences", "answer_style", "broad", 0.9)  # type: ignore[arg-type]
+
+    activation = ActivationService(world.store, Policy(), actor="extractor")
+    world.runner(activation=activation).extract_session(_SESSION_ID, _PRINCIPAL)
+
+    profile = ProfileAssembler(world.store).build(_PRINCIPAL)
+    assert C_STYLE in profile.text
+    assert C_SPANISH not in profile.text and C_ROHAN not in profile.text
+
+    retriever = Retriever(
+        world.store, VectorIndex(world.config.embedding), world.embedder, world.config, current_time=world.clock
+    )
+    request = SearchRequest(
+        queries=["Rohan Mehta runs the platform team."],
+        context=None,
+        types=None,
+        entities=None,
+        since=None,
+        until=None,
+        k=8,
+        include_history=False,
+        trigger="auto",
+    )
+    found = {entry.record.content for entry in retriever.search(_PRINCIPAL, request).results}
+    assert C_ROHAN in found
+
+
 def test_activation_is_not_run_when_no_service_is_configured(world: World) -> None:
     world.runner().extract_session(_SESSION_ID, _PRINCIPAL)
     assert {r.activation for r in world.records()} == {"conditional"}

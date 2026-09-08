@@ -106,6 +106,19 @@ Drives `examples/reference_host.py` with the real hosted adapters and the suppor
 whole operating loop: refusal while unapproved, shadow, fitness recording, serving, budget withhold, a kill
 switch, metrics, and rollback reasons. Results land in `results/reference-host/`.
 
+```bash
+HF_HUB_OFFLINE=1 uv run --extra live --extra local-models python benchmarks/rerank_calibration.py \
+  --scenario benchmarks/scenarios/phase0_tune.json --check benchmarks/scenarios/phase0_v5.json
+```
+
+Sweeps the cross-encoder reranker's floor on a labelled split: every turn's text runs as a host-issued search
+with the reranker enabled and its floor at zero, then precision, recall, and F1 of expected records, and the
+share of ordinary turns with any survivor, are computed offline for every floor. Results land in
+`results/rerank/`. `--rewrite-model <model>` and `--rerank-floor <x>` on `phase0_two_arm.py` and
+`shadow_run.py` enable the two optional retrieval stages for a run; either is a new retrieval configuration,
+so the bundle hash changes and the run cannot reuse an earlier fitness result. The bundle hash covers the
+`retrieval` and `reranker` sections of the configuration together.
+
 The shadow harness runs the orchestrator beside the served path with isolation asserted; `metrics`
 aggregates any store's turn-decision log into stage outcomes, rates, latency, cost, and backlog; `bundles
 record` writes the supported bundle's fitness result into a store so that store may serve it. Without that

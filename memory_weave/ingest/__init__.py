@@ -1,5 +1,14 @@
 """Ingestion: the explicit write path, session extraction, and the helpers both share."""
 
+from memory_weave.hosted import (
+    AnthropicCompletionClient,
+    CompletionClient,
+    OpenAICompletionClient,
+    StructuredOutputError,
+    completion_client_for,
+    parse_json_object,
+)
+
 from .entities import (
     EntityMergeError,
     EntityNotFoundError,
@@ -27,14 +36,6 @@ from .extractor import (
     Extractor,
     FakeExtractor,
     StructuredLLMExtractor,
-)
-from .hosted import (
-    AnthropicCompletionClient,
-    CompletionClient,
-    OpenAICompletionClient,
-    StructuredOutputError,
-    completion_client_for,
-    parse_json_object,
 )
 from .ingestor import EntityAmbiguityCandidate, Ingestor, SummaryRequest, WriteRequest, WriteResult
 from .reviewer import (

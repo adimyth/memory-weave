@@ -98,12 +98,14 @@ reranker:
   candidates: 30
   floor: null
   budget_mean_ms: 100
+  batch_size: 32
 ```
 
 - `enabled` adds a cross-encoder pass after duplicate collapse. The cross-encoder scores each query-record pair and reorders the survivors; refer section 10.7.
 - `candidates` is the maximum number of records sent to the reranker after the initial gate and duplicate collapse. The reranker scores every selected record against every query, then keeps the record's best score. For three queries and 30 records, that is at most `3 × 30 = 90` query-record scores.
 - `floor` is the minimum best reranker score a record needs to be returned. Dense and lexical floors still keep weak records out of the reranker shortlist, but, when reranking is enabled, `floor` makes the final keep-or-drop decision. `null` means the threshold has not been calibrated, so `load_config` rejects an enabled reranker without a floor.
 - `budget_mean_ms` sets the expected cost for 30 candidates on the target laptop. The benchmark compares measured p50 and p95 against it.
+- `batch_size` is how many query-record pairs the cross-encoder scores per forward pass. All pairs for one search go through in one call; this only bounds the batch inside it.
 
 ### 2.3 Retrieval
 
@@ -114,6 +116,7 @@ retrieval:
     model: claude-haiku-4-5-20251001
     max_context_chars: 2000
     timeout_ms: 800
+    max_output_tokens: 512
   trigger:
     mode: tool_only           # tool_only | auto | hybrid; refer section 14.1
     auto_k: 4                 # k for host-issued searches in auto and hybrid modes
@@ -157,6 +160,7 @@ The retriever applies these settings in the order shown. Section 10 defines the 
 - `rewrite.enabled` rewrites the query before searching, using the last user and assistant turns: "what does he prefer?" becomes "Aditya's preferred explanation style"; refer section 10.0. The feature defaults to off because the hosted call sits on the hot path.
 - `rewrite.max_context_chars` caps the combined current-turn context that the adapter sends to the rewrite model. By default, this context is the most recent user turn plus assistant turn. It does not truncate the stored session transcript or the search queries.
 - `rewrite.timeout_ms` bounds the wait. On timeout the search uses the raw query and logs `rewrite_status = failed`.
+- `rewrite.max_output_tokens` caps the one structured completion; the rewriter's reply is a short JSON list.
 - `per_generator_k` limits each candidate generator to its top records: dense vector search, lexical FTS search, and entity search. At `30`, RRF receives at most 30 ranked positions from each generator, or 90 positions total. The same record can appear in more than one list, so the number of unique candidates can be lower. Increasing this value raises work in later stages.
 - `max_alias_tokens` bounds each query-derived entity alias to this many whitespace tokens. Alias lookup batches its candidates and uses temporary tables for matching entity IDs, so a long pasted query cannot exhaust SQLite bound parameters.
 - `rrf_k` is the fusion constant. Each list a record appears in adds `1 / (60 + rank)` to its score; refer section 10.3.
@@ -1352,8 +1356,9 @@ Rules:
 - Dense and lexical generators receive rewritten queries. The retriever leaves entity hints unchanged.
 - The response and log retain raw and rewritten queries, and each `Explanation` carries both, so evaluation can attribute a hit or miss to rewriting.
 - On rewrite failure, the search proceeds on raw queries and records `failed` in the log.
+- The no-invention rule is enforced, not only prompted: `HostedLLMQueryRewriter` refuses a rewrite that contains a capitalised token, other than a query's first word, that appears in neither the raw queries nor the context, and the search proceeds on the raw queries with `failed`. A rewrite cannot carry a name or a private fact into retrieval that the turn did not already contain.
 
-The deployment leaves rewriting off by default because the hosted call sits on the hot path. The timer records rewrite latency as its own stage.
+`HostedLLMQueryRewriter` in `retrieve/rewrite.py` makes one structured call through the provider-neutral `CompletionClient` with the versioned prompt `retrieve/prompts/rewrite_v1.md`; `rewriter_from_config` returns it when `retrieval.rewrite.enabled` and `NoRewriter` otherwise. The deployment leaves rewriting off by default because the hosted call sits on the hot path. The timer records rewrite latency as its own stage.
 
 ### 10.1 Pipeline orchestration
 
@@ -1551,6 +1556,8 @@ For each survivor, it scores every query-record pair, keeps the record's maximum
 `reranker.floor` drops weak reranked candidates. When reranking is enabled, that floor becomes the final gate; dense and lexical floors only create the shortlist. `load_config` rejects an enabled reranker until evaluation supplies a floor.
 
 `reranker.budget_mean_ms` starts at 100 ms mean for 30 candidates on the target laptop. The benchmark reports p50 and p95 by candidate count and hardware, then updates the HLD latency table. Make reranking the default after evaluation improves final context and downstream task outcomes.
+
+`BgeReranker` in `index/reranker.py` loads `sentence-transformers`' `CrossEncoder` on first use and scores every query-record pair of one search as one batch; `reranker_from_config` returns it when `reranker.enabled` and `NoReranker` otherwise. The model has a single output label, so its scores are sigmoid values in (0, 1) and `floor` is compared on that scale. The reranker runs after the scope filter, the gate, and duplicate collapse, so it never scores a record the caller could not read or that the gate rejected; `benchmarks/rerank_calibration.py` sweeps the floor on a labelled split.
 
 ### 10.8 Budget fill
 

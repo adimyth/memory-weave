@@ -143,13 +143,22 @@ def policy_bundle(
     latency_budget_ms: int | None,
     classifier: str = "gpt-4o/category-v2",
 ) -> dict[str, object]:
-    """The versioned bundle recorded with every decision."""
+    """The versioned bundle recorded with every decision.
+
+    ``retrieval_config`` is the whole ``MemoryWeaveConfig`` when the caller has one: the hash then covers
+    the retrieval section and the reranker section together, because an enabled reranker changes what the
+    judge sees as much as a gate floor does. A bare retrieval section or a plain mapping is hashed as given.
+    """
 
     from dataclasses import asdict, is_dataclass
 
-    retrieval_repr = json.dumps(
-        asdict(retrieval_config) if is_dataclass(retrieval_config) else retrieval_config, sort_keys=True, default=str
-    )
+    if hasattr(retrieval_config, "retrieval") and hasattr(retrieval_config, "reranker"):
+        hashed: Any = {"retrieval": asdict(retrieval_config.retrieval), "reranker": asdict(retrieval_config.reranker)}
+    elif is_dataclass(retrieval_config) and not isinstance(retrieval_config, type):
+        hashed = asdict(retrieval_config)
+    else:
+        hashed = retrieval_config
+    retrieval_repr = json.dumps(hashed, sort_keys=True, default=str)
     return {
         "planner": f"{gap_model}/{GAP_PROMPT_VERSION}",
         "judge": f"{admission_model}/{ADMISSION_PROMPT_VERSION}",

@@ -238,8 +238,14 @@ class Phase0:
         activation: str = "fixture",
         activation_model: str = "gpt-4o",
         category_prompt: str = "category-v1",
+        rewrite_model: str | None = None,
+        rewrite_timeout_ms: int | None = None,
+        rerank_floor: float | None = None,
     ) -> None:
         self.scenario = scenario
+        self.rewrite_model = rewrite_model
+        self.rewrite_timeout_ms = rewrite_timeout_ms
+        self.rerank_floor = rerank_floor
         self.draft_model = draft_model
         self.gap_model = gap_model
         self.admission_model = admission_model
@@ -563,7 +569,15 @@ class Phase0:
                     if self.activation == "real"
                     else None
                 )
-                self._real = RealRetrieval(self.scenario, self._real_workdir, self._embedder, policy)
+                self._real = RealRetrieval(
+                    self.scenario,
+                    self._real_workdir,
+                    self._embedder,
+                    policy,
+                    rewrite_model=self.rewrite_model,
+                    rewrite_timeout_ms=self.rewrite_timeout_ms,
+                    rerank_floor=self.rerank_floor,
+                )
             self.write_logs[arm] = self._real.build_arm(arm, store_ids)
             outcomes = {}
             for entry in self.write_logs[arm]:
@@ -825,6 +839,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--draft-cache", type=Path, default=None)
     parser.add_argument("--tag", default="")
+    parser.add_argument(
+        "--rewrite-model", default=None, help="Enable query rewriting through this hosted model; a new bundle"
+    )
+    parser.add_argument("--rewrite-timeout-ms", type=int, default=None)
+    parser.add_argument(
+        "--rerank-floor",
+        type=float,
+        default=None,
+        help="Enable the cross-encoder reranker with this floor; a new bundle",
+    )
     parser.add_argument("--out-dir", type=Path, default=Path("benchmarks/results/phase0"))
     args = parser.parse_args(argv)
 
@@ -848,6 +872,9 @@ def main(argv: list[str] | None = None) -> int:
         args.activation,
         args.activation_model,
         args.category_prompt,
+        rewrite_model=args.rewrite_model,
+        rewrite_timeout_ms=args.rewrite_timeout_ms,
+        rerank_floor=args.rerank_floor,
     )
     print(
         f"scenario={args.scenario} draft={args.draft_model} gap={gap_model}/{args.gap_prompt} "
@@ -876,6 +903,9 @@ def main(argv: list[str] | None = None) -> int:
     args.out_dir.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     tag = f"-{args.tag}" if args.tag else ""
+    stages = ("-rewrite" if args.rewrite_model else "") + (
+        f"-rerank{args.rerank_floor}" if args.rerank_floor is not None else ""
+    )
 
     def _safe(name: str) -> str:
         return (
@@ -884,7 +914,7 @@ def main(argv: list[str] | None = None) -> int:
 
     path = args.out_dir / (
         f"{stamp}-{args.scenario.stem}-gap-{_safe(gap_model)}-{args.gap_prompt}"
-        f"-adm-{_safe(admission_model)}-{args.admission_prompt}-act-{args.activation}{tag}.json"
+        f"-adm-{_safe(admission_model)}-{args.admission_prompt}-act-{args.activation}{stages}{tag}.json"
     )
     payload = {
         "scenario": str(args.scenario),
@@ -894,6 +924,9 @@ def main(argv: list[str] | None = None) -> int:
         "admission_model": admission_model,
         "admission_prompt": args.admission_prompt,
         "retrieval": args.retrieval,
+        "rewrite_model": args.rewrite_model,
+        "rewrite_timeout_ms": args.rewrite_timeout_ms,
+        "rerank_floor": args.rerank_floor,
         "shadow_judge": args.shadow_judge,
         "activation": args.activation,
         "activation_model": args.activation_model,

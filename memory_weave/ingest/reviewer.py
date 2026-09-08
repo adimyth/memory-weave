@@ -14,10 +14,10 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, replace
 from typing import Any, Literal, Protocol
 
+from memory_weave.hosted import CompletionClient, StructuredOutputError, parse_json_object
 from memory_weave.models import CandidateRecord, Record, Scope, Turn
 
 from .extractor import dump_candidate, load_prompt, parse_timestamp
-from .hosted import CompletionClient, StructuredOutputError, parse_json_object
 
 REVIEW_PROMPT_VERSION = "review-v1"
 

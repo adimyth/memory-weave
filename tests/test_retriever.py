@@ -108,6 +108,9 @@ class _ScoredReranker:
     def score(self, query: str, document: str) -> float:
         return self._scores[(query, document)]
 
+    def score_pairs(self, pairs: list[tuple[str, str]]) -> list[float]:
+        return [self.score(query, document) for query, document in pairs]
+
 
 def test_search_fuses_generators_and_writes_a_replayable_log(store: Store) -> None:
     query = "Aditya editor preference"

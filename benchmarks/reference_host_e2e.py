@@ -68,7 +68,7 @@ def main(argv: list[str] | None = None) -> int:
         return store.get_records([str(e["record"]["id"]) for e in result.get("results", [])])
 
     bundle = policy_bundle(
-        args.gap_model, args.admission_model, rr.config.retrieval, None, classifier=f"{args.gap_model}/category-v2"
+        args.gap_model, args.admission_model, rr.config, None, classifier=f"{args.gap_model}/category-v2"
     )
     gap_policy = HostedGapPolicy(models, args.gap_model)
     admission = HostedAdmissionPolicy(models, args.admission_model)
