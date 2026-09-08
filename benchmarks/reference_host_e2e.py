@@ -27,7 +27,13 @@ from benchmarks.phase0_real_retrieval import HostedCategoryPolicy, RealRetrieval
 from benchmarks.shadow_adapter import HostedAdmissionPolicy, HostedGapPolicy, policy_bundle  # noqa: E402
 from examples.reference_host import KillSwitches, ReferenceHost  # noqa: E402
 from memory_weave.models import Principal, Record  # noqa: E402
-from memory_weave.policy import BundleNotApprovedError, BundleRegistry, RollbackThresholds, bundle_components, render  # noqa: E402
+from memory_weave.policy import (  # noqa: E402
+    BundleNotApprovedError,
+    BundleRegistry,
+    RollbackThresholds,
+    bundle_components,
+    render,
+)
 
 _DRAFT_SYSTEM = (
     "You are a helpful assistant. Answer the user's message directly and briefly, in under 150 words. "
@@ -61,7 +67,9 @@ def main(argv: list[str] | None = None) -> int:
             return []
         return store.get_records([str(e["record"]["id"]) for e in result.get("results", [])])
 
-    bundle = policy_bundle(args.gap_model, args.admission_model, rr.config.retrieval, None, classifier=f"{args.gap_model}/category-v2")
+    bundle = policy_bundle(
+        args.gap_model, args.admission_model, rr.config.retrieval, None, classifier=f"{args.gap_model}/category-v2"
+    )
     gap_policy = HostedGapPolicy(models, args.gap_model)
     admission = HostedAdmissionPolicy(models, args.admission_model)
     drafts: dict[str, str] = {}
@@ -78,7 +86,11 @@ def main(argv: list[str] | None = None) -> int:
     def regenerate_for(turn_text: str, profile_text: str):
         def regenerate(records: list[Record]) -> str:
             facts = "\n".join(f"- {r.content}" for r in records)
-            return models.complete(args.draft_model, f"{_DRAFT_SYSTEM}\n\n{profile_text}\n\nRelevant facts recalled from memory:\n{facts}", turn_text)
+            return models.complete(
+                args.draft_model,
+                f"{_DRAFT_SYSTEM}\n\n{profile_text}\n\nRelevant facts recalled from memory:\n{facts}",
+                turn_text,
+            )
 
         return regenerate
 
@@ -91,33 +103,80 @@ def main(argv: list[str] | None = None) -> int:
         print(f"enforcement ok: {error}")
 
     # 2. Shadow with the unapproved bundle.
-    host = ReferenceHost(store, retrieve=retrieve, gap_policy=gap_policy, admission_policy=admission, bundle=bundle, switches=KillSwitches(regeneration=False))
+    host = ReferenceHost(
+        store,
+        retrieve=retrieve,
+        gap_policy=gap_policy,
+        admission_policy=admission,
+        bundle=bundle,
+        switches=KillSwitches(regeneration=False),
+    )
     from memory_weave.policy import ProfileAssembler
 
     profile_text = ProfileAssembler(store).build(principal).text or "Applied preferences: none."
     print(f"profile: {profile_text.replace(chr(10), ' | ')}")
     for turn in scenario["turns"]:
-        d = host.serve_turn(principal, turn["text"], None, baseline_for(turn["text"], profile_text), regenerate_for(turn["text"], profile_text))
-        print(f"[shadow]  {turn['id']:<4} {turn['class']:<13} {d.disposition:<26} admitted={[id_map.get(i, i) for i in d.admitted_ids]}")
+        d = host.serve_turn(
+            principal,
+            turn["text"],
+            None,
+            baseline_for(turn["text"], profile_text),
+            regenerate_for(turn["text"], profile_text),
+        )
+        print(
+            f"[shadow]  {turn['id']:<4} {turn['class']:<13} {d.disposition:<26} "
+            f"admitted={[id_map.get(i, i) for i in d.admitted_ids]}"
+        )
 
     # 3. Record the supported bundle's fitness the way a consuming application would, then serve.
     components = bundle_components(host.config())
     expected = json.loads(args.bundle_file.read_text())
-    drift = {k: (components.get(k), expected.get(k)) for k in set(components) | set(expected) if components.get(k) != expected.get(k) and k not in ("gap_enabled",)}
+    drift = {
+        k: (components.get(k), expected.get(k))
+        for k in set(components) | set(expected)
+        if components.get(k) != expected.get(k) and k not in ("gap_enabled",)
+    }
     if drift:
         print(f"note: live bundle differs from the shipped file on {sorted(drift)}; recording the live components")
-    BundleRegistry(store).record(dict(components, gap_enabled=True), passed=True, evidence="docs/usefulness-gate.md 8k,8l", recorded_by="reference_host_e2e")
+    BundleRegistry(store).record(
+        dict(components, gap_enabled=True),
+        passed=True,
+        evidence="docs/usefulness-gate.md 8k,8l",
+        recorded_by="reference_host_e2e",
+    )
     host.set_switches(KillSwitches())
     print(f"serving bundle {host.bundle_hash()}")
     for turn in scenario["turns"]:
-        d = host.serve_turn(principal, turn["text"], None, baseline_for(turn["text"], profile_text), regenerate_for(turn["text"], profile_text))
-        print(f"[served]  {turn['id']:<4} {turn['class']:<13} {d.disposition:<26} admitted={[id_map.get(i, i) for i in d.admitted_ids]} budget={d.effective_budget_ms}")
+        d = host.serve_turn(
+            principal,
+            turn["text"],
+            None,
+            baseline_for(turn["text"], profile_text),
+            regenerate_for(turn["text"], profile_text),
+        )
+        print(
+            f"[served]  {turn['id']:<4} {turn['class']:<13} {d.disposition:<26} "
+            f"admitted={[id_map.get(i, i) for i in d.admitted_ids]} budget={d.effective_budget_ms}"
+        )
 
     # 4. Budget path and a kill switch, once each.
-    tight = host.serve_turn(principal, scenario["turns"][1]["text"], None, baseline_for(scenario["turns"][1]["text"], profile_text), regenerate_for(scenario["turns"][1]["text"], profile_text), latency_budget_ms=0)
+    tight = host.serve_turn(
+        principal,
+        scenario["turns"][1]["text"],
+        None,
+        baseline_for(scenario["turns"][1]["text"], profile_text),
+        regenerate_for(scenario["turns"][1]["text"], profile_text),
+        latency_budget_ms=0,
+    )
     print(f"[budget0] {scenario['turns'][1]['id']:<4} {tight.disposition}")
     host.disable("admission")
-    off = host.serve_turn(principal, scenario["turns"][1]["text"], None, baseline_for(scenario["turns"][1]["text"], profile_text), regenerate_for(scenario["turns"][1]["text"], profile_text))
+    off = host.serve_turn(
+        principal,
+        scenario["turns"][1]["text"],
+        None,
+        baseline_for(scenario["turns"][1]["text"], profile_text),
+        regenerate_for(scenario["turns"][1]["text"], profile_text),
+    )
     print(f"[adm off] {scenario['turns'][1]['id']:<4} {off.disposition} bundle={host.bundle_hash()}")
 
     # 5. Metrics and rollback over everything logged.
@@ -132,7 +191,19 @@ def main(argv: list[str] | None = None) -> int:
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
     out = args.out_dir / f"{stamp}-{args.scenario.stem}.json"
-    out.write_text(json.dumps({"bundle": components, "report": report.to_dict(), "all": everything.to_dict(), "decisions": store.turn_decisions(principal.session_id), "usage": models.usage}, indent=2, default=str))
+    out.write_text(
+        json.dumps(
+            {
+                "bundle": components,
+                "report": report.to_dict(),
+                "all": everything.to_dict(),
+                "decisions": store.turn_decisions(principal.session_id),
+                "usage": models.usage,
+            },
+            indent=2,
+            default=str,
+        )
+    )
     print(f"wrote {out}")
     return 0
 

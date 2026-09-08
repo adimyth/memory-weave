@@ -18,7 +18,17 @@ from .activation import (
 )
 from .bundles import SUITE_VERSION, BundleNotApprovedError, BundleRegistry, FitnessRecord, bundle_hash
 from .grants import private_scope, readable_scopes, writable_scopes
+from .lifecycle import (
+    has_authority,
+    initial_confidence,
+    initial_expiry,
+    initial_status,
+    provisional_expiry,
+    rank,
+    reinforce,
+)
 from .metrics import MetricsReport, RollbackThresholds, aggregate, render, rollback_reasons, stage_outcome
+from .prompt import AUTO_MEMORY_NOTICE, AUTO_MEMORY_USE_POLICY, MEMORY_USE_POLICY, MEMORY_USE_POLICY_VERSION
 from .utility_aware import (
     AdmissionDecision,
     AdmissionPolicy,
@@ -32,16 +42,6 @@ from .utility_aware import (
     UtilityAwareOrchestrator,
     bundle_components,
 )
-from .lifecycle import (
-    has_authority,
-    initial_confidence,
-    initial_expiry,
-    initial_status,
-    provisional_expiry,
-    rank,
-    reinforce,
-)
-from .prompt import AUTO_MEMORY_NOTICE, AUTO_MEMORY_USE_POLICY, MEMORY_USE_POLICY, MEMORY_USE_POLICY_VERSION
 
 __all__ = [
     "AUTO_MEMORY_USE_POLICY",

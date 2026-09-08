@@ -565,12 +565,8 @@ class Ingestor:
         # "contradicts" between two unrelated facts about one person would let the newer fact supersede
         # the older one, and a person could hold only one live semantic record.
         floor = self._config.ingestion.attribute_alias_cosine
-        aliasable = {
-            existing.id for existing in attribute_records if self._attribute_cosine(existing, vector) >= floor
-        }
-        aliased_same = [
-            existing for existing, verdict in verdicts if verdict == "same" and existing.id in aliasable
-        ]
+        aliasable = {existing.id for existing in attribute_records if self._attribute_cosine(existing, vector) >= floor}
+        aliased_same = [existing for existing, verdict in verdicts if verdict == "same" and existing.id in aliasable]
         if aliased_same:
             existing = max(aliased_same, key=lambda candidate: _authority_key(candidate, self._config))
             extra["attribute_aliased_from"] = record.attribute or ""

@@ -47,7 +47,9 @@ def world(tmp_path: Path) -> tuple[Store, Principal, str]:
     return store, principal, entity_id
 
 
-def _record(record_id: str, content: str, subject_entity_id: str, *, status: str = "provisional", memory_type: str = "semantic") -> Record:
+def _record(
+    record_id: str, content: str, subject_entity_id: str, *, status: str = "provisional", memory_type: str = "semantic"
+) -> Record:
     return Record(
         id=record_id,
         type=memory_type,  # type: ignore[arg-type]
@@ -99,13 +101,21 @@ def test_evidence_is_verified_only_from_principal_user_turns(world) -> None:
 def test_rules_in_order() -> None:
     principal_entity = "p"
     semantic = _record("r", "x", principal_entity)
-    assert decide_activation(_record("e", "x", principal_entity, memory_type="episodic"), _broad(), principal_entity, 1) == ("conditional", "not_semantic")
-    assert decide_activation(_record("o", "x", "someone-else"), _broad(), principal_entity, 1) == ("conditional", "not_about_principal")
+    assert decide_activation(
+        _record("e", "x", principal_entity, memory_type="episodic"), _broad(), principal_entity, 1
+    ) == ("conditional", "not_semantic")
+    assert decide_activation(_record("o", "x", "someone-else"), _broad(), principal_entity, 1) == (
+        "conditional",
+        "not_about_principal",
+    )
     assert decide_activation(semantic, None, principal_entity, 1) == ("review", "policy_unavailable")
     unsafe = CategoryDecision("preferences", "answer_style", "broad", 0.95, unsafe=True)
     assert decide_activation(semantic, unsafe, principal_entity, 1) == ("review", "flagged_unsafe")
     assert decide_activation(semantic, _broad(), principal_entity, None) == ("conditional", "no_host_verified_evidence")
-    assert decide_activation(semantic, _broad("other"), principal_entity, 1) == ("conditional", "category_not_promotable")
+    assert decide_activation(semantic, _broad("other"), principal_entity, 1) == (
+        "conditional",
+        "category_not_promotable",
+    )
     scoped = CategoryDecision("preferences", "answer_style", "scoped", 0.9)
     assert decide_activation(semantic, scoped, principal_entity, 1) == ("conditional", "scoped_preference")
     ambiguous = CategoryDecision("preferences", "answer_style", "ambiguous", 0.9)
@@ -126,7 +136,9 @@ def test_recognised_forms_override_the_classifier() -> None:
     assert decide_activation(default, broad, principal_entity, 1) == ("promote", "eligible_global_default")
 
     # Topic-scoped: stays conditional even when the classifier calls it broad.
-    topic = _record("t", "When writing SQL, user prefers common table expressions over nested subqueries.", principal_entity)
+    topic = _record(
+        "t", "When writing SQL, user prefers common table expressions over nested subqueries.", principal_entity
+    )
     assert decide_activation(topic, broad, principal_entity, 1) == ("conditional", "scoped_preference")
 
     # Temporary: never ambient.
@@ -150,7 +162,9 @@ def test_review_resolution_and_direct_activation_are_checked_and_audited(world) 
     text = "User likes it terse, sometimes."
     store.append_turn(Turn("session-1", 1, "user", text, _AT))
     store.insert_record(_record("r1", text, entity_id))
-    decision = ActivationService(store, FakePolicy({text: CategoryDecision("preferences", "answer_style", "ambiguous", 0.6)})).apply(principal, "r1")
+    decision = ActivationService(
+        store, FakePolicy({text: CategoryDecision("preferences", "answer_style", "ambiguous", 0.6)})
+    ).apply(principal, "r1")
     assert decision.outcome == "review" and decision.review_id is not None
 
     ops = ActivationOperations(store)
@@ -241,7 +255,9 @@ def test_policy_failure_is_a_review_not_a_promotion(world) -> None:
 def test_profile_respects_budgets_and_ignores_conditional_and_superseded(world) -> None:
     store, principal, entity_id = world
     for index in range(4):
-        store.insert_record(_record(f"amb{index}", f"Ambient preference number {index}.", entity_id, status="confirmed"))
+        store.insert_record(
+            _record(f"amb{index}", f"Ambient preference number {index}.", entity_id, status="confirmed")
+        )
         store.set_activation(f"amb{index}", "ambient")
     store.insert_record(_record("cond", "Conditional fact.", entity_id, status="confirmed"))
     store.insert_record(_record("old", "Superseded preference.", entity_id, status="superseded"))

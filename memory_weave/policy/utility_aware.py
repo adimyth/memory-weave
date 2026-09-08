@@ -18,7 +18,7 @@ from collections.abc import Callable, Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FuturesTimeout
 from dataclasses import asdict, dataclass, field
-from typing import Literal, Protocol
+from typing import Any, Literal, Protocol
 
 from memory_weave.models import Principal, Record
 from memory_weave.policy.activation import ProfileAssembler, ProfileBlock, inventory
@@ -26,8 +26,16 @@ from memory_weave.store import Store
 from memory_weave.util import now, uuid7
 
 GapCategory = Literal["preference", "prior_decision", "constraint", "relationship_or_event", "task_state"]
-GAP_CATEGORIES: tuple[GapCategory, ...] = ("preference", "prior_decision", "constraint", "relationship_or_event", "task_state")
-AdmissionVerdict = Literal["helpful", "redundant", "insufficient", "stale_or_conflicting", "potentially_harmful", "jointly_helpful"]
+GAP_CATEGORIES: tuple[GapCategory, ...] = (
+    "preference",
+    "prior_decision",
+    "constraint",
+    "relationship_or_event",
+    "task_state",
+)
+AdmissionVerdict = Literal[
+    "helpful", "redundant", "insufficient", "stale_or_conflicting", "potentially_harmful", "jointly_helpful"
+]
 ADMITTING_VERDICTS: tuple[AdmissionVerdict, ...] = ("helpful", "jointly_helpful")
 PolicyStatus = Literal["ok", "empty", "failed", "timeout", "skipped"]
 Disposition = Literal[
@@ -63,7 +71,9 @@ class GapDecision:
 
 
 class GapPolicy(Protocol):
-    def plan(self, turn: str, public_context: str | None, ambient_profile: ProfileBlock, inventory: Sequence[str]) -> GapDecision: ...
+    def plan(
+        self, turn: str, public_context: str | None, ambient_profile: ProfileBlock, inventory: Sequence[str]
+    ) -> GapDecision: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -211,7 +221,8 @@ class UtilityAwareOrchestrator:
         if serving:
             if registry is None:
                 raise BundleNotApprovedError(
-                    f"Bundle {self._bundle_hash} cannot serve without a registry holding a passing fitness result; use shadow mode."
+                    f"Bundle {self._bundle_hash} cannot serve without a registry holding a passing fitness result; "
+                    "use shadow mode."
                 )
             registry.require_approved(components)
 
@@ -259,7 +270,9 @@ class UtilityAwareOrchestrator:
         if not path_enabled:
             decision.draft = baseline()
             timings["draft"] = (self._clock() - started) * 1000
-            decision.disposition = "baseline_budget_exhausted" if effective == 0 and self._config.gap_enabled else "baseline_no_gaps"
+            decision.disposition = (
+                "baseline_budget_exhausted" if effective == 0 and self._config.gap_enabled else "baseline_no_gaps"
+            )
             return self._persist(decision)
 
         # Baseline and gap planning run concurrently; the gap call is charged only for what outlasts the draft.
@@ -274,7 +287,9 @@ class UtilityAwareOrchestrator:
             try:
                 gap_decision = gap_future.result(timeout=max(0.0, gap_timeout / 1000))
             except FuturesTimeout:
-                gap_decision = GapDecision([], "gap", "timeout", gap_timeout, "budget_exhausted" if budget_bound else "gap_timeout")
+                gap_decision = GapDecision(
+                    [], "gap", "timeout", gap_timeout, "budget_exhausted" if budget_bound else "gap_timeout"
+                )
             except Exception as error:  # noqa: BLE001
                 gap_decision = GapDecision.failed("gap", type(error).__name__)
             timings["gap_overhang"] = max(0.0, (self._clock() - draft_done) * 1000)
@@ -305,7 +320,9 @@ class UtilityAwareOrchestrator:
 
         retrieval_started = self._clock()
         try:
-            candidates = self._retrieve(principal, [gap.query for gap in decision.gaps], turn)[: self._config.max_candidates]
+            candidates = self._retrieve(principal, [gap.query for gap in decision.gaps], turn)[
+                : self._config.max_candidates
+            ]
         except Exception as error:  # noqa: BLE001
             failures.append(f"retrieval:{type(error).__name__}")
             candidates = []
@@ -324,7 +341,11 @@ class UtilityAwareOrchestrator:
             decision.disposition = "baseline_budget_exhausted"
             return self._persist(decision)
 
-        admission_timeout = self._config.admission_timeout_ms if (left := remaining_ms()) is None else min(self._config.admission_timeout_ms, left)
+        admission_timeout = (
+            self._config.admission_timeout_ms
+            if (left := remaining_ms()) is None
+            else min(self._config.admission_timeout_ms, left)
+        )
         admission_started = self._clock()
         with ThreadPoolExecutor(max_workers=1) as pool:
             future = pool.submit(self._admit, turn, public_context, profile, decision.draft, candidates)
@@ -386,10 +407,16 @@ class UtilityAwareOrchestrator:
             if key not in seen:
                 seen.add(key)
                 unique.append(gap)
-        status: PolicyStatus = result.status if result.status in ("failed", "timeout") else ("ok" if unique else "empty")
-        return GapDecision(unique, result.policy_id, status, (self._clock() - started) * 1000, result.error, dict(result.usage))
+        status: PolicyStatus = (
+            result.status if result.status in ("failed", "timeout") else ("ok" if unique else "empty")
+        )
+        return GapDecision(
+            unique, result.policy_id, status, (self._clock() - started) * 1000, result.error, dict(result.usage)
+        )
 
-    def _admit(self, turn: str, public_context: str | None, profile: ProfileBlock, draft: str, candidates: list[Record]) -> AdmissionDecision:
+    def _admit(
+        self, turn: str, public_context: str | None, profile: ProfileBlock, draft: str, candidates: list[Record]
+    ) -> AdmissionDecision:
         assert self._admission_policy is not None
         started = self._clock()
         try:
@@ -401,7 +428,13 @@ class UtilityAwareOrchestrator:
         if len({v.record_id for v in verdicts}) != len(ids):
             return AdmissionDecision.failed(result.policy_id, "incomplete_verdicts", (self._clock() - started) * 1000)
         return AdmissionDecision(
-            list(result.admitted_ids), verdicts, result.policy_id, result.status or "ok", (self._clock() - started) * 1000, result.error, dict(result.usage)
+            list(result.admitted_ids),
+            verdicts,
+            result.policy_id,
+            result.status or "ok",
+            (self._clock() - started) * 1000,
+            result.error,
+            dict(result.usage),
         )
 
     def _persist(self, decision: TurnMemoryDecision) -> TurnMemoryDecision:
@@ -434,7 +467,12 @@ class UtilityAwareOrchestrator:
             self._actor,
             None,
             None,
-            {"decision_id": decision.decision_id, "disposition": decision.disposition, "shadow": decision.shadow, "admitted": len(decision.admitted_ids)},
+            {
+                "decision_id": decision.decision_id,
+                "disposition": decision.disposition,
+                "shadow": decision.shadow,
+                "admitted": len(decision.admitted_ids),
+            },
         )
         return decision
 
@@ -450,6 +488,11 @@ def render_decision(decision: TurnMemoryDecision) -> str:
     """Compact one-line rendering for logs and tests."""
 
     return json.dumps(
-        {"disposition": decision.disposition, "gaps": len(decision.gaps), "candidates": len(decision.candidate_ids), "admitted": decision.admitted_ids},
+        {
+            "disposition": decision.disposition,
+            "gaps": len(decision.gaps),
+            "candidates": len(decision.candidate_ids),
+            "admitted": decision.admitted_ids,
+        },
         sort_keys=True,
     )

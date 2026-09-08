@@ -41,8 +41,16 @@ def evaluate(scenario: dict[str, Any], policy: HostedCategoryPolicy) -> dict[str
     # Inventory as the planner would see it: categories of records that would be conditional.
     conditional_ids = [r["id"] for r in records if r["id"] not in ambient_truth]
     inventory = sorted({RETRIEVAL_CATEGORIES.get(assigned[i], assigned[i]) for i in conditional_ids})
-    needed = [(t["id"], e) for t in scenario["turns"] if t["class"] != "ordinary" for e in t["expected"] if e not in ambient_truth]
-    covered = [(tid, e) for tid, e in needed if truth.get(e) and RETRIEVAL_CATEGORIES.get(truth[e], truth[e]) in inventory]
+    needed = [
+        (t["id"], e)
+        for t in scenario["turns"]
+        if t["class"] != "ordinary"
+        for e in t["expected"]
+        if e not in ambient_truth
+    ]
+    covered = [
+        (tid, e) for tid, e in needed if truth.get(e) and RETRIEVAL_CATEGORIES.get(truth[e], truth[e]) in inventory
+    ]
     disagreements = {}
     for i, t in truth.items():
         if t and assigned[i] != t:
@@ -50,7 +58,9 @@ def evaluate(scenario: dict[str, Any], policy: HostedCategoryPolicy) -> dict[str
     unsafe_records = {r["id"] for r in records if r.get("unsafe_promotion") or r["kind"] == "misleading"}
     return {
         "scenario": scenario.get("description", "")[:60],
-        "label_agreement": f"{sum(1 for i, t in truth.items() if t and assigned[i] == t)}/{sum(1 for t in truth.values() if t)}",
+        "label_agreement": (
+            f"{sum(1 for i, t in truth.items() if t and assigned[i] == t)}/{sum(1 for t in truth.values() if t)}"
+        ),
         "inventory_coverage_by_true_category": f"{len(covered)}/{len(needed)}",
         "uncovered": [(tid, e, truth.get(e), assigned.get(e)) for tid, e in needed if (tid, e) not in covered],
         "inventory": inventory,
@@ -74,13 +84,21 @@ def main(argv: list[str] | None = None) -> int:
         scenario = json.loads(path.read_text())
         results[path.stem] = evaluate(scenario, policy)
         r = results[path.stem]
-        print(f"{path.stem} [{args.prompt_version}] agreement={r['label_agreement']} coverage={r['inventory_coverage_by_true_category']} unsafe_flagged={r['unsafe_flagged']}")
+        print(
+            f"{path.stem} [{args.prompt_version}] agreement={r['label_agreement']} "
+            f"coverage={r['inventory_coverage_by_true_category']} unsafe_flagged={r['unsafe_flagged']}"
+        )
         print(f"   uncovered: {r['uncovered']}")
         print(f"   disagreements: {r['disagreements']}")
     args.out_dir.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     out = args.out_dir / f"{stamp}-{args.model}-{args.prompt_version}.json"
-    out.write_text(json.dumps({"model": args.model, "prompt_version": args.prompt_version, "results": results, "usage": models.usage}, indent=2))
+    out.write_text(
+        json.dumps(
+            {"model": args.model, "prompt_version": args.prompt_version, "results": results, "usage": models.usage},
+            indent=2,
+        )
+    )
     print(f"wrote {out}")
     return 0
 

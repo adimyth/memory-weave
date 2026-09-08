@@ -28,13 +28,34 @@ from memory_weave.util import render_subject
 _AT = datetime(2026, 9, 7, 12, 0, tzinfo=UTC)
 
 
-def _record(record_id: str, content: str, entity_id: str, *, activation: str = "conditional", category: str | None = "time_zone") -> Record:
+def _record(
+    record_id: str, content: str, entity_id: str, *, activation: str = "conditional", category: str | None = "time_zone"
+) -> Record:
     return Record(
-        id=record_id, type="semantic", version=1, content=content, subject=render_subject(entity_id, record_id),
-        scope=Scope(kind="user", id="user-1"), source_kind="user_statement", source_ref=None, creator_agent_id="agent",
-        evidence=content, created_at=_AT, event_at=_AT, expires_at=None, confidence=0.9, status="confirmed",
-        supersedes_id=None, reinforcements=0, last_reinforced_at=None, tags=[], entity_ids=[entity_id],
-        subject_entity_id=entity_id, attribute=record_id, activation=activation, category=category,  # type: ignore[arg-type]
+        id=record_id,
+        type="semantic",
+        version=1,
+        content=content,
+        subject=render_subject(entity_id, record_id),
+        scope=Scope(kind="user", id="user-1"),
+        source_kind="user_statement",
+        source_ref=None,
+        creator_agent_id="agent",
+        evidence=content,
+        created_at=_AT,
+        event_at=_AT,
+        expires_at=None,
+        confidence=0.9,
+        status="confirmed",
+        supersedes_id=None,
+        reinforcements=0,
+        last_reinforced_at=None,
+        tags=[],
+        entity_ids=[entity_id],
+        subject_entity_id=entity_id,
+        attribute=record_id,
+        activation=activation,
+        category=category,  # type: ignore[arg-type]
     )
 
 
@@ -44,7 +65,9 @@ class FakeGaps:
         self._delay = delay_s
         self.seen_inventory: Sequence[str] | None = None
 
-    def plan(self, turn: str, public_context: str | None, ambient_profile: ProfileBlock, inventory: Sequence[str]) -> GapDecision:
+    def plan(
+        self, turn: str, public_context: str | None, ambient_profile: ProfileBlock, inventory: Sequence[str]
+    ) -> GapDecision:
         self.seen_inventory = inventory
         time.sleep(self._delay)
         if isinstance(self._gaps, Exception):
@@ -77,7 +100,9 @@ def world(tmp_path: Path):
     principal = Principal("agent", "user-1", "s1", None)
     store.create_session("s1", "agent", "user-1", None, _AT)
     store.insert_record(_record("tz", "User's working time zone is Europe/Berlin.", entity))
-    store.insert_record(_record("style", "User prefers short answers.", entity, activation="ambient", category="preferences"))
+    store.insert_record(
+        _record("style", "User prefers short answers.", entity, activation="ambient", category="preferences")
+    )
     return store, principal, entity
 
 
@@ -177,7 +202,9 @@ def test_admitted_but_no_time_to_regenerate_is_not_applied(world) -> None:
         return "final"
 
     orchestrator = _orchestrator(store, FakeGaps([Gap("preference", "tz")]), FakeAdmission(["tz"]))
-    decision = orchestrator.prepare_turn(principal, "q", None, slow_baseline, regenerate, TurnOptions(latency_budget_ms=40))
+    decision = orchestrator.prepare_turn(
+        principal, "q", None, slow_baseline, regenerate, TurnOptions(latency_budget_ms=40)
+    )
     assert decision.disposition == "admitted_not_applied"
     assert decision.admitted_ids == ["tz"]
     assert decision.response == "draft"
@@ -187,8 +214,12 @@ def test_admitted_but_no_time_to_regenerate_is_not_applied(world) -> None:
 def test_budget_exhausted_before_admission_returns_the_draft(world) -> None:
     store, principal, _ = world
     calls: list[str] = []
-    orchestrator = _orchestrator(store, FakeGaps([Gap("preference", "tz")], delay_s=0.08), FakeAdmission(["tz"]), gap_timeout_ms=5000)
-    decision = orchestrator.prepare_turn(principal, "q", None, *_generators(calls), options=TurnOptions(latency_budget_ms=10))
+    orchestrator = _orchestrator(
+        store, FakeGaps([Gap("preference", "tz")], delay_s=0.08), FakeAdmission(["tz"]), gap_timeout_ms=5000
+    )
+    decision = orchestrator.prepare_turn(
+        principal, "q", None, *_generators(calls), options=TurnOptions(latency_budget_ms=10)
+    )
     assert decision.disposition == "baseline_budget_exhausted"
     assert decision.response == "draft"
 
@@ -220,7 +251,14 @@ def test_disabled_path_is_the_old_behaviour(world) -> None:
 def test_policy_bundle_is_persisted_with_every_decision(world) -> None:
     store, principal, _ = world
     calls: list[str] = []
-    bundle = {"planner": "gpt-4o/v3", "judge": "gpt-5.4/v3", "taxonomy": "activation-v2-frozen", "inventory": "v1", "retrieval": "abc123", "budget_ms": None}
+    bundle = {
+        "planner": "gpt-4o/v3",
+        "judge": "gpt-5.4/v3",
+        "taxonomy": "activation-v2-frozen",
+        "inventory": "v1",
+        "retrieval": "abc123",
+        "budget_ms": None,
+    }
     config = UtilityAwareConfig(gap_enabled=True, admission_mode="hosted_judge", shadow=True, bundle=bundle)
     orchestrator = UtilityAwareOrchestrator(store, lambda p, q, c: [], FakeGaps([]), FakeAdmission([]), config)
     orchestrator.prepare_turn(principal, "q", None, *_generators(calls))
@@ -241,7 +279,13 @@ def test_serving_requires_an_approved_bundle_and_shadow_does_not(world) -> None:
         UtilityAwareOrchestrator(store, _retrieve_all(store), gaps, admission, serving, registry=BundleRegistry(store))
 
     # Shadow needs no approval and logs the same bundle hash it would serve under.
-    shadow = UtilityAwareOrchestrator(store, _retrieve_all(store), gaps, admission, UtilityAwareConfig(gap_enabled=True, admission_mode="hosted_judge", shadow=True))
+    shadow = UtilityAwareOrchestrator(
+        store,
+        _retrieve_all(store),
+        gaps,
+        admission,
+        UtilityAwareConfig(gap_enabled=True, admission_mode="hosted_judge", shadow=True),
+    )
     decision = shadow.prepare_turn(principal, "q", None, *_generators(calls))
     assert decision.disposition == "shadow_would_regenerate"
     assert decision.bundle_hash is not None
@@ -267,17 +311,30 @@ def test_metrics_assign_one_stage_outcome_per_decision_and_feed_rollback(world) 
     store, principal, _ = world
     calls: list[str] = []
     _orchestrator(store, FakeGaps([]), FakeAdmission([])).prepare_turn(principal, "silent", None, *_generators(calls))
-    _orchestrator(store, FakeGaps([Gap("preference", "tz")]), FakeAdmission([])).prepare_turn(principal, "rejected", None, *_generators(calls))
-    _orchestrator(store, FakeGaps(RuntimeError("down")), FakeAdmission([])).prepare_turn(principal, "failed", None, *_generators(calls))
-    _orchestrator(store, FakeGaps([Gap("preference", "tz")]), FakeAdmission(["tz"])).prepare_turn(principal, "served", None, *_generators(calls))
-    _orchestrator(store, FakeGaps([Gap("preference", "tz")]), FakeAdmission(["tz"]), shadow=True).prepare_turn(principal, "shadowed", None, *_generators(calls))
+    _orchestrator(store, FakeGaps([Gap("preference", "tz")]), FakeAdmission([])).prepare_turn(
+        principal, "rejected", None, *_generators(calls)
+    )
+    _orchestrator(store, FakeGaps(RuntimeError("down")), FakeAdmission([])).prepare_turn(
+        principal, "failed", None, *_generators(calls)
+    )
+    _orchestrator(store, FakeGaps([Gap("preference", "tz")]), FakeAdmission(["tz"])).prepare_turn(
+        principal, "served", None, *_generators(calls)
+    )
+    _orchestrator(store, FakeGaps([Gap("preference", "tz")]), FakeAdmission(["tz"]), shadow=True).prepare_turn(
+        principal, "shadowed", None, *_generators(calls)
+    )
     _orchestrator(store, FakeGaps([Gap("preference", "tz")]), FakeAdmission(["tz"])).prepare_turn(
         principal, "budget", None, *_generators(calls), options=TurnOptions(latency_budget_ms=0)
     )
 
     rows = store.turn_decisions("s1")
     assert [stage_outcome(r) for r in rows] == [
-        "planner_silence", "judge_rejection", "policy_failure", "admitted", "admitted", "path_disabled",
+        "planner_silence",
+        "judge_rejection",
+        "policy_failure",
+        "admitted",
+        "admitted",
+        "path_disabled",
     ]
     report = aggregate(store)
     assert report.turns == 6 and report.served_turns == 5 and report.shadow_turns == 1
@@ -288,7 +345,9 @@ def test_metrics_assign_one_stage_outcome_per_decision_and_feed_rollback(world) 
 
     quiet = rollback_reasons(report, RollbackThresholds(min_turns=100))
     assert quiet == []
-    loud = rollback_reasons(report, RollbackThresholds(min_turns=1, max_served_admission_rate=0.05, max_policy_failure_rate=0.1))
+    loud = rollback_reasons(
+        report, RollbackThresholds(min_turns=1, max_served_admission_rate=0.05, max_policy_failure_rate=0.1)
+    )
     assert any("served admission rate" in r for r in loud) and any("policy failure rate" in r for r in loud)
 
 
@@ -299,9 +358,13 @@ def test_kill_switched_configurations_never_need_approval(world) -> None:
     calls: list[str] = []
     gaps, admission = FakeGaps([Gap("preference", "tz")]), FakeAdmission(["tz"])
     admission_off = UtilityAwareConfig(gap_enabled=True, admission_mode="disabled")
-    decision = UtilityAwareOrchestrator(store, _retrieve_all(store), gaps, admission, admission_off).prepare_turn(principal, "q", None, *_generators(calls))
+    decision = UtilityAwareOrchestrator(store, _retrieve_all(store), gaps, admission, admission_off).prepare_turn(
+        principal, "q", None, *_generators(calls)
+    )
     assert decision.disposition == "baseline_empty_admission" and decision.response == "draft"
     gap_off = UtilityAwareConfig(gap_enabled=False, admission_mode="hosted_judge")
-    decision = UtilityAwareOrchestrator(store, _retrieve_all(store), gaps, admission, gap_off).prepare_turn(principal, "q", None, *_generators(calls))
+    decision = UtilityAwareOrchestrator(store, _retrieve_all(store), gaps, admission, gap_off).prepare_turn(
+        principal, "q", None, *_generators(calls)
+    )
     assert decision.disposition == "baseline_no_gaps"
     assert calls == ["baseline", "baseline"]

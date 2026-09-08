@@ -42,7 +42,12 @@ def _usage_delta(models: Any, model: str, before: dict[str, int] | None) -> dict
 
     after = dict((models.usage or {}).get(model, {"prompt": 0, "completion": 0}))
     prior = before or {"prompt": 0, "completion": 0}
-    return {model: {"prompt": after.get("prompt", 0) - prior.get("prompt", 0), "completion": after.get("completion", 0) - prior.get("completion", 0)}}
+    return {
+        model: {
+            "prompt": after.get("prompt", 0) - prior.get("prompt", 0),
+            "completion": after.get("completion", 0) - prior.get("completion", 0),
+        }
+    }
 
 
 def _usage_snapshot(models: Any, model: str) -> dict[str, int]:
@@ -55,7 +60,9 @@ class HostedGapPolicy:
         self.model = model
         self.policy_id = f"{model}/{GAP_PROMPT_VERSION}"
 
-    def plan(self, turn: str, public_context: str | None, ambient_profile: ProfileBlock, inventory: Sequence[str]) -> GapDecision:
+    def plan(
+        self, turn: str, public_context: str | None, ambient_profile: ProfileBlock, inventory: Sequence[str]
+    ) -> GapDecision:
         labels = "\n".join(f"- {label}" for label in inventory) or "- (no category information available)"
         system = _GAP_SYSTEM_V3C.replace("{inventory}", labels)
         profile_text = ambient_profile.text or "Applied preferences: none."
@@ -86,10 +93,20 @@ class HostedAdmissionPolicy:
         self.model = model
         self.policy_id = f"{model}/{ADMISSION_PROMPT_VERSION}"
 
-    def admit(self, turn: str, public_context: str | None, ambient_profile: ProfileBlock, draft: str, candidates: Sequence[Record]) -> AdmissionDecision:
+    def admit(
+        self,
+        turn: str,
+        public_context: str | None,
+        ambient_profile: ProfileBlock,
+        draft: str,
+        candidates: Sequence[Record],
+    ) -> AdmissionDecision:
         lines = []
         for record in candidates:
-            lines.append(f"- id={record.id} (recorded {record.event_at.date().isoformat()}, status: {record.status}): {record.content}")
+            lines.append(
+                f"- id={record.id} (recorded {record.event_at.date().isoformat()}, status: {record.status}): "
+                f"{record.content}"
+            )
         profile_text = ambient_profile.text or "Applied preferences: none."
         user = (
             f"{profile_text}\n\nUser message:\n{turn}\n\nDraft answer written without the candidates:\n{draft}\n\n"
@@ -105,7 +122,14 @@ class HostedAdmissionPolicy:
             if not isinstance(item, dict) or str(item.get("id")) not in known:
                 continue
             verdict = str(item.get("verdict", "")).strip().lower()
-            if verdict not in ("helpful", "redundant", "insufficient", "stale_or_conflicting", "potentially_harmful", "jointly_helpful"):
+            if verdict not in (
+                "helpful",
+                "redundant",
+                "insufficient",
+                "stale_or_conflicting",
+                "potentially_harmful",
+                "jointly_helpful",
+            ):
                 verdict = "insufficient"
             verdicts.append(CandidateVerdict(str(item["id"]), verdict, str(item.get("reason", ""))))  # type: ignore[arg-type]
         admitted = [str(i) for i in parsed.get("admitted", []) if str(i) in known]
@@ -123,7 +147,9 @@ def policy_bundle(
 
     from dataclasses import asdict, is_dataclass
 
-    retrieval_repr = json.dumps(asdict(retrieval_config) if is_dataclass(retrieval_config) else retrieval_config, sort_keys=True, default=str)
+    retrieval_repr = json.dumps(
+        asdict(retrieval_config) if is_dataclass(retrieval_config) else retrieval_config, sort_keys=True, default=str
+    )
     return {
         "planner": f"{gap_model}/{GAP_PROMPT_VERSION}",
         "judge": f"{admission_model}/{ADMISSION_PROMPT_VERSION}",

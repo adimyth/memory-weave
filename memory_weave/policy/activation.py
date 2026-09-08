@@ -30,6 +30,7 @@ def _principal_entity(store: Store, principal: Principal, actor: str) -> Entity:
 
     return ensure_principal_entity(principal.user_id, store, actor=actor)
 
+
 POLICY_VERSION = "activation-v2-frozen"
 
 # Deterministic form recognition. A recognised form decides applicability by rule; the classifier's
@@ -37,7 +38,8 @@ POLICY_VERSION = "activation-v2-frozen"
 # fifth scenario split labelled the same global-default sentence broad and scoped, so the classifier
 # cannot be the deciding input for these forms.
 _OVERRIDE_CLAUSE = re.compile(
-    r"\b(unless (?:i|the user|they|you)?\s*(?:ask|asks|request|requests|say|says|tell|tells|specify|specifies|state|states)"
+    r"\b(unless (?:i|the user|they|you)?\s*"
+    r"(?:ask|asks|request|requests|say|says|tell|tells|specify|specifies|state|states)"
     r"|unless (?:another|a different|otherwise|asked|requested|told|specified|stated)"
     r"|by default|default to|as a default)\b",
     re.IGNORECASE,
@@ -69,6 +71,7 @@ def recognise_form(content: str) -> FormKind | None:
     if _OVERRIDE_CLAUSE.search(text):
         return "global_default"
     return None
+
 
 RETRIEVAL_CATEGORIES: dict[str, str] = {
     "time_zone": "time zone and working hours",
@@ -190,7 +193,9 @@ def decide_activation(
 class ActivationService:
     """Run the activation policy for one committed record and persist every step of the decision."""
 
-    def __init__(self, store: Store, policy: CategoryPolicy | None, *, min_confidence: float = 0.7, actor: str = "host") -> None:
+    def __init__(
+        self, store: Store, policy: CategoryPolicy | None, *, min_confidence: float = 0.7, actor: str = "host"
+    ) -> None:
         self._store = store
         self._policy = policy
         self._min_confidence = min_confidence
@@ -254,7 +259,12 @@ class ActivationService:
                 self._actor,
                 record.id,
                 None,
-                {"outcome": outcome, "reason": reason, "evidence_turn": evidence_turn, "policy_version": POLICY_VERSION},
+                {
+                    "outcome": outcome,
+                    "reason": reason,
+                    "evidence_turn": evidence_turn,
+                    "policy_version": POLICY_VERSION,
+                },
             )
             review_id: str | None = None
             if outcome == "promote":
@@ -374,11 +384,19 @@ class ActivationOperations:
             self._actor,
             record_id,
             None,
-            {"review_id": review_id, "resolution": resolution, "resolver": resolver, "note": note, "policy_version": POLICY_VERSION},
+            {
+                "review_id": review_id,
+                "resolution": resolution,
+                "resolver": resolver,
+                "note": note,
+                "policy_version": POLICY_VERSION,
+            },
         )
         return record_id
 
-    def set_activation(self, record_id: str, activation: Literal["ambient", "conditional"], *, resolver: str, reason: str) -> None:
+    def set_activation(
+        self, record_id: str, activation: Literal["ambient", "conditional"], *, resolver: str, reason: str
+    ) -> None:
         """Direct trusted change, subject to the eligibility checks that apply to any promotion."""
 
         self._change_activation(record_id, activation, reason=reason, resolver=resolver)
@@ -417,5 +435,11 @@ class ActivationOperations:
                 self._actor,
                 record_id,
                 None,
-                {"from": record.activation, "to": activation, "reason": reason, "resolver": resolver, "policy_version": POLICY_VERSION},
+                {
+                    "from": record.activation,
+                    "to": activation,
+                    "reason": reason,
+                    "resolver": resolver,
+                    "policy_version": POLICY_VERSION,
+                },
             )

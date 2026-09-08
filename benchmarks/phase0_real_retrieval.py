@@ -12,7 +12,7 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
-from memory_weave.config import AutoGateConfig, DenseFloorConfig, MemoryWeaveConfig, load_config
+from memory_weave.config import DenseFloorConfig, MemoryWeaveConfig, load_config
 from memory_weave.host import MemoryHost
 from memory_weave.index.embedder import BgeM3Embedder
 from memory_weave.index.vector import VectorIndex
@@ -39,24 +39,29 @@ CATEGORY_PROMPT_VERSIONS = ("category-v1", "category-v2")
 _CATEGORY_DEFINITIONS_V2 = (
     "retrieval_category definitions, choose the single best fit:\n"
     "- time_zone: the user's working time zone, working hours, or location used for scheduling.\n"
-    "- people: who a named person is or what they own, lead, manage, or are responsible for, including the user's manager.\n"
+    "- people: who a named person is or what they own, lead, manage, or are responsible for, "
+    "including the user's manager.\n"
     "- infrastructure: names and regions of clusters, environments, services, accounts, or hosts the user operates.\n"
     "- decisions: a choice the team made between tools, technologies, or approaches, with or without a date.\n"
     "- constraints: a version pin, compatibility rule, or technical restriction and the reason for it.\n"
-    "- limits: a numeric quota, rate limit, budget, retry count, concurrency cap, or availability target, and tier multipliers on it.\n"
+    "- limits: a numeric quota, rate limit, budget, retry count, concurrency cap, or availability target, "
+    "and tier multipliers on it.\n"
     "- schedules: a recurring meeting, release train, freeze window, review slot, or on-call rotation.\n"
-    "- locations: where a document, runbook, handbook, checklist, or record set is kept, such as a repository path, wiki, or folder.\n"
+    "- locations: where a document, runbook, handbook, checklist, or record set is kept, "
+    "such as a repository path, wiki, or folder.\n"
     "- personal: facts about the user's life outside work, such as diet, family, health, hobbies, or tastes.\n"
     "- preferences: how the user wants replies written, what language or units to use, or what they like or believe.\n"
     "- other: a fact that fits none of the above.\n"
-    "A record naming a numeric limit is limits even when it mentions a service. A record saying where something lives is "
+    "A record naming a numeric limit is limits even when it mentions a service. "
+    "A record saying where something lives is "
     "locations even when it names a system. A record about a person's role is people even when it names a document.\n"
 )
 
 _CATEGORY_SYSTEM = (
     "You classify one stored memory record about a user or their work. Reply with JSON only:\n"
     '{"retrieval_category": "<one of: ' + ", ".join(RETRIEVAL_CATEGORIES) + '>",\n'
-    ' "activation_category": "<one of: answer_style, response_language, accessibility, code_example_language, other>",\n'
+    ' "activation_category": '
+    '"<one of: answer_style, response_language, accessibility, code_example_language, other>",\n'
     ' "applicability": "<broad | scoped | ambiguous>",\n'
     ' "confidence": <0.0 to 1.0>,\n'
     ' "unsafe": <true | false>,\n'
@@ -265,5 +270,12 @@ class RealRetrieval:
             if scenario_id is None or scenario_id in promoted:
                 # Ambient records live in the profile; the conditional pool excludes them.
                 continue
-            out.append({"id": scenario_id, "score": round(float(entry.get("score", 0.0)), 3), "query": "memory_search", "status": record.get("status")})
+            out.append(
+                {
+                    "id": scenario_id,
+                    "score": round(float(entry.get("score", 0.0)), 3),
+                    "query": "memory_search",
+                    "status": record.get("status"),
+                }
+            )
         return out

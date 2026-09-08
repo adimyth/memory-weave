@@ -26,10 +26,22 @@ from typing import Any, Literal
 from memory_weave.store import Store
 
 StageOutcome = Literal[
-    "path_disabled", "planner_silence", "retrieval_miss", "judge_rejection", "policy_failure", "budget_withheld", "admitted"
+    "path_disabled",
+    "planner_silence",
+    "retrieval_miss",
+    "judge_rejection",
+    "policy_failure",
+    "budget_withheld",
+    "admitted",
 ]
 STAGE_OUTCOMES: tuple[StageOutcome, ...] = (
-    "path_disabled", "planner_silence", "retrieval_miss", "judge_rejection", "policy_failure", "budget_withheld", "admitted"
+    "path_disabled",
+    "planner_silence",
+    "retrieval_miss",
+    "judge_rejection",
+    "policy_failure",
+    "budget_withheld",
+    "admitted",
 )
 
 
@@ -103,7 +115,7 @@ def aggregate(
     """Aggregate the turn-decision log into one report. Reads only; a host may call this on a schedule."""
 
     decisions = store.turn_decisions(session_id, since=since, until=until, bundle_hash=bundle_hash)
-    stages = {name: 0 for name in STAGE_OUTCOMES}
+    stages: dict[str, int] = {name: 0 for name in STAGE_OUTCOMES}
     by_bundle: dict[str, dict[str, int]] = {}
     served = [d for d in decisions if not d["shadow"]]
     shadow = [d for d in decisions if d["shadow"]]
@@ -149,7 +161,9 @@ def aggregate(
         from memory_weave.util import now
 
         current = now()
-        oldest = max((current - datetime.fromisoformat(str(r["created_at"]))).total_seconds() / 86400 for r in open_reviews)
+        oldest = max(
+            (current - datetime.fromisoformat(str(r["created_at"]))).total_seconds() / 86400 for r in open_reviews
+        )
 
     return MetricsReport(
         window_start=since.isoformat() if since else None,
@@ -196,7 +210,9 @@ def rollback_reasons(report: MetricsReport, thresholds: RollbackThresholds) -> l
     if report.turns < thresholds.min_turns:
         return reasons
     if report.served_turns and report.served_admission_rate > thresholds.max_served_admission_rate:
-        reasons.append(f"served admission rate {report.served_admission_rate:.3f} > {thresholds.max_served_admission_rate}")
+        reasons.append(
+            f"served admission rate {report.served_admission_rate:.3f} > {thresholds.max_served_admission_rate}"
+        )
     failure_rate = report.stages["policy_failure"] / report.turns
     if failure_rate > thresholds.max_policy_failure_rate:
         reasons.append(f"policy failure rate {failure_rate:.3f} > {thresholds.max_policy_failure_rate}")
@@ -204,11 +220,16 @@ def rollback_reasons(report: MetricsReport, thresholds: RollbackThresholds) -> l
     if withheld_rate > thresholds.max_budget_withheld_rate:
         reasons.append(f"budget withheld rate {withheld_rate:.3f} > {thresholds.max_budget_withheld_rate}")
     if report.added_latency_gap_turns_ms_p95 > thresholds.max_added_latency_gap_turns_ms_p95:
-        reasons.append(f"gap-turn added latency p95 {report.added_latency_gap_turns_ms_p95:.0f} ms > {thresholds.max_added_latency_gap_turns_ms_p95:.0f} ms")
+        reasons.append(
+            f"gap-turn added latency p95 {report.added_latency_gap_turns_ms_p95:.0f} ms > "
+            f"{thresholds.max_added_latency_gap_turns_ms_p95:.0f} ms"
+        )
     if report.review_backlog_open > thresholds.max_review_backlog_open:
         reasons.append(f"review backlog {report.review_backlog_open} > {thresholds.max_review_backlog_open}")
     if report.review_backlog_oldest_days > thresholds.max_review_backlog_oldest_days:
-        reasons.append(f"oldest review {report.review_backlog_oldest_days:.1f} days > {thresholds.max_review_backlog_oldest_days}")
+        reasons.append(
+            f"oldest review {report.review_backlog_oldest_days:.1f} days > {thresholds.max_review_backlog_oldest_days}"
+        )
     return reasons
 
 
@@ -216,16 +237,23 @@ def render(report: MetricsReport) -> str:
     """Human-readable rendering for the CLI."""
 
     lines = [
-        f"turns={report.turns} served={report.served_turns} shadow={report.shadow_turns} bundle={report.bundle_hash or 'all'}",
+        f"turns={report.turns} served={report.served_turns} shadow={report.shadow_turns} "
+        f"bundle={report.bundle_hash or 'all'}",
         "stage outcomes: " + ", ".join(f"{name}={report.stages[name]}" for name in STAGE_OUTCOMES),
-        f"served admission rate={report.served_admission_rate:.3f}  shadow admission rate={report.shadow_admission_rate:.3f}  planner fire rate={report.planner_fire_rate:.3f}",
-        f"added latency ms p50/p95 all={report.added_latency_ms_p50:.0f}/{report.added_latency_ms_p95:.0f}  gap turns={report.added_latency_gap_turns_ms_p50:.0f}/{report.added_latency_gap_turns_ms_p95:.0f}",
-        "tokens: " + (", ".join(f"{m}: {u['prompt']}+{u['completion']}" for m, u in report.tokens.items()) or "none recorded"),
+        f"served admission rate={report.served_admission_rate:.3f}  "
+        f"shadow admission rate={report.shadow_admission_rate:.3f}  "
+        f"planner fire rate={report.planner_fire_rate:.3f}",
+        f"added latency ms p50/p95 all={report.added_latency_ms_p50:.0f}/{report.added_latency_ms_p95:.0f}  "
+        f"gap turns={report.added_latency_gap_turns_ms_p50:.0f}/{report.added_latency_gap_turns_ms_p95:.0f}",
+        "tokens: "
+        + (", ".join(f"{m}: {u['prompt']}+{u['completion']}" for m, u in report.tokens.items()) or "none recorded"),
         f"harmful verdicts seen={report.harmful_verdicts}  failures={report.failures or {}}",
         f"review backlog open={report.review_backlog_open} oldest_days={report.review_backlog_oldest_days:.1f}",
     ]
     if report.admitted_records:
-        lines.append("most admitted records: " + ", ".join(f"{k}x{v}" for k, v in list(report.admitted_records.items())[:8]))
+        lines.append(
+            "most admitted records: " + ", ".join(f"{k}x{v}" for k, v in list(report.admitted_records.items())[:8])
+        )
     if len(report.by_bundle) > 1:
         for key, stages in report.by_bundle.items():
             lines.append(f"  bundle {key}: " + ", ".join(f"{n}={stages[n]}" for n in STAGE_OUTCOMES if stages[n]))

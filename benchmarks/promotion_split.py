@@ -37,7 +37,9 @@ def evaluate(scenario: dict[str, Any], decisions: dict[str, dict[str, Any]], pro
         if expected == "promote" and not is_ambient:
             wrong.append(f"{record_id}: expected promote, got {outcome}/{decisions.get(record_id, {}).get('reason')}")
         elif expected == "conditional" and (is_ambient or outcome != "conditional"):
-            wrong.append(f"{record_id}: expected conditional, got {outcome}/{decisions.get(record_id, {}).get('reason')}")
+            wrong.append(
+                f"{record_id}: expected conditional, got {outcome}/{decisions.get(record_id, {}).get('reason')}"
+            )
         elif expected == "not_ambient" and is_ambient:
             wrong.append(f"{record_id}: expected not ambient, was promoted")
         elif expected == "review" and (is_ambient or outcome != "review"):
@@ -66,7 +68,11 @@ def main(argv: list[str] | None = None) -> int:
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     builds: list[dict[str, Any]] = []
     for index in range(1, args.builds + 1):
-        rr = RealRetrieval(scenario, args.out_dir / "stores" / f"{args.scenario.stem}-{stamp}", activation_policy=HostedCategoryPolicy(models, args.activation_model, args.category_prompt))
+        rr = RealRetrieval(
+            scenario,
+            args.out_dir / "stores" / f"{args.scenario.stem}-{stamp}",
+            activation_policy=HostedCategoryPolicy(models, args.activation_model, args.category_prompt),
+        )
         arm = f"build{index}"
         rr.build_arm(arm, [r["id"] for r in scenario["records"]])
         decisions = rr.decisions(arm)
@@ -78,13 +84,33 @@ def main(argv: list[str] | None = None) -> int:
         for line in result["wrong"]:
             print(f"   wrong: {line}", flush=True)
         for record_id, decision in sorted(decisions.items()):
-            print(f"   {record_id:<3} {decision['outcome']:<11} {decision['reason']:<28} cat={decision['activation_category']} conf={decision['confidence']}", flush=True)
+            print(
+                f"   {record_id:<3} {decision['outcome']:<11} {decision['reason']:<28} "
+                f"cat={decision['activation_category']} conf={decision['confidence']}",
+                flush=True,
+            )
 
     overall = all(b["pass"] for b in builds)
     agree = all(b["promoted"] == builds[0]["promoted"] for b in builds)
     args.out_dir.mkdir(parents=True, exist_ok=True)
-    path = args.out_dir / f"{stamp}-{args.scenario.stem}-{args.activation_model}-{args.category_prompt}-x{args.builds}.json"
-    path.write_text(json.dumps({"scenario": str(args.scenario), "activation_model": args.activation_model, "category_prompt": args.category_prompt, "builds": builds, "all_pass": overall, "builds_agree": agree, "usage": models.usage}, indent=2))
+    path = (
+        args.out_dir
+        / f"{stamp}-{args.scenario.stem}-{args.activation_model}-{args.category_prompt}-x{args.builds}.json"
+    )
+    path.write_text(
+        json.dumps(
+            {
+                "scenario": str(args.scenario),
+                "activation_model": args.activation_model,
+                "category_prompt": args.category_prompt,
+                "builds": builds,
+                "all_pass": overall,
+                "builds_agree": agree,
+                "usage": models.usage,
+            },
+            indent=2,
+        )
+    )
     print(f"\nwrote {path}")
     print(f"\n== verdict == builds agree on promoted set: {agree}; every build passes: {overall}")
     return 0

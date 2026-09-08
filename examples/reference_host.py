@@ -120,8 +120,13 @@ class ReferenceHost:
     def _build(self) -> UtilityAwareOrchestrator:
         # Raises BundleNotApprovedError when the switches would serve an unapproved bundle.
         return UtilityAwareOrchestrator(
-            self._store, self._retrieve, self._gap_policy, self._admission_policy, self.config(),
-            profile_assembler=self._assembler, registry=self._registry,
+            self._store,
+            self._retrieve,
+            self._gap_policy,
+            self._admission_policy,
+            self.config(),
+            profile_assembler=self._assembler,
+            registry=self._registry,
         )
 
     def set_switches(self, switches: KillSwitches) -> None:
@@ -166,7 +171,9 @@ class ReferenceHost:
     def metrics(self, *, since: datetime | None = None, until: datetime | None = None) -> MetricsReport:
         return aggregate(self._store, since=since, until=until, bundle_hash=self.bundle_hash())
 
-    def rollback_check(self, *, since: datetime | None = None, until: datetime | None = None) -> tuple[list[str], Stage | None]:
+    def rollback_check(
+        self, *, since: datetime | None = None, until: datetime | None = None
+    ) -> tuple[list[str], Stage | None]:
         """Evaluate thresholds over the window for the current bundle. On breach, disable the newest active
         stage and return the reasons and the stage disabled. The application decides how often to call this."""
 
@@ -178,8 +185,16 @@ class ReferenceHost:
             if getattr(self._switches, stage):
                 self.disable(stage)
                 self._store.append_event(
-                    "host.rollback", "host", None, None,
-                    {"stage_disabled": stage, "reasons": reasons, "bundle_hash": report.bundle_hash, "turns": report.turns},
+                    "host.rollback",
+                    "host",
+                    None,
+                    None,
+                    {
+                        "stage_disabled": stage,
+                        "reasons": reasons,
+                        "bundle_hash": report.bundle_hash,
+                        "turns": report.turns,
+                    },
                 )
                 return reasons, stage
         return reasons, None

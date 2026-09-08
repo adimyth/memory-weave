@@ -34,7 +34,12 @@ from benchmarks.draft_delta_experiment import Models  # noqa: E402
 from benchmarks.phase0_real_retrieval import HostedCategoryPolicy, RealRetrieval  # noqa: E402
 from benchmarks.shadow_adapter import HostedAdmissionPolicy, HostedGapPolicy, policy_bundle  # noqa: E402
 from memory_weave.models import Principal, Record  # noqa: E402
-from memory_weave.policy import ProfileAssembler, TurnOptions, UtilityAwareConfig, UtilityAwareOrchestrator  # noqa: E402
+from memory_weave.policy import (  # noqa: E402
+    ProfileAssembler,
+    TurnOptions,
+    UtilityAwareConfig,
+    UtilityAwareOrchestrator,
+)
 
 _DRAFT_SYSTEM = (
     "You are a helpful assistant. Answer the user's message directly and briefly, in under 150 words. "
@@ -63,7 +68,9 @@ def snapshot(store_path: Path, principal: Principal) -> dict[str, Any]:
     db = sqlite3.connect(store_path)
     try:
         records = db.execute("SELECT id, status, activation, category FROM records ORDER BY id").fetchall()
-        turns = db.execute("SELECT session_id, turn, role, content FROM session_turns ORDER BY session_id, turn").fetchall()
+        turns = db.execute(
+            "SELECT session_id, turn, role, content FROM session_turns ORDER BY session_id, turn"
+        ).fetchall()
         reviews = db.execute("SELECT id, status FROM activation_reviews ORDER BY id").fetchall()
     finally:
         db.close()
@@ -77,21 +84,36 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--gap-model", default="gpt-4o")
     parser.add_argument("--admission-model", default="gpt-5.4")
     parser.add_argument("--activation-model", default="gpt-4o")
-    parser.add_argument("--category-prompt", default="category-v2", help="Classifier prompt version; a change is a new bundle")
-    parser.add_argument("--budget-ms", type=int, default=None, help="Per-request latency budget applied to every turn in pass 2")
-    parser.add_argument("--gap-timeout-ms", type=int, default=4000, help="Stage timeout for gap planning; set from measured planner latency")
-    parser.add_argument("--admission-timeout-ms", type=int, default=8000, help="Stage timeout for admission; set from measured judge p95 with eight candidates")
+    parser.add_argument(
+        "--category-prompt", default="category-v2", help="Classifier prompt version; a change is a new bundle"
+    )
+    parser.add_argument(
+        "--budget-ms", type=int, default=None, help="Per-request latency budget applied to every turn in pass 2"
+    )
+    parser.add_argument(
+        "--gap-timeout-ms",
+        type=int,
+        default=4000,
+        help="Stage timeout for gap planning; set from measured planner latency",
+    )
+    parser.add_argument(
+        "--admission-timeout-ms",
+        type=int,
+        default=8000,
+        help="Stage timeout for admission; set from measured judge p95 with eight candidates",
+    )
     parser.add_argument("--draft-cache", type=Path, default=None)
     parser.add_argument("--out-dir", type=Path, default=Path("benchmarks/results/shadow"))
     parser.add_argument("--tag", default="")
     args = parser.parse_args(argv)
 
     scenario = json.loads(args.scenario.read_text())
-    records_by_id = {r["id"]: r for r in scenario["records"]}
     models = Models()
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     workdir = args.out_dir / "stores" / f"{args.scenario.stem}-{stamp}"
-    rr = RealRetrieval(scenario, workdir, activation_policy=HostedCategoryPolicy(models, args.activation_model, args.category_prompt))
+    rr = RealRetrieval(
+        scenario, workdir, activation_policy=HostedCategoryPolicy(models, args.activation_model, args.category_prompt)
+    )
     rr.build_arm("shadow", [r["id"] for r in scenario["records"]])
     state = rr._arms["shadow"]  # noqa: SLF001
     store, handlers, principal, id_map = state["store"], state["handlers"], state["principal"], state["id_map"]
@@ -125,11 +147,22 @@ def main(argv: list[str] | None = None) -> int:
     def forbidden_regenerate(records: list[Record]) -> str:
         raise AssertionError("regeneration must never run in shadow mode")
 
-    bundle = policy_bundle(args.gap_model, args.admission_model, rr.config.retrieval, args.budget_ms, classifier=f"{args.activation_model}/{args.category_prompt}")
+    bundle = policy_bundle(
+        args.gap_model,
+        args.admission_model,
+        rr.config.retrieval,
+        args.budget_ms,
+        classifier=f"{args.activation_model}/{args.category_prompt}",
+    )
     off = UtilityAwareConfig(gap_enabled=False, admission_mode="disabled", shadow=False, bundle=bundle)
     on = UtilityAwareConfig(
-        gap_enabled=True, admission_mode="hosted_judge", shadow=True, latency_budget_ms=args.budget_ms,
-        gap_timeout_ms=args.gap_timeout_ms, admission_timeout_ms=args.admission_timeout_ms, bundle=bundle,
+        gap_enabled=True,
+        admission_mode="hosted_judge",
+        shadow=True,
+        latency_budget_ms=args.budget_ms,
+        gap_timeout_ms=args.gap_timeout_ms,
+        admission_timeout_ms=args.admission_timeout_ms,
+        bundle=bundle,
     )
 
     served: dict[str, list[str]] = {"off": [], "on": []}
@@ -138,12 +171,26 @@ def main(argv: list[str] | None = None) -> int:
     for label, config in (("off", off), ("on", on)):
         gap_policy = HostedGapPolicy(models, args.gap_model) if label == "on" else None
         admission = HostedAdmissionPolicy(models, args.admission_model) if label == "on" else None
-        orchestrator = UtilityAwareOrchestrator(store, retrieve, gap_policy, admission, config, profile_assembler=assembler)
+        orchestrator = UtilityAwareOrchestrator(
+            store, retrieve, gap_policy, admission, config, profile_assembler=assembler
+        )
         for turn in turns:
-            decision = orchestrator.prepare_turn(principal, turn["text"], None, make_baseline(turn["text"]), forbidden_regenerate, TurnOptions(args.budget_ms))
+            decision = orchestrator.prepare_turn(
+                principal,
+                turn["text"],
+                None,
+                make_baseline(turn["text"]),
+                forbidden_regenerate,
+                TurnOptions(args.budget_ms),
+            )
             served[label].append(decision.response)
             if label == "on":
-                print(f"[shadow] {turn['id']:<4} {turn['class']:<13} {decision.disposition:<26} gaps={len(decision.gaps)} cands={len(decision.candidate_ids)} admitted={[reverse.get(i, i) for i in decision.admitted_ids]} failures={decision.failures}", flush=True)
+                print(
+                    f"[shadow] {turn['id']:<4} {turn['class']:<13} {decision.disposition:<26} "
+                    f"gaps={len(decision.gaps)} cands={len(decision.candidate_ids)} "
+                    f"admitted={[reverse.get(i, i) for i in decision.admitted_ids]} failures={decision.failures}",
+                    flush=True,
+                )
         snapshots[label] = snapshot(store_path, principal)
 
     isolation = {
@@ -155,13 +202,30 @@ def main(argv: list[str] | None = None) -> int:
 
     # Score pass 2 from the turn-decision log, the only thing shadow mode is allowed to write.
     decisions = [d for d in store.turn_decisions(principal.session_id) if d["config"]["shadow"]]
-    summary = score(scenario, decisions, reverse, set(rr.promoted("shadow")), rr.inventory_labels("shadow"), bundle, isolation)
+    summary = score(
+        scenario, decisions, reverse, set(rr.promoted("shadow")), rr.inventory_labels("shadow"), bundle, isolation
+    )
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
     tag = f"-{args.tag}" if args.tag else ""
     safe = lambda s: s.replace("/", "-").replace(":", "-")  # noqa: E731
-    path = args.out_dir / f"{stamp}-{args.scenario.stem}-gap-{safe(args.gap_model)}-adm-{safe(args.admission_model)}-budget-{args.budget_ms}{tag}.json"
-    path.write_text(json.dumps({"summary": summary, "decisions": decisions, "id_map": reverse, "store": str(store_path), "usage": models.usage}, indent=2, default=str))
+    path = args.out_dir / (
+        f"{stamp}-{args.scenario.stem}-gap-{safe(args.gap_model)}-adm-{safe(args.admission_model)}"
+        f"-budget-{args.budget_ms}{tag}.json"
+    )
+    path.write_text(
+        json.dumps(
+            {
+                "summary": summary,
+                "decisions": decisions,
+                "id_map": reverse,
+                "store": str(store_path),
+                "usage": models.usage,
+            },
+            indent=2,
+            default=str,
+        )
+    )
     print(f"\nwrote {path}\n")
     print(json.dumps(summary, indent=2, default=str))
     return 0
@@ -198,10 +262,19 @@ def score(
     explicit = [t for t in explicit if conditional_expected(t)]
     implicit = [t for t in implicit if conditional_expected(t)]
     injected = [t for t in ordinary if by_turn[t["text"]]["disposition"] == "shadow_would_regenerate"]
-    unsafe = [(t["id"], i) for t in turns for i in admitted_scenario_ids(t) if records_by_id.get(i, {}).get("kind") in ("placebo", "misleading") or i in ("F9", "F10")]
+    unsafe = [
+        (t["id"], i)
+        for t in turns
+        for i in admitted_scenario_ids(t)
+        if records_by_id.get(i, {}).get("kind") in ("placebo", "misleading") or i in ("F9", "F10")
+    ]
     unexpected = [(t["id"], i) for t in turns for i in admitted_scenario_ids(t) if i not in t["expected"]]
     failures = [(t["id"], by_turn[t["text"]]["failures"]) for t in turns if by_turn[t["text"]]["failures"]]
-    withholds = [(t["id"], by_turn[t["text"]]["disposition"]) for t in turns if by_turn[t["text"]]["disposition"] in ("baseline_budget_exhausted", "admitted_not_applied")]
+    withholds = [
+        (t["id"], by_turn[t["text"]]["disposition"])
+        for t in turns
+        if by_turn[t["text"]]["disposition"] in ("baseline_budget_exhausted", "admitted_not_applied")
+    ]
 
     summary = {
         "isolation": isolation,
@@ -220,7 +293,8 @@ def score(
             "isolation": all(isolation.values()),
             "ordinary_injection_le_5pct": len(injected) <= max(1, len(ordinary) // 20),
             "explicit_recall_ge_90pct": len(explicit) == 0 or sum(recalled(t) for t in explicit) / len(explicit) >= 0.9,
-            "implicit_recall_ge_75pct": len(implicit) == 0 or sum(recalled(t) for t in implicit) / len(implicit) >= 0.75,
+            "implicit_recall_ge_75pct": len(implicit) == 0
+            or sum(recalled(t) for t in implicit) / len(implicit) >= 0.75,
             "no_unsafe": not unsafe,
         },
     }
@@ -249,7 +323,15 @@ def rescore(result_path: Path, scenario_path: Path) -> dict[str, Any]:
                         promoted.add(scenario_id)
         finally:
             db.close()
-    summary = score(scenario, saved["decisions"], id_map, promoted, saved["summary"].get("inventory", []), saved["summary"].get("bundle", {}), saved["summary"].get("isolation", {}))
+    summary = score(
+        scenario,
+        saved["decisions"],
+        id_map,
+        promoted,
+        saved["summary"].get("inventory", []),
+        saved["summary"].get("bundle", {}),
+        saved["summary"].get("isolation", {}),
+    )
     saved["summary"] = summary
     saved["id_map"] = id_map
     result_path.write_text(json.dumps(saved, indent=2, default=str))

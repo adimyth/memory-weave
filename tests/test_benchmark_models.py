@@ -85,9 +85,18 @@ def test_models_requires_openrouter_key_and_slug(monkeypatch: pytest.MonkeyPatch
     assert constructed == []
 
 
-def test_openrouter_json_mode_extracts_the_object_from_fenced_or_wrapped_replies(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_openrouter_json_mode_extracts_the_object_from_fenced_or_wrapped_replies(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     from benchmarks.draft_delta_experiment import _extract_json_object
 
-    fenced = 'Here you go:\n```json\n{"admitted": ["F1"], "verdicts": [{"id": "F1", "reason": "a } inside \\" quotes"}]}\n```\nDone.'
-    assert _extract_json_object(fenced) == '{"admitted": ["F1"], "verdicts": [{"id": "F1", "reason": "a } inside \\" quotes"}]}'
+    fenced = (
+        "Here you go:\n```json\n"
+        '{"admitted": ["F1"], "verdicts": [{"id": "F1", "reason": "a } inside \\" quotes"}]}\n'
+        "```\nDone."
+    )
+    assert (
+        _extract_json_object(fenced)
+        == '{"admitted": ["F1"], "verdicts": [{"id": "F1", "reason": "a } inside \\" quotes"}]}'
+    )
     assert _extract_json_object("no json here") == "no json here"

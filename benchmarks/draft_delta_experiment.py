@@ -121,9 +121,13 @@ class _LocalBackend:
         if json_mode:
             system = system + "\n\nReply with a single JSON object and nothing else."
         messages = [{"role": "system", "content": system}, {"role": "user", "content": user}]
-        ids = self._tokenizer.apply_chat_template(messages, add_generation_prompt=True, return_tensors="pt").to(self._device)
+        ids = self._tokenizer.apply_chat_template(messages, add_generation_prompt=True, return_tensors="pt").to(
+            self._device
+        )
         with self._lock, self._torch.no_grad():
-            out = self._model.generate(ids, do_sample=False, max_new_tokens=700, pad_token_id=self._tokenizer.eos_token_id)
+            out = self._model.generate(
+                ids, do_sample=False, max_new_tokens=700, pad_token_id=self._tokenizer.eos_token_id
+            )
         generated = out[0, ids.shape[1] :]
         text = self._tokenizer.decode(generated, skip_special_tokens=True).strip()
         if json_mode:

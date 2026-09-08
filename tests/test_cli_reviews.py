@@ -31,11 +31,28 @@ def _seed(path: Path) -> tuple[str, str]:
     store.append_turn(Turn("s1", 1, "user", text, _AT))
     store.insert_record(
         Record(
-            id="r1", type="semantic", version=1, content=text, subject=render_subject(entity, "r1"),
-            scope=Scope(kind="user", id="user-1"), source_kind="user_statement", source_ref=None, creator_agent_id="agent",
-            evidence=text, created_at=_AT, event_at=_AT, expires_at=None, confidence=0.9, status="provisional",
-            supersedes_id=None, reinforcements=0, last_reinforced_at=None, tags=[], entity_ids=[entity],
-            subject_entity_id=entity, attribute="r1",
+            id="r1",
+            type="semantic",
+            version=1,
+            content=text,
+            subject=render_subject(entity, "r1"),
+            scope=Scope(kind="user", id="user-1"),
+            source_kind="user_statement",
+            source_ref=None,
+            creator_agent_id="agent",
+            evidence=text,
+            created_at=_AT,
+            event_at=_AT,
+            expires_at=None,
+            confidence=0.9,
+            status="provisional",
+            supersedes_id=None,
+            reinforcements=0,
+            last_reinforced_at=None,
+            tags=[],
+            entity_ids=[entity],
+            subject_entity_id=entity,
+            attribute="r1",
         )
     )
     decision = ActivationService(store, _Policy()).apply(principal, "r1")
@@ -54,7 +71,9 @@ def test_reviews_list_resolve_and_backlog(tmp_path: Path, capsys) -> None:
 
     assert cli.main(["--store", str(db), "reviews", "backlog", "--max-open", "0", "--max-age-days", "30"]) == 3
 
-    assert cli.main(["--store", str(db), "reviews", "resolve", review_id, "--as", "promote", "--resolver", "ops-1"]) == 0
+    assert (
+        cli.main(["--store", str(db), "reviews", "resolve", review_id, "--as", "promote", "--resolver", "ops-1"]) == 0
+    )
     store = Store(db)
     assert store.get_record(record_id).activation == "ambient"  # type: ignore[union-attr]
     assert store.open_activation_reviews() == []
@@ -70,9 +89,19 @@ def test_reviews_list_resolve_and_backlog(tmp_path: Path, capsys) -> None:
 def test_direct_activation_is_checked(tmp_path: Path, capsys) -> None:
     db = tmp_path / "m.sqlite"
     _, record_id = _seed(db)
-    assert cli.main(["--store", str(db), "activation", record_id, "ambient", "--resolver", "ops-1", "--reason", "manual"]) == 0
-    assert cli.main(["--store", str(db), "activation", record_id, "conditional", "--resolver", "ops-1", "--reason", "demote"]) == 0
-    assert cli.main(["--store", str(db), "activation", "missing", "ambient", "--resolver", "ops-1", "--reason", "x"]) == 2
+    assert (
+        cli.main(["--store", str(db), "activation", record_id, "ambient", "--resolver", "ops-1", "--reason", "manual"])
+        == 0
+    )
+    assert (
+        cli.main(
+            ["--store", str(db), "activation", record_id, "conditional", "--resolver", "ops-1", "--reason", "demote"]
+        )
+        == 0
+    )
+    assert (
+        cli.main(["--store", str(db), "activation", "missing", "ambient", "--resolver", "ops-1", "--reason", "x"]) == 2
+    )
     assert "refused" in capsys.readouterr().out
 
 
@@ -93,7 +122,9 @@ def test_metrics_and_bundle_commands(tmp_path: Path, capsys) -> None:
 
             return GapDecision([], "fake", "empty")
 
-    UtilityAwareOrchestrator(store, lambda p, q, c: [], Gaps(), None, shadow).prepare_turn(principal, "hello", None, lambda: "draft", lambda r: "final")
+    UtilityAwareOrchestrator(store, lambda p, q, c: [], Gaps(), None, shadow).prepare_turn(
+        principal, "hello", None, lambda: "draft", lambda r: "final"
+    )
     store.close()
 
     assert cli.main(["--store", str(db), "metrics"]) == 0
@@ -107,7 +138,23 @@ def test_metrics_and_bundle_commands(tmp_path: Path, capsys) -> None:
     components.write_text(json.dumps(bundle_components(shadow)))
     assert cli.main(["--store", str(db), "bundles", "list"]) == 0
     assert "no fitness results" in capsys.readouterr().out
-    assert cli.main(["--store", str(db), "bundles", "record", str(components), "--passed", "--evidence", "results/x", "--by", "ops"]) == 0
+    assert (
+        cli.main(
+            [
+                "--store",
+                str(db),
+                "bundles",
+                "record",
+                str(components),
+                "--passed",
+                "--evidence",
+                "results/x",
+                "--by",
+                "ops",
+            ]
+        )
+        == 0
+    )
     assert "PASS" in capsys.readouterr().out
     assert cli.main(["--store", str(db), "bundles", "record", str(components), "--evidence", "x", "--by", "ops"]) == 2
     assert cli.main(["--store", str(db), "bundles", "list"]) == 0

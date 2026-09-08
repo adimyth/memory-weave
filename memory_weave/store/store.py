@@ -208,7 +208,8 @@ class Store:
                 INSERT INTO records(
                     id, type, version, content, subject, scope_kind, scope_id, source_kind, source_ref,
                     creator_agent_id, evidence, created_at, event_at, expires_at, confidence, status,
-                    supersedes_id, reinforcements, last_reinforced_at, index_version, tags, subject_entity_id, attribute,
+                    supersedes_id, reinforcements, last_reinforced_at, index_version, tags, subject_entity_id,
+                    attribute,
                     activation, category
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
@@ -305,16 +306,43 @@ class Store:
         return [dict(row) for row in rows]
 
     _TURN_DECISION_JSON = (
-        "profile_record_ids", "inventory", "gaps", "candidate_ids", "verdicts", "admitted_ids", "timings_ms", "failures", "config", "usage",
+        "profile_record_ids",
+        "inventory",
+        "gaps",
+        "candidate_ids",
+        "verdicts",
+        "admitted_ids",
+        "timings_ms",
+        "failures",
+        "config",
+        "usage",
     )
 
     def insert_turn_decision(self, row: Mapping[str, Any]) -> None:
         """Persist one utility-aware turn decision."""
 
         columns = (
-            "id", "at", "session_id", "turn", "disposition", "shadow", "profile_record_ids", "inventory", "gaps",
-            "gap_status", "candidate_ids", "verdicts", "admitted_ids", "admission_status", "requested_budget_ms",
-            "effective_budget_ms", "timings_ms", "failures", "config", "bundle_hash", "usage",
+            "id",
+            "at",
+            "session_id",
+            "turn",
+            "disposition",
+            "shadow",
+            "profile_record_ids",
+            "inventory",
+            "gaps",
+            "gap_status",
+            "candidate_ids",
+            "verdicts",
+            "admitted_ids",
+            "admission_status",
+            "requested_budget_ms",
+            "effective_budget_ms",
+            "timings_ms",
+            "failures",
+            "config",
+            "bundle_hash",
+            "usage",
         )
         values: list[object] = []
         for column in columns:
@@ -330,7 +358,8 @@ class Store:
             values.append(value)
         with self.transaction() as connection:
             connection.execute(
-                f"INSERT INTO turn_decisions({', '.join(columns)}) VALUES ({_placeholders(len(columns))})", tuple(values)
+                f"INSERT INTO turn_decisions({', '.join(columns)}) VALUES ({_placeholders(len(columns))})",
+                tuple(values),
             )
 
     def turn_decisions(
@@ -364,7 +393,11 @@ class Store:
             item = dict(row)
             for column in self._TURN_DECISION_JSON:
                 raw = item.get(column)
-                item[column] = json.loads(cast(str, raw)) if raw is not None else ({} if column in ("usage", "timings_ms", "config") else [])
+                item[column] = (
+                    json.loads(cast(str, raw))
+                    if raw is not None
+                    else ({} if column in ("usage", "timings_ms", "config") else [])
+                )
             item["shadow"] = bool(item["shadow"])
             out.append(item)
         return out
@@ -385,8 +418,18 @@ class Store:
         result_id = uuid7()
         with self.transaction() as connection:
             connection.execute(
-                "INSERT INTO bundle_fitness(id, bundle_hash, bundle, suite_version, passed, evidence, recorded_by, recorded_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                (result_id, bundle_hash, _dump_json(dict(bundle)), suite_version, int(passed), evidence, recorded_by, _dump_datetime(at or now())),
+                "INSERT INTO bundle_fitness(id, bundle_hash, bundle, suite_version, passed, evidence, recorded_by, "
+                "recorded_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    result_id,
+                    bundle_hash,
+                    _dump_json(dict(bundle)),
+                    suite_version,
+                    int(passed),
+                    evidence,
+                    recorded_by,
+                    _dump_datetime(at or now()),
+                ),
             )
         return result_id
 
@@ -411,10 +454,13 @@ class Store:
         row = self.connection.execute("SELECT * FROM activation_reviews WHERE id = ?", (review_id,)).fetchone()
         return None if row is None else dict(row)
 
-    def resolve_activation_review(self, review_id: str, *, resolution: str, resolver: str, at: datetime | None = None) -> None:
+    def resolve_activation_review(
+        self, review_id: str, *, resolution: str, resolver: str, at: datetime | None = None
+    ) -> None:
         with self.transaction() as connection:
             connection.execute(
-                "UPDATE activation_reviews SET status = 'resolved', resolution = ?, resolver = ?, resolved_at = ? WHERE id = ?",
+                "UPDATE activation_reviews SET status = 'resolved', resolution = ?, resolver = ?, resolved_at = ? "
+                "WHERE id = ?",
                 (resolution, resolver, _dump_datetime(at or now()), review_id),
             )
 
