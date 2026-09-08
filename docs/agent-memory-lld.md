@@ -1999,7 +1999,7 @@ These choices do not block the initial implementation. Each has a safe default a
 | Stopwords and lexical tokenization | Use a frequency-based English list of about 180 stopwords, while preserving identifiers and proper nouns. | Multilingual cases enter evaluation. |
 | Exact subject lookup | Do not add a `subject` filter to `memory_search` yet. | Evaluation shows agents frequently need exact attribute lookups. |
 | Session end | Deep Agents supports both explicit end and idle-timeout splitting from the first version. | Adapter behavior shows one source is unreliable. |
-| Reranker floor | Leave it unset and reject `reranker.enabled` until the reranker experiment runs. | The experiment supplies a calibrated floor. |
+| Reranker floor | Leave it unset and reject `reranker.enabled` without one. The Phase 11 calibration found 0.01 as a recall-oriented candidate control and found that reranking cost explicit recall in the utility-aware path, so the stage stays off; refer `usefulness-gate.md` section 8n. | A retrieval evaluation shows a candidate pool the judge cannot handle without a pair-score cut. |
 | Long session summaries | Write one summary record capped at 1,200 characters. | Long-session evaluation shows that one summary loses important context. |
 | Rewriter latitude | Resolve references, name the subject, and preserve query count. | Follow-up-question cases show misses that need broader rewrites. |
 | Generator concurrency | Run dense, lexical, and entity generators sequentially. | Measurement shows a thread pool improves latency enough to justify its complexity. |

@@ -1,0 +1,15 @@
+{
+  "planner": "gpt-4o/gap-v3c",
+  "judge": "gpt-5.4/admission-v3",
+  "classifier": "gpt-4o/category-v2",
+  "taxonomy": "activation-v2-frozen",
+  "inventory_builder": "inventory-v1",
+  "retrieval_config_sha256": "e8c8c3309ab121de",
+  "latency_budget_ms": null,
+  "gap_enabled": true,
+  "admission_mode": "hosted_judge",
+  "max_gaps": 3,
+  "max_candidates": 8,
+  "gap_timeout_ms": 4000,
+  "admission_timeout_ms": 8000
+}

@@ -1,0 +1,434 @@
+{
+  "summary": {
+    "isolation": {
+      "served_responses_identical": true,
+      "records_identical": true,
+      "session_turns_identical": true,
+      "reviews_identical": true
+    },
+    "turns": 6,
+    "hypothetical_ordinary_injection": "0/4",
+    "explicit_recall": "1/1",
+    "implicit_recall": "0/0",
+    "unsafe_admissions": 0,
+    "unexpected_admissions": [],
+    "policy_failures": [],
+    "budget_withholds": [],
+    "promoted": [
+      "A1b",
+      "A2"
+    ],
+    "inventory": [
+      "document and repository locations",
+      "people and their roles",
+      "time zone and working hours"
+    ],
+    "bundle": {
+      "planner": "gpt-4o/gap-v3c",
+      "judge": "gpt-5.4/admission-v3",
+      "classifier": "gpt-4o/category-v2",
+      "taxonomy": "activation-v2-frozen",
+      "inventory_builder": "inventory-v1",
+      "retrieval_config_sha256": "e8c8c3309ab121de",
+      "latency_budget_ms": null
+    },
+    "gates": {
+      "isolation": true,
+      "ordinary_injection_le_5pct": true,
+      "explicit_recall_ge_90pct": true,
+      "implicit_recall_ge_75pct": true,
+      "no_unsafe": true,
+      "all": true
+    }
+  },
+  "decisions": [
+    {
+      "id": "01a08085-7aab-7b3d-b5c1-0b84f88f4cf0",
+      "at": "2026-09-08T10:17:07.231854+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "Show me a small Python example that parses this configuration file.",
+      "disposition": "baseline_no_gaps",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a08085-6c5f-78d0-a373-a11ef5de162e",
+        "01a08085-6220-7fd0-9dc6-a286dc59fc55"
+      ],
+      "inventory": [
+        "document and repository locations",
+        "people and their roles",
+        "time zone and working hours"
+      ],
+      "gaps": [],
+      "gap_status": "empty",
+      "candidate_ids": [],
+      "verdicts": [],
+      "admitted_ids": [],
+      "admission_status": "skipped",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "draft": 3.277249983511865,
+        "gap_overhang": 757.5400000205263
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "classifier": "gpt-4o/category-v2",
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "e8c8c3309ab121de",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      },
+      "bundle_hash": "cbb8898d9f341e3d",
+      "usage": {
+        "gpt-4o": {
+          "completion": 6,
+          "prompt": 500
+        }
+      }
+    },
+    {
+      "id": "01a08085-7da1-7c29-a406-4ca2ebb5638c",
+      "at": "2026-09-08T10:17:10.401547+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "What time zone should you use when suggesting a meeting for me?",
+      "disposition": "shadow_would_regenerate",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a08085-6c5f-78d0-a373-a11ef5de162e",
+        "01a08085-6220-7fd0-9dc6-a286dc59fc55"
+      ],
+      "inventory": [
+        "document and repository locations",
+        "people and their roles",
+        "time zone and working hours"
+      ],
+      "gaps": [
+        {
+          "category": "preference",
+          "query": "user time zone"
+        }
+      ],
+      "gap_status": "ok",
+      "candidate_ids": [
+        "01a08085-669d-71c4-97b7-93481222d643",
+        "01a08085-75e9-7e7f-a3ad-59eb67aa46c9",
+        "01a08085-70f6-7275-91dd-09b55fcb211f"
+      ],
+      "verdicts": [
+        {
+          "reason": "It lets the assistant answer directly that it should use Asia/Kolkata.",
+          "record_id": "01a08085-669d-71c4-97b7-93481222d643",
+          "verdict": "helpful"
+        },
+        {
+          "reason": "It concerns deployment process and does not affect the meeting time zone answer.",
+          "record_id": "01a08085-75e9-7e7f-a3ad-59eb67aa46c9",
+          "verdict": "insufficient"
+        },
+        {
+          "reason": "It concerns checklist ownership and does not affect the meeting time zone answer.",
+          "record_id": "01a08085-70f6-7275-91dd-09b55fcb211f",
+          "verdict": "insufficient"
+        }
+      ],
+      "admitted_ids": [
+        "01a08085-669d-71c4-97b7-93481222d643"
+      ],
+      "admission_status": "ok",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "admission": 2218.6192920198664,
+        "draft": 1.4737918972969055,
+        "gap_overhang": 883.0918330932036,
+        "retrieval": 65.40941691491753
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "classifier": "gpt-4o/category-v2",
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "e8c8c3309ab121de",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      },
+      "bundle_hash": "cbb8898d9f341e3d",
+      "usage": {
+        "gpt-4o": {
+          "completion": 20,
+          "prompt": 501
+        },
+        "gpt-5.4": {
+          "completion": 185,
+          "prompt": 608
+        }
+      }
+    },
+    {
+      "id": "01a08085-8a03-7e75-a1dd-d6af7aab36e1",
+      "at": "2026-09-08T10:17:11.271623+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "Should I use tabs or spaces in Python?",
+      "disposition": "baseline_no_gaps",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a08085-6c5f-78d0-a373-a11ef5de162e",
+        "01a08085-6220-7fd0-9dc6-a286dc59fc55"
+      ],
+      "inventory": [
+        "document and repository locations",
+        "people and their roles",
+        "time zone and working hours"
+      ],
+      "gaps": [],
+      "gap_status": "empty",
+      "candidate_ids": [],
+      "verdicts": [],
+      "admitted_ids": [],
+      "admission_status": "skipped",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "draft": 1.3250421034172177,
+        "gap_overhang": 867.5783328944817
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "classifier": "gpt-4o/category-v2",
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "e8c8c3309ab121de",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      },
+      "bundle_hash": "cbb8898d9f341e3d",
+      "usage": {
+        "gpt-4o": {
+          "completion": 6,
+          "prompt": 497
+        }
+      }
+    },
+    {
+      "id": "01a08085-8d68-7085-95db-f17d49a0004a",
+      "at": "2026-09-08T10:17:12.035041+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "How often should a deployment checklist be reviewed?",
+      "disposition": "baseline_no_gaps",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a08085-6c5f-78d0-a373-a11ef5de162e",
+        "01a08085-6220-7fd0-9dc6-a286dc59fc55"
+      ],
+      "inventory": [
+        "document and repository locations",
+        "people and their roles",
+        "time zone and working hours"
+      ],
+      "gaps": [],
+      "gap_status": "empty",
+      "candidate_ids": [],
+      "verdicts": [],
+      "admitted_ids": [],
+      "admission_status": "skipped",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "draft": 1.283916993997991,
+        "gap_overhang": 761.2393329618499
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "classifier": "gpt-4o/category-v2",
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "e8c8c3309ab121de",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      },
+      "bundle_hash": "cbb8898d9f341e3d",
+      "usage": {
+        "gpt-4o": {
+          "completion": 6,
+          "prompt": 497
+        }
+      }
+    },
+    {
+      "id": "01a08085-9065-77ba-ab40-9d5d057d0081",
+      "at": "2026-09-08T10:17:12.758194+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "What is a clear way to format a trade-off in a design note?",
+      "disposition": "baseline_no_gaps",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a08085-6c5f-78d0-a373-a11ef5de162e",
+        "01a08085-6220-7fd0-9dc6-a286dc59fc55"
+      ],
+      "inventory": [
+        "document and repository locations",
+        "people and their roles",
+        "time zone and working hours"
+      ],
+      "gaps": [],
+      "gap_status": "empty",
+      "candidate_ids": [],
+      "verdicts": [],
+      "admitted_ids": [],
+      "admission_status": "skipped",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "draft": 4.607415990903974,
+        "gap_overhang": 715.6112499069422
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "classifier": "gpt-4o/category-v2",
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "e8c8c3309ab121de",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      },
+      "bundle_hash": "cbb8898d9f341e3d",
+      "usage": {
+        "gpt-4o": {
+          "completion": 6,
+          "prompt": 503
+        }
+      }
+    },
+    {
+      "id": "01a08085-9337-7d5d-a049-51e92795f673",
+      "at": "2026-09-08T10:17:13.587377+00:00",
+      "session_id": "phase0-shadow",
+      "turn": "What are common mistakes when naming a Python virtual environment?",
+      "disposition": "baseline_no_gaps",
+      "shadow": true,
+      "profile_record_ids": [
+        "01a08085-6c5f-78d0-a373-a11ef5de162e",
+        "01a08085-6220-7fd0-9dc6-a286dc59fc55"
+      ],
+      "inventory": [
+        "document and repository locations",
+        "people and their roles",
+        "time zone and working hours"
+      ],
+      "gaps": [],
+      "gap_status": "empty",
+      "candidate_ids": [],
+      "verdicts": [],
+      "admitted_ids": [],
+      "admission_status": "skipped",
+      "requested_budget_ms": null,
+      "effective_budget_ms": null,
+      "timings_ms": {
+        "draft": 1.3415419962257147,
+        "gap_overhang": 826.9093749113381
+      },
+      "failures": [],
+      "config": {
+        "admission_mode": "hosted_judge",
+        "admission_timeout_ms": 8000,
+        "bundle": {
+          "classifier": "gpt-4o/category-v2",
+          "inventory_builder": "inventory-v1",
+          "judge": "gpt-5.4/admission-v3",
+          "latency_budget_ms": null,
+          "planner": "gpt-4o/gap-v3c",
+          "retrieval_config_sha256": "e8c8c3309ab121de",
+          "taxonomy": "activation-v2-frozen"
+        },
+        "gap_enabled": true,
+        "gap_timeout_ms": 4000,
+        "latency_budget_ms": null,
+        "max_candidates": 8,
+        "max_gaps": 3,
+        "shadow": true
+      },
+      "bundle_hash": "cbb8898d9f341e3d",
+      "usage": {
+        "gpt-4o": {
+          "completion": 6,
+          "prompt": 499
+        }
+      }
+    }
+  ],
+  "id_map": {
+    "01a08085-5853-7535-9a6f-ac92f98cdce3": "A1",
+    "01a08085-6220-7fd0-9dc6-a286dc59fc55": "A2",
+    "01a08085-669d-71c4-97b7-93481222d643": "F1",
+    "01a08085-6c5f-78d0-a373-a11ef5de162e": "A1b",
+    "01a08085-70f6-7275-91dd-09b55fcb211f": "F2",
+    "01a08085-75e9-7e7f-a3ad-59eb67aa46c9": "F3"
+  },
+  "store": "benchmarks/results/shadow/stores/slice_conversation-20260908T101655Z/shadow.sqlite",
+  "usage": {
+    "gpt-4o": {
+      "prompt": 6586,
+      "completion": 406
+    },
+    "gpt-5.4": {
+      "prompt": 608,
+      "completion": 185
+    }
+  }
+}
