@@ -10,6 +10,8 @@ One consequence for the utility-aware bundle: the phase added `retrieval.gate.de
 
 Phases 11 and 12 followed the same day. The optional rewrite and rerank stages are built and measured in `usefulness-gate.md` section 8n, and both stay off. The operator surface in `memory_weave/operations.py` and the CLI covers expiry, retention, erasure of a record, a session, or a user, re-embedding with the floor-recalibration refusal, and snapshots; `memory_weave/runtime.py` is the composition root the adapters will use.
 
+Phase 13 added the Deep Agents adapter, `memory_weave/adapters/deepagents.py`, behind the `deepagents` extra, with the shared contract suite it must pass in `tests/adapter_contract.py`; the CrewAI adapter in Phase 14 runs the same suite.
+
 The paragraphs below are the note as written on 6 September, before the build.
 
 Weave has one write path: the chatting agent calls `memory_write` during the session. That is it.

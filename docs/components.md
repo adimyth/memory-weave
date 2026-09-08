@@ -393,7 +393,7 @@ The append-only `events` table records memory changes. `search_log` records retr
 | `memory_revise` | Confirm, supersede, expire, or merge an entity. |
 | `memory_forget` | Mark a memory deleted with a reason. |
 
-An adapter integrates those tools with an agent framework. It registers the tool schemas, derives the principal, records session hooks, and attaches current-turn context to each search. The memory contract remains independent of the agent framework and model provider.
+An adapter integrates those tools with an agent framework. It registers the tool schemas, derives the principal, records session hooks, and attaches current-turn context to each search. The memory contract remains independent of the agent framework and model provider. `memory_weave/adapters/deepagents.py` is the first adapter: tools that read the principal from the run configuration at call time and one middleware for turn capture, host-issued recall, and the utility-aware wrap around answer-producing model calls; `memory_weave/adapters/base.py` holds what every adapter shares.
 
 ## 15. Prompts and instructions
 
