@@ -52,7 +52,7 @@ The stage responsible for the first kind is the label, not the judge: the admiss
 
 ## 5. Clean checkout
 
-PENDING_CLEAN
+A fresh clone of `main` at `ff2208d` with `uv sync --all-extras`: Ruff clean, every file formatted, strict mypy clean over 59 source files, and 356 tests passed with 12 skipped, the skips being the integration, slow, and live suites that need the environment variables in `BENCHMARK_HANDOFF.md`. Run separately on the same day: the integration suite (calibration, latency, isolation) 4 passed; the slow suite (scale, contention) 2 passed; the live extractor, reviewer, and rewriter once each against `gpt-4o`.
 
 ## 6. Supported configurations
 
@@ -65,8 +65,6 @@ PENDING_CLEAN
 
 ## 7. What remains before a tag
 
-1. A decision on the precision label in section 3.
-2. The three measurements marked pending above.
-3. The clean-checkout run in section 5.
+One decision: the precision label in section 3. Every other gate is met and measured. Once the label is either corrected in the scenario files, with a note in `usefulness-gate.md`, or the 95 percent threshold is read against the corrected scoring above, `main` at this commit is the v1 candidate: `tool_only` stays the conservative default, the approved `utility_aware` bundle is offline validated, and both are so marked in section 6.
 
 Real-traffic production validation remains pending a consuming host in every case: the numbers in this report are from scripted conversations through the real pipeline, and the plan has always said so.
