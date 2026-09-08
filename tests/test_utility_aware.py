@@ -290,3 +290,18 @@ def test_metrics_assign_one_stage_outcome_per_decision_and_feed_rollback(world) 
     assert quiet == []
     loud = rollback_reasons(report, RollbackThresholds(min_turns=1, max_served_admission_rate=0.05, max_policy_failure_rate=0.1))
     assert any("served admission rate" in r for r in loud) and any("policy failure rate" in r for r in loud)
+
+
+def test_kill_switched_configurations_never_need_approval(world) -> None:
+    """Disabling a stage can only make the path safer, so a degraded bundle serves without its own result."""
+
+    store, principal, _ = world
+    calls: list[str] = []
+    gaps, admission = FakeGaps([Gap("preference", "tz")]), FakeAdmission(["tz"])
+    admission_off = UtilityAwareConfig(gap_enabled=True, admission_mode="disabled")
+    decision = UtilityAwareOrchestrator(store, _retrieve_all(store), gaps, admission, admission_off).prepare_turn(principal, "q", None, *_generators(calls))
+    assert decision.disposition == "baseline_empty_admission" and decision.response == "draft"
+    gap_off = UtilityAwareConfig(gap_enabled=False, admission_mode="hosted_judge")
+    decision = UtilityAwareOrchestrator(store, _retrieve_all(store), gaps, admission, gap_off).prepare_turn(principal, "q", None, *_generators(calls))
+    assert decision.disposition == "baseline_no_gaps"
+    assert calls == ["baseline", "baseline"]

@@ -97,6 +97,15 @@ uv run memory-weave --store <store.sqlite> bundles record benchmarks/bundles/bun
   --passed --evidence "docs/usefulness-gate.md 8k,8l" --by <you>
 ```
 
+```bash
+HF_HUB_OFFLINE=1 uv run --extra live --extra local-models python benchmarks/reference_host_e2e.py \
+  --scenario benchmarks/scenarios/slice_conversation.json
+```
+
+Drives `examples/reference_host.py` with the real hosted adapters and the supported bundle through the
+whole operating loop: refusal while unapproved, shadow, fitness recording, serving, budget withhold, a kill
+switch, metrics, and rollback reasons. Results land in `results/reference-host/`.
+
 The shadow harness runs the orchestrator beside the served path with isolation asserted; `metrics`
 aggregates any store's turn-decision log into stage outcomes, rates, latency, cost, and backlog; `bundles
 record` writes the supported bundle's fitness result into a store so that store may serve it. Without that

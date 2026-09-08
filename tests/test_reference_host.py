@@ -145,3 +145,20 @@ def test_per_request_budget_is_honoured_by_the_host(world) -> None:
     decision = host.serve_turn(principal, "q", None, lambda: "draft", lambda r: "final", latency_budget_ms=0)
     assert decision.disposition == "baseline_budget_exhausted" and decision.response == "draft"
     assert decision.requested_budget_ms == 0
+
+
+def test_kill_switches_work_without_approving_the_degraded_bundles(world) -> None:
+    from dataclasses import replace
+
+    store, principal = world
+    probe = _host(store, Gaps(True), Admission(True), switches=KillSwitches(regeneration=False))
+    _approve(store, replace(probe.config(), shadow=False))
+    host = _host(store, Gaps(True), Admission(True))
+    assert host.serve_turn(principal, "q", None, lambda: "draft", lambda r: "final").disposition == "regenerated"
+    host.disable("admission")  # no fitness result exists for this configuration; it must still be allowed
+    assert host.serve_turn(principal, "q", None, lambda: "draft", lambda r: "final").disposition == "baseline_empty_admission"
+    host.disable("gap")
+    assert host.serve_turn(principal, "q", None, lambda: "draft", lambda r: "final").disposition == "baseline_no_gaps"
+    # Re-enabling everything brings the approval requirement back, and the original bundle is approved.
+    host.set_switches(KillSwitches())
+    assert host.serve_turn(principal, "q", None, lambda: "draft", lambda r: "final").disposition == "regenerated"

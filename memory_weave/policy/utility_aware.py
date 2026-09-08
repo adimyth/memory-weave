@@ -204,7 +204,10 @@ class UtilityAwareOrchestrator:
         self._clock = clock
         components = bundle_components(config)
         self._bundle_hash = bundle_hash(components)
-        serving = config.gap_enabled and not config.shadow
+        # Approval gates the ability to put memory in front of the user, which needs planning, admission,
+        # and regeneration all on. Disabling any stage is a kill switch: it can only make the path safer,
+        # so it must never be blocked by a missing fitness result for the degraded configuration.
+        serving = config.gap_enabled and not config.shadow and config.admission_mode != "disabled"
         if serving:
             if registry is None:
                 raise BundleNotApprovedError(
