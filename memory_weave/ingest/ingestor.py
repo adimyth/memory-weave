@@ -636,10 +636,18 @@ class Ingestor:
         timer.mark("dedup_search")
         extra: dict[str, object] = {"attribute_scan_truncated": True} if scan_truncated else {}
 
-        # Judge every scanned record first. The same-attribute authority incumbent then receives the
-        # supersession decision before any reinforcement, so a "same" verdict against a provisional
-        # sibling can never leave a contradicted incumbent active.
-        verdicts = [(existing, self._verdict(existing, record)) for existing in attribute_records]
+        # Judge the records whose verdict can matter: those under the same attribute, and those about the
+        # same thing by cosine, which are the only ones the cross-attribute rules below consult. Judging the
+        # rest would cost one cross-encoder pass each and change nothing. The same-attribute authority
+        # incumbent then receives the supersession decision before any reinforcement, so a "same" verdict
+        # against a provisional sibling can never leave a contradicted incumbent active.
+        floor = self._config.ingestion.attribute_alias_cosine
+        aliasable = {existing.id for existing in attribute_records if self._attribute_cosine(existing, vector) >= floor}
+        verdicts = [
+            (existing, self._verdict(existing, record))
+            for existing in attribute_records
+            if existing.attribute == record.attribute or existing.id in aliasable
+        ]
         same_attribute = [existing for existing, _ in verdicts if existing.attribute == record.attribute]
 
         # A temporary statement ("this week, answer in Spanish") is not a new value for a standing fact
@@ -673,8 +681,6 @@ class Ingestor:
         # the cosine says they are about the same thing. Without the second, an NLI verdict of
         # "contradicts" between two unrelated facts about one person would let the newer fact supersede
         # the older one, and a person could hold only one live semantic record.
-        floor = self._config.ingestion.attribute_alias_cosine
-        aliasable = {existing.id for existing in attribute_records if self._attribute_cosine(existing, vector) >= floor}
         aliased_same = [existing for existing, verdict in verdicts if verdict == "same" and existing.id in aliasable]
         if aliased_same:
             existing = max(aliased_same, key=lambda candidate: _authority_key(candidate, self._config))

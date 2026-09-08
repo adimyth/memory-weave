@@ -1809,6 +1809,8 @@ This budget describes warm `memory_search` on an Apple M-series laptop with two 
 
 With rewriting and reranking off, embedding dominates latency. Keep the model loaded and cache exact-string query embeddings in the bounded LRU defined by `embedding.query_cache_entries`. A smaller query-side encoder is out of scope.
 
+**Measured, 8 September 2026, M4 Pro.** On the 1K fixture with the real embedder and twenty distinct queries, warm `memory_search` p50 is 23.2 ms and p95 28.0 ms, of which the embedding pass is 19.8 ms and lexical 1.2 ms; the first search after opening the store is 2.6 s. `memory_write` p50 is 26.3 ms, with a p95 of 471 ms on a write whose attribute scan reaches the NLI judge. On the 50K synthetic store with a fixed 25 ms embedding cost, warm search p50 is 73.7 ms: scopes and filter take 0.36 ms together, dense 0.8 ms, and lexical 38.3 ms, which is the stage to optimise first at that size. `tests/integration/test_latency.py` and `test_scale.py` are the measurements; `BENCHMARK_HANDOFF.md` collects them.
+
 `memory_write` has the same embedding cost plus one small index search and one transaction. It can also pay NLI-judge cost when it finds a possible duplicate or contradiction.
 
 ### Benchmark instrumentation

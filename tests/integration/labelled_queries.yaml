@@ -1,0 +1,112 @@
+# Hand-labelled queries against the 1K fixture (tests/integration/fixture_1k.py).
+#
+# relevant: the answer is in the store; `expected` names the record ids that answer it and `principal`
+# names an agent/user pair that can read them. irrelevant: nothing in the store bears on it, asked by a
+# principal with a full view of their scopes; the correct result is empty.
+#
+# The dense-floor sweep in test_gate_calibration.py scores each floor by whether a relevant query's expected
+# record clears it and whether any record clears it for an irrelevant query.
+
+relevant:
+  - {query: "which editor does Aditya use", expected: [pref-aditya-editor], principal: [coding-agent, aditya]}
+  - {query: "how does Aditya like his answers written", expected: [pref-aditya-answer_style], principal: [research-agent, aditya]}
+  - {query: "default programming language for code examples for Aditya", expected: [pref-aditya-code_language], principal: [coding-agent, aditya]}
+  - {query: "what time zone is Aditya in", expected: [pref-aditya-time_zone], principal: [research-agent, aditya]}
+  - {query: "commit message convention Aditya follows", expected: [pref-aditya-commit_style], principal: [coding-agent, aditya]}
+  - {query: "which test runner does Aditya use", expected: [pref-aditya-test_runner], principal: [coding-agent, aditya]}
+  - {query: "what shell does Aditya use now", expected: [pref-aditya-shell], principal: [coding-agent, aditya]}
+  - {query: "how Aditya sets up a project environment", expected: [proc-aditya-venv], principal: [coding-agent, aditya]}
+  - {query: "who is Aditya's manager", expected: [fact-aditya-manager], principal: [research-agent, aditya]}
+  - {query: "who owns the deployment checklist", expected: [fact-priya-checklist-owner], principal: [research-agent, aditya]}
+  - {query: "what did Aditya present at the Goa offsite", expected: [event-aditya-offsite], principal: [coding-agent, aditya]}
+  - {query: "Aditya's current git branch", expected: [private-coding-aditya-branch], principal: [coding-agent, aditya]}
+  - {query: "Priya's editor and keybindings", expected: [pref-priya-editor], principal: [research-agent, priya]}
+  - {query: "how Priya wants answers formatted", expected: [pref-priya-answer_style], principal: [ops-agent, priya]}
+  - {query: "Priya's time zone", expected: [pref-priya-time_zone], principal: [ops-agent, priya]}
+  - {query: "when does Priya deploy the billing service", expected: [pref-priya-deploy_window], principal: [ops-agent, priya]}
+  - {query: "which team does Priya lead", expected: [pref-priya-team], principal: [research-agent, priya]}
+  - {query: "Priya's process for shipping a hotfix", expected: [proc-priya-hotfix], principal: [ops-agent, priya]}
+  - {query: "why was Priya paged in early September", expected: [event-priya-oncall-page], principal: [ops-agent, priya]}
+  - {query: "Rohan's dietary restrictions", expected: [pref-rohan-diet], principal: [ops-agent, rohan]}
+  - {query: "Rohan's working time zone", expected: [pref-rohan-time_zone], principal: [coding-agent, rohan]}
+  - {query: "how long does Rohan like meetings to be", expected: [pref-rohan-meeting_length], principal: [ops-agent, rohan]}
+  - {query: "where does Rohan keep his meeting notes", expected: [pref-rohan-notebook], principal: [coding-agent, rohan]}
+  - {query: "who maintains the nightly analytics pipeline", expected: [fact-meera-pipeline], principal: [ops-agent, rohan]}
+  - {query: "hiring decision Rohan made in August", expected: [event-rohan-hiring], principal: [coding-agent, rohan]}
+  - {query: "Rohan's staging cluster name", expected: [private-ops-rohan-cluster], principal: [ops-agent, rohan]}
+  - {query: "which English spelling should replies to Meera use", expected: [pref-meera-language], principal: [coding-agent, meera]}
+  - {query: "Meera's preferred chart styling", expected: [pref-meera-chart_style], principal: [coding-agent, meera]}
+  - {query: "what language does Meera write pipelines in", expected: [pref-meera-code_language], principal: [coding-agent, meera]}
+  - {query: "earliest meeting time for Meera", expected: [pref-meera-working_hours], principal: [coding-agent, meera]}
+  - {query: "when did Meera ship the dashboard redesign", expected: [event-meera-dashboard], principal: [coding-agent, meera]}
+  - {query: "what database does memory-weave use as its source of truth", expected: [proj-weave-store], principal: [research-agent, aditya]}
+  - {query: "embedding model used by memory-weave", expected: [proj-weave-embedder], principal: [coding-agent, aditya]}
+  - {query: "where is the memory-weave release runbook", expected: [proj-weave-runbook], principal: [coding-agent, rohan]}
+  - {query: "steps to release memory-weave", expected: [proc-weave-release], principal: [coding-agent, aditya]}
+  - {query: "how to switch memory-weave to a new embedding model", expected: [proc-weave-reembed], principal: [research-agent, aditya]}
+  - {query: "what did the team learn about the relevance gate in September", expected: [event-weave-gate-finding], principal: [research-agent, priya]}
+  - {query: "change data capture choice for billing", expected: [proj-billing-cdc], principal: [ops-agent, priya]}
+  - {query: "billing API rate limit per tenant", expected: [proj-billing-rate-limit], principal: [ops-agent, rohan]}
+  - {query: "when are billing deployments frozen", expected: [proj-billing-freeze], principal: [coding-agent, rohan]}
+  - {query: "how to roll back a billing deployment", expected: [proc-billing-rollback], principal: [ops-agent, priya]}
+  - {query: "what caused the billing outage in August", expected: [event-billing-outage], principal: [ops-agent, rohan]}
+  - {query: "when does the on-call handover happen", expected: [org-acme-oncall], principal: [research-agent, aditya]}
+  - {query: "where is the engineering handbook", expected: [org-acme-handbook], principal: [ops-agent, priya]}
+  - {query: "what was announced at the August all-hands", expected: [event-acme-allhands], principal: [coding-agent, meera]}
+  - {query: "Postgres logical replication versus Debezium decision", expected: [proj-billing-cdc], principal: [coding-agent, aditya]}
+  - {query: "who runs the platform team", expected: [fact-aditya-manager], principal: [coding-agent, aditya]}
+  - {query: "Aditya's Neovim configuration language", expected: [pref-aditya-editor], principal: [coding-agent, aditya]}
+  - {query: "Priya billing platform team lead since July", expected: [pref-priya-team], principal: [ops-agent, priya]}
+  - {query: "invoice queue backlog page", expected: [event-priya-oncall-page], principal: [research-agent, priya]}
+
+irrelevant:
+  - {query: "how do I make sourdough starter from scratch", principal: [coding-agent, aditya]}
+  - {query: "what is the boiling point of water at altitude", principal: [research-agent, priya]}
+  - {query: "recommend a good science fiction novel", principal: [ops-agent, rohan]}
+  - {query: "how far is the moon from earth", principal: [coding-agent, meera]}
+  - {query: "explain the rules of cricket", principal: [research-agent, aditya]}
+  - {query: "what is the capital of Portugal", principal: [ops-agent, priya]}
+  - {query: "how to change a bicycle tyre", principal: [coding-agent, rohan]}
+  - {query: "best time of year to visit Kyoto", principal: [coding-agent, meera]}
+  - {query: "how do vaccines train the immune system", principal: [research-agent, aditya]}
+  - {query: "what is a haiku", principal: [ops-agent, priya]}
+  - {query: "how many strings does a violin have", principal: [coding-agent, rohan]}
+  - {query: "tips for growing tomatoes on a balcony", principal: [coding-agent, meera]}
+  - {query: "who painted the Starry Night", principal: [research-agent, aditya]}
+  - {query: "how does compound interest work", principal: [ops-agent, priya]}
+  - {query: "what causes the northern lights", principal: [coding-agent, rohan]}
+  - {query: "how to fold a paper crane", principal: [coding-agent, meera]}
+  - {query: "the plot of Hamlet in one paragraph", principal: [research-agent, aditya]}
+  - {query: "how long should I boil an egg", principal: [ops-agent, priya]}
+  - {query: "what is the tallest mountain in Africa", principal: [coding-agent, rohan]}
+  - {query: "beginner stretches for lower back pain", principal: [coding-agent, meera]}
+  - {query: "difference between a crocodile and an alligator", principal: [research-agent, aditya]}
+  - {query: "how to pronounce quinoa", principal: [ops-agent, priya]}
+  - {query: "why is the sky blue", principal: [coding-agent, rohan]}
+  - {query: "chess opening for beginners", principal: [coding-agent, meera]}
+  - {query: "what year did the Berlin wall fall", principal: [research-agent, aditya]}
+  - {query: "how to remove a red wine stain", principal: [ops-agent, priya]}
+  - {query: "calories in an avocado", principal: [coding-agent, rohan]}
+  - {query: "how do bees make honey", principal: [coding-agent, meera]}
+  - {query: "what is the speed of sound", principal: [research-agent, aditya]}
+  - {query: "recipe for a classic margarita", principal: [ops-agent, priya]}
+  - {query: "how to train a puppy to sit", principal: [coding-agent, rohan]}
+  - {query: "who wrote Pride and Prejudice", principal: [coding-agent, meera]}
+  - {query: "what is the largest ocean", principal: [research-agent, aditya]}
+  - {query: "how to tie a bow tie", principal: [ops-agent, priya]}
+  - {query: "symptoms of the common cold", principal: [coding-agent, rohan]}
+  - {query: "how does a refrigerator keep food cold", principal: [coding-agent, meera]}
+  - {query: "the history of the Olympic games", principal: [research-agent, aditya]}
+  - {query: "what is the population of Brazil", principal: [ops-agent, priya]}
+  - {query: "how to brew pour-over coffee", principal: [coding-agent, rohan]}
+  - {query: "rules for a game of Scrabble", principal: [coding-agent, meera]}
+  - {query: "how do solar panels generate electricity", principal: [research-agent, aditya]}
+  - {query: "what is the meaning of the word serendipity", principal: [ops-agent, priya]}
+  - {query: "how to care for a succulent", principal: [coding-agent, rohan]}
+  - {query: "who discovered penicillin", principal: [coding-agent, meera]}
+  - {query: "how to convert Celsius to Fahrenheit", principal: [research-agent, aditya]}
+  - {query: "what is jazz improvisation", principal: [ops-agent, priya]}
+  - {query: "the lifecycle of a butterfly", principal: [coding-agent, rohan]}
+  - {query: "how to learn to juggle", principal: [coding-agent, meera]}
+  - {query: "what makes a rainbow", principal: [research-agent, aditya]}
+  - {query: "best way to store fresh basil", principal: [ops-agent, priya]}

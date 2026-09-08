@@ -83,3 +83,6 @@ Thumbs.db
 implementation-plan.md
 docs/current-landscape.md
 docs/benchmark-plan.md
+
+# The committed integration fixture is the one SQLite file the repository keeps.
+!tests/fixtures/memory_1k.sqlite
