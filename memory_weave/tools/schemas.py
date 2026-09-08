@@ -114,7 +114,11 @@ TOOL_SCHEMAS: dict[str, dict[str, object]] = {
     },
     "memory_forget": {
         "name": "memory_forget",
-        "description": "Remove a known memory from normal retrieval while keeping a durable audit tombstone.",
+        "description": (
+            "Stop a known memory from being retrieved or used again. This is a tombstone, not erasure: the "
+            "record stays in the audit trail and its stored text is removed only by an operator's erase "
+            "command. Use it when the user asks to forget or withdraw a memory."
+        ),
         "input_schema": {
             "type": "object",
             "additionalProperties": False,

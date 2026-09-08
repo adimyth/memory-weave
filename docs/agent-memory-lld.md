@@ -71,6 +71,7 @@ Memory Weave loads its tunables from one YAML file through `load_config`. The fo
 ```yaml
 store:
   path: ./memory.sqlite
+  busy_timeout_seconds: 30
 
 embedding:
   model: BAAI/bge-m3
@@ -80,9 +81,12 @@ embedding:
   max_chars: 2000
   query_cache_entries: 4096
   incremental_reload_max: 512
+  reembed_batch_size: 64
 ```
 
+- `store.busy_timeout_seconds` is how long one connection waits for another's write lock. Every store transaction begins `IMMEDIATE`, so a writer queues behind a background extraction rather than failing at once; the wait is bounded by this value.
 - `version` tags each stored vector. `VectorIndex.load` accepts rows that match the current model and version. Bump it when the model or preprocessing changes, then run `memory-weave reembed`.
+- `reembed_batch_size` is how many records `memory-weave reembed` embeds per batch while rebuilding the vectors.
 - `dims` is the vector width. It must match the model's output.
 - `device` selects `mps` on Apple silicon, `cuda` when available, and `cpu` otherwise.
 - `max_chars` truncates content before embedding. Stored content is never truncated.
@@ -242,6 +246,15 @@ policy:
 ```
 
 `source_rank` determines which record wins a disagreement: a record may supersede an equal- or lower-ranked record. The rank also sets initial status and confidence; refer section 6.2. `session_summary` shares rank 2 with `tool_result`, and the extractor writes it.
+
+### 2.6 Sessions
+
+```yaml
+sessions:
+  retain_days: 90
+```
+
+- `retain_days` is how long a transcript is kept after its session ended once extraction has completed. `memory-weave retain` blanks older transcripts and keeps the turn rows; refer sections 3.5 and 16. A session that has not been extracted is kept regardless of age, because its evidence has not been consumed.
 
 ## 3. Schema
 
@@ -557,7 +570,7 @@ The retriever loads eligible record IDs into a temporary SQLite table and joins 
 | `can_read` | `1` when the agent may retrieve records from the scope. |
 | `can_write` | `1` when the agent may create or revise records in the scope. |
 
-`sessions` identifies an agent run. `session_turns` stores the transcript used by evidence validation and session extraction.
+`sessions` identifies an agent run. `session_turns` stores the transcript used by evidence validation and session extraction. Transcript text is not kept forever: `memory-weave retain` blanks the turns of extracted sessions older than `sessions.retain_days`, and `memory-weave erase` blanks them on request. Both keep the turn rows, so a `source_ref` still resolves to a tombstoned turn rather than to nothing.
 
 | `sessions` field | Meaning |
 | --- | --- |
@@ -1678,7 +1691,7 @@ The published JSON Schema declares every property of both shapes at the top leve
 
 Input: `{"id": string, "reason": string}`.
 
-The handler sets the record to `deleted`, retains a tombstone, removes its FTS row, and marks its in-memory vector dead. Durable content and its embedding remain in the database until a controlled erase removes them, but no tool returns them: `memory_get` on a forgotten record answers with the audit shape only, carrying `tombstone: true` and `null` for `content`, `evidence`, and `source_ref`. Content erasure is an admin CLI operation (`memory-weave erase <id>`), not an agent tool: a person must control that irreversible step.
+The handler sets the record to `deleted`, retains a tombstone, removes its FTS row, and marks its in-memory vector dead. Durable content and its embedding remain in the database until a controlled erase removes them, but no tool returns them: `memory_get` on a forgotten record answers with the audit shape only, carrying `tombstone: true` and `null` for `content`, `evidence`, and `source_ref`. Content erasure is an admin CLI operation (`memory-weave erase --record <id>`), not an agent tool: a person must control that irreversible step. The tool description says so in as many words, so a model does not read "forget" as erasure.
 
 ## 12. Session buffer and ingestion hooks
 
@@ -1814,13 +1827,16 @@ The CLI supports maintenance, debugging, and reproducible evaluation. It is not 
 | `memory-weave search --agent A --user U "..."` | Run retrieval and print the corresponding log row. |
 | `memory-weave get <id>` | Print a full record with lineage and events. |
 | `memory-weave dump --scope user:U` | Print active records in one scope. |
-| `memory-weave expire` | Mark provisional records past expiry as `expired`. |
-| `memory-weave reembed --model M --version V` | Re-embed every record, then swap the index. Refuses to run until gate floors are reset. |
-| `memory-weave erase <id>` | Erase durable content and append an event. |
+| `memory-weave expire` | Mark every active record past its expiry, provisional records and session summaries alike, as `expired`, one event each. |
+| `memory-weave reembed --model M --version V` | Re-embed every record with text and drop the old vectors, one `store.reembedded` event. Refuses when the latest logged search ran under a different embedding version with the same dense floors the configuration still carries, because that means nobody recalibrated the floors for the new model. |
+| `memory-weave erase --record <id> \| --session <id> \| --user <id> --reason R --yes` | Irreversibly erase durable content. A record loses its text, evidence, tags, embedding, lexical row, and entity links and keeps its tombstone row. A session keeps its turn rows with blank text so source references still resolve. A user loses every place their text can reach: every session, every record in the user scope and the private agent scopes, the content and evidence of any record in any scope sourced from those sessions, search logs and turn decisions, the payloads of events about the erased rows, and the entities and aliases in the user's scopes. Ids, kinds, and timestamps remain; the file is compacted afterwards so freed pages hold no residue. |
+| `memory-weave retain` | Blank the transcripts of sessions whose extraction completed and that ended more than `sessions.retain_days` ago. A session with no `extracted_at` is never blanked. |
 | `memory-weave grant A user:U --read --write` | Create or update a scope grant. |
 | `memory-weave extract <session_id>` | Re-run extraction for one session through candidate review. Atomic session claiming and source-reference idempotency prevent duplicate effects. |
 | `memory-weave review-due` | Atomically flag one bounded batch of records whose `review_at` has arrived. |
-| `memory-weave snapshot save|load <path>` | Copy the SQLite database for evaluation fixtures. |
+| `memory-weave snapshot save|load <path>` | Copy the SQLite database for evaluation fixtures, or replace the store file with a copy. A copy carries every table, so lineage, activation, conflicts, reviews, fitness results, and decision logs survive a restore; `load` needs `--yes` and a stopped host, because it replaces the file under any open connection. |
+| `memory-weave search --agent A --user U <query>` | Run `memory_search` as that principal and print the results and the log row. Scope follows the principal's grants, as for any tool call. |
+| `memory-weave dump --scope user:U` | Print active records in one scope, or every status with `--all-statuses`. |
 
 ## 17. Test plan for the implementation
 

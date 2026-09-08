@@ -8,6 +8,8 @@ Local working note. Written 6 September 2026 after checking the current landscap
 
 One consequence for the utility-aware bundle: the phase added `retrieval.gate.dense_floor.session_summary`, which changes the retrieval configuration hash the bundle records. Nothing the fitness scenarios exercise touches summaries, but the rule is mechanical: the Phase 11 baseline run, with neither optional stage enabled, re-records the supported bundle under the new hash.
 
+Phases 11 and 12 followed the same day. The optional rewrite and rerank stages are built and measured in `usefulness-gate.md` section 8n, and both stay off. The operator surface in `memory_weave/operations.py` and the CLI covers expiry, retention, erasure of a record, a session, or a user, re-embedding with the floor-recalibration refusal, and snapshots; `memory_weave/runtime.py` is the composition root the adapters will use.
+
 The paragraphs below are the note as written on 6 September, before the build.
 
 Weave has one write path: the chatting agent calls `memory_write` during the session. That is it.

@@ -20,6 +20,8 @@ class ConfigError(ValueError):
 @dataclass(frozen=True, slots=True)
 class StoreConfig:
     path: str = "./memory.sqlite"
+    # How long one connection waits for another's write lock before failing.
+    busy_timeout_seconds: float = 30.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -31,6 +33,8 @@ class EmbeddingConfig:
     max_chars: int = 2000
     query_cache_entries: int = 4096
     incremental_reload_max: int = 512
+    # Records embedded per batch when `memory-weave reembed` rebuilds the vectors for a new model or version.
+    reembed_batch_size: int = 64
 
 
 @dataclass(frozen=True, slots=True)
@@ -187,7 +191,14 @@ class PolicyConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class SessionsConfig:
+    # Transcripts whose extraction has completed are blanked after this many days; refer LLD 3.5 and 16.
+    retain_days: int = 90
+
+
+@dataclass(frozen=True, slots=True)
 class MemoryWeaveConfig:
+    sessions: SessionsConfig = field(default_factory=SessionsConfig)
     store: StoreConfig = field(default_factory=StoreConfig)
     embedding: EmbeddingConfig = field(default_factory=EmbeddingConfig)
     reranker: RerankerConfig = field(default_factory=RerankerConfig)
@@ -230,8 +241,11 @@ def load_config(path: str | Path | None = None) -> MemoryWeaveConfig:
         else:
             raise ConfigError("Configuration root must be a mapping.")
 
-    _reject_unknown_keys(raw, {"store", "embedding", "reranker", "retrieval", "ingestion", "policy"}, "root")
+    _reject_unknown_keys(
+        raw, {"sessions", "store", "embedding", "reranker", "retrieval", "ingestion", "policy"}, "root"
+    )
     config = MemoryWeaveConfig(
+        sessions=_load_dataclass(SessionsConfig, raw.get("sessions"), "sessions"),
         store=_load_dataclass(StoreConfig, raw.get("store"), "store"),
         embedding=_load_dataclass(EmbeddingConfig, raw.get("embedding"), "embedding"),
         reranker=_load_dataclass(RerankerConfig, raw.get("reranker"), "reranker"),

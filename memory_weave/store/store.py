@@ -107,10 +107,13 @@ _SEARCH_LOG_COLUMNS = (
 class Store:
     """Own SQLite connections and expose persistence without policy or ranking decisions."""
 
-    def __init__(self, path: str | Path, *, allow_migration_issues: bool = False) -> None:
+    def __init__(self, path: str | Path, *, allow_migration_issues: bool = False, busy_timeout_s: float = 30.0) -> None:
         self._path = str(path)
         self._local = threading.local()
         self._allow_migration_issues = allow_migration_issues
+        # How long a writer waits for another connection's write lock. Extraction runs on a background
+        # thread beside the host's own writes, so writers queue rather than fail; refer LLD 2.1.
+        self._busy_timeout_s = busy_timeout_s
 
     @property
     def connection(self) -> sqlite3.Connection:
@@ -118,7 +121,7 @@ class Store:
 
         connection = getattr(self._local, "connection", None)
         if connection is None:
-            connection = sqlite3.connect(self._path, isolation_level=None)
+            connection = sqlite3.connect(self._path, isolation_level=None, timeout=self._busy_timeout_s)
             connection.row_factory = sqlite3.Row
             connection.execute("PRAGMA foreign_keys = ON")
             connection.execute("PRAGMA journal_mode = WAL")
@@ -186,11 +189,14 @@ class Store:
             del self._local.migration_result
 
     @contextmanager
-    def transaction(self, *, immediate: bool = False) -> Iterator[sqlite3.Connection]:
+    def transaction(self, *, immediate: bool = True) -> Iterator[sqlite3.Connection]:
         """Run store operations atomically and nest inner calls with savepoints.
 
-        ``immediate`` takes the write lock at the start, so a read inside the transaction cannot be
-        overtaken by another writer before this transaction's own write; nested calls inherit the outer lock.
+        Every transaction begins ``IMMEDIATE`` by default: it takes the write lock at the start and waits on
+        the busy timeout if another connection holds it. A deferred transaction that reads first and writes
+        later cannot wait under WAL; when another writer commits in between it fails at once with
+        ``SQLITE_BUSY``, which is exactly the shape of the ingestor beside a background extraction thread.
+        Nested calls inherit the outer lock through savepoints.
         """
 
         connection = self.connection
@@ -1285,12 +1291,17 @@ class Store:
                 return "not_found"
             if current.extracted_at is not None and not force:
                 return "already_extracted"
-            if current.extraction_started_at is not None and current.extraction_started_at >= stale_before:
+            # A claim is live while a run is in progress: started, not yet finished, and not yet stale. A claim
+            # that finished, whose extracted_at is at or after it, protects nothing and cannot block a re-run.
+            started, finished = current.extraction_started_at, current.extracted_at
+            in_progress = started is not None and (finished is None or started > finished)
+            if in_progress and started is not None and started >= stale_before:
                 return "already_claimed"
             extracted_clause = "" if force else "AND extracted_at IS NULL "
             cursor = self.connection.execute(
                 "UPDATE sessions SET extraction_started_at = ? WHERE id = ? "
-                f"{extracted_clause}AND (extraction_started_at IS NULL OR extraction_started_at < ?)",
+                f"{extracted_clause}AND (extraction_started_at IS NULL OR extraction_started_at < ? "
+                "OR (extracted_at IS NOT NULL AND extraction_started_at <= extracted_at))",
                 (_dump_datetime(claimed_at), session_id, _dump_datetime(stale_before)),
             )
             if cursor.rowcount != 1:
@@ -1349,6 +1360,214 @@ class Store:
             tuple(parameters),
         ).fetchall()
         return [self._entity_from_row(row) for row in rows]
+
+    # -- operations: expiry, retention, erasure, re-embedding --------------------------------------------
+
+    def expire_due(self, at: datetime) -> list[str]:
+        """Set every active record whose expiry has passed to ``expired``; return the ids, oldest first."""
+
+        with self.transaction(immediate=True) as connection:
+            rows = connection.execute(
+                "SELECT id FROM records WHERE status IN ('provisional', 'confirmed') AND expires_at IS NOT NULL "
+                "AND expires_at <= ? ORDER BY expires_at, id",
+                (_dump_datetime(at),),
+            ).fetchall()
+            ids = [cast(str, row["id"]) for row in rows]
+            if ids:
+                index_version = self._bump_records_version(connection)
+                connection.execute(
+                    f"UPDATE records SET status = 'expired', index_version = ? WHERE id IN ({_placeholders(len(ids))})",
+                    (index_version, *ids),
+                )
+        return ids
+
+    def sessions_for_user(self, user_id: str) -> list[SessionRow]:
+        rows = self.connection.execute(
+            "SELECT id FROM sessions WHERE user_id = ? ORDER BY started_at, id", (user_id,)
+        ).fetchall()
+        sessions = [self.get_session(cast(str, row["id"])) for row in rows]
+        return [session for session in sessions if session is not None]
+
+    def sessions_due_for_retention(self, cutoff: datetime) -> list[str]:
+        """Extracted sessions that ended at or before ``cutoff`` and still hold transcript text."""
+
+        rows = self.connection.execute(
+            "SELECT DISTINCT s.id FROM sessions s JOIN session_turns t ON t.session_id = s.id "
+            "WHERE s.extracted_at IS NOT NULL AND s.ended_at IS NOT NULL AND s.ended_at <= ? AND t.content != '' "
+            "ORDER BY s.ended_at, s.id",
+            (_dump_datetime(cutoff),),
+        ).fetchall()
+        return [cast(str, row["id"]) for row in rows]
+
+    def blank_session_turns(self, session_id: str) -> int:
+        """Empty every turn's text for one session, keeping the rows so source references still resolve."""
+
+        cursor = self.connection.execute(
+            "UPDATE session_turns SET content = '' WHERE session_id = ? AND content != ''", (session_id,)
+        )
+        return cursor.rowcount
+
+    def record_ids_in_scopes(self, scopes: Sequence[Scope]) -> list[str]:
+        """Every record id in ``scopes``, in any lifecycle status."""
+
+        if not scopes:
+            return []
+        predicates = " OR ".join("(scope_kind = ? AND scope_id = ?)" for _ in scopes)
+        parameters: list[str] = []
+        for scope in scopes:
+            parameters.extend((scope.kind, scope.id))
+        rows = self.connection.execute(f"SELECT id FROM records WHERE {predicates} ORDER BY id", parameters).fetchall()
+        return [cast(str, row["id"]) for row in rows]
+
+    def record_ids_sourced_from_sessions(self, session_ids: Sequence[str]) -> list[str]:
+        """Records in any scope whose source reference points into one of ``session_ids``."""
+
+        found: list[str] = []
+        for session_id in session_ids:
+            rows = self.connection.execute(
+                "SELECT id FROM records WHERE source_ref = ? OR source_ref LIKE ? ORDER BY id",
+                (f"session:{session_id}", f"session:{session_id}<%"),
+            ).fetchall()
+            found.extend(cast(str, row["id"]) for row in rows)
+        return list(dict.fromkeys(found))
+
+    def erase_record(self, record_id: str) -> bool:
+        """Remove a record's text, evidence, tags, embedding, lexical row, and entity links; keep the tombstone."""
+
+        with self.transaction(immediate=True) as connection:
+            index_version = self._bump_records_version(connection)
+            cursor = connection.execute(
+                "UPDATE records SET content = '', evidence = NULL, tags = '[]', status = 'deleted', "
+                "index_version = ? WHERE id = ?",
+                (index_version, record_id),
+            )
+            if cursor.rowcount != 1:
+                return False
+            connection.execute("DELETE FROM records_fts WHERE record_id = ?", (record_id,))
+            connection.execute("DELETE FROM embeddings WHERE record_id = ?", (record_id,))
+            connection.execute("DELETE FROM record_entities WHERE record_id = ?", (record_id,))
+        return True
+
+    def erase_search_logs_for_user(self, user_id: str) -> int:
+        """Blank every column of a user's search logs that can carry query, context, or record text."""
+
+        cursor = self.connection.execute(
+            "UPDATE search_log SET request = ?, context = NULL, rewritten_queries = NULL, lexical = '[]', "
+            "gated_out = '[]', reranked = NULL, reranked_out = '[]', explanations = ? WHERE user_id = ?",
+            (_dump_json({"erased": True}), _dump_json({"erased": True}), user_id),
+        )
+        return cursor.rowcount
+
+    def erase_turn_decisions_for_sessions(self, session_ids: Sequence[str]) -> int:
+        """Blank the turn text, planner queries, and verdict reasons of decisions logged for ``session_ids``."""
+
+        if not session_ids:
+            return 0
+        cursor = self.connection.execute(
+            "UPDATE turn_decisions SET turn = '', gaps = '[]', verdicts = '[]' "
+            f"WHERE session_id IN ({_placeholders(len(session_ids))})",
+            tuple(session_ids),
+        )
+        return cursor.rowcount
+
+    def erase_event_payloads(
+        self, *, record_ids: Sequence[str] = (), entity_ids: Sequence[str] = (), session_ids: Sequence[str] = ()
+    ) -> int:
+        """Replace the payload of every event about an erased record, entity, or session with a marker."""
+
+        clauses: list[str] = []
+        parameters: list[str] = []
+        if record_ids:
+            clauses.append(f"record_id IN ({_placeholders(len(record_ids))})")
+            parameters.extend(record_ids)
+        if entity_ids:
+            clauses.append(f"entity_id IN ({_placeholders(len(entity_ids))})")
+            parameters.extend(entity_ids)
+        if session_ids:
+            marks = _placeholders(len(session_ids))
+            clauses.append(
+                f"json_extract(payload, '$.session_id') IN ({marks}) OR json_extract(payload, '$.from') IN ({marks}) "
+                f"OR json_extract(payload, '$.to') IN ({marks})"
+            )
+            parameters.extend([*session_ids, *session_ids, *session_ids])
+        if not clauses:
+            return 0
+        rows = self.connection.execute(
+            f"SELECT id, kind FROM events WHERE {' OR '.join(clauses)}", tuple(parameters)
+        ).fetchall()
+        for row in rows:
+            self.connection.execute(
+                "UPDATE events SET payload = ? WHERE id = ?",
+                (_dump_json({"erased": True, "kind": row["kind"]}), row["id"]),
+            )
+        return len(rows)
+
+    def entity_ids_in_scopes(self, scopes: Sequence[Scope]) -> list[str]:
+        if not scopes:
+            return []
+        predicates = " OR ".join("(scope_kind = ? AND scope_id = ?)" for _ in scopes)
+        parameters: list[str] = []
+        for scope in scopes:
+            parameters.extend((scope.kind, scope.id))
+        rows = self.connection.execute(f"SELECT id FROM entities WHERE {predicates} ORDER BY id", parameters).fetchall()
+        return [cast(str, row["id"]) for row in rows]
+
+    def erase_entity(self, entity_id: str) -> list[str]:
+        """Drop an entity's aliases and name, mark it deleted, and return the records still linked to it."""
+
+        with self.transaction(immediate=True) as connection:
+            connection.execute("DELETE FROM entity_aliases WHERE entity_id = ?", (entity_id,))
+            connection.execute("UPDATE entities SET canonical = '', status = 'deleted' WHERE id = ?", (entity_id,))
+            rows = connection.execute(
+                "SELECT record_id FROM record_entities WHERE entity_id = ? ORDER BY record_id", (entity_id,)
+            ).fetchall()
+            linked = [cast(str, row["record_id"]) for row in rows]
+            self._rebuild_fts_aliases_for_entity(connection, entity_id)
+        return linked
+
+    def iter_records_for_reembedding(self) -> Iterator[tuple[str, str]]:
+        """Every record that still carries text, as ``(id, content)``; erased tombstones are skipped."""
+
+        rows = self.connection.execute(
+            "SELECT id, content FROM records WHERE status != 'deleted' AND content != '' ORDER BY created_at, id"
+        ).fetchall()
+        for row in rows:
+            yield cast(str, row["id"]), cast(str, row["content"])
+
+    def delete_embeddings_except(self, model: str, version: str) -> int:
+        cursor = self.connection.execute(
+            "DELETE FROM embeddings WHERE NOT (model = ? AND version = ?)", (model, version)
+        )
+        return cursor.rowcount
+
+    def latest_search_flags(self) -> dict[str, Any] | None:
+        """The configuration flags recorded on the most recent search, or ``None`` when none has run."""
+
+        row = self.connection.execute(
+            "SELECT config_flags FROM search_log ORDER BY at DESC, id DESC LIMIT 1"
+        ).fetchone()
+        if row is None:
+            return None
+        return cast(dict[str, Any], json.loads(cast(str, row["config_flags"])))
+
+    def records_in_scope(self, scope: Scope, *, statuses: Sequence[RecordStatus]) -> list[Record]:
+        if not statuses:
+            return []
+        rows = self.connection.execute(
+            "SELECT * FROM records WHERE scope_kind = ? AND scope_id = ? "
+            f"AND status IN ({_placeholders(len(statuses))}) ORDER BY event_at, created_at, id",
+            (scope.kind, scope.id, *statuses),
+        ).fetchall()
+        return self._records_from_rows(rows)
+
+    def compact(self) -> None:
+        """Checkpoint the write-ahead log and rebuild the file so erased pages hold no residue."""
+
+        connection = self.connection
+        if connection.in_transaction:
+            raise RuntimeError("compact() cannot run inside a transaction.")
+        connection.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        connection.execute("VACUUM")
 
     def active_subjects(self, scope: Scope, *, limit: int) -> list[str]:
         """Return the distinct current-fact subjects that are active in ``scope``."""
