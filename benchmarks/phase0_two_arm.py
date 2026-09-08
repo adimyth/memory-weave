@@ -38,6 +38,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from benchmarks.draft_delta_experiment import Models  # noqa: E402
+from benchmarks.fitness import combination_verdict, serving_summary  # noqa: E402
 
 _ADMITTING = ("helpful", "jointly_helpful")
 _VERDICTS = ("helpful", "redundant", "insufficient", "stale_or_conflicting", "potentially_harmful", "jointly_helpful")
@@ -850,6 +851,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Enable the cross-encoder reranker with this floor; a new bundle",
     )
     parser.add_argument("--out-dir", type=Path, default=Path("benchmarks/results/phase0"))
+    parser.add_argument(
+        "--fail-on-verdict",
+        action="store_true",
+        help="Exit 1 if the serving arm fails the combination fitness bar. evaluate_combination.py sets this.",
+    )
     args = parser.parse_args(argv)
 
     gap_model = args.gap_model or args.policy_model
@@ -997,6 +1003,14 @@ def main(argv: list[str] | None = None) -> int:
                         else "no gaps generated"
                     )
                     print(f"  [{arm}] {r.turn_id} {r.turn[:50]!r} missed {i}: {why}")
+
+    arm, summary = serving_summary(payload)
+    verdict = combination_verdict(summary)
+    print(f"\n== combination verdict ({arm} arm) ==")
+    for line in verdict.lines():
+        print(line)
+    if args.fail_on_verdict and not verdict.passed:
+        return 1
     return 0
 
 

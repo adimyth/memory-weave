@@ -69,14 +69,18 @@ model. Takes about eight minutes on an M4 Pro. Results land in `results/utility-
 [../docs/usefulness-gate.md](../docs/usefulness-gate.md) section 8b.
 
 ```bash
+HF_HUB_OFFLINE=1 uv run --extra live --extra local-models python benchmarks/evaluate_combination.py \
+  --gap-model gpt-4o --admission-model gpt-5.4
+```
+
+Scores one planner/judge/classifier combination against the committed fifth-split scenario. Prints `PASS` or `FAIL` per threshold and a final `COMBINATION PASS` or `COMBINATION FAIL`, and exits 1 on failure. Defaults are the combination that already passed; any other models or prompts are a new combination and need this run. To score a saved `phase0` JSON without calling models: `--from-result benchmarks/results/phase0/<file>.json`. The thresholds and the combination that passed are in [../docs/design-contributions.md](../docs/design-contributions.md).
+
+```bash
 HF_HUB_OFFLINE=1 uv run --extra live --extra local-models python benchmarks/phase0_two_arm.py \
   --draft-model gpt-5.6-luna --policy-model gpt-5.4
 ```
 
-Phase 0 of the utility-aware memory plan: the gap-planning plus draft-relative admission path, run twice
-over the hand-authored scenario set in `scenarios/phase0.json`, once with style and language preferences
-ambient and once with them conditional. Prints the design gate and the promotion gate. Results land in
-`results/phase0/`; findings are in [../docs/usefulness-gate.md](../docs/usefulness-gate.md) section 8c.
+Phase 0 of the utility-aware memory plan: the gap-planning plus draft-relative admission path, run twice over the hand-authored scenario set in `scenarios/phase0.json`, once with style and language preferences ambient and once with them conditional. Prints the design gate, the promotion gate, and a combination verdict on the ambient arm. Results land in `results/phase0/`; findings are in [../docs/usefulness-gate.md](../docs/usefulness-gate.md) section 8c. `--fail-on-verdict` exits 1 when that combination bar is missed; `evaluate_combination.py` sets it.
 
 `--gap-model`, `--admission-model`, `--gap-prompt v1|v2`, and `--gap-repeats N` vary one stage at a time
 and measure gap-decision stability; `--draft-cache` keeps drafts identical across configurations.

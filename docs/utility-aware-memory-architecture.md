@@ -2,7 +2,7 @@
 
 Status: authoritative design for host-issued memory use. The implementation is evaluation-gated and disabled by default until the acceptance criteria in [utility-aware-memory-implementation-plan.md](utility-aware-memory-implementation-plan.md) are met.
 
-This document defines how Memory Weave decides whether stored information will improve an answer. [usefulness-gate.md](usefulness-gate.md) remains the research and experiment record that motivated this design; where the two documents differ, this document is authoritative.
+This document defines how Memory Weave decides whether stored information will improve an answer. [usefulness-gate.md](usefulness-gate.md) remains the research and experiment record that motivated this design; where the two documents differ, this document is authoritative. [design-contributions.md](design-contributions.md) is a plain-language account of what is distinctive relative to RUMS and TRACE.
 
 ## 1. Problem and decision boundary
 
