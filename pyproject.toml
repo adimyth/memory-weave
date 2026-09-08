@@ -27,6 +27,9 @@ live = [
 deepagents = [
   "deepagents>=0.7",
 ]
+crewai = [
+    "crewai>=1.15",
+]
 
 [build-system]
 requires = ["hatchling>=1.27"]

@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Literal, Protocol
+from typing import Any, Literal, Protocol, cast
 
 from memory_weave.models import Principal
 from memory_weave.policy.prompt import AUTO_MEMORY_NOTICE, AUTO_MEMORY_USE_POLICY, MEMORY_USE_POLICY
@@ -54,17 +54,64 @@ class TurnContext:
         return "\n".join(parts)[:limit]
 
 
-def turn_context(store: Store, session_id: str | None, *, before_turn: int | None = None) -> TurnContext:
-    """Read the most recent user and assistant turns of a session from the store."""
+def turn_context(
+    store: Store, session_id: str | None, *, before_turn: int | None = None, steps_count: bool = False
+) -> TurnContext:
+    """Read the most recent user and assistant turns of a session from the store.
+
+    With ``steps_count`` the most recent tool turn also counts as the assistant side, which is the CrewAI
+    shape: the task description plus the most recent step output.
+    """
 
     if session_id is None:
         return TurnContext(None, None)
     turns = store.session_turns(session_id)
     if before_turn is not None:
         turns = [turn for turn in turns if turn.turn < before_turn]
+    roles = ("assistant", "tool") if steps_count else ("assistant",)
     user = next((turn.content for turn in reversed(turns) if turn.role == "user"), None)
-    assistant = next((turn.content for turn in reversed(turns) if turn.role == "assistant"), None)
+    assistant = next((turn.content for turn in reversed(turns) if turn.role in roles), None)
     return TurnContext(user, assistant)
+
+
+def args_model_from_schema(name: str, schema: Mapping[str, Any]) -> type[Any]:
+    """Build a pydantic model from one tool's JSON schema, for frameworks that validate through pydantic.
+
+    Nested objects become dictionaries and arrays of objects become lists of dictionaries; the handler
+    validates the full structure against the JSON schema again, so nothing is lost by the flattening.
+    """
+
+    from pydantic import Field, create_model
+
+    properties = cast(Mapping[str, Any], schema.get("properties", {}))
+    required = set(cast(Sequence[str], schema.get("required", [])))
+    fields: dict[str, Any] = {}
+    for field_name, spec in properties.items():
+        annotation = _python_type(cast(Mapping[str, Any], spec))
+        description = str(spec.get("description", ""))
+        if field_name in required:
+            fields[field_name] = (annotation, Field(..., description=description))
+        else:
+            fields[field_name] = (annotation | None, Field(None, description=description))
+    return cast(type[Any], create_model(f"{name}_args", **fields))
+
+
+def _python_type(spec: Mapping[str, Any]) -> Any:
+    kind = spec.get("type")
+    if kind == "string":
+        return str
+    if kind == "integer":
+        return int
+    if kind == "number":
+        return float
+    if kind == "boolean":
+        return bool
+    if kind == "array":
+        item = cast(Mapping[str, Any], spec.get("items", {}))
+        return list[_python_type(item)]  # type: ignore[misc]
+    if kind == "object":
+        return dict[str, Any]
+    return Any
 
 
 def principal_from_mapping(configurable: Mapping[str, Any], *, session_key: str = "thread_id") -> Principal:

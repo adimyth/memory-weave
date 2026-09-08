@@ -10,7 +10,7 @@ One consequence for the utility-aware bundle: the phase added `retrieval.gate.de
 
 Phases 11 and 12 followed the same day. The optional rewrite and rerank stages are built and measured in `usefulness-gate.md` section 8n, and both stay off. The operator surface in `memory_weave/operations.py` and the CLI covers expiry, retention, erasure of a record, a session, or a user, re-embedding with the floor-recalibration refusal, and snapshots; `memory_weave/runtime.py` is the composition root the adapters will use.
 
-Phase 13 added the Deep Agents adapter, `memory_weave/adapters/deepagents.py`, behind the `deepagents` extra, with the shared contract suite it must pass in `tests/adapter_contract.py`; the CrewAI adapter in Phase 14 runs the same suite.
+Phase 13 added the Deep Agents adapter, `memory_weave/adapters/deepagents.py`, behind the `deepagents` extra, with the shared contract suite it must pass in `tests/adapter_contract.py`. Phase 14 added the CrewAI adapter, `memory_weave/adapters/crewai.py`, behind the `crewai` extra; it passes the same suite, and `tests/test_adapter_equivalence.py` shows both leave the same semantic records from the same conversation. The core contracts needed no change for the second framework.
 
 The paragraphs below are the note as written on 6 September, before the build.
 

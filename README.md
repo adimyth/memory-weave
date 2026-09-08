@@ -26,7 +26,7 @@ You need a place for a user's preference, a project convention, or the outcome o
 | Lifecycle | A record is provisional, confirmed, superseded, expired, or forgotten. A revision stores the reason. |
 | Explainable retrieval | A result includes matched terms or entity, contributing channels, score components, and final rank. |
 | Entity linking | The service links records through entity aliases. It leaves an ambiguous name unmerged for review. |
-| Model and framework | The storage contract and tool schemas do not depend on one provider or framework. A Deep Agents adapter ships behind the `deepagents` extra; a CrewAI adapter follows it and both must pass one shared contract suite. |
+| Model and framework | The storage contract and tool schemas do not depend on one provider or framework. Deep Agents and CrewAI adapters ship behind the `deepagents` and `crewai` extras; both pass one shared contract suite and leave the same memory state from the same conversation. |
 | Background work | An agent waits for `memory_write` to finish. Session extraction, pre-apply candidate review, and due temporal review run off the message path. |
 
 ## 4. Ingestion
