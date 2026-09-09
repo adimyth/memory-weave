@@ -7,7 +7,7 @@ from datetime import datetime
 
 from memory_weave.config import MemoryWeaveConfig
 from memory_weave.index.embedder import Embedder
-from memory_weave.index.reranker import NoReranker, Reranker, rerank
+from memory_weave.index.reranker import NoReranker, Reranker, RerankStatus, rerank_with_timeout
 from memory_weave.index.vector import VectorIndex
 from memory_weave.models import (
     Candidate,
@@ -30,7 +30,7 @@ from .dedup import collapse_duplicates
 from .explain import build_results
 from .freshness import apply_freshness
 from .fusion import fuse
-from .gate import FloorGate, Gate, GateDecision
+from .gate import FloorGate, Gate, GateDecision, exclude_source_kinds
 from .generators import dense_candidates, entity_alias_matches, entity_candidates, lexical_candidates
 from .rewrite import NoRewriter, QueryRewriter, rewrite_stage
 
@@ -134,7 +134,12 @@ class Retriever:
         ]
         candidates = apply_freshness(candidates, records, request, current_time, self._config.retrieval.freshness)
         timer.mark("freshness")
-        gate_decision = self._gate.apply(candidates, records, request)
+        reranker_config = self._config.reranker
+        if reranker_config.enabled and reranker_config.mode == "cross_encoder_only":
+            # The cross-encoder floor is the relevance decision; only the gate's policy rules run here.
+            gate_decision = exclude_source_kinds(candidates, records, request, self._config.retrieval.gate)
+        else:
+            gate_decision = self._gate.apply(candidates, records, request)
         timer.mark("gate")
         deduped, deduped_out = collapse_duplicates(
             gate_decision.kept, self._vector_index, self._config.retrieval.dedup_cosine
@@ -142,36 +147,48 @@ class Retriever:
         timer.mark("dedup")
         reranked: list[dict[str, object]] | None = None
         reranked_out: list[dict[str, object]] = []
-        if self._config.reranker.enabled:
-            shortlist_limit = self._config.reranker.candidates
-            reranked_out = [
-                {
-                    "record_id": candidate.record_id,
-                    "reason": "reranker candidate limit",
-                    "limit": shortlist_limit,
-                }
-                for candidate in deduped[shortlist_limit:]
-            ]
-            reranked_candidates, reranked = rerank(
-                deduped[:shortlist_limit], records, rewritten_queries, self._reranker
+        rerank_status: RerankStatus = "disabled"
+        rerank_error: str | None = None
+        if reranker_config.enabled:
+            shortlist_limit = reranker_config.candidates
+            outcome = rerank_with_timeout(
+                deduped[:shortlist_limit],
+                records,
+                rewritten_queries,
+                self._reranker,
+                timeout_ms=reranker_config.timeout_ms,
+                on_failure=reranker_config.on_failure,
             )
-            assert self._config.reranker.floor is not None
-            reranked_out.extend(
-                {
-                    "record_id": candidate.record_id,
-                    "reason": "reranker floor",
-                    "floor": self._config.reranker.floor,
-                    "score": candidate.rerank_score,
-                    "winning_query": _winning_query(reranked, candidate.record_id),
-                }
-                for candidate in reranked_candidates
-                if candidate.rerank_score is not None and candidate.rerank_score < self._config.reranker.floor
-            )
-            deduped = [
-                candidate
-                for candidate in reranked_candidates
-                if candidate.rerank_score is not None and candidate.rerank_score >= self._config.reranker.floor
-            ]
+            rerank_status, rerank_error = outcome.status, outcome.error
+            if outcome.status == "applied":
+                assert reranker_config.floor is not None
+                reranked = outcome.logged
+                reranked_out = [
+                    {
+                        "record_id": candidate.record_id,
+                        "reason": "reranker candidate limit",
+                        "limit": shortlist_limit,
+                    }
+                    for candidate in deduped[shortlist_limit:]
+                ]
+                reranked_out.extend(
+                    {
+                        "record_id": candidate.record_id,
+                        "reason": "reranker floor",
+                        "floor": reranker_config.floor,
+                        "score": candidate.rerank_score,
+                        "winning_query": _winning_query(reranked or [], candidate.record_id),
+                    }
+                    for candidate in outcome.candidates
+                    if candidate.rerank_score is not None and candidate.rerank_score < reranker_config.floor
+                )
+                deduped = [
+                    candidate
+                    for candidate in outcome.candidates
+                    if candidate.rerank_score is not None and candidate.rerank_score >= reranker_config.floor
+                ]
+            # Otherwise the pass timed out or failed with fallback configured: the RRF order stands, nothing
+            # is removed by the reranker, and the search log says which happened.
         timer.mark("rerank")
         chosen, companions = self._include_conflict_authority(deduped, records, eligible)
         budgeted, budget_out = fill_budget(
@@ -196,7 +213,7 @@ class Retriever:
             results,
             gate_decision,
             deduped,
-            self._config.reranker.enabled,
+            rerank_status == "applied",
             self._config.reranker.floor,
         )
         timer.mark("explain")
@@ -216,6 +233,8 @@ class Retriever:
                 deduped_out,
                 reranked,
                 reranked_out,
+                rerank_status,
+                rerank_error,
                 budget_out,
                 results,
                 index_refresh,
@@ -293,6 +312,8 @@ class Retriever:
         deduped_out: Sequence[dict[str, object]],
         reranked: list[dict[str, object]] | None,
         reranked_out: Sequence[dict[str, object]],
+        rerank_status: RerankStatus,
+        rerank_error: str | None,
         budget_out: Sequence[dict[str, object]],
         results: Sequence[SearchResult],
         index_refresh: str,
@@ -329,6 +350,8 @@ class Retriever:
             "deduped_out": list(deduped_out),
             "reranked": reranked,
             "reranked_out": list(reranked_out),
+            "rerank_status": rerank_status,
+            "rerank_error": rerank_error,
             "budget_out": list(budget_out),
             "returned": [result.record.id for result in results],
             "explanations": [_explanation_payload(result.explanation) for result in results],
@@ -469,14 +492,14 @@ def _empty_reason(
     results: Sequence[SearchResult],
     gate_decision: GateDecision,
     candidates_after_rerank: Sequence[Candidate],
-    reranker_enabled: bool,
+    reranker_applied: bool,
     reranker_floor: float | None,
 ) -> str | None:
     if results:
         return None
     if not gate_decision.kept:
         return gate_decision.empty_reason
-    if reranker_enabled and not candidates_after_rerank:
+    if reranker_applied and not candidates_after_rerank:
         assert reranker_floor is not None
         return f"all relevance-gated candidates missed reranker floor {reranker_floor:.2f}"
     if not candidates_after_rerank:

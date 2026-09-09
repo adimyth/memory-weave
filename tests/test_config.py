@@ -30,6 +30,7 @@ def test_load_config_uses_lld_defaults() -> None:
         "embedding_incremental_reload_max": 512,
         "rewrite_enabled": False,
         "reranker_enabled": False,
+        "ranking": "rrf_only",
         "trigger_mode": "tool_only",
         "gate": {
             "dense_floor": {"semantic": 0.45, "episodic": 0.40, "procedural": 0.45, "session_summary": 0.50},

@@ -2,11 +2,19 @@
 
 from __future__ import annotations
 
+import threading
 from collections.abc import Callable, Mapping, Sequence
-from typing import Any, Protocol
+from dataclasses import dataclass, replace
+from typing import Any, Literal, Protocol
 
-from memory_weave.config import MemoryWeaveConfig, RerankerConfig
+from memory_weave.config import MemoryWeaveConfig, RerankerConfig, RerankFailure
 from memory_weave.models import Candidate, Record
+
+RerankStatus = Literal["disabled", "applied", "timeout", "failed"]
+
+
+class RerankError(RuntimeError):
+    """The cross-encoder pass timed out or failed and the configuration says not to fall back."""
 
 
 class Reranker(Protocol):
@@ -53,10 +61,18 @@ class BgeReranker:
         self._config = config
         self._model_factory = model_factory or _cross_encoder_factory(config.model)
         self._model: Any | None = None
+        # A search that times out during the cold load abandons its thread; the next search must wait for
+        # that load rather than start a second one.
+        self._load_lock = threading.Lock()
 
     @property
     def is_loaded(self) -> bool:
         return self._model is not None
+
+    def warm(self) -> None:
+        """Load the model now, so the first search does not spend its timeout on the load."""
+
+        self._ensure_loaded()
 
     def score(self, query: str, document: str) -> float:
         return self.score_pairs([(query, document)])[0]
@@ -64,12 +80,17 @@ class BgeReranker:
     def score_pairs(self, pairs: Sequence[tuple[str, str]]) -> list[float]:
         if not pairs:
             return []
-        if self._model is None:
-            self._model = self._model_factory()
-        scores = self._model.predict(
+        model = self._ensure_loaded()
+        scores = model.predict(
             [list(pair) for pair in pairs], batch_size=self._config.batch_size, show_progress_bar=False
         )
         return [float(score) for score in scores]
+
+    def _ensure_loaded(self) -> Any:
+        with self._load_lock:
+            if self._model is None:
+                self._model = self._model_factory()
+            return self._model
 
 
 def reranker_from_config(config: MemoryWeaveConfig) -> Reranker:
@@ -116,6 +137,61 @@ def rerank(
             }
         )
     return ordered, logged
+
+
+@dataclass(frozen=True, slots=True)
+class RerankOutcome:
+    """What one cross-encoder pass produced, or why it did not."""
+
+    candidates: list[Candidate]
+    logged: list[dict[str, object]] | None
+    status: RerankStatus
+    error: str | None = None
+
+
+def rerank_with_timeout(
+    candidates: Sequence[Candidate],
+    records: Mapping[str, Record],
+    queries: Sequence[str],
+    reranker: Reranker,
+    *,
+    timeout_ms: int,
+    on_failure: RerankFailure,
+) -> RerankOutcome:
+    """Run :func:`rerank` in a worker thread and give up on it after ``timeout_ms``.
+
+    The worker scores copies of the candidates, so a pass that is abandoned cannot write scores into the
+    list the search went on to use. With ``on_failure="fallback"`` a timeout or a scoring error returns the
+    input order unchanged and says so in ``status``; with ``"fail"`` it raises :class:`RerankError`.
+    """
+
+    copies = [replace(candidate) for candidate in candidates]
+    box: dict[str, tuple[list[Candidate], list[dict[str, object]]] | BaseException] = {}
+
+    def work() -> None:
+        try:
+            box["result"] = rerank(copies, records, queries, reranker)
+        except Exception as error:  # noqa: BLE001 - the error is reported through the outcome
+            box["error"] = error
+
+    worker = threading.Thread(target=work, name="memory-weave-rerank", daemon=True)
+    worker.start()
+    worker.join(timeout_ms / 1000)
+    if worker.is_alive():
+        message = f"reranker timed out after {timeout_ms} ms"
+        if on_failure == "fail":
+            raise RerankError(message)
+        return RerankOutcome(list(candidates), None, "timeout", message)
+    error = box.get("error")
+    if isinstance(error, BaseException):
+        message = f"{type(error).__name__}: {error}"
+        if on_failure == "fail":
+            raise RerankError(message) from error
+        return RerankOutcome(list(candidates), None, "failed", message)
+    result = box["result"]
+    assert isinstance(result, tuple)
+    ordered, logged = result
+    return RerankOutcome(ordered, logged, "applied")
 
 
 def _required_score(candidate: Candidate) -> float:

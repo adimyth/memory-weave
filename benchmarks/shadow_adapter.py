@@ -15,6 +15,7 @@ from collections.abc import Sequence
 from typing import Any
 
 from benchmarks.phase0_two_arm import _ADMISSION_SYSTEM_V3, _GAP_SYSTEM_V2
+from memory_weave.config import RERANKER_INERT_WHEN_DISABLED
 from memory_weave.models import Record
 from memory_weave.policy import AdmissionDecision, CandidateVerdict, Gap, GapDecision, ProfileBlock
 from memory_weave.policy.activation import POLICY_VERSION as TAXONOMY_VERSION
@@ -153,7 +154,13 @@ def policy_bundle(
     from dataclasses import asdict, is_dataclass
 
     if hasattr(retrieval_config, "retrieval") and hasattr(retrieval_config, "reranker"):
-        hashed: Any = {"retrieval": asdict(retrieval_config.retrieval), "reranker": asdict(retrieval_config.reranker)}
+        reranker = asdict(retrieval_config.reranker)
+        if not retrieval_config.reranker.enabled:
+            # Fields that do nothing while the reranker is off stay out of a disabled configuration's hash, so
+            # adding them later did not turn the supported bundle into a new one.
+            for key in RERANKER_INERT_WHEN_DISABLED:
+                reranker.pop(key, None)
+        hashed: Any = {"retrieval": asdict(retrieval_config.retrieval), "reranker": reranker}
     elif is_dataclass(retrieval_config) and not isinstance(retrieval_config, type):
         hashed = asdict(retrieval_config)
     else:

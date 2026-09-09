@@ -103,9 +103,14 @@ reranker:
   floor: null
   budget_mean_ms: 100
   batch_size: 32
+  mode: rrf_cross_encoder
+  timeout_ms: 2000
+  on_failure: fallback
 ```
 
-- `enabled` adds a cross-encoder pass after duplicate collapse. The cross-encoder scores each query-record pair and reorders the survivors; refer section 10.7.
+- `enabled` adds a cross-encoder pass after duplicate collapse. The cross-encoder scores each query-record pair and reorders the survivors; refer section 10.7. With `enabled: false` candidate ranking is reciprocal-rank fusion alone, which the search log records as `ranking: rrf_only`.
+- `mode` says where the cross-encoder sits when enabled. `rrf_cross_encoder` scores the shortlist that survived the dense and lexical floors, so RRF remains the first relevance decision and the cross-encoder the second. `cross_encoder_only` skips those floors and scores the fused pool, so the cross-encoder floor is the only relevance decision. In both modes scope, status, expiry, the auto-retrieval source-kind exclusion, and conflict rules run before the cross-encoder, and the cross-encoder can only remove a candidate, never restore one.
+- `timeout_ms` bounds the cross-encoder pass, cold model load included. `on_failure` says what happens when the pass exceeds it or raises: `fallback` serves the RRF order in full, removes nothing, and records `rerank_status` of `timeout` or `failed` with `rerank_error` in the search log; `fail` raises `RerankError` from the search. A serving process should call `BgeReranker.warm()` at start so the first search does not spend its timeout on the load.
 - `candidates` is the maximum number of records sent to the reranker after the initial gate and duplicate collapse. The reranker scores every selected record against every query, then keeps the record's best score. For three queries and 30 records, that is at most `3 × 30 = 90` query-record scores.
 - `floor` is the minimum best reranker score a record needs to be returned. Dense and lexical floors still keep weak records out of the reranker shortlist, but, when reranking is enabled, `floor` makes the final keep-or-drop decision. `null` means the threshold has not been calibrated, so `load_config` rejects an enabled reranker without a floor.
 - `budget_mean_ms` sets the expected cost for 30 candidates on the target laptop. The benchmark compares measured p50 and p95 against it.
@@ -433,6 +438,8 @@ CREATE TABLE search_log (
   deduped_out   TEXT NOT NULL,                -- JSON [[dropped_id, kept_id, cosine], ...]
   reranked      TEXT,                         -- JSON [[record_id, rank_before, rank_after, score, winning_query], ...] or NULL when disabled
   reranked_out  TEXT NOT NULL DEFAULT '[]',   -- JSON records excluded by the reranker shortlist or floor, with the reason
+  rerank_status TEXT NOT NULL DEFAULT 'disabled', -- disabled | applied | timeout | failed
+  rerank_error  TEXT,                         -- the timeout or error message when rerank_status is timeout or failed
   budget_out    TEXT NOT NULL,                -- JSON [record_id, ...] survivors that did not fit k or the token budget
   returned      TEXT NOT NULL,                -- JSON [record_id, ...]
   explanations  TEXT NOT NULL,                -- JSON [Explanation, ...] one per returned record, plus empty_reason when none
@@ -1571,6 +1578,8 @@ For each survivor, it scores every query-record pair, keeps the record's maximum
 `reranker.budget_mean_ms` starts at 100 ms mean for 30 candidates on the target laptop. The benchmark reports p50 and p95 by candidate count and hardware, then updates the HLD latency table. Make reranking the default after evaluation improves final context and downstream task outcomes.
 
 `BgeReranker` in `index/reranker.py` loads `sentence-transformers`' `CrossEncoder` on first use and scores every query-record pair of one search as one batch; `reranker_from_config` returns it when `reranker.enabled` and `NoReranker` otherwise. The model has a single output label, so its scores are sigmoid values in (0, 1) and `floor` is compared on that scale. The reranker runs after the scope filter, the gate, and duplicate collapse, so it never scores a record the caller could not read or that the gate rejected; `benchmarks/rerank_calibration.py` sweeps the floor on a labelled split.
+
+The pass runs through `rerank_with_timeout`, which scores copies of the shortlist in a worker thread and abandons the thread at `reranker.timeout_ms`. An abandoned or failed pass cannot write scores into the candidates the search goes on to use. With `on_failure: fallback` the search continues on the RRF order with nothing removed, `reranked` is null, `reranked_out` is empty, and `rerank_status` says `timeout` or `failed`; with `fail` the search raises. In `mode: cross_encoder_only` the gate's relevance floors are replaced by `exclude_source_kinds`, which applies only the auto-retrieval source-kind policy; every candidate the channels produced is then scored, so the caller should raise `candidates` to the pool size. Section 8n and 8p of `usefulness-gate.md` measure both modes; neither is enabled in the supported bundle.
 
 ### 10.8 Budget fill
 

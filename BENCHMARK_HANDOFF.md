@@ -41,7 +41,8 @@ Every `memory_search` writes one row to `search_log` (LLD 3.6). `timings_ms` car
 `rewrite`, `scopes`, `filter`, `index_refresh`, `embed`, `dense`, `lexical`, `entity`, `fuse`, `freshness`,
 `gate`, `dedup`, `rerank`, `budget`, `explain`, `log`, and `total`. The candidate columns are `dense`,
 `lexical`, `entity` (per-channel hits), `fused`, `freshness`, `gated_out` (with the gate reason), `deduped_out`,
-`reranked` and `reranked_out` (when the reranker is on), `budget_out`, `returned`, and `explanations`;
+`reranked` and `reranked_out` (when the reranker is on), `rerank_status` (`disabled`, `applied`, `timeout`,
+or `failed`) with `rerank_error`, `budget_out`, `returned`, and `explanations`;
 `trigger` says whether the model or the host issued the search; `config_flags` records the embedding
 version, feature flags, and gate floors that produced the row; `warm` is 0 on the first search after a
 process opens the store.
@@ -59,6 +60,8 @@ them.
 
 `retrieval.trigger.mode` (`tool_only`, `auto`, `hybrid`); `retrieval.rewrite.enabled` and `reranker.enabled`
 with `reranker.floor`, both off and both measured off in `docs/usefulness-gate.md` section 8n;
+`reranker.mode` (`rrf_cross_encoder` after the RRF floors, or `cross_encoder_only` in place of them, section
+8p), `reranker.timeout_ms`, and `reranker.on_failure` (`fallback` to the RRF order, or `fail`);
 `retrieval.gate.dense_floor.<type>` and `.session_summary`, `lexical_min_term_fraction`,
 `lexical_min_matched_terms`, `relative_floor`, and the stricter `retrieval.gate.auto` block for host-issued
 searches; `retrieval.per_generator_k`, `rrf_k`, `default_k`, `token_budget`, `dedup_cosine`;

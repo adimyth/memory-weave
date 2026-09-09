@@ -79,6 +79,31 @@ class FloorGate:
         return GateDecision(kept, rejected, _empty_reason(candidates, rejected))
 
 
+def exclude_source_kinds(
+    candidates: Sequence[Candidate], records: Mapping[str, Record], request: SearchRequest, config: GateConfig
+) -> GateDecision:
+    """The gate's policy rules alone, without its relevance floors.
+
+    ``cross_encoder_only`` ranking uses this in place of :class:`FloorGate`: the auto-retrieval source-kind
+    exclusion still applies, because it is a policy about what a host-issued search may surface, and the
+    cross-encoder floor then makes the only relevance decision. Scope, status, and expiry were applied before
+    candidate generation and are not repeated here.
+    """
+
+    kept: list[Candidate] = []
+    rejected: list[Candidate] = []
+    for candidate in candidates:
+        record = records[candidate.record_id]
+        if request.trigger == "auto" and record.source_kind in config.auto.exclude_source_kinds:
+            candidate.gate_reason = f"excluded source kind {record.source_kind} for auto retrieval"
+            rejected.append(candidate)
+            continue
+        candidate.gate_reason = "relevance floors skipped for cross-encoder-only ranking"
+        kept.append(candidate)
+    kept.sort(key=lambda candidate: (-candidate.score, candidate.fused_rank, candidate.record_id))
+    return GateDecision(kept, rejected, _empty_reason(candidates, rejected))
+
+
 def _absolute_reason(candidate: Candidate, record: Record, config: GateConfig | AutoGateConfig) -> str | None:
     if candidate.entity is not None and config.entity_exempt:
         return "passed exact entity match"

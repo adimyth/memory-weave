@@ -37,6 +37,15 @@ class EmbeddingConfig:
     reembed_batch_size: int = 64
 
 
+RerankMode = Literal["rrf_cross_encoder", "cross_encoder_only"]
+RERANK_MODES: tuple[RerankMode, ...] = ("rrf_cross_encoder", "cross_encoder_only")
+RerankFailure = Literal["fallback", "fail"]
+RERANK_FAILURES: tuple[RerankFailure, ...] = ("fallback", "fail")
+# Fields that change nothing while the reranker is disabled. A bundle hash of a disabled configuration leaves
+# them out, so adding them did not change the hash of the supported bundle; refer shadow_adapter.policy_bundle.
+RERANKER_INERT_WHEN_DISABLED: tuple[str, ...] = ("mode", "timeout_ms", "on_failure")
+
+
 @dataclass(frozen=True, slots=True)
 class RerankerConfig:
     enabled: bool = False
@@ -45,6 +54,22 @@ class RerankerConfig:
     floor: float | None = None
     budget_mean_ms: int = 100
     batch_size: int = 32
+    # Where the cross-encoder sits when enabled. ``rrf_cross_encoder`` scores the relevance-gated RRF shortlist;
+    # ``cross_encoder_only`` skips the dense and lexical floors and scores the fused pool, so the cross-encoder
+    # floor is the only relevance decision. Scope, status, expiry, source-kind exclusion, and conflict rules run
+    # first in both modes, and the cross-encoder can only remove. With ``enabled: false`` ranking is RRF only.
+    mode: RerankMode = "rrf_cross_encoder"
+    # The cross-encoder pass, including a cold model load, must finish within this or the search proceeds
+    # without it. ``on_failure`` says what a timeout or a scoring error does: ``fallback`` keeps the RRF order
+    # and records the outcome in the search log; ``fail`` raises.
+    timeout_ms: int = 2000
+    on_failure: RerankFailure = "fallback"
+
+    @property
+    def ranking(self) -> str:
+        """The candidate-ranking configuration in one word: ``rrf_only`` or the enabled mode."""
+
+        return self.mode if self.enabled else "rrf_only"
 
 
 @dataclass(frozen=True, slots=True)
@@ -216,6 +241,7 @@ class MemoryWeaveConfig:
             "embedding_incremental_reload_max": self.embedding.incremental_reload_max,
             "rewrite_enabled": self.retrieval.rewrite.enabled,
             "reranker_enabled": self.reranker.enabled,
+            "ranking": self.reranker.ranking,
             "trigger_mode": self.retrieval.trigger.mode,
             "gate": asdict(self.retrieval.gate),
             "reranker_floor": self.reranker.floor,
@@ -408,6 +434,12 @@ def _validate(config: MemoryWeaveConfig) -> None:
         raise ConfigError("embedding.incremental_reload_max must be positive.")
     if config.reranker.candidates <= 0:
         raise ConfigError("reranker.candidates must be positive.")
+    if config.reranker.mode not in RERANK_MODES:
+        raise ConfigError(f"reranker.mode must be one of {', '.join(RERANK_MODES)}.")
+    if config.reranker.timeout_ms <= 0:
+        raise ConfigError("reranker.timeout_ms must be positive.")
+    if config.reranker.on_failure not in RERANK_FAILURES:
+        raise ConfigError(f"reranker.on_failure must be one of {', '.join(RERANK_FAILURES)}.")
     if config.retrieval.max_alias_tokens <= 0:
         raise ConfigError("retrieval.max_alias_tokens must be positive.")
     if config.retrieval.per_generator_k <= 0 or config.retrieval.default_k <= 0:

@@ -157,7 +157,7 @@ flowchart TD
 | Lexical | SQLite FTS5 with BM25 ranking | Exact terms, identifiers, error messages, commands, and code-like language. |
 | Entity | Exact canonical-name and alias lookup, then linked-record lookup | People, projects, systems, repositories, and other named subjects. |
 
-The service logs timing for candidate generation, fusion, reranking, and result construction. Query rewriting and the reranker are in the pipeline and off by default. Turn them on after the benchmark shows they earn their latency.
+The service logs timing for candidate generation, fusion, reranking, and result construction. Query rewriting and the reranker are in the pipeline and off by default. Turn them on after the benchmark shows they earn their latency. The reranker has two placements, after the RRF relevance floors or in place of them, and a stage timeout that falls back to the RRF order and says so in the search log; both placements were measured against RRF alone in [usefulness-gate.md](docs/usefulness-gate.md) section 8p and neither is supported, because each removes the expected record from the judge's pool on one turn in five.
 
 ## 6. Search trigger and the relevance gate
 

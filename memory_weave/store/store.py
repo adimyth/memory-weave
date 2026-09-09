@@ -95,6 +95,8 @@ _SEARCH_LOG_COLUMNS = (
     "deduped_out",
     "reranked",
     "reranked_out",
+    "rerank_status",
+    "rerank_error",
     "budget_out",
     "returned",
     "explanations",

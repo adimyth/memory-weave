@@ -152,6 +152,8 @@ CREATE TABLE search_log (
   deduped_out   TEXT NOT NULL,
   reranked      TEXT,
   reranked_out  TEXT NOT NULL DEFAULT '[]',
+  rerank_status TEXT NOT NULL DEFAULT 'disabled',
+  rerank_error  TEXT,
   budget_out    TEXT NOT NULL,
   returned      TEXT NOT NULL,
   explanations  TEXT NOT NULL,

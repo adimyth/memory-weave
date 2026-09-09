@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import os
+import threading
+import time
+from collections.abc import Sequence
 from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
@@ -11,7 +14,7 @@ from typing import Any
 import pytest
 
 from memory_weave.config import EmbeddingConfig, MemoryWeaveConfig, RerankerConfig, RetrievalConfig
-from memory_weave.index import BgeReranker, NoReranker, reranker_from_config
+from memory_weave.index import BgeReranker, NoReranker, RerankError, rerank_with_timeout, reranker_from_config
 from memory_weave.index.embedder import FakeEmbedder
 from memory_weave.index.reranker import rerank
 from memory_weave.index.vector import VectorIndex
@@ -178,3 +181,194 @@ def test_real_reranker_orders_an_obvious_pair() -> None:
     )
     assert scores[0] > scores[1]
     assert 0.0 <= scores[1] <= scores[0] <= 1.0
+
+
+# -- Modes, timeouts, and fallback -------------------------------------------------------------------
+
+
+class SlowOrBrokenReranker:
+    """Sleeps or raises on demand, and records what it was asked to score."""
+
+    def __init__(self, *, delay_s: float = 0.0, error: Exception | None = None, score: float = 0.9) -> None:
+        self.delay_s = delay_s
+        self.error = error
+        self.score_value = score
+        self.documents: list[str] = []
+        self.finished = threading.Event()
+
+    @property
+    def is_loaded(self) -> bool:
+        return True
+
+    def score(self, query: str, document: str) -> float:
+        return self.score_pairs([(query, document)])[0]
+
+    def score_pairs(self, pairs: Sequence[tuple[str, str]]) -> list[float]:
+        try:
+            if self.delay_s:
+                time.sleep(self.delay_s)
+            if self.error is not None:
+                raise self.error
+            self.documents.extend(document for _, document in pairs)
+            return [self.score_value for _ in pairs]
+        finally:
+            self.finished.set()
+
+
+def _seed(store: Store, embedder: FakeEmbedder, query: str, records: list[tuple[Record, float]]) -> None:
+    for record, similarity in records:
+        embedder.set_similarity(query, record.content, similarity)
+        store.insert_record(record)
+        store.put_embedding(record.id, embedder.name, embedder.version, embedder.embed_documents([record.content])[0])
+        store.upsert_fts(record.id, record.content, record.subject, "")
+
+
+def _search(retriever: Retriever, query: str, trigger: str = "tool") -> Any:
+    return retriever.search(_PRINCIPAL, SearchRequest([query], None, None, None, None, None, 8, False, trigger=trigger))
+
+
+def test_timeout_falls_back_to_the_rrf_order_and_says_so_in_the_log(tmp_path: Path) -> None:
+    store = Store(tmp_path / "memory.sqlite")
+    store.set_grant(_AGENT, _USER_SCOPE, can_read=True, can_write=True)
+    embedder = FakeEmbedder(dims=_EMBEDDING.dims)
+    query = "preferred editor"
+    strong = _record("strong", "Aditya uses Vim as the preferred editor.")
+    weaker = _record("weaker", "Aditya's editor of choice is Vim, configured from dotfiles.")
+    _seed(store, embedder, query, [(strong, 0.90), (weaker, 0.80)])
+    slow = SlowOrBrokenReranker(delay_s=0.5, score=0.01)
+    config = MemoryWeaveConfig(
+        embedding=_EMBEDDING,
+        retrieval=RetrievalConfig(per_generator_k=10, default_k=8),
+        reranker=RerankerConfig(enabled=True, floor=0.5, timeout_ms=50),
+    )
+    retriever = Retriever(store, VectorIndex(_EMBEDDING), embedder, config, reranker=slow, current_time=lambda: _NOW)
+
+    response = _search(retriever, query)
+
+    # The RRF order is served in full: the reranker would have dropped both under the floor, but it did not apply.
+    assert [result.record.id for result in response.results] == ["strong", "weaker"]
+    assert all(result.explanation.rerank is None for result in response.results)
+    log = store.read_search_log(response.search_id)
+    assert log is not None
+    assert log["rerank_status"] == "timeout"
+    assert log["rerank_error"] == "reranker timed out after 50 ms"
+    assert log["reranked"] is None and log["reranked_out"] == []
+    assert log["config_flags"]["ranking"] == "rrf_cross_encoder"
+    # The abandoned pass finishes later and must not have touched the candidates the search used.
+    assert slow.finished.wait(2.0)
+    assert all(result.explanation.rerank is None for result in response.results)
+    store.close()
+
+
+def test_scoring_error_falls_back_or_raises_as_configured(tmp_path: Path) -> None:
+    store = Store(tmp_path / "memory.sqlite")
+    store.set_grant(_AGENT, _USER_SCOPE, can_read=True, can_write=True)
+    embedder = FakeEmbedder(dims=_EMBEDDING.dims)
+    query = "preferred editor"
+    _seed(store, embedder, query, [(_record("mine", "Aditya uses Vim as the preferred editor."), 0.90)])
+    broken = SlowOrBrokenReranker(error=RuntimeError("model unavailable"))
+    base = MemoryWeaveConfig(embedding=_EMBEDDING, retrieval=RetrievalConfig(per_generator_k=10, default_k=8))
+    vector_index = VectorIndex(_EMBEDDING)
+
+    fallback = replace(base, reranker=RerankerConfig(enabled=True, floor=0.5))
+    response = _search(Retriever(store, vector_index, embedder, fallback, reranker=broken), query)
+    assert [result.record.id for result in response.results] == ["mine"]
+    log = store.read_search_log(response.search_id)
+    assert log is not None
+    assert log["rerank_status"] == "failed"
+    assert log["rerank_error"] == "RuntimeError: model unavailable"
+
+    strict = replace(base, reranker=RerankerConfig(enabled=True, floor=0.5, on_failure="fail"))
+    with pytest.raises(RerankError, match="model unavailable"):
+        _search(Retriever(store, vector_index, embedder, strict, reranker=broken), query)
+    store.close()
+
+
+def test_cross_encoder_only_skips_relevance_floors_but_not_scope_or_policy(tmp_path: Path) -> None:
+    store = Store(tmp_path / "memory.sqlite")
+    store.set_grant(_AGENT, _USER_SCOPE, can_read=True, can_write=True)
+    embedder = FakeEmbedder(dims=_EMBEDDING.dims)
+    query = "preferred editor"
+    mine = _record("mine", "Aditya uses Vim as the preferred editor.")
+    below_floor = _record("below", "Aditya keeps editor settings in dotfiles.")
+    foreign = _record("foreign", "Someone else uses Emacs as the preferred editor.", _OTHER_SCOPE)
+    summary = replace(_record("summary", "Session summary: the editor discussion."), source_kind="session_summary")
+    _seed(store, embedder, query, [(mine, 0.90), (below_floor, 0.20), (foreign, 0.95), (summary, 0.85)])
+    model = FakeCrossEncoder(
+        {
+            (query, mine.content): 0.8,
+            (query, below_floor.content): 0.7,
+            (query, foreign.content): 0.99,
+            (query, summary.content): 0.9,
+        }
+    )
+    reranker = BgeReranker(RerankerConfig(enabled=True, floor=0.5), model_factory=lambda: model)
+    retrieval = RetrievalConfig(per_generator_k=10, default_k=8)
+    rrf_then_ce = MemoryWeaveConfig(
+        embedding=_EMBEDDING, retrieval=retrieval, reranker=RerankerConfig(enabled=True, floor=0.5)
+    )
+    ce_only = replace(rrf_then_ce, reranker=replace(rrf_then_ce.reranker, mode="cross_encoder_only"))
+    vector_index = VectorIndex(_EMBEDDING)
+
+    gated = _search(Retriever(store, vector_index, embedder, rrf_then_ce, reranker=reranker), query, "auto")
+    assert [result.record.id for result in gated.results] == ["mine"]
+
+    open_ranked = _search(Retriever(store, vector_index, embedder, ce_only, reranker=reranker), query, "auto")
+    # The dense floor no longer decides: the cross-encoder admitted the record cosine rejected.
+    assert [result.record.id for result in open_ranked.results] == ["mine", "below"]
+    assert open_ranked.results[1].explanation.gate == "relevance floors skipped for cross-encoder-only ranking"
+    scored = {document for batch in model.batches for _, document in batch}
+    # Scope and the auto-retrieval source-kind policy still run first; the cross-encoder never saw either record.
+    assert foreign.content not in scored
+    assert summary.content not in scored
+    log = store.read_search_log(open_ranked.search_id)
+    assert log is not None
+    assert log["config_flags"]["ranking"] == "cross_encoder_only"
+    assert [entry["record_id"] for entry in log["gated_out"]] == ["summary"]
+    assert log["rerank_status"] == "applied"
+    store.close()
+
+
+def test_rerank_with_timeout_returns_the_input_unchanged_on_timeout() -> None:
+    slow = SlowOrBrokenReranker(delay_s=0.3, score=0.9)
+    candidates = [_candidate("a", 1), _candidate("b", 2)]
+    records = {"a": _record("a", "A"), "b": _record("b", "B")}
+
+    outcome = rerank_with_timeout(candidates, records, ["q"], slow, timeout_ms=20, on_failure="fallback")
+
+    assert outcome.status == "timeout" and outcome.logged is None
+    assert [candidate.record_id for candidate in outcome.candidates] == ["a", "b"]
+    assert slow.finished.wait(2.0)
+    assert all(candidate.rerank_score is None for candidate in candidates)
+    with pytest.raises(RerankError):
+        rerank_with_timeout(candidates, records, ["q"], slow, timeout_ms=20, on_failure="fail")
+
+
+def test_reranker_config_validation_and_ranking_name(tmp_path: Path) -> None:
+    from memory_weave.config import ConfigError, load_config
+
+    assert MemoryWeaveConfig().reranker.ranking == "rrf_only"
+    assert RerankerConfig(enabled=True, floor=0.1, mode="cross_encoder_only").ranking == "cross_encoder_only"
+    for body in (
+        "reranker:\n  enabled: true\n  floor: 0.1\n  mode: bm25\n",
+        "reranker:\n  timeout_ms: 0\n",
+        "reranker:\n  on_failure: retry\n",
+    ):
+        path = tmp_path / "config.yaml"
+        path.write_text(body, encoding="utf-8")
+        with pytest.raises(ConfigError, match="reranker\\."):
+            load_config(path)
+
+
+def test_new_reranker_fields_do_not_change_a_disabled_bundle_hash() -> None:
+    from benchmarks.phase0_real_retrieval import recall_oriented_config
+    from benchmarks.shadow_adapter import policy_bundle
+
+    supported = policy_bundle("gpt-4o", "gpt-5.4", recall_oriented_config(), None)["retrieval_config_sha256"]
+    assert supported == "e8c8c3309ab121de", "the supported bundle's retrieval hash must not move"
+    enabled = recall_oriented_config(rerank_floor=0.01)
+    quick = replace(enabled, reranker=replace(enabled.reranker, timeout_ms=1))
+    assert (
+        policy_bundle("gpt-4o", "gpt-5.4", enabled, None)["retrieval_config_sha256"]
+        != policy_bundle("gpt-4o", "gpt-5.4", quick, None)["retrieval_config_sha256"]
+    ), "an enabled reranker's timeout changes behaviour and so the bundle"

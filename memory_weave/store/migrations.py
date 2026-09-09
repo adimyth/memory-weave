@@ -264,6 +264,15 @@ def _attribute_from_legacy_subject(subject: str) -> str | None:
     return normalize_attribute(attribute) or None
 
 
+def _migration_10(connection: sqlite3.Connection) -> None:
+    """Record whether the cross-encoder pass applied, timed out, or failed on each search."""
+
+    if not _has_column(connection, "search_log", "rerank_status"):
+        connection.execute("ALTER TABLE search_log ADD COLUMN rerank_status TEXT NOT NULL DEFAULT 'disabled'")
+    if not _has_column(connection, "search_log", "rerank_error"):
+        connection.execute("ALTER TABLE search_log ADD COLUMN rerank_error TEXT")
+
+
 MIGRATIONS: tuple[tuple[int, Migration], ...] = (
     (1, _migration_1),
     (2, _migration_2),
@@ -274,6 +283,7 @@ MIGRATIONS: tuple[tuple[int, Migration], ...] = (
     (7, _migration_7),
     (8, _migration_8),
     (9, _migration_9),
+    (10, _migration_10),
 )
 
 
