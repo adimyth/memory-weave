@@ -1,0 +1,117 @@
+site_name: Retold
+site_description: Long-term memory for AI agents that stays quiet until it changes the answer.
+site_url: https://adimyth.github.io/retold/
+repo_url: https://github.com/adimyth/retold
+repo_name: adimyth/retold
+edit_uri: edit/main/docs/
+copyright: Copyright &copy; 2026 Aditya Mishra
+
+docs_dir: docs
+site_dir: site
+strict: true
+
+# Two working notes live in docs/ but are gitignored; they must not enter the site even when present locally.
+exclude_docs: |
+  current-landscape.md
+  benchmark-plan.md
+
+hooks:
+  - .mkdocs/hooks.py
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.action.edit
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: black
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.arithmatex:
+      generic: true
+
+extra_javascript:
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
+
+plugins:
+  - search
+  - include-markdown
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: ["."]
+          options:
+            docstring_style: sphinx
+            show_source: false
+            show_root_heading: true
+            members_order: source
+            separate_signature: true
+            show_signature_annotations: true
+            signature_crossrefs: true
+            filters: ["!^_"]
+
+nav:
+  - Home: index.md
+  - Design:
+      - Components, with examples: components.md
+      - High-level design: agent-memory-hld.md
+      - Low-level design: agent-memory-lld.md
+      - Utility-aware memory architecture: utility-aware-memory-architecture.md
+      - Utility-aware implementation plan: utility-aware-memory-implementation-plan.md
+      - What is distinctive: design-contributions.md
+      - Research notes: agent-memory-research-notes.md
+      - Bedrock AgentCore comparison: bedrock-agentcore-comparison.md
+  - Evidence:
+      - Acceptance report (v1): acceptance-report.md
+      - The relevance gate: gate.md
+      - Usefulness, not relevance: usefulness-gate.md
+      - Vertical-slice findings: vertical-slice-findings.md
+      - Benchmark handoff: benchmark-handoff.md
+      - Experiments: benchmarks.md
+      - Next phases: next-phases.md
+  - API:
+      - Overview: api/index.md
+      - Configuration: api/config.md
+      - Runtime and host: api/runtime.md
+      - Models: api/models.md
+      - Tools: api/tools.md
+      - Session hooks and extraction: api/ingest.md
+      - Retrieval: api/retrieve.md
+      - Utility-aware policy: api/policy.md
+      - Adapters: api/adapters.md
+      - Operations: api/operations.md

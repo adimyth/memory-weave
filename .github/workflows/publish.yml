@@ -1,0 +1,45 @@
+name: publish
+
+# Publishes to PyPI through trusted publishing on a version tag. One-time setup on pypi.org: add a pending
+# publisher for project `retold` with owner `adimyth`, repository `retold`, workflow `publish.yml`, and
+# environment `pypi`. No API token is stored anywhere.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - run: uv sync
+      - run: uv run ruff check . && uv run ruff format --check . && uv run mypy
+      - run: uv run pytest -q
+      - run: uv build
+      - run: |
+          test -n "$(ls dist/*.whl)" && test -n "$(ls dist/*.tar.gz)"
+          uv run python -c "import tomllib,sys; v=tomllib.load(open('pyproject.toml','rb'))['project']['version']; t='${GITHUB_REF_NAME}'; sys.exit(0 if not t.startswith('v') or t=='v'+v else f'tag {t} does not match version {v}')"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/retold/
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1

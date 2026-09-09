@@ -2,7 +2,7 @@
 
 A local, provider-neutral long-term memory layer for AI agents. It stores evidence-backed records in one SQLite file, retrieves them through dense, lexical, and entity channels fused by reciprocal-rank fusion, returns only what the caller may read, and can return nothing. Every write and every search leaves a trace that explains itself.
 
-Version 1.0.0 (9 September 2026), released under the project's previous name, Memory Weave; the package, CLI, and documents were renamed to Retold on 9 September and nothing else changed. Python 3.12, one process, one database file. Deep Agents and CrewAI adapters ship behind extras. The utility-aware host path, which decides whether a turn needs memory before ranking anything, is implemented and validated offline; it is off by default and waits on real-traffic validation. The [acceptance report](docs/acceptance-report.md) records every gate.
+Documentation: https://adimyth.github.io/retold/. Version 1.0.1 (9 September 2026); v1.0.0 was tagged under the project's previous name, Memory Weave, and the rename changed nothing else. Python 3.12, one process, one database file. Deep Agents and CrewAI adapters ship behind extras. The utility-aware host path, which decides whether a turn needs memory before ranking anything, is implemented and validated offline; it is off by default and waits on real-traffic validation. The [acceptance report](docs/acceptance-report.md) records every gate.
 
 ## 1. What it is, and what it is not
 
@@ -141,10 +141,13 @@ Scope answers whose memory it is; a grant answers which agent may see it. Grants
 ### 3.1 Install
 
 ```bash
-uv sync                                   # core: SQLite from the standard library, numpy, PyYAML
-uv sync --extra local-models              # bge-m3 embedder, NLI judge, cross-encoder reranker
-uv sync --extra live                      # Anthropic and OpenAI SDKs for extraction, review, rewriting
-uv sync --extra deepagents --extra crewai # the framework adapters
+pip install "retold[local-models]"        # or: uv add "retold[local-models]"
+```
+
+Extras: `local-models` (the bge-m3 embedder, the NLI judge, and the cross-encoder reranker; without it you supply an embedder and judge), `live` (the Anthropic and OpenAI SDKs for extraction, review, and rewriting), `deepagents`, and `crewai`. From a checkout:
+
+```bash
+uv sync --extra local-models --extra live --extra deepagents --extra crewai
 ```
 
 Set `HF_HUB_OFFLINE=1` once the model cache is warm; a partial cache hangs inside the hub library instead of failing. Hosted models read `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` from the environment; the runtime picks the SDK by model name, `claude-*` to Anthropic and anything else to OpenAI. The benchmark harness additionally routes `openrouter:<slug>` through OpenRouter and `local:<repo>` through a locally loaded open-weight model.
