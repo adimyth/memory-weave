@@ -122,11 +122,17 @@ def recall_oriented_config(
     rewrite_model: str | None = None,
     rewrite_timeout_ms: int | None = None,
     rerank_floor: float | None = None,
+    rerank_mode: str | None = None,
+    rerank_timeout_ms: int | None = None,
 ) -> MemoryWeaveConfig:
     """Default config with the host-search gate loosened to a candidate control.
 
     ``rewrite_model`` enables query rewriting through that hosted model; ``rerank_floor`` enables the
     cross-encoder reranker with that floor. Either is a new retrieval configuration and so a new bundle.
+    ``rerank_mode`` picks ``rrf_cross_encoder`` or ``cross_encoder_only``; the latter raises the shortlist
+    cap to the whole fused pool so the cross-encoder scores every candidate the channels produced. The
+    benchmark's ``rerank_timeout_ms`` defaults to a minute, so runs measure the ranking, not the fallback;
+    the shipped default is 2 s and the runs report how long the stage actually took.
     """
 
     config = load_config()
@@ -142,7 +148,11 @@ def recall_oriented_config(
     retrieval = replace(config.retrieval, gate=gate, trigger=trigger, rewrite=rewrite)
     reranker = config.reranker
     if rerank_floor is not None:
-        reranker = replace(reranker, enabled=True, floor=rerank_floor)
+        reranker = replace(reranker, enabled=True, floor=rerank_floor, timeout_ms=rerank_timeout_ms or 60000)
+        if rerank_mode is not None:
+            reranker = replace(reranker, mode=rerank_mode)  # type: ignore[arg-type]
+        if reranker.mode == "cross_encoder_only":
+            reranker = replace(reranker, candidates=3 * retrieval.per_generator_k)
     return replace(config, retrieval=retrieval, reranker=reranker)
 
 
@@ -159,12 +169,22 @@ class RealRetrieval:
         rewrite_model: str | None = None,
         rewrite_timeout_ms: int | None = None,
         rerank_floor: float | None = None,
+        rerank_mode: str | None = None,
+        rerank_timeout_ms: int | None = None,
     ) -> None:
         self.scenario = scenario
         self.workdir = workdir
         self.config = recall_oriented_config(
-            rewrite_model=rewrite_model, rewrite_timeout_ms=rewrite_timeout_ms, rerank_floor=rerank_floor
+            rewrite_model=rewrite_model,
+            rewrite_timeout_ms=rewrite_timeout_ms,
+            rerank_floor=rerank_floor,
+            rerank_mode=rerank_mode,
+            rerank_timeout_ms=rerank_timeout_ms,
         )
+        # Per arm: how many host-issued searches the cross-encoder pass applied to, timed out on, or failed on,
+        # and the retriever's own rerank stage time per search, so a run reports the stage's real cost.
+        self.rerank_statuses: dict[str, dict[str, int]] = {}
+        self.rerank_stage_ms: dict[str, list[float]] = {}
         self.embedder = embedder or BgeM3Embedder(self.config.embedding)
         self.judge = NLICrossEncoderJudge(self.config.ingestion.equivalence)
         self.rewriter = rewriter_from_config(self.config)
@@ -279,6 +299,19 @@ class RealRetrieval:
         }
         return log
 
+    def _note_rerank(self, arm: str, store: Store, search_id: str) -> None:
+        if not self.config.reranker.enabled or not search_id:
+            return
+        log = store.read_search_log(search_id)
+        if log is None:
+            return
+        counts = self.rerank_statuses.setdefault(arm, {})
+        status = str(log.get("rerank_status"))
+        counts[status] = counts.get(status, 0) + 1
+        timings = log.get("timings_ms") or {}
+        if isinstance(timings, dict) and "rerank" in timings:
+            self.rerank_stage_ms.setdefault(arm, []).append(float(timings["rerank"]))
+
     def search(self, arm: str, queries: list[str], context: str) -> list[dict[str, Any]]:
         """Run the real host-issued search and return scenario-id candidates with their fused scores."""
 
@@ -291,6 +324,7 @@ class RealRetrieval:
         result = handlers.memory_search(principal, payload, context=context[:2000], trigger="auto")
         if result.get("ok") is not True:
             return []
+        self._note_rerank(arm, state["store"], str(result.get("search_id", "")))
         out: list[dict[str, Any]] = []
         for entry in result.get("results", []):
             record = entry.get("record", {})

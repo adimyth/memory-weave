@@ -121,7 +121,22 @@ share of ordinary turns with any survivor, are computed offline for every floor.
 `results/rerank/`. `--rewrite-model <model>` and `--rerank-floor <x>` on `phase0_two_arm.py` and
 `shadow_run.py` enable the two optional retrieval stages for a run; either is a new retrieval configuration,
 so the bundle hash changes and the run cannot reuse an earlier fitness result. The bundle hash covers the
-`retrieval` and `reranker` sections of the configuration together.
+`retrieval` and `reranker` sections of the configuration together. `--rerank-mode cross_encoder_only` puts
+the cross-encoder in place of the RRF relevance floors rather than after them, and `--rerank-timeout-ms`
+sets the stage timeout for the run; the benchmark default is a minute so the ranking is measured rather than
+the fallback, and every run records how many searches the pass applied to, timed out on, or failed on, with
+the stage's p50 and p95.
+
+```bash
+uv run python benchmarks/pool_stats.py benchmarks/results/phase0/phase11-baseline-v5/*.json \
+  benchmarks/results/phase0/phase11-rerank-v5/*.json benchmarks/results/phase0/ceonly-v5/*.json
+```
+
+Judge-pool statistics from saved results, no model call: on every turn where the planner fired, how many
+candidates reached the judge, how many of them the scenario never expected, whether the expected records
+were still in the pool, and the retrieval time. This is the comparison between ranking configurations,
+because the cross-encoder can only decide what the judge sees. Results land in `results/rerank/`; section 8p
+of [../docs/usefulness-gate.md](../docs/usefulness-gate.md) has the three-way comparison.
 
 ```bash
 uv run --extra live python benchmarks/adjudicate_labels.py --reviewer openrouter:anthropic/claude-sonnet-4.6

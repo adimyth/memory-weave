@@ -1,0 +1,151 @@
+{
+ "computed_at": "2026-09-09T10:12:53.232976+00:00",
+ "runs": [
+  {
+   "result": "benchmarks/results/phase0/phase11-baseline-v5/20260908T101743Z-phase0_v5-gap-gpt-4o-v3-adm-gpt-5.4-v3-act-real-phase11-baseline.json",
+   "scenario": "phase0_v5",
+   "ranking": "rrf_only",
+   "rerank_floor": null,
+   "rerank_statuses": {},
+   "rerank_stage_ms": {},
+   "arms": {
+    "ambient": {
+     "gap_turns": 19,
+     "pool_mean": 6.84,
+     "weak_candidates_total": 112,
+     "weak_per_gap_turn": 5.89,
+     "expected_in_pool": "18/19 (95%)",
+     "ordinary_gap_turns_with_a_pool": 1,
+     "weak_candidates_admitted": 2,
+     "retrieval_s_p50": 0.044,
+     "retrieval_s_p95": 0.133
+    }
+   }
+  },
+  {
+   "result": "benchmarks/results/phase0/phase11-rerank-v5/20260908T101853Z-phase0_v5-gap-gpt-4o-v3-adm-gpt-5.4-v3-act-real-rerank0.01-phase11-rerank.json",
+   "scenario": "phase0_v5",
+   "ranking": "rrf_cross_encoder",
+   "rerank_floor": 0.01,
+   "rerank_statuses": {},
+   "rerank_stage_ms": {},
+   "arms": {
+    "ambient": {
+     "gap_turns": 18,
+     "pool_mean": 1.06,
+     "weak_candidates_total": 4,
+     "weak_per_gap_turn": 0.22,
+     "expected_in_pool": "15/19 (79%)",
+     "ordinary_gap_turns_with_a_pool": 0,
+     "weak_candidates_admitted": 1,
+     "retrieval_s_p50": 0.455,
+     "retrieval_s_p95": 10.476
+    }
+   }
+  },
+  {
+   "result": "benchmarks/results/phase0/ceonly-v5/20260909T100916Z-phase0_v5-gap-gpt-4o-v3-adm-gpt-5.4-v3-act-real-rerank0.01-ceonly-ceonly.json",
+   "scenario": "phase0_v5",
+   "ranking": "cross_encoder_only",
+   "rerank_floor": 0.01,
+   "rerank_statuses": {
+    "ambient": {
+     "applied": 39
+    }
+   },
+   "rerank_stage_ms": {
+    "ambient": {
+     "searches": 39.0,
+     "p50_ms": 160.04695801530033,
+     "p95_ms": 1985.6907919747755
+    }
+   },
+   "arms": {
+    "ambient": {
+     "gap_turns": 17,
+     "pool_mean": 1.06,
+     "weak_candidates_total": 4,
+     "weak_per_gap_turn": 0.24,
+     "expected_in_pool": "14/18 (78%)",
+     "ordinary_gap_turns_with_a_pool": 0,
+     "weak_candidates_admitted": 1,
+     "retrieval_s_p50": 0.368,
+     "retrieval_s_p95": 2.117
+    }
+   }
+  },
+  {
+   "result": "benchmarks/results/phase0/phase11-baseline-v4/20260908T101925Z-phase0_v4-gap-gpt-4o-v3-adm-gpt-5.4-v3-act-real-phase11-baseline.json",
+   "scenario": "phase0_v4",
+   "ranking": "rrf_only",
+   "rerank_floor": null,
+   "rerank_statuses": {},
+   "rerank_stage_ms": {},
+   "arms": {
+    "ambient": {
+     "gap_turns": 18,
+     "pool_mean": 7.0,
+     "weak_candidates_total": 109,
+     "weak_per_gap_turn": 6.06,
+     "expected_in_pool": "17/18 (94%)",
+     "ordinary_gap_turns_with_a_pool": 1,
+     "weak_candidates_admitted": 1,
+     "retrieval_s_p50": 0.085,
+     "retrieval_s_p95": 0.861
+    }
+   }
+  },
+  {
+   "result": "benchmarks/results/phase0/phase11-rerank-v4/20260908T102030Z-phase0_v4-gap-gpt-4o-v3-adm-gpt-5.4-v3-act-real-rerank0.01-phase11-rerank.json",
+   "scenario": "phase0_v4",
+   "ranking": "rrf_cross_encoder",
+   "rerank_floor": 0.01,
+   "rerank_statuses": {},
+   "rerank_stage_ms": {},
+   "arms": {
+    "ambient": {
+     "gap_turns": 18,
+     "pool_mean": 1.22,
+     "weak_candidates_total": 7,
+     "weak_per_gap_turn": 0.39,
+     "expected_in_pool": "15/18 (83%)",
+     "ordinary_gap_turns_with_a_pool": 1,
+     "weak_candidates_admitted": 3,
+     "retrieval_s_p50": 0.569,
+     "retrieval_s_p95": 2.93
+    }
+   }
+  },
+  {
+   "result": "benchmarks/results/phase0/ceonly-v4/20260909T101052Z-phase0_v4-gap-gpt-4o-v3-adm-gpt-5.4-v3-act-real-rerank0.01-ceonly-ceonly.json",
+   "scenario": "phase0_v4",
+   "ranking": "cross_encoder_only",
+   "rerank_floor": 0.01,
+   "rerank_statuses": {
+    "ambient": {
+     "applied": 38
+    }
+   },
+   "rerank_stage_ms": {
+    "ambient": {
+     "searches": 38.0,
+     "p50_ms": 168.81895798724145,
+     "p95_ms": 795.9274159511551
+    }
+   },
+   "arms": {
+    "ambient": {
+     "gap_turns": 18,
+     "pool_mean": 1.28,
+     "weak_candidates_total": 8,
+     "weak_per_gap_turn": 0.44,
+     "expected_in_pool": "15/18 (83%)",
+     "ordinary_gap_turns_with_a_pool": 1,
+     "weak_candidates_admitted": 1,
+     "retrieval_s_p50": 0.396,
+     "retrieval_s_p95": 1.463
+    }
+   }
+  }
+ ]
+}

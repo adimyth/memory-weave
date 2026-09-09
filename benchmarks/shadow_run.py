@@ -115,6 +115,8 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="Enable the cross-encoder reranker with this floor; a new bundle",
     )
+    parser.add_argument("--rerank-mode", choices=["rrf_cross_encoder", "cross_encoder_only"], default=None)
+    parser.add_argument("--rerank-timeout-ms", type=int, default=None)
     args = parser.parse_args(argv)
 
     scenario = json.loads(args.scenario.read_text())
@@ -128,6 +130,8 @@ def main(argv: list[str] | None = None) -> int:
         rewrite_model=args.rewrite_model,
         rewrite_timeout_ms=args.rewrite_timeout_ms,
         rerank_floor=args.rerank_floor,
+        rerank_mode=args.rerank_mode,
+        rerank_timeout_ms=args.rerank_timeout_ms,
     )
     rr.build_arm("shadow", [r["id"] for r in scenario["records"]])
     state = rr._arms["shadow"]  # noqa: SLF001
@@ -232,6 +236,9 @@ def main(argv: list[str] | None = None) -> int:
         json.dumps(
             {
                 "summary": summary,
+                "ranking": rr.config.reranker.ranking,
+                "rerank_statuses": rr.rerank_statuses,
+                "rerank_stage_ms": rr.rerank_stage_ms,
                 "decisions": decisions,
                 "id_map": reverse,
                 "store": str(store_path),

@@ -81,6 +81,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--tag", default="combination")
     parser.add_argument("--rewrite-model", default=None)
     parser.add_argument("--rerank-floor", type=float, default=None)
+    parser.add_argument("--rerank-mode", choices=["rrf_cross_encoder", "cross_encoder_only"], default=None)
+    parser.add_argument("--rerank-timeout-ms", type=int, default=None)
     parser.add_argument("--out-dir", type=Path, default=Path("benchmarks/results/phase0"))
     args = parser.parse_args(argv)
 
@@ -138,6 +140,10 @@ def main(argv: list[str] | None = None) -> int:
         forwarded.extend(["--rewrite-model", args.rewrite_model])
     if args.rerank_floor is not None:
         forwarded.extend(["--rerank-floor", str(args.rerank_floor)])
+    if args.rerank_mode is not None:
+        forwarded.extend(["--rerank-mode", args.rerank_mode])
+    if args.rerank_timeout_ms is not None:
+        forwarded.extend(["--rerank-timeout-ms", str(args.rerank_timeout_ms)])
     return phase0_main(forwarded)
 
 

@@ -242,11 +242,15 @@ class Phase0:
         rewrite_model: str | None = None,
         rewrite_timeout_ms: int | None = None,
         rerank_floor: float | None = None,
+        rerank_mode: str | None = None,
+        rerank_timeout_ms: int | None = None,
     ) -> None:
         self.scenario = scenario
         self.rewrite_model = rewrite_model
         self.rewrite_timeout_ms = rewrite_timeout_ms
         self.rerank_floor = rerank_floor
+        self.rerank_mode = rerank_mode
+        self.rerank_timeout_ms = rerank_timeout_ms
         self.draft_model = draft_model
         self.gap_model = gap_model
         self.admission_model = admission_model
@@ -278,6 +282,32 @@ class Phase0:
         import threading
 
         self._cache_lock = threading.Lock()
+
+    def ranking(self) -> str:
+        """The candidate-ranking configuration this run used: rrf_only or the enabled cross-encoder mode."""
+
+        if self._real is not None:
+            return str(self._real.config.reranker.ranking)
+        return "rrf_only" if self.rerank_floor is None else (self.rerank_mode or "rrf_cross_encoder")
+
+    def rerank_statuses(self) -> dict[str, dict[str, int]]:
+        return dict(self._real.rerank_statuses) if self._real is not None else {}
+
+    def rerank_stage_ms(self) -> dict[str, dict[str, float]]:
+        """Per arm, the retriever's rerank stage p50 and p95 in ms over this run's host-issued searches."""
+
+        if self._real is None:
+            return {}
+        out: dict[str, dict[str, float]] = {}
+        for arm, values in self._real.rerank_stage_ms.items():
+            if values:
+                ordered = sorted(values)
+                out[arm] = {
+                    "searches": float(len(ordered)),
+                    "p50_ms": ordered[len(ordered) // 2],
+                    "p95_ms": ordered[min(len(ordered) - 1, int(0.95 * len(ordered)))],
+                }
+        return out
 
     def save_cache(self) -> None:
         if self._draft_cache_path:
@@ -578,6 +608,8 @@ class Phase0:
                     rewrite_model=self.rewrite_model,
                     rewrite_timeout_ms=self.rewrite_timeout_ms,
                     rerank_floor=self.rerank_floor,
+                    rerank_mode=self.rerank_mode,
+                    rerank_timeout_ms=self.rerank_timeout_ms,
                 )
             self.write_logs[arm] = self._real.build_arm(arm, store_ids)
             outcomes = {}
@@ -873,6 +905,18 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="Enable the cross-encoder reranker with this floor; a new bundle",
     )
+    parser.add_argument(
+        "--rerank-mode",
+        choices=["rrf_cross_encoder", "cross_encoder_only"],
+        default=None,
+        help="Where the cross-encoder sits: after the RRF gate (default) or as the only relevance decision",
+    )
+    parser.add_argument(
+        "--rerank-timeout-ms",
+        type=int,
+        default=None,
+        help="Cross-encoder stage timeout for this run; the benchmark default is 60000 so ranking is measured",
+    )
     parser.add_argument("--out-dir", type=Path, default=Path("benchmarks/results/phase0"))
     parser.add_argument(
         "--label-overlay",
@@ -910,6 +954,8 @@ def main(argv: list[str] | None = None) -> int:
         rewrite_model=args.rewrite_model,
         rewrite_timeout_ms=args.rewrite_timeout_ms,
         rerank_floor=args.rerank_floor,
+        rerank_mode=args.rerank_mode,
+        rerank_timeout_ms=args.rerank_timeout_ms,
     )
     print(
         f"scenario={args.scenario} draft={args.draft_model} gap={gap_model}/{args.gap_prompt} "
@@ -939,8 +985,10 @@ def main(argv: list[str] | None = None) -> int:
     args.out_dir.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     tag = f"-{args.tag}" if args.tag else ""
-    stages = ("-rewrite" if args.rewrite_model else "") + (
-        f"-rerank{args.rerank_floor}" if args.rerank_floor is not None else ""
+    stages = (
+        ("-rewrite" if args.rewrite_model else "")
+        + (f"-rerank{args.rerank_floor}" if args.rerank_floor is not None else "")
+        + ("-ceonly" if args.rerank_mode == "cross_encoder_only" else "")
     )
 
     def _safe(name: str) -> str:
@@ -963,6 +1011,11 @@ def main(argv: list[str] | None = None) -> int:
         "rewrite_model": args.rewrite_model,
         "rewrite_timeout_ms": args.rewrite_timeout_ms,
         "rerank_floor": args.rerank_floor,
+        "rerank_mode": args.rerank_mode,
+        "rerank_timeout_ms": args.rerank_timeout_ms,
+        "ranking": runner.ranking(),
+        "rerank_statuses": runner.rerank_statuses(),
+        "rerank_stage_ms": runner.rerank_stage_ms(),
         "shadow_judge": args.shadow_judge,
         "activation": args.activation,
         "activation_model": args.activation_model,

@@ -637,6 +637,37 @@ Run on 9 September 2026 for the v1 acceptance. The Phase 15 acceptance report fo
 
 Result file: `benchmarks/results/rescore/20260908T184734Z-rescore.json`. On the two runs that are `bundle-2026-09-08-a`'s fitness evidence the gate is met. Every admission still counted against precision is an ordinary-turn injection, which the injection gate measures separately and which stayed within its 5 percent bound on the same runs. Had the reviewer said unhelpful, the gate would have failed on the judge and the judge would have needed a change and the complete suite again; it did not.
 
+## 8p. Cross-encoder placement: RRF only, RRF then cross-encoder, and cross-encoder only
+
+Run on 9 September 2026, after the v1.0.0 tag. Section 8n measured the cross-encoder after the RRF relevance floors. This round adds the third placement the plan asked for, the cross-encoder in place of those floors over the whole fused pool, and the operating behaviour a host needs before either could ship: a stage timeout, a configured failure behaviour, and a search-log record of what the pass did. `reranker.mode` selects `rrf_cross_encoder` or `cross_encoder_only`; `reranker.timeout_ms` and `reranker.on_failure` bound the pass, and `fallback` serves the RRF order in full with `rerank_status` and `rerank_error` written to the log. Scope, status, expiry, the auto-retrieval source-kind exclusion, and conflict rules run before the cross-encoder in both modes, and the pass scores copies of the shortlist, so an abandoned pass cannot write into the candidates the search used or restore a record an earlier filter removed; `tests/test_reranker.py` asserts each of those. The three fields are inert while the reranker is disabled and are left out of a disabled configuration's bundle hash, so the supported bundle's hash is still `e8c8c3309ab121de`; `test_new_reranker_fields_do_not_change_a_disabled_bundle_hash` pins it.
+
+The cross-encoder-only configuration ran through the same recall runs as section 8n, with the same cached drafts, the calibrated floor of 0.01, the shortlist cap raised to the pool size so every fused candidate was scored, and a one-minute stage timeout so the ranking was measured rather than the fallback. Every pass applied; none timed out or failed.
+
+| Configuration | Retrieval hash | Fifth split, configuration A | Fourth split, configuration A | Fifth split, shadow |
+| --- | --- | --- | --- | --- |
+| RRF only, the supported bundle | `e8c8c3309ab121de` | 1 of 20 injected, 10 of 10, 7 of 8, nothing unsafe | 0 of 20, 9 of 10, 6 of 7, nothing unsafe | 0 of 20, 10 of 10, 7 of 8 |
+| RRF then cross-encoder, floor 0.01 (section 8n) | `3082bd63258d697b` | 0 of 20, **7 of 10**, 7 of 8, nothing unsafe | 1 of 20, **8 of 10**, 6 of 7, nothing unsafe | 0 of 20, 10 of 10, 6 of 8 |
+| Cross-encoder only, floor 0.01 | `d67b0d6ead3e745f` | 0 of 20, **8 of 10**, **5 of 8**, nothing unsafe | 0 of 20, **7 of 10**, **5 of 7**, nothing unsafe | 0 of 20, 10 of 10, 6 of 8 |
+
+Bold marks a gate failure. The pool the judge saw on the turns where the planner fired, from `benchmarks/pool_stats.py` over the saved results, is what separates the three:
+
+| Configuration | Split | Mean pool | Non-expected candidates per gap turn | Expected records still in the pool | Non-expected records admitted | Retrieval p50 / p95 | Cross-encoder stage p50 / p95 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| RRF only | fifth | 6.84 | 5.89 | 18 of 19 (95%) | 2 | 0.04 s / 0.13 s | none |
+| RRF then cross-encoder | fifth | 1.06 | 0.22 | 15 of 19 (79%) | 1 | 0.46 s / 10.5 s | not recorded in that run |
+| Cross-encoder only | fifth | 1.06 | 0.24 | 14 of 18 (78%) | 1 | 0.37 s / 2.1 s | 160 ms / 2.0 s over 39 searches |
+| RRF only | fourth | 7.00 | 6.06 | 17 of 18 (94%) | 1 | 0.09 s / 0.86 s | none |
+| RRF then cross-encoder | fourth | 1.22 | 0.39 | 15 of 18 (83%) | 3 | 0.57 s / 2.9 s | not recorded in that run |
+| Cross-encoder only | fourth | 1.28 | 0.44 | 15 of 18 (83%) | 1 | 0.40 s / 1.5 s | 169 ms / 0.8 s over 38 searches |
+
+Result files: `benchmarks/results/phase0/ceonly-v5`, `benchmarks/results/phase0/ceonly-v4`, `benchmarks/results/shadow/20260909T101053Z-phase0_v5-gap-gpt-4o-adm-gpt-5.4-budget-None-ceonly.json`, and `benchmarks/results/rerank/20260909T101253Z-pool-stats.json`.
+
+**Against the acceptance checks.** Weak-candidate rejection improves by an order of magnitude under either cross-encoder placement: about six non-expected candidates per gap turn become a quarter to a half. Unsafe admissions stay at zero and ordinary-turn injection stays at or under 1 of 20 in every run. The stage's own cost, 160 to 170 ms at p50 and 0.8 to 2.0 s at p95 on this machine, sits inside a 2 s timeout at p50 and outside it at p95 on the fifth split, so a host running the shipped default would fall back on a few percent of searches. And explicit and implicit recall fall below the gates on both blind splits in both placements, because the same cut that removes the weak candidates removes the expected record from the pool on one turn in five. The judge cannot admit what it does not see, and the judge was already rejecting the weak candidates on its own: RRF only admitted two and one non-expected records across the two splits, both the adjudicated time-zone record or an ordinary-turn injection the injection gate counts.
+
+The shadow harness passes all three placements on the fifth split, as it did in section 8n. Its single pass per turn through the orchestrator sees a different sample of planner queries from configuration A's three repeats, and the recall runs are the fitness verdict; the shadow result is recorded, not relied on.
+
+**Decision.** `RRF → cross-encoder` does not improve precision without unacceptable recall loss, and cross-encoder only does not either, so neither becomes a supported bundle. `rrf_only` stays the default, both cross-encoder placements stay in the package as measured experimental modes with the timeout and fallback behaviour they now have, and the supported bundle is unchanged. What would change this: a floor calibrated on the planner's gap queries rather than on turn text, since section 8n traced the recall loss to the planner's queries scoring expected records below even 0.01, or a cross-encoder fine-tuned on gap-to-record pairs. Either is a new bundle and the complete suite again.
+
 ## 9. Sources
 
 - Ross, Mahabaleshwarkar, Suhara. *When2Call: When (not) to Call Tools.* NAACL 2025. https://aclanthology.org/2025.naacl-long.174/
