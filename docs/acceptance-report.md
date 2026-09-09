@@ -6,13 +6,13 @@ Written 8 September 2026 at the end of Core Phase 15 and completed 9 September w
 
 | Phase | Commit | What it delivered |
 | --- | --- | --- |
-| Merge | `7c27944` | `feat/utility-aware-memory` fast-forwarded into `main` after the full fitness suite passed again (`usefulness-gate.md` section 8m). |
-| 10 | `6cec308` | Session extraction with review before apply, temporal metadata and the due-review worker, session hooks with the idle split, schema migration 9. |
-| 11 | `82f6b7c`, `89d74d8` | The hosted query rewriter and the cross-encoder reranker behind their flags; both measured in four configurations and left off (section 8n); the supported bundle re-recorded as `bundle-2026-09-08-a`. |
-| 12 | `77b7f77` | The operator surface: search, get, dump, expire, retain, review-due, reembed, erase, extract, snapshot; the composition root; immediate write transactions with a busy timeout. |
-| 13 | `d55ab02` | The Deep Agents adapter and the shared framework contract suite. |
-| 14 | `2254a75` | The CrewAI adapter, and the equivalence test showing both adapters leave the same semantic records from the same conversation. |
-| 15 | `ff2208d` | The 1K fixture, the labelled queries, the dense-floor sweep, warm and cold latency, the isolation class, the 50K scale test, the writer-contention test, and the benchmark handoff. |
+| Merge | `36e84a0` | `feat/utility-aware-memory` fast-forwarded into `main` after the full fitness suite passed again (`usefulness-gate.md` section 8m). |
+| 10 | `9c22b8d` | Session extraction with review before apply, temporal metadata and the due-review worker, session hooks with the idle split, schema migration 9. |
+| 11 | `490057d`, `aa43ef6` | The hosted query rewriter and the cross-encoder reranker behind their flags; both measured in four configurations and left off (section 8n); the supported bundle re-recorded as `bundle-2026-09-08-a`. |
+| 12 | `ba607e2` | The operator surface: search, get, dump, expire, retain, review-due, reembed, erase, extract, snapshot; the composition root; immediate write transactions with a busy timeout. |
+| 13 | `b51432d` | The Deep Agents adapter and the shared framework contract suite. |
+| 14 | `3a6014e` | The CrewAI adapter, and the equivalence test showing both adapters leave the same semantic records from the same conversation. |
+| 15 | `a827db6` | The 1K fixture, the labelled queries, the dense-floor sweep, warm and cold latency, the isolation class, the 50K scale test, the writer-contention test, and the benchmark handoff. |
 
 ## 2. Final quality gates
 
@@ -49,7 +49,7 @@ On 9 September 2026 an independent reviewer, Claude Sonnet 4.6 through OpenRoute
 
 ## 5. Clean checkout
 
-A fresh clone of `main` at `ff2208d` with `uv sync --all-extras`: Ruff clean, every file formatted, strict mypy clean over 59 source files, and 356 tests passed with 12 skipped, the skips being the integration, slow, and live suites that need the environment variables in `BENCHMARK_HANDOFF.md`. Repeated on 9 September at `732fb14`, the commit carrying the adjudication and the foreign fitness work: Ruff clean, formatted, mypy clean, 365 passed with 12 skipped. Run separately on the same day: the integration suite (calibration, latency, isolation) 4 passed; the slow suite (scale, contention) 2 passed; the live extractor, reviewer, and rewriter once each against `gpt-4o`.
+A fresh clone of `main` at `a827db6` with `uv sync --all-extras`: Ruff clean, every file formatted, strict mypy clean over 59 source files, and 356 tests passed with 12 skipped, the skips being the integration, slow, and live suites that need the environment variables in `BENCHMARK_HANDOFF.md`. Repeated on 9 September at `6b86be8`, the commit carrying the adjudication and the foreign fitness work: Ruff clean, formatted, mypy clean, 365 passed with 12 skipped. Run separately on the same day: the integration suite (calibration, latency, isolation) 4 passed; the slow suite (scale, contention) 2 passed; the live extractor, reviewer, and rewriter once each against `gpt-4o`.
 
 ## 6. Supported configurations
 
