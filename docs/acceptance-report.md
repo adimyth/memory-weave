@@ -68,7 +68,7 @@ Every gate is met and measured. `main` is tagged `v1.0.0`: `tool_only` is the co
 ## 8. v1.0.1 closure, 9 and 10 September 2026
 
 A review of the tagged tree before publication found eight gaps. This section records what each one was, what
-was done, and what was measured afterwards. Three commits carry the work: `db98a62`, `9662bc1`, and `dcda14b`.
+was done, and what was measured afterwards. Three commits carry the work: `07ceb75`, `3311588`, and `4377def`.
 
 ### 8.1 What was found and what closed it
 
@@ -92,7 +92,7 @@ now refuses; shadow warns and records `bundle_retrieval_verified` on every turn 
 The six tests above were run against `bdce864`, the commit before the fixes, in a separate worktree. All six
 fail there, each on the behaviour it names: the planner test measures 5.00 s against its 1.0 s bound, the judge
 reports `failed` rather than `timeout`, the activation test cannot construct the handlers, the profile changes
-mid-session, and both adapters accept the refused combinations. They pass on `dcda14b`.
+mid-session, and both adapters accept the refused combinations. They pass on `4377def`.
 
 ### 8.3 Release gates
 
