@@ -5,20 +5,20 @@ from pathlib import Path
 
 import pytest
 
-from memory_weave.config import EmbeddingConfig
-from memory_weave.index.embedder import FakeEmbedder
-from memory_weave.index.vector import VectorIndex
-from memory_weave.models import MemoryType, Record, Scope
-from memory_weave.policy import readable_scopes
-from memory_weave.retrieve import STOPWORDS, dense_candidates, entity_candidates, lexical_candidates
-from memory_weave.retrieve.generators import fts_match_expression
-from memory_weave.store import Store
+from retold.config import EmbeddingConfig
+from retold.index.embedder import FakeEmbedder
+from retold.index.vector import VectorIndex
+from retold.models import MemoryType, Record, Scope
+from retold.policy import readable_scopes
+from retold.retrieve import STOPWORDS, dense_candidates, entity_candidates, lexical_candidates
+from retold.retrieve.generators import fts_match_expression
+from retold.store import Store
 from tests.fixtures import build_store
 
 _NOW = datetime(2026, 9, 4, 12, 0, tzinfo=UTC)
 _EMBEDDING = EmbeddingConfig(model="fake-embedder", version="1", dims=8)
 _AGENT_SCOPE = Scope(kind="agent", id="research-agent")
-_PROJECT_SCOPE = Scope(kind="project", id="memory-weave")
+_PROJECT_SCOPE = Scope(kind="project", id="retold")
 
 
 @pytest.fixture
@@ -42,7 +42,7 @@ def _record(
         type=memory_type,
         version=1,
         content=content,
-        subject=f"project:memory-weave/setting_{record_id}",
+        subject=f"project:retold/setting_{record_id}",
         scope=scope,
         source_kind="user_statement",
         source_ref=None,
@@ -259,7 +259,7 @@ def test_entity_candidates_batch_alias_lookup_for_a_long_query(store: Store, mon
 
 
 def test_entity_store_query_filters_eligibility_before_applying_its_limit(store: Store) -> None:
-    entity = store.create_entity(kind="project", canonical="Memory Weave", scope=_AGENT_SCOPE, entity_id="memory-weave")
+    entity = store.create_entity(kind="project", canonical="Retold", scope=_AGENT_SCOPE, entity_id="retold")
     store.add_alias(entity.id, "memory weave")
     ineligible = _record("ineligible", "Newest memory.", event_at=_NOW + timedelta(days=2))
     eligible = _record("eligible", "Older memory.", event_at=_NOW)
@@ -315,7 +315,7 @@ def test_private_scope_isolation_holds_for_dense_lexical_and_entity_generators(s
 
 
 def test_entity_candidates_survive_a_pasted_paragraph_without_exhausting_sql_variables(store: Store) -> None:
-    from memory_weave.retrieve.generators import _entity_aliases
+    from retold.retrieve.generators import _entity_aliases
 
     long_query = " ".join(f"token{index}" for index in range(300))
     aliases = _entity_aliases((), [long_query], 4)
@@ -325,7 +325,7 @@ def test_entity_candidates_survive_a_pasted_paragraph_without_exhausting_sql_var
 
 
 def test_query_terms_drop_contractions_and_possessive_suffixes() -> None:
-    from memory_weave.retrieve.generators import _query_terms
+    from retold.retrieve.generators import _query_terms
 
     assert [term.value for term in _query_terms("I'm on the ERR42 issue", STOPWORDS)] == ["err42", "issue"]
     assert [term.value for term in _query_terms("What\u2019s Aditya\u2019s deploy command?", STOPWORDS)][:2] == [
@@ -336,7 +336,7 @@ def test_query_terms_drop_contractions_and_possessive_suffixes() -> None:
 
 
 def test_hyphenated_words_are_not_identifiers_and_multi_part_terms_need_adjacency() -> None:
-    from memory_weave.retrieve.generators import _is_identifier, _query_terms, _term_matches
+    from retold.retrieve.generators import _is_identifier, _query_terms, _term_matches
 
     terms = {
         term.value: term for term in _query_terms("Send a follow-up e-mail about bge-m3 and deploy.yml", STOPWORDS)

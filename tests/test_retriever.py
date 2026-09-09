@@ -10,13 +10,13 @@ from threading import Event, Thread
 
 import pytest
 
-from memory_weave.config import EmbeddingConfig, MemoryWeaveConfig, RerankerConfig, RetrievalConfig
-from memory_weave.index.embedder import FakeEmbedder
-from memory_weave.index.reranker import Reranker
-from memory_weave.index.vector import VectorIndex
-from memory_weave.models import Explanation, Principal, Record, Scope, SearchRequest
-from memory_weave.retrieve.retriever import Retriever
-from memory_weave.store import Store
+from retold.config import EmbeddingConfig, RerankerConfig, RetoldConfig, RetrievalConfig
+from retold.index.embedder import FakeEmbedder
+from retold.index.reranker import Reranker
+from retold.index.vector import VectorIndex
+from retold.models import Explanation, Principal, Record, Scope, SearchRequest
+from retold.retrieve.retriever import Retriever
+from retold.store import Store
 
 _NOW = datetime(2026, 9, 5, 12, 0, tzinfo=UTC)
 _AGENT = "research-agent"
@@ -25,7 +25,7 @@ _USER_SCOPE = Scope(kind="user", id=_USER)
 _OTHER_SCOPE = Scope(kind="user", id="other-user")
 _PRINCIPAL = Principal(_AGENT, _USER, "session-1", None)
 _EMBEDDING = EmbeddingConfig(model="fake-embedder", version="1", dims=8)
-_CONFIG = MemoryWeaveConfig(embedding=_EMBEDDING, retrieval=RetrievalConfig(per_generator_k=10, default_k=8))
+_CONFIG = RetoldConfig(embedding=_EMBEDDING, retrieval=RetrievalConfig(per_generator_k=10, default_k=8))
 
 
 @pytest.fixture
@@ -85,7 +85,7 @@ def _retriever(
     store: Store,
     embedder: FakeEmbedder,
     *,
-    config: MemoryWeaveConfig = _CONFIG,
+    config: RetoldConfig = _CONFIG,
     reranker: Reranker | None = None,
 ) -> Retriever:
     return Retriever(

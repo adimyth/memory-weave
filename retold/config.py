@@ -1,0 +1,502 @@
+"""Typed configuration loading and validation for Retold."""
+
+from __future__ import annotations
+
+from collections.abc import Mapping
+from dataclasses import asdict, dataclass, field, fields
+from pathlib import Path
+from types import UnionType
+from typing import Any, Literal, cast, get_args, get_origin, get_type_hints
+
+import yaml
+
+from retold.models import SourceKind
+
+
+class ConfigError(ValueError):
+    """Raised when a Retold configuration is invalid."""
+
+
+@dataclass(frozen=True, slots=True)
+class StoreConfig:
+    path: str = "./memory.sqlite"
+    # How long one connection waits for another's write lock before failing.
+    busy_timeout_seconds: float = 30.0
+
+
+@dataclass(frozen=True, slots=True)
+class EmbeddingConfig:
+    model: str = "BAAI/bge-m3"
+    version: str = "1"
+    dims: int = 1024
+    device: str = "auto"
+    max_chars: int = 2000
+    query_cache_entries: int = 4096
+    incremental_reload_max: int = 512
+    # Records embedded per batch when `retold reembed` rebuilds the vectors for a new model or version.
+    reembed_batch_size: int = 64
+
+
+RerankMode = Literal["rrf_cross_encoder", "cross_encoder_only"]
+RERANK_MODES: tuple[RerankMode, ...] = ("rrf_cross_encoder", "cross_encoder_only")
+RerankFailure = Literal["fallback", "fail"]
+RERANK_FAILURES: tuple[RerankFailure, ...] = ("fallback", "fail")
+# Fields that change nothing while the reranker is disabled. A bundle hash of a disabled configuration leaves
+# them out, so adding them did not change the hash of the supported bundle; refer shadow_adapter.policy_bundle.
+RERANKER_INERT_WHEN_DISABLED: tuple[str, ...] = ("mode", "timeout_ms", "on_failure")
+
+
+@dataclass(frozen=True, slots=True)
+class RerankerConfig:
+    enabled: bool = False
+    model: str = "BAAI/bge-reranker-v2-m3"
+    candidates: int = 30
+    floor: float | None = None
+    budget_mean_ms: int = 100
+    batch_size: int = 32
+    # Where the cross-encoder sits when enabled. ``rrf_cross_encoder`` scores the relevance-gated RRF shortlist;
+    # ``cross_encoder_only`` skips the dense and lexical floors and scores the fused pool, so the cross-encoder
+    # floor is the only relevance decision. Scope, status, expiry, source-kind exclusion, and conflict rules run
+    # first in both modes, and the cross-encoder can only remove. With ``enabled: false`` ranking is RRF only.
+    mode: RerankMode = "rrf_cross_encoder"
+    # The cross-encoder pass, including a cold model load, must finish within this or the search proceeds
+    # without it. ``on_failure`` says what a timeout or a scoring error does: ``fallback`` keeps the RRF order
+    # and records the outcome in the search log; ``fail`` raises.
+    timeout_ms: int = 2000
+    on_failure: RerankFailure = "fallback"
+
+    @property
+    def ranking(self) -> str:
+        """The candidate-ranking configuration in one word: ``rrf_only`` or the enabled mode."""
+
+        return self.mode if self.enabled else "rrf_only"
+
+
+@dataclass(frozen=True, slots=True)
+class RewriteConfig:
+    enabled: bool = False
+    model: str = "claude-haiku-4-5-20251001"
+    max_context_chars: int = 2000
+    timeout_ms: int = 800
+    max_output_tokens: int = 512
+
+
+@dataclass(frozen=True, slots=True)
+class DenseFloorConfig:
+    """Per-type cosine floors. Long episodic summaries score lower against short queries than short facts do."""
+
+    semantic: float = 0.45
+    episodic: float = 0.40
+    procedural: float = 0.45
+    # Generated session summaries are long and topically broad, so they get their own floor rather than the
+    # episodic one; refer LLD 8.2.
+    session_summary: float = 0.50
+
+
+@dataclass(frozen=True, slots=True)
+class GateConfig:
+    dense_floor: DenseFloorConfig = field(default_factory=DenseFloorConfig)
+    lexical_min_term_fraction: float = 0.5
+    # Lexical-only passes need this many matched terms unless one matched term is an identifier or an entity alias.
+    lexical_min_matched_terms: int = 2
+    # Survivors below this fraction of the top fused score are dropped. Entity hits are exempt.
+    relative_floor: float = 0.5
+    entity_exempt: bool = True
+    auto: AutoGateConfig = field(default_factory=lambda: AutoGateConfig())
+
+
+@dataclass(frozen=True, slots=True)
+class AutoGateConfig:
+    """Stricter gate settings used only for a host-issued retrieval request."""
+
+    dense_floor: DenseFloorConfig = field(
+        default_factory=lambda: DenseFloorConfig(semantic=0.55, episodic=0.50, procedural=0.55)
+    )
+    lexical_min_term_fraction: float = 0.6
+    lexical_min_matched_terms: int = 2
+    relative_floor: float = 0.6
+    exclude_source_kinds: list[SourceKind] = field(default_factory=lambda: ["session_summary"])
+    # A host-issued search gets no entity exemption. Measured on the Phase 9a hybrid run, exact entity
+    # matches admitted memory on 3 of 12 ordinary turns and on 0 of 6 turns where memory applied, so the
+    # exemption was pure injection. A model-issued search keeps it: there the model asked about the name.
+    entity_exempt: bool = False
+
+
+TriggerMode = Literal["tool_only", "auto", "hybrid"]
+TRIGGER_MODES: tuple[TriggerMode, ...] = ("tool_only", "auto", "hybrid")
+
+
+@dataclass(frozen=True, slots=True)
+class TriggerConfig:
+    """Who calls memory_search. The retrieval pipeline is identical in every mode; only the caller changes."""
+
+    mode: TriggerMode = "tool_only"
+    auto_k: int = 4  # k for host-issued searches; smaller than default_k because nothing asked for them
+    auto_min_query_chars: int = 12  # host-issued search is skipped for very short user turns such as "ok" or "yes"
+
+
+@dataclass(frozen=True, slots=True)
+class FreshnessConfig:
+    episodic_half_life_days: int = 30
+    floor: float = 0.5
+
+
+@dataclass(frozen=True, slots=True)
+class RetrievalConfig:
+    rewrite: RewriteConfig = field(default_factory=RewriteConfig)
+    trigger: TriggerConfig = field(default_factory=TriggerConfig)
+    per_generator_k: int = 30
+    max_alias_tokens: int = 4  # longest n-gram of query text tried as an entity alias
+    rrf_k: int = 60
+    default_k: int = 8
+    token_budget: int = 1500
+    dedup_cosine: float = 0.92
+    gate: GateConfig = field(default_factory=GateConfig)
+    freshness: FreshnessConfig = field(default_factory=FreshnessConfig)
+
+
+@dataclass(frozen=True, slots=True)
+class EquivalenceConfig:
+    model: str = "cross-encoder/nli-deberta-v3-small"
+    entail_floor: float = 0.70
+    contradict_floor: float = 0.70
+
+
+@dataclass(frozen=True, slots=True)
+class EvidenceConfig:
+    """Minimum evidence length and entailment score required for a direct claim."""
+
+    min_characters: int = 15
+    min_words: int = 3
+    entail_floor: float = 0.70
+
+
+@dataclass(frozen=True, slots=True)
+class IngestionConfig:
+    dedup_candidate_cosine: float = 0.85
+    # Two records under different attributes describe the same current fact only when they are also about
+    # the same thing. A judge verdict alone is not enough: an NLI model routinely calls two unrelated
+    # claims about one person "contradicts", which would let any new fact supersede any older one.
+    attribute_alias_cosine: float = 0.80
+    equivalence: EquivalenceConfig = field(default_factory=EquivalenceConfig)
+    evidence: EvidenceConfig = field(default_factory=EvidenceConfig)
+    provisional_ttl_days: int = 30
+    reinforcements_to_confirm: int = 2
+    max_entity_attributes: int = 64
+    extraction_model: str = "claude-haiku-4-5-20251001"
+    extraction_max_candidates: int = 20
+    extraction_timeout_ms: int = 60000
+    # Bounded context handed to the extractor: readable entity aliases and active writable subjects.
+    extraction_context_max_entities: int = 200
+    extraction_context_max_subjects: int = 200
+    # A worker's claim on a session expires after this long, so a crashed worker's session can be reclaimed.
+    extraction_claim_timeout_minutes: int = 30
+    review_model: str = "claude-haiku-4-5-20251001"
+    review_timeout_ms: int = 30000
+    hosted_max_output_tokens: int = 4096
+    summary_ttl_days: int = 180
+    summary_max_chars: int = 1200
+    temporal_review_batch_size: int = 100
+    # An adapter that cannot signal session end splits a session after this much idle time; refer LLD 12.
+    session_idle_timeout_minutes: int = 30
+
+
+@dataclass(frozen=True, slots=True)
+class SourceRankConfig:
+    user_statement: int = 4
+    system: int = 3
+    tool_result: int = 2
+    session_summary: int = 2
+    agent_inference: int = 1
+
+
+@dataclass(frozen=True, slots=True)
+class PolicyConfig:
+    source_rank: SourceRankConfig = field(default_factory=SourceRankConfig)
+
+
+@dataclass(frozen=True, slots=True)
+class SessionsConfig:
+    # Transcripts whose extraction has completed are blanked after this many days; refer LLD 3.5 and 16.
+    retain_days: int = 90
+
+
+@dataclass(frozen=True, slots=True)
+class RetoldConfig:
+    sessions: SessionsConfig = field(default_factory=SessionsConfig)
+    store: StoreConfig = field(default_factory=StoreConfig)
+    embedding: EmbeddingConfig = field(default_factory=EmbeddingConfig)
+    reranker: RerankerConfig = field(default_factory=RerankerConfig)
+    retrieval: RetrievalConfig = field(default_factory=RetrievalConfig)
+    ingestion: IngestionConfig = field(default_factory=IngestionConfig)
+    policy: PolicyConfig = field(default_factory=PolicyConfig)
+
+    def flags(self) -> dict[str, Any]:
+        """Return the feature and calibration values persisted with each search."""
+
+        return {
+            "embedding_model": self.embedding.model,
+            "embedding_version": self.embedding.version,
+            "embedding_query_cache_entries": self.embedding.query_cache_entries,
+            "embedding_incremental_reload_max": self.embedding.incremental_reload_max,
+            "rewrite_enabled": self.retrieval.rewrite.enabled,
+            "reranker_enabled": self.reranker.enabled,
+            "ranking": self.reranker.ranking,
+            "trigger_mode": self.retrieval.trigger.mode,
+            "gate": asdict(self.retrieval.gate),
+            "reranker_floor": self.reranker.floor,
+        }
+
+
+def load_config(path: str | Path | None = None) -> RetoldConfig:
+    """Load defaults, optionally applying a nested YAML mapping from ``path``."""
+
+    raw: Mapping[str, Any]
+    if path is None:
+        raw = {}
+    else:
+        config_path = Path(path)
+        try:
+            loaded = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+        except OSError as exc:
+            raise ConfigError(f"Unable to read configuration file {config_path}: {exc}") from exc
+        if loaded is None:
+            raw = {}
+        elif isinstance(loaded, Mapping):
+            raw = loaded
+        else:
+            raise ConfigError("Configuration root must be a mapping.")
+
+    _reject_unknown_keys(
+        raw, {"sessions", "store", "embedding", "reranker", "retrieval", "ingestion", "policy"}, "root"
+    )
+    config = RetoldConfig(
+        sessions=_load_dataclass(SessionsConfig, raw.get("sessions"), "sessions"),
+        store=_load_dataclass(StoreConfig, raw.get("store"), "store"),
+        embedding=_load_dataclass(EmbeddingConfig, raw.get("embedding"), "embedding"),
+        reranker=_load_dataclass(RerankerConfig, raw.get("reranker"), "reranker"),
+        retrieval=_load_retrieval(raw.get("retrieval")),
+        ingestion=_load_ingestion(raw.get("ingestion")),
+        policy=_load_policy(raw.get("policy")),
+    )
+    _validate(config)
+    return config
+
+
+def _load_retrieval(raw: object) -> RetrievalConfig:
+    values = _mapping(raw, "retrieval")
+    try:
+        return RetrievalConfig(
+            rewrite=_load_dataclass(RewriteConfig, values.pop("rewrite", None), "retrieval.rewrite"),
+            trigger=_load_dataclass(TriggerConfig, values.pop("trigger", None), "retrieval.trigger"),
+            gate=_load_gate(values.pop("gate", None)),
+            freshness=_load_dataclass(FreshnessConfig, values.pop("freshness", None), "retrieval.freshness"),
+            **_coerce_dataclass_values(RetrievalConfig, values, "retrieval"),
+        )
+    except TypeError as exc:
+        raise ConfigError(f"Invalid keys or values in retrieval: {exc}") from exc
+
+
+def _load_gate(raw: object) -> GateConfig:
+    values = _mapping(raw, "retrieval.gate")
+    try:
+        return GateConfig(
+            dense_floor=_load_dataclass(
+                DenseFloorConfig, values.pop("dense_floor", None), "retrieval.gate.dense_floor"
+            ),
+            auto=_load_auto_gate(values.pop("auto", None)),
+            **_coerce_dataclass_values(GateConfig, values, "retrieval.gate"),
+        )
+    except TypeError as exc:
+        raise ConfigError(f"Invalid keys or values in retrieval.gate: {exc}") from exc
+
+
+def _load_auto_gate(raw: object) -> AutoGateConfig:
+    if raw is None:
+        return AutoGateConfig()
+    values = _mapping(raw, "retrieval.gate.auto")
+    try:
+        return AutoGateConfig(
+            dense_floor=_load_dataclass(
+                DenseFloorConfig, values.pop("dense_floor", None), "retrieval.gate.auto.dense_floor"
+            ),
+            **_coerce_dataclass_values(AutoGateConfig, values, "retrieval.gate.auto"),
+        )
+    except TypeError as exc:
+        raise ConfigError(f"Invalid keys or values in retrieval.gate.auto: {exc}") from exc
+
+
+def _load_ingestion(raw: object) -> IngestionConfig:
+    values = _mapping(raw, "ingestion")
+    try:
+        return IngestionConfig(
+            equivalence=_load_dataclass(EquivalenceConfig, values.pop("equivalence", None), "ingestion.equivalence"),
+            evidence=_load_dataclass(EvidenceConfig, values.pop("evidence", None), "ingestion.evidence"),
+            **_coerce_dataclass_values(IngestionConfig, values, "ingestion"),
+        )
+    except TypeError as exc:
+        raise ConfigError(f"Invalid keys or values in ingestion: {exc}") from exc
+
+
+def _load_policy(raw: object) -> PolicyConfig:
+    values = _mapping(raw, "policy")
+    try:
+        return PolicyConfig(
+            source_rank=_load_dataclass(SourceRankConfig, values.pop("source_rank", None), "policy.source_rank"),
+            **_coerce_dataclass_values(PolicyConfig, values, "policy"),
+        )
+    except TypeError as exc:
+        raise ConfigError(f"Invalid keys or values in policy: {exc}") from exc
+
+
+def _load_dataclass[T](cls: type[T], raw: object, section: str) -> T:
+    values = _mapping(raw, section)
+    coerced_values = _coerce_dataclass_values(cls, values, section)
+    try:
+        return cls(**coerced_values)
+    except TypeError as exc:
+        raise ConfigError(f"Invalid keys or values in {section}: {exc}") from exc
+
+
+def _coerce_dataclass_values[T](cls: type[T], values: Mapping[str, Any], section: str) -> dict[str, Any]:
+    dataclass_fields = {config_field.name for config_field in fields(cast(Any, cls))}
+    _reject_unknown_keys(values, dataclass_fields, section)
+    annotations = get_type_hints(cls)
+    return {name: _coerce_value(value, annotations[name], f"{section}.{name}") for name, value in values.items()}
+
+
+def _mapping(raw: object, section: str) -> dict[str, Any]:
+    if raw is None:
+        return {}
+    if not isinstance(raw, Mapping):
+        raise ConfigError(f"Configuration section {section} must be a mapping.")
+    return dict(raw)
+
+
+def _reject_unknown_keys(raw: Mapping[str, Any], allowed: set[str], section: str) -> None:
+    unknown = sorted(set(raw) - allowed)
+    if unknown:
+        joined = ", ".join(unknown)
+        raise ConfigError(f"Unknown configuration key(s) in {section}: {joined}")
+
+
+def _coerce_value(value: Any, annotation: Any, key: str) -> Any:
+    if value is None:
+        if type(None) in get_args(annotation):
+            return None
+        raise ConfigError(f"Configuration value {key} must not be null.")
+
+    if annotation is str:
+        if isinstance(value, str):
+            return value
+        raise ConfigError(f"Configuration value {key} must be a string.")
+
+    if annotation is bool:
+        if isinstance(value, bool):
+            return value
+        raise ConfigError(f"Configuration value {key} must be a boolean.")
+
+    if annotation is int:
+        if isinstance(value, bool):
+            raise ConfigError(f"Configuration value {key} must be an integer.")
+        if isinstance(value, float) and not value.is_integer():
+            raise ConfigError(f"Configuration value {key} must be an integer.")
+        try:
+            return int(value)
+        except (TypeError, ValueError) as exc:
+            raise ConfigError(f"Configuration value {key} must be an integer.") from exc
+
+    if annotation is float:
+        if isinstance(value, bool):
+            raise ConfigError(f"Configuration value {key} must be a number.")
+        try:
+            return float(value)
+        except (TypeError, ValueError) as exc:
+            raise ConfigError(f"Configuration value {key} must be a number.") from exc
+
+    if get_origin(annotation) in (UnionType,):
+        non_none = next(item for item in get_args(annotation) if item is not type(None))
+        return _coerce_value(value, non_none, key)
+
+    return value
+
+
+def _validate(config: RetoldConfig) -> None:
+    if config.reranker.enabled and config.reranker.floor is None:
+        raise ConfigError("reranker.floor must be set when reranker.enabled is true.")
+    if config.embedding.dims <= 0:
+        raise ConfigError("embedding.dims must be positive.")
+    if config.embedding.max_chars <= 0:
+        raise ConfigError("embedding.max_chars must be positive.")
+    if config.embedding.query_cache_entries <= 0:
+        raise ConfigError("embedding.query_cache_entries must be positive.")
+    if config.embedding.incremental_reload_max <= 0:
+        raise ConfigError("embedding.incremental_reload_max must be positive.")
+    if config.reranker.candidates <= 0:
+        raise ConfigError("reranker.candidates must be positive.")
+    if config.reranker.mode not in RERANK_MODES:
+        raise ConfigError(f"reranker.mode must be one of {', '.join(RERANK_MODES)}.")
+    if config.reranker.timeout_ms <= 0:
+        raise ConfigError("reranker.timeout_ms must be positive.")
+    if config.reranker.on_failure not in RERANK_FAILURES:
+        raise ConfigError(f"reranker.on_failure must be one of {', '.join(RERANK_FAILURES)}.")
+    if config.retrieval.max_alias_tokens <= 0:
+        raise ConfigError("retrieval.max_alias_tokens must be positive.")
+    if config.retrieval.per_generator_k <= 0 or config.retrieval.default_k <= 0:
+        raise ConfigError("retrieval candidate limits must be positive.")
+    if config.retrieval.rrf_k <= 0 or config.retrieval.token_budget <= 0:
+        raise ConfigError("retrieval.rrf_k and retrieval.token_budget must be positive.")
+    if not 0.0 <= config.retrieval.dedup_cosine <= 1.0:
+        raise ConfigError("retrieval.dedup_cosine must be between 0 and 1.")
+    if not 0.0 <= config.ingestion.dedup_candidate_cosine <= 1.0:
+        raise ConfigError("ingestion.dedup_candidate_cosine must be between 0 and 1.")
+    if not 0.0 <= config.ingestion.attribute_alias_cosine <= 1.0:
+        raise ConfigError("ingestion.attribute_alias_cosine must be between 0 and 1.")
+    _validate_gate(config.retrieval.gate, "retrieval.gate")
+    _validate_gate(config.retrieval.gate.auto, "retrieval.gate.auto")
+    invalid_source_kinds = sorted(
+        set(config.retrieval.gate.auto.exclude_source_kinds)
+        - {"user_statement", "system", "tool_result", "session_summary", "agent_inference"}
+    )
+    if invalid_source_kinds:
+        raise ConfigError(
+            "retrieval.gate.auto.exclude_source_kinds contains invalid source kinds: " + ", ".join(invalid_source_kinds)
+        )
+    if config.retrieval.trigger.mode not in TRIGGER_MODES:
+        raise ConfigError(f"retrieval.trigger.mode must be one of {', '.join(TRIGGER_MODES)}.")
+    if config.retrieval.trigger.auto_k <= 0:
+        raise ConfigError("retrieval.trigger.auto_k must be positive.")
+    if config.retrieval.trigger.auto_min_query_chars < 0:
+        raise ConfigError("retrieval.trigger.auto_min_query_chars must not be negative.")
+    if not 0.0 <= config.retrieval.freshness.floor <= 1.0:
+        raise ConfigError("retrieval.freshness.floor must be between 0 and 1.")
+    if config.retrieval.freshness.episodic_half_life_days <= 0:
+        raise ConfigError("retrieval.freshness.episodic_half_life_days must be positive.")
+    if config.ingestion.provisional_ttl_days <= 0 or config.ingestion.reinforcements_to_confirm <= 0:
+        raise ConfigError("ingestion lifecycle limits must be positive.")
+    if config.ingestion.extraction_max_candidates <= 0:
+        raise ConfigError("ingestion.extraction_max_candidates must be positive.")
+    if not 0.0 <= config.ingestion.equivalence.entail_floor <= 1.0:
+        raise ConfigError("ingestion.equivalence.entail_floor must be between 0 and 1.")
+    if not 0.0 <= config.ingestion.equivalence.contradict_floor <= 1.0:
+        raise ConfigError("ingestion.equivalence.contradict_floor must be between 0 and 1.")
+    if config.ingestion.evidence.min_characters <= 0:
+        raise ConfigError("ingestion.evidence.min_characters must be positive.")
+    if config.ingestion.evidence.min_words <= 0:
+        raise ConfigError("ingestion.evidence.min_words must be positive.")
+    if not 0.0 <= config.ingestion.evidence.entail_floor <= 1.0:
+        raise ConfigError("ingestion.evidence.entail_floor must be between 0 and 1.")
+    if config.ingestion.max_entity_attributes <= 0:
+        raise ConfigError("ingestion.max_entity_attributes must be positive.")
+
+
+def _validate_gate(config: GateConfig | AutoGateConfig, key: str) -> None:
+    for memory_type in ("semantic", "episodic", "procedural"):
+        if not 0.0 <= getattr(config.dense_floor, memory_type) <= 1.0:
+            raise ConfigError(f"{key}.dense_floor.{memory_type} must be between 0 and 1.")
+    if not 0.0 <= config.lexical_min_term_fraction <= 1.0:
+        raise ConfigError(f"{key}.lexical_min_term_fraction must be between 0 and 1.")
+    if config.lexical_min_matched_terms < 1:
+        raise ConfigError(f"{key}.lexical_min_matched_terms must be at least 1.")
+    if not 0.0 <= config.relative_floor <= 1.0:
+        raise ConfigError(f"{key}.relative_floor must be between 0 and 1.")

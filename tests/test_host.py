@@ -4,10 +4,10 @@ from pathlib import Path
 
 import pytest
 
-from memory_weave.host import MemoryHost
-from memory_weave.models import Scope
-from memory_weave.policy import readable_scopes, writable_scopes
-from memory_weave.store import Store
+from retold.host import MemoryHost
+from retold.models import Scope
+from retold.policy import readable_scopes, writable_scopes
+from retold.store import Store
 
 
 def test_host_grant_and_revoke_record_the_administrative_actions(tmp_path: Path) -> None:
@@ -31,7 +31,7 @@ def test_host_grant_and_revoke_record_the_administrative_actions(tmp_path: Path)
 @pytest.mark.parametrize(
     ("agent_id", "scope"),
     [
-        ("research/agent", Scope(kind="project", id="memory-weave")),
+        ("research/agent", Scope(kind="project", id="retold")),
         ("research-agent", Scope(kind="user", id="aditya/test")),
         ("research-agent", Scope(kind="agent", id="research-agent/aditya")),
     ],

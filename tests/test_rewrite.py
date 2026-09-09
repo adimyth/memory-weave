@@ -9,13 +9,13 @@ from pathlib import Path
 
 import pytest
 
-from memory_weave.config import EmbeddingConfig, MemoryWeaveConfig, RetrievalConfig, RewriteConfig
-from memory_weave.index.embedder import FakeEmbedder
-from memory_weave.index.vector import VectorIndex
-from memory_weave.models import Principal, Record, RewriteResult, Scope, SearchRequest
-from memory_weave.retrieve import HostedLLMQueryRewriter, Retriever, RewriteError, invented_names
-from memory_weave.retrieve.rewrite import rewrite_stage
-from memory_weave.store import Store
+from retold.config import EmbeddingConfig, RetoldConfig, RetrievalConfig, RewriteConfig
+from retold.index.embedder import FakeEmbedder
+from retold.index.vector import VectorIndex
+from retold.models import Principal, Record, RewriteResult, Scope, SearchRequest
+from retold.retrieve import HostedLLMQueryRewriter, Retriever, RewriteError, invented_names
+from retold.retrieve.rewrite import rewrite_stage
+from retold.store import Store
 
 _NOW = datetime(2026, 9, 8, 12, 0, tzinfo=UTC)
 _AGENT = "research-agent"
@@ -23,7 +23,7 @@ _USER = "aditya"
 _USER_SCOPE = Scope(kind="user", id=_USER)
 _PRINCIPAL = Principal(_AGENT, _USER, "session-1", None)
 _EMBEDDING = EmbeddingConfig(model="fake-embedder", version="1", dims=8)
-_CONFIG = MemoryWeaveConfig(
+_CONFIG = RetoldConfig(
     embedding=_EMBEDDING,
     retrieval=RetrievalConfig(per_generator_k=10, default_k=8, rewrite=RewriteConfig(enabled=True)),
 )
@@ -223,11 +223,11 @@ def test_invented_names_ignore_the_leading_word_and_known_names() -> None:
 
 @pytest.mark.live
 def test_live_rewriter_names_the_subject_from_the_context() -> None:
-    if os.environ.get("MEMORY_WEAVE_LIVE") != "1":
-        pytest.skip("set MEMORY_WEAVE_LIVE=1 to run the hosted rewriter")
-    from memory_weave.hosted import completion_client_for
+    if os.environ.get("RETOLD_LIVE") != "1":
+        pytest.skip("set RETOLD_LIVE=1 to run the hosted rewriter")
+    from retold.hosted import completion_client_for
 
-    model = os.environ.get("MEMORY_WEAVE_REWRITE_MODEL", RewriteConfig().model)
+    model = os.environ.get("RETOLD_REWRITE_MODEL", RewriteConfig().model)
     key = "ANTHROPIC_API_KEY" if model.startswith("claude-") else "OPENAI_API_KEY"
     if not os.environ.get(key):
         pytest.skip(f"{key} is not set")

@@ -33,8 +33,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from benchmarks.draft_delta_experiment import Models  # noqa: E402
 from benchmarks.phase0_real_retrieval import HostedCategoryPolicy, RealRetrieval  # noqa: E402
 from benchmarks.shadow_adapter import HostedAdmissionPolicy, HostedGapPolicy, policy_bundle  # noqa: E402
-from memory_weave.models import Principal, Record  # noqa: E402
-from memory_weave.policy import (  # noqa: E402
+from retold.models import Principal, Record  # noqa: E402
+from retold.policy import (  # noqa: E402
     ProfileAssembler,
     TurnOptions,
     UtilityAwareConfig,
@@ -136,7 +136,7 @@ def main(argv: list[str] | None = None) -> int:
     rr.build_arm("shadow", [r["id"] for r in scenario["records"]])
     state = rr._arms["shadow"]  # noqa: SLF001
     store, handlers, principal, id_map = state["store"], state["handlers"], state["principal"], state["id_map"]
-    # id_map already maps Memory Weave record ids to scenario ids.
+    # id_map already maps Retold record ids to scenario ids.
     reverse = dict(id_map)
     store_path = workdir / "shadow.sqlite"
     cache = DraftCache(args.draft_cache)

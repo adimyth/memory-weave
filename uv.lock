@@ -2100,66 +2100,6 @@ wheels = [
 ]
 
 [[package]]
-name = "memory-weave"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "numpy" },
-    { name = "pyyaml" },
-    { name = "uuid6" },
-]
-
-[package.optional-dependencies]
-crewai = [
-    { name = "crewai" },
-]
-deepagents = [
-    { name = "deepagents" },
-]
-live = [
-    { name = "anthropic" },
-    { name = "openai" },
-    { name = "python-dotenv" },
-]
-local-models = [
-    { name = "protobuf" },
-    { name = "sentence-transformers" },
-    { name = "sentencepiece" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "mypy" },
-    { name = "pytest" },
-    { name = "ruff" },
-    { name = "types-pyyaml" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "anthropic", marker = "extra == 'live'", specifier = ">=0.68" },
-    { name = "crewai", marker = "extra == 'crewai'", specifier = ">=1.15" },
-    { name = "deepagents", marker = "extra == 'deepagents'", specifier = ">=0.7" },
-    { name = "numpy", specifier = ">=2.0" },
-    { name = "openai", marker = "extra == 'live'", specifier = ">=1.0" },
-    { name = "protobuf", marker = "extra == 'local-models'", specifier = ">=4.25" },
-    { name = "python-dotenv", marker = "extra == 'live'", specifier = ">=1.0" },
-    { name = "pyyaml", specifier = ">=6.0.2" },
-    { name = "sentence-transformers", marker = "extra == 'local-models'", specifier = ">=3.0,<5" },
-    { name = "sentencepiece", marker = "extra == 'local-models'", specifier = ">=0.2" },
-    { name = "uuid6", specifier = ">=2024.7.10" },
-]
-provides-extras = ["local-models", "live", "deepagents", "crewai"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "mypy", specifier = ">=1.15" },
-    { name = "pytest", specifier = ">=8.3" },
-    { name = "ruff", specifier = ">=0.11" },
-    { name = "types-pyyaml", specifier = ">=6.0.12.20250402" },
-]
-
-[[package]]
 name = "mmh3"
 version = "5.3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -3909,6 +3849,66 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/f3/61/d7545dafb7ac2230c70d38d31cbfe4cc64f7144dc41f6e4e4b78ecd9f5bb/requests-toolbelt-1.0.0.tar.gz", hash = "sha256:7681a0a3d047012b5bdc0ee37d7f8f07ebe76ab08caeccfc3921ce23c88d5bc6", size = 206888, upload-time = "2023-05-01T04:11:33.229Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/3f/51/d4db610ef29373b879047326cbf6fa98b6c1969d6f6dc423279de2b1be2c/requests_toolbelt-1.0.0-py2.py3-none-any.whl", hash = "sha256:cccfdd665f0a24fcf4726e690f65639d272bb0637b9b92dfd91a5568ccf6bd06", size = 54481, upload-time = "2023-05-01T04:11:28.427Z" },
+]
+
+[[package]]
+name = "retold"
+version = "1.0.0"
+source = { editable = "." }
+dependencies = [
+    { name = "numpy" },
+    { name = "pyyaml" },
+    { name = "uuid6" },
+]
+
+[package.optional-dependencies]
+crewai = [
+    { name = "crewai" },
+]
+deepagents = [
+    { name = "deepagents" },
+]
+live = [
+    { name = "anthropic" },
+    { name = "openai" },
+    { name = "python-dotenv" },
+]
+local-models = [
+    { name = "protobuf" },
+    { name = "sentence-transformers" },
+    { name = "sentencepiece" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "mypy" },
+    { name = "pytest" },
+    { name = "ruff" },
+    { name = "types-pyyaml" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "anthropic", marker = "extra == 'live'", specifier = ">=0.68" },
+    { name = "crewai", marker = "extra == 'crewai'", specifier = ">=1.15" },
+    { name = "deepagents", marker = "extra == 'deepagents'", specifier = ">=0.7" },
+    { name = "numpy", specifier = ">=2.0" },
+    { name = "openai", marker = "extra == 'live'", specifier = ">=1.0" },
+    { name = "protobuf", marker = "extra == 'local-models'", specifier = ">=4.25" },
+    { name = "python-dotenv", marker = "extra == 'live'", specifier = ">=1.0" },
+    { name = "pyyaml", specifier = ">=6.0.2" },
+    { name = "sentence-transformers", marker = "extra == 'local-models'", specifier = ">=3.0,<5" },
+    { name = "sentencepiece", marker = "extra == 'local-models'", specifier = ">=0.2" },
+    { name = "uuid6", specifier = ">=2024.7.10" },
+]
+provides-extras = ["local-models", "live", "deepagents", "crewai"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "mypy", specifier = ">=1.15" },
+    { name = "pytest", specifier = ">=8.3" },
+    { name = "ruff", specifier = ">=0.11" },
+    { name = "types-pyyaml", specifier = ">=6.0.12.20250402" },
 ]
 
 [[package]]

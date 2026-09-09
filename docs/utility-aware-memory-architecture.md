@@ -2,7 +2,7 @@
 
 Status: authoritative design for host-issued memory use. The implementation is complete through Phase 2 of [utility-aware-memory-implementation-plan.md](utility-aware-memory-implementation-plan.md) and the offline acceptance gates are met by one bundle, `benchmarks/bundles/bundle-2026-09-08-a.json` (`docs/acceptance-report.md`). It stays disabled by default: a host enables it by constructing the orchestrator with a `UtilityAwareConfig`, and the orchestrator refuses to serve a bundle whose fitness result is not recorded in the host's store. Phase 3, real-traffic validation, is pending a consuming host.
 
-This document defines how Memory Weave decides whether stored information will improve an answer. [usefulness-gate.md](usefulness-gate.md) remains the research and experiment record that motivated this design; where the two documents differ, this document is authoritative. [design-contributions.md](design-contributions.md) is a plain-language account of what is distinctive relative to RUMS and TRACE.
+This document defines how Retold decides whether stored information will improve an answer. [usefulness-gate.md](usefulness-gate.md) remains the research and experiment record that motivated this design; where the two documents differ, this document is authoritative. [design-contributions.md](design-contributions.md) is a plain-language account of what is distinctive relative to RUMS and TRACE.
 
 ## 1. Problem and decision boundary
 

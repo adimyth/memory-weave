@@ -8,9 +8,9 @@ from pathlib import Path
 import pytest
 
 from examples.reference_host import MEASURED_ADMISSION_TIMEOUT_MS, MEASURED_GAP_TIMEOUT_MS, KillSwitches, ReferenceHost
-from memory_weave.host import MemoryHost
-from memory_weave.models import Principal, Record, Scope
-from memory_weave.policy import (
+from retold.host import MemoryHost
+from retold.models import Principal, Record, Scope
+from retold.policy import (
     AdmissionDecision,
     BundleNotApprovedError,
     BundleRegistry,
@@ -20,8 +20,8 @@ from memory_weave.policy import (
     RollbackThresholds,
     bundle_components,
 )
-from memory_weave.store import Store
-from memory_weave.util import render_subject
+from retold.store import Store
+from retold.util import render_subject
 
 _AT = datetime(2026, 9, 7, 12, 0, tzinfo=UTC)
 _BUNDLE = {

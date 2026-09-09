@@ -16,7 +16,7 @@ Three things follow, and they explain the Phase 9a result exactly.
 
 ## 2. What the literature says
 
-Grouped by what each method judges. The column that matters for Memory Weave is whether the method works against a hosted model that exposes only text.
+Grouped by what each method judges. The column that matters for Retold is whether the method works against a hosted model that exposes only text.
 
 ### 2.1 Judging the turn alone
 
@@ -42,7 +42,7 @@ Reading: a turn-only yes-or-no judgement is weak and does not get strong with mo
 | UsefulBench, 2026 | Human labels for both relevance and usefulness on the same pairs. | Yes | Embedding retrievers align with relevance more than usefulness. LLM rankers improve usefulness but plateau. A fine-tuned 8B classifier beats GPT-4.1 on usefulness. |
 | Decision-aware memory cards, CICL, 2026 | Score each context unit by whether it would change the agent's next action, via a structured judge. | Yes, hosted judges | hit@1 0.78 against BM25 0.58 on file selection. Heuristic judge weights beat learned rankers. Cards carry an explicit "trigger: when to consult" field. |
 
-Reading: the consistent lever is conditioning the judgement on a draft answer. That is what turns the pair into a triple. The honest caveat is that verbalised utility judgement is far from perfect on hard open-domain sets. Memory Weave's setting is easier: at most eight short candidates, one principal, and records that are single claims.
+Reading: the consistent lever is conditioning the judgement on a draft answer. That is what turns the pair into a triple. The honest caveat is that verbalised utility judgement is far from perfect on hard open-domain sets. Retold's setting is easier: at most eight short candidates, one principal, and records that are single claims.
 
 ### 2.3 Judging the answer delta directly
 
@@ -73,7 +73,7 @@ Change the object being judged, not the amount of reasoning applied to it.
 
 The pair `(turn, record)` cannot carry the usefulness signal. The turn alone cannot either. The literature that succeeds on this decision, whether white-box or black-box, always gets a draft answer into the judgement, either as a generated pseudo-answer, as the response distribution, or as an after-the-fact deletion test. Everything that stays on the turn or the pair plateaus.
 
-For Memory Weave this is good news, because the host loop sits in exactly the right place to obtain a draft answer, and the design already prefers a missed recall over an unwanted injection, which is the failure asymmetry a utility gate needs.
+For Retold this is good news, because the host loop sits in exactly the right place to obtain a draft answer, and the design already prefers a missed recall over an unwanted injection, which is the failure asymmetry a utility gate needs.
 
 ## 4. The proposal: judge the answer, in three tiers
 
@@ -117,7 +117,7 @@ Stored next to the existing scores, those labels turn the gate from tuned to lea
 
 1. **The threshold becomes a budget, not a cosine.** As TARG does, set the admission threshold by quantile so that host injection lands under a stated rate on ordinary turns. The benchmark plan's 5% target becomes a knob.
 2. **Calibration is per serving model**, which is what the non-transferability result in section 2.2 demands and what no vendor-neutral system can get from a fixed number.
-3. **Memory Weave gets a metric nobody else reports**: usefulness precision, the fraction of injected records that changed an answer. Given gate.md section 4, that is the differentiator the audit trail was built to enable.
+3. **Retold gets a metric nobody else reports**: usefulness precision, the fraction of injected records that changed an answer. Given gate.md section 4, that is the differentiator the audit trail was built to enable.
 
 UsefulBench and FILCO both found that a small fine-tuned classifier on utility labels beats prompting a frontier model for the same judgement. Once Tier C has labels, Tier B's judge is the thing it replaces.
 
@@ -498,7 +498,7 @@ All three frontier judges pass the fitness test; the two OpenRouter judges recov
 
 ## 8j. Phase 2 in shadow mode: the orchestrator beside the served path, isolation asserted
 
-Run on 7 September 2026 with `benchmarks/shadow_run.py`, after the pre-registration in the implementation plan. The core orchestrator, `memory_weave/policy/utility_aware.py`, ran with hosted adapters for the planner and judge against a real store built through the ingestor and the activation policy. Each scenario was replayed twice with identical cached drafts: served-only, with the orchestrator disabled, and shadow-on, with gap planning, real retrieval through `memory_search`, and hosted admission running but never regenerating. The harness asserted that the served responses, every record's status and activation, the session turns, and the review queue were identical across the two passes, then scored the shadow decision log alone. Every decision carries the policy bundle: `gpt-4o/gap-v3c`, `gpt-5.4/admission-v3`, taxonomy `activation-v2-frozen`, `inventory-v1`, a retrieval-config hash, and the budget.
+Run on 7 September 2026 with `benchmarks/shadow_run.py`, after the pre-registration in the implementation plan. The core orchestrator, `retold/policy/utility_aware.py`, ran with hosted adapters for the planner and judge against a real store built through the ingestor and the activation policy. Each scenario was replayed twice with identical cached drafts: served-only, with the orchestrator disabled, and shadow-on, with gap planning, real retrieval through `memory_search`, and hosted admission running but never regenerating. The harness asserted that the served responses, every record's status and activation, the session turns, and the review queue were identical across the two passes, then scored the shadow decision log alone. Every decision carries the policy bundle: `gpt-4o/gap-v3c`, `gpt-5.4/admission-v3`, taxonomy `activation-v2-frozen`, `inventory-v1`, a retrieval-config hash, and the budget.
 
 **The first fifth-split run failed on a configuration value and passed the isolation test while doing so.** The orchestrator's default admission timeout was 2 seconds, taken from the architecture document's configuration example. The judge takes 2 to 3 seconds with 7 or 8 real candidates. Every one of the 18 gap turns ended as `baseline_policy_failure` with `admission:TimeoutError`; served responses were untouched; recall as scored was zero; failures were reported as failures, not as recall misses, which is what the pre-registration required. Stage timeouts must be set from measured latency, as the plan already said, and the harness now takes them as flags. The core default is left as written and is not a serving value.
 

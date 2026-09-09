@@ -9,12 +9,12 @@ from pathlib import Path
 
 import pytest
 
-from memory_weave.config import GateConfig
-from memory_weave.ingest import flag_due_reviews, has_temporal_expression, validate_temporal
-from memory_weave.models import CandidateRecord, Record, Scope, Turn
-from memory_weave.retrieve.gate import _dense_floor
-from memory_weave.store import Store
-from memory_weave.util import render_subject
+from retold.config import GateConfig
+from retold.ingest import flag_due_reviews, has_temporal_expression, validate_temporal
+from retold.models import CandidateRecord, Record, Scope, Turn
+from retold.retrieve.gate import _dense_floor
+from retold.store import Store
+from retold.util import render_subject
 
 _NOW = datetime(2026, 9, 8, 12, 0, tzinfo=UTC)
 _SCOPE = Scope(kind="user", id="aditya")

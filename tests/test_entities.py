@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from memory_weave.ingest.entities import (
+from retold.ingest.entities import (
     EntityMergeError,
     EntityNotReadableError,
     EntityNotWritableError,
@@ -16,9 +16,9 @@ from memory_weave.ingest.entities import (
     merge_entities,
     resolve_entities,
 )
-from memory_weave.models import EntityMention, Principal, Record, Scope
-from memory_weave.store import Store
-from memory_weave.util import render_subject
+from retold.models import EntityMention, Principal, Record, Scope
+from retold.store import Store
+from retold.util import render_subject
 
 _NOW = datetime(2026, 9, 4, 12, 0, tzinfo=UTC)
 _AGENT_ID = "research-agent"

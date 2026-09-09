@@ -25,7 +25,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from benchmarks.draft_delta_experiment import Models  # noqa: E402
 from benchmarks.phase0_real_retrieval import HostedCategoryPolicy  # noqa: E402
-from memory_weave.policy.activation import RETRIEVAL_CATEGORIES  # noqa: E402
+from retold.policy.activation import RETRIEVAL_CATEGORIES  # noqa: E402
 
 
 def evaluate(scenario: dict[str, Any], policy: HostedCategoryPolicy) -> dict[str, Any]:

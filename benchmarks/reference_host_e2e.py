@@ -26,8 +26,8 @@ from benchmarks.draft_delta_experiment import Models  # noqa: E402
 from benchmarks.phase0_real_retrieval import HostedCategoryPolicy, RealRetrieval  # noqa: E402
 from benchmarks.shadow_adapter import HostedAdmissionPolicy, HostedGapPolicy, policy_bundle  # noqa: E402
 from examples.reference_host import KillSwitches, ReferenceHost  # noqa: E402
-from memory_weave.models import Principal, Record  # noqa: E402
-from memory_weave.policy import (  # noqa: E402
+from retold.models import Principal, Record  # noqa: E402
+from retold.policy import (  # noqa: E402
     BundleNotApprovedError,
     BundleRegistry,
     RollbackThresholds,
@@ -111,7 +111,7 @@ def main(argv: list[str] | None = None) -> int:
         bundle=bundle,
         switches=KillSwitches(regeneration=False),
     )
-    from memory_weave.policy import ProfileAssembler
+    from retold.policy import ProfileAssembler
 
     profile_text = ProfileAssembler(store).build(principal).text or "Applied preferences: none."
     print(f"profile: {profile_text.replace(chr(10), ' | ')}")
@@ -182,7 +182,7 @@ def main(argv: list[str] | None = None) -> int:
     # 5. Metrics and rollback over everything logged.
     report = host.metrics()
     print("\n" + render(report))
-    from memory_weave.policy import aggregate, rollback_reasons
+    from retold.policy import aggregate, rollback_reasons
 
     everything = aggregate(store)
     reasons = rollback_reasons(everything, RollbackThresholds(min_turns=1))

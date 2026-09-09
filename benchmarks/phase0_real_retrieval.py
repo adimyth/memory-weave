@@ -1,4 +1,4 @@
-"""Real Memory Weave retrieval for the Phase 0 runner.
+"""Real Retold retrieval for the Phase 0 runner.
 
 Builds one isolated store per arm, writes the scenario records through the public `memory_write` handler
 with session-turn evidence so the ingestor applies its own lifecycle, supersession, and entity rules, and
@@ -12,14 +12,14 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
-from memory_weave.config import DenseFloorConfig, MemoryWeaveConfig, load_config
-from memory_weave.host import MemoryHost
-from memory_weave.index.embedder import BgeM3Embedder
-from memory_weave.index.reranker import reranker_from_config
-from memory_weave.index.vector import VectorIndex
-from memory_weave.ingest import Ingestor, NLICrossEncoderJudge, SessionBuffer
-from memory_weave.models import Principal, Scope, Turn
-from memory_weave.policy import (
+from retold.config import DenseFloorConfig, RetoldConfig, load_config
+from retold.host import MemoryHost
+from retold.index.embedder import BgeM3Embedder
+from retold.index.reranker import reranker_from_config
+from retold.index.vector import VectorIndex
+from retold.ingest import Ingestor, NLICrossEncoderJudge, SessionBuffer
+from retold.models import Principal, Scope, Turn
+from retold.policy import (
     RETRIEVAL_CATEGORIES,
     ActivationDecision,
     ActivationService,
@@ -27,10 +27,10 @@ from memory_weave.policy import (
     ProfileAssembler,
     inventory,
 )
-from memory_weave.retrieve import Retriever, rewriter_from_config
-from memory_weave.store import Store
-from memory_weave.tools import ToolHandlers
-from memory_weave.util import now
+from retold.retrieve import Retriever, rewriter_from_config
+from retold.store import Store
+from retold.tools import ToolHandlers
+from retold.util import now
 
 _AGENT_ID = "phase0-agent"
 _USER_ID = "user-phase0"
@@ -124,7 +124,7 @@ def recall_oriented_config(
     rerank_floor: float | None = None,
     rerank_mode: str | None = None,
     rerank_timeout_ms: int | None = None,
-) -> MemoryWeaveConfig:
+) -> RetoldConfig:
     """Default config with the host-search gate loosened to a candidate control.
 
     ``rewrite_model`` enables query rewriting through that hosted model; ``rerank_floor`` enables the
@@ -157,7 +157,7 @@ def recall_oriented_config(
 
 
 class RealRetrieval:
-    """One store per arm; maps Memory Weave record ids back to scenario record ids."""
+    """One store per arm; maps Retold record ids back to scenario record ids."""
 
     def __init__(
         self,

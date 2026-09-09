@@ -5,12 +5,12 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from pathlib import Path
 
-from memory_weave import cli
-from memory_weave.host import MemoryHost
-from memory_weave.models import Principal, Record, Scope, Turn
-from memory_weave.policy import ActivationService, CategoryDecision
-from memory_weave.store import Store
-from memory_weave.util import render_subject
+from retold import cli
+from retold.host import MemoryHost
+from retold.models import Principal, Record, Scope, Turn
+from retold.policy import ActivationService, CategoryDecision
+from retold.store import Store
+from retold.util import render_subject
 
 _AT = datetime(2026, 9, 7, 12, 0, tzinfo=UTC)
 
@@ -108,7 +108,7 @@ def test_direct_activation_is_checked(tmp_path: Path, capsys) -> None:
 def test_metrics_and_bundle_commands(tmp_path: Path, capsys) -> None:
     import json
 
-    from memory_weave.policy import UtilityAwareConfig, UtilityAwareOrchestrator, bundle_components
+    from retold.policy import UtilityAwareConfig, UtilityAwareOrchestrator, bundle_components
 
     db = tmp_path / "m.sqlite"
     _seed(db)
@@ -118,7 +118,7 @@ def test_metrics_and_bundle_commands(tmp_path: Path, capsys) -> None:
 
     class Gaps:
         def plan(self, turn, public_context, ambient_profile, inventory):
-            from memory_weave.policy import GapDecision
+            from retold.policy import GapDecision
 
             return GapDecision([], "fake", "empty")
 

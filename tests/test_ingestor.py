@@ -7,21 +7,21 @@ from pathlib import Path
 
 import pytest
 
-from memory_weave.config import EmbeddingConfig, IngestionConfig, MemoryWeaveConfig
-from memory_weave.index.embedder import FakeEmbedder
-from memory_weave.index.vector import VectorIndex
-from memory_weave.ingest import FakeJudge, Ingestor, SessionBuffer, WriteRequest
-from memory_weave.models import EntityMention, Principal, Scope, Turn
-from memory_weave.store import Store
+from retold.config import EmbeddingConfig, IngestionConfig, RetoldConfig
+from retold.index.embedder import FakeEmbedder
+from retold.index.vector import VectorIndex
+from retold.ingest import FakeJudge, Ingestor, SessionBuffer, WriteRequest
+from retold.models import EntityMention, Principal, Scope, Turn
+from retold.store import Store
 
 _NOW = datetime(2026, 9, 4, 12, 0, tzinfo=UTC)
 _AGENT_ID = "research-agent"
 _USER_ID = "aditya"
 _SESSION_ID = "session-1"
-_PRINCIPAL = Principal(_AGENT_ID, _USER_ID, _SESSION_ID, "memory-weave")
+_PRINCIPAL = Principal(_AGENT_ID, _USER_ID, _SESSION_ID, "retold")
 _AGENT_SCOPE = Scope(kind="agent", id=f"{_AGENT_ID}/{_USER_ID}")
 _USER_SCOPE = Scope(kind="user", id=_USER_ID)
-_PROJECT_SCOPE = Scope(kind="project", id="memory-weave")
+_PROJECT_SCOPE = Scope(kind="project", id="retold")
 _EMBEDDING = EmbeddingConfig(model="fake-embedder", version="1", dims=8)
 
 
@@ -29,7 +29,7 @@ _EMBEDDING = EmbeddingConfig(model="fake-embedder", version="1", dims=8)
 def store(tmp_path: Path) -> Store:
     database = Store(tmp_path / "memory.sqlite")
     _ = database.connection
-    database.create_session(_SESSION_ID, _AGENT_ID, _USER_ID, "memory-weave", _NOW)
+    database.create_session(_SESSION_ID, _AGENT_ID, _USER_ID, "retold", _NOW)
     database.set_grant(_AGENT_ID, _USER_SCOPE, can_read=True, can_write=True)
     yield database
     database.close()
@@ -46,8 +46,8 @@ def buffer(store: Store) -> SessionBuffer:
 
 
 @pytest.fixture
-def config() -> MemoryWeaveConfig:
-    return MemoryWeaveConfig(
+def config() -> RetoldConfig:
+    return RetoldConfig(
         embedding=_EMBEDDING,
         ingestion=IngestionConfig(dedup_candidate_cosine=0.80, reinforcements_to_confirm=2),
     )
@@ -56,7 +56,7 @@ def config() -> MemoryWeaveConfig:
 def _ingestor(
     store: Store,
     buffer: SessionBuffer,
-    config: MemoryWeaveConfig,
+    config: RetoldConfig,
     judge: FakeJudge | None = None,
     *,
     embedder: FakeEmbedder | None = None,
@@ -104,7 +104,7 @@ def _event(store: Store, record_id: str) -> dict[str, object]:
 
 
 def test_scope_not_writable_returns_before_writing_anything(
-    store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig
+    store: Store, buffer: SessionBuffer, config: RetoldConfig
 ) -> None:
     result = _ingestor(store, buffer, config).write(
         _PRINCIPAL,
@@ -118,7 +118,7 @@ def test_scope_not_writable_returns_before_writing_anything(
 
 
 def test_default_write_uses_the_provisioned_user_scope_and_resolves_the_principal_person(
-    store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig
+    store: Store, buffer: SessionBuffer, config: RetoldConfig
 ) -> None:
     result = _ingestor(store, buffer, config).write(_PRINCIPAL, _request("Aditya uses Vim."))
 
@@ -134,7 +134,7 @@ def test_default_write_uses_the_provisioned_user_scope_and_resolves_the_principa
 
 
 def test_default_write_without_host_provisioning_returns_scope_not_writable(
-    store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig
+    store: Store, buffer: SessionBuffer, config: RetoldConfig
 ) -> None:
     store.revoke_grant(_AGENT_ID, _USER_SCOPE)
 
@@ -146,7 +146,7 @@ def test_default_write_without_host_provisioning_returns_scope_not_writable(
 
 
 def test_semantic_and_procedural_records_require_a_current_fact_subject(
-    store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig
+    store: Store, buffer: SessionBuffer, config: RetoldConfig
 ) -> None:
     result = _ingestor(store, buffer, config).write(
         _PRINCIPAL,
@@ -160,7 +160,7 @@ def test_semantic_and_procedural_records_require_a_current_fact_subject(
 
 
 def test_project_scope_requires_an_about_entity_but_user_scope_uses_the_principal(
-    store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig
+    store: Store, buffer: SessionBuffer, config: RetoldConfig
 ) -> None:
     store.set_grant(_AGENT_ID, _PROJECT_SCOPE, can_read=True, can_write=True)
 
@@ -180,14 +180,14 @@ def test_project_scope_requires_an_about_entity_but_user_scope_uses_the_principa
 
 
 def test_attribute_ignores_a_writer_supplied_entity_portion(
-    store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig
+    store: Store, buffer: SessionBuffer, config: RetoldConfig
 ) -> None:
     result = _ingestor(store, buffer, config).write(
         _PRINCIPAL,
         _request(
-            "Memory Weave uses SQLite.",
+            "Retold uses SQLite.",
             attribute="person:someone-else/Storage Mode",
-            entities=[EntityMention(kind="project", text="Memory Weave", role="about")],
+            entities=[EntityMention(kind="project", text="Retold", role="about")],
         ),
     )
 
@@ -200,7 +200,7 @@ def test_attribute_ignores_a_writer_supplied_entity_portion(
 
 
 def test_assistant_evidence_downgrades_user_statement_and_records_the_note(
-    store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig
+    store: Store, buffer: SessionBuffer, config: RetoldConfig
 ) -> None:
     result = _ingestor(store, buffer, config).write(
         _PRINCIPAL,
@@ -221,7 +221,7 @@ def test_assistant_evidence_downgrades_user_statement_and_records_the_note(
 
 
 def test_missing_evidence_creates_a_provisional_inference_without_a_source_reference(
-    store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig
+    store: Store, buffer: SessionBuffer, config: RetoldConfig
 ) -> None:
     result = _ingestor(store, buffer, config).write(
         _PRINCIPAL,
@@ -241,7 +241,7 @@ def test_missing_evidence_creates_a_provisional_inference_without_a_source_refer
 
 
 def test_non_entailing_evidence_downgrades_a_direct_claim_and_records_its_score(
-    store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig
+    store: Store, buffer: SessionBuffer, config: RetoldConfig
 ) -> None:
     content = "Aditya uses Vim."
     evidence = "I prefer concise technical explanations."
@@ -259,7 +259,7 @@ def test_non_entailing_evidence_downgrades_a_direct_claim_and_records_its_score(
 
 
 def test_agent_inference_is_never_sent_to_the_evidence_entailment_judge(
-    store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig
+    store: Store, buffer: SessionBuffer, config: RetoldConfig
 ) -> None:
     judge = FakeJudge()
 
@@ -273,7 +273,7 @@ def test_agent_inference_is_never_sent_to_the_evidence_entailment_judge(
 
 
 def test_same_subject_reinforces_and_the_second_reinforcement_confirms(
-    store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig
+    store: Store, buffer: SessionBuffer, config: RetoldConfig
 ) -> None:
     contents = (
         "Aditya prefers concise technical explanations.",
@@ -326,7 +326,7 @@ def test_same_subject_reinforces_and_the_second_reinforcement_confirms(
 
 
 def test_repeated_source_reference_does_not_count_as_an_independent_reinforcement(
-    store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig
+    store: Store, buffer: SessionBuffer, config: RetoldConfig
 ) -> None:
     original = "Aditya prefers concise technical explanations."
     repeated = "Aditya likes concise technical explanations."
@@ -352,7 +352,7 @@ def test_repeated_source_reference_does_not_count_as_an_independent_reinforcemen
 
 
 def test_stronger_independent_evidence_promotes_the_existing_record_provenance(
-    store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig
+    store: Store, buffer: SessionBuffer, config: RetoldConfig
 ) -> None:
     inference = "Aditya prefers concise technical explanations."
     user_statement = "Aditya likes short technical explanations."
@@ -381,7 +381,7 @@ def test_stronger_independent_evidence_promotes_the_existing_record_provenance(
 
 
 def test_higher_rank_same_subject_supersedes_the_active_record(
-    store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig
+    store: Store, buffer: SessionBuffer, config: RetoldConfig
 ) -> None:
     judge = FakeJudge(
         {("The deployment completed successfully.", "Aditya prefers concise technical explanations."): "distinct"}
@@ -410,7 +410,7 @@ def test_higher_rank_same_subject_supersedes_the_active_record(
 
 
 def test_equal_rank_later_event_supersedes_and_earlier_event_is_superseded_on_arrival(
-    store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig
+    store: Store, buffer: SessionBuffer, config: RetoldConfig
 ) -> None:
     judge = FakeJudge(
         {
@@ -460,7 +460,7 @@ def test_equal_rank_later_event_supersedes_and_earlier_event_is_superseded_on_ar
 
 
 def test_lower_rank_contradiction_is_provisional_and_records_symmetric_conflicts(
-    store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig
+    store: Store, buffer: SessionBuffer, config: RetoldConfig
 ) -> None:
     judge = FakeJudge(
         {("Aditya prefers concise technical explanations.", "The deployment completed successfully."): "contradicts"}
@@ -488,7 +488,7 @@ def test_lower_rank_contradiction_is_provisional_and_records_symmetric_conflicts
 
 
 def test_authority_incumbent_wins_when_a_subject_also_has_a_later_provisional_conflict(
-    store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig
+    store: Store, buffer: SessionBuffer, config: RetoldConfig
 ) -> None:
     ingestor = _ingestor(store, buffer, config, FakeJudge())
     confirmed = ingestor.write(
@@ -520,7 +520,7 @@ def test_authority_incumbent_wins_when_a_subject_also_has_a_later_provisional_co
 
 
 def test_nearby_different_subject_same_claim_reinforces_the_neighbour(
-    store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig
+    store: Store, buffer: SessionBuffer, config: RetoldConfig
 ) -> None:
     old_content = "Aditya prefers concise technical explanations."
     new_content = "Aditya prefers brief technical explanations."
@@ -547,7 +547,7 @@ def test_nearby_different_subject_same_claim_reinforces_the_neighbour(
 
 
 def test_conflicting_attribute_aliases_supersede_when_the_records_are_about_the_same_thing(
-    store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig
+    store: Store, buffer: SessionBuffer, config: RetoldConfig
 ) -> None:
     first_content = "Aditya prefers concise technical explanations."
     second_content = "Aditya prefers detailed technical explanations."
@@ -572,7 +572,7 @@ def test_conflicting_attribute_aliases_supersede_when_the_records_are_about_the_
 
 
 def test_attribute_scan_logs_when_the_configured_limit_truncates_active_attributes(
-    store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig
+    store: Store, buffer: SessionBuffer, config: RetoldConfig
 ) -> None:
     bounded = replace(config, ingestion=replace(config.ingestion, max_entity_attributes=1))
     ingestor = _ingestor(store, buffer, bounded, FakeJudge())
@@ -585,7 +585,7 @@ def test_attribute_scan_logs_when_the_configured_limit_truncates_active_attribut
 
 
 def test_episodic_record_never_supersedes_an_existing_subject(
-    store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig
+    store: Store, buffer: SessionBuffer, config: RetoldConfig
 ) -> None:
     ingestor = _ingestor(store, buffer, config)
     first = ingestor.write(
@@ -606,7 +606,7 @@ def test_episodic_record_never_supersedes_an_existing_subject(
 
 
 def test_semantic_writes_reject_an_attribute_that_normalizes_to_nothing(
-    store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig
+    store: Store, buffer: SessionBuffer, config: RetoldConfig
 ) -> None:
     first_content = "Aditya uses Vim."
     second_content = "Aditya lives in Bangalore."
@@ -622,7 +622,7 @@ def test_semantic_writes_reject_an_attribute_that_normalizes_to_nothing(
 
 
 def test_about_ambiguity_rolls_back_and_is_audited_afterward(
-    store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig
+    store: Store, buffer: SessionBuffer, config: RetoldConfig
 ) -> None:
     first = store.create_entity(kind="project", canonical="API", scope=_AGENT_SCOPE, entity_id="project-agent")
     second = store.create_entity(kind="project", canonical="API", scope=_PROJECT_SCOPE, entity_id="project-shared")
@@ -652,7 +652,7 @@ def test_about_ambiguity_rolls_back_and_is_audited_afterward(
 
 
 def test_ambiguous_mentions_are_dropped_while_the_record_is_written(
-    store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig
+    store: Store, buffer: SessionBuffer, config: RetoldConfig
 ) -> None:
     first = store.create_entity(kind="project", canonical="API", scope=_AGENT_SCOPE, entity_id="project-agent")
     second = store.create_entity(kind="project", canonical="API", scope=_PROJECT_SCOPE, entity_id="project-shared")
@@ -677,7 +677,7 @@ def test_ambiguous_mentions_are_dropped_while_the_record_is_written(
 
 
 def test_created_record_writes_its_embedding_fts_aliases_and_entity_links(
-    store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig
+    store: Store, buffer: SessionBuffer, config: RetoldConfig
 ) -> None:
     embedder = FakeEmbedder(dims=config.embedding.dims)
     index = VectorIndex(config.embedding)
@@ -696,7 +696,7 @@ def test_created_record_writes_its_embedding_fts_aliases_and_entity_links(
         _request(
             "It uses SQLite for durable memory.",
             attribute="storage",
-            entities=[EntityMention(kind="project", text="Memory Weave", role="about")],
+            entities=[EntityMention(kind="project", text="Retold", role="about")],
         ),
     )
 
@@ -716,7 +716,7 @@ def test_created_record_writes_its_embedding_fts_aliases_and_entity_links(
 
 @pytest.mark.parametrize("source_kind", ["system", "session_summary"])
 def test_system_and_session_summary_sources_are_rejected(
-    store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig, source_kind: str
+    store: Store, buffer: SessionBuffer, config: RetoldConfig, source_kind: str
 ) -> None:
     result = _ingestor(store, buffer, config).write(
         _PRINCIPAL,
@@ -729,7 +729,7 @@ def test_system_and_session_summary_sources_are_rejected(
 
 
 def test_write_result_carries_complete_timings_after_commit_and_index_update(
-    store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig
+    store: Store, buffer: SessionBuffer, config: RetoldConfig
 ) -> None:
     result = _ingestor(store, buffer, config).write(
         _PRINCIPAL,
@@ -757,7 +757,7 @@ def test_write_result_carries_complete_timings_after_commit_and_index_update(
 
 
 def test_contradicted_incumbent_is_superseded_even_when_a_provisional_sibling_matches(
-    store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig
+    store: Store, buffer: SessionBuffer, config: RetoldConfig
 ) -> None:
     concise = "Aditya prefers concise technical explanations."
     detailed_guess = "Aditya prefers detailed technical explanations."
@@ -793,7 +793,7 @@ def test_contradicted_incumbent_is_superseded_even_when_a_provisional_sibling_ma
 
 
 def test_attribute_cap_keeps_store_order_so_cosine_never_excludes_a_recent_attribute(
-    store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig
+    store: Store, buffer: SessionBuffer, config: RetoldConfig
 ) -> None:
     location = "Aditya lives in Bangalore."
     editor = "Aditya uses Vim."
@@ -820,7 +820,7 @@ def test_attribute_cap_keeps_store_order_so_cosine_never_excludes_a_recent_attri
 
 
 def test_two_person_entities_carrying_the_principal_alias_return_entity_ambiguous(
-    store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig
+    store: Store, buffer: SessionBuffer, config: RetoldConfig
 ) -> None:
     for entity_id in ("person-one", "person-two"):
         store.create_entity(kind="person", canonical="Aditya", scope=_USER_SCOPE, entity_id=entity_id)
@@ -833,7 +833,7 @@ def test_two_person_entities_carrying_the_principal_alias_return_entity_ambiguou
     assert store.connection.execute("SELECT COUNT(*) FROM records").fetchone()[0] == 0
 
 
-def test_empty_attribute_reports_its_own_note(store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig) -> None:
+def test_empty_attribute_reports_its_own_note(store: Store, buffer: SessionBuffer, config: RetoldConfig) -> None:
     result = _ingestor(store, buffer, config).write(_PRINCIPAL, _request("Aditya uses Vim.", attribute="///"))
 
     assert result.outcome == "invalid_subject"
@@ -841,7 +841,7 @@ def test_empty_attribute_reports_its_own_note(store: Store, buffer: SessionBuffe
 
 
 def test_a_claim_downgraded_by_its_turn_role_is_not_entailment_checked_again(
-    store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig
+    store: Store, buffer: SessionBuffer, config: RetoldConfig
 ) -> None:
     quote = "I recommend concise technical explanations."
     judge = FakeJudge(entailments={(quote, "Aditya prefers concise technical explanations."): 0.0})
@@ -854,9 +854,9 @@ def test_a_claim_downgraded_by_its_turn_role_is_not_entailment_checked_again(
 
 
 def test_host_provisioned_aliases_make_a_mention_resolve_to_the_principal_entity(
-    tmp_path: Path, config: MemoryWeaveConfig
+    tmp_path: Path, config: RetoldConfig
 ) -> None:
-    from memory_weave.host import MemoryHost
+    from retold.host import MemoryHost
 
     opaque = Principal(_AGENT_ID, "u-123", _SESSION_ID, None)
     user_scope = Scope(kind="user", id="u-123")
@@ -888,7 +888,7 @@ def test_host_provisioned_aliases_make_a_mention_resolve_to_the_principal_entity
 
 
 def test_an_unrelated_fact_about_one_person_never_supersedes_another(
-    store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig
+    store: Store, buffer: SessionBuffer, config: RetoldConfig
 ) -> None:
     """A judge verdict alone must not collapse two attributes.
 
@@ -917,7 +917,7 @@ def test_an_unrelated_fact_about_one_person_never_supersedes_another(
 
 
 def test_a_changed_fact_on_the_same_attribute_still_supersedes(
-    store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig
+    store: Store, buffer: SessionBuffer, config: RetoldConfig
 ) -> None:
     """The alias guard must not weaken supersession when the caller reuses the attribute."""
 
@@ -941,7 +941,7 @@ def test_a_changed_fact_on_the_same_attribute_still_supersedes(
 
 
 def test_temporary_statement_coexists_with_a_standing_preference_instead_of_superseding_it(
-    store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig
+    store: Store, buffer: SessionBuffer, config: RetoldConfig
 ) -> None:
     standing = "Aditya wants replies in English."
     temporary = "This week, Aditya wants answers in Spanish."

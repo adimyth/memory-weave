@@ -1,4 +1,4 @@
-"""Run the Phase 9a scripted conversation through a real serving model and Memory Weave tools."""
+"""Run the Phase 9a scripted conversation through a real serving model and Retold tools."""
 
 from __future__ import annotations
 
@@ -12,17 +12,17 @@ from pathlib import Path
 from tempfile import TemporaryDirectory, mkdtemp
 from typing import Any, Literal, Protocol, cast
 
-from memory_weave.config import MemoryWeaveConfig, TriggerConfig, load_config
-from memory_weave.host import MemoryHost
-from memory_weave.index.embedder import BgeM3Embedder, Embedder
-from memory_weave.index.vector import VectorIndex
-from memory_weave.ingest import EquivalenceJudge, Ingestor, NLICrossEncoderJudge, SessionBuffer
-from memory_weave.models import Principal, Scope, Turn
-from memory_weave.policy import AUTO_MEMORY_NOTICE, AUTO_MEMORY_USE_POLICY, MEMORY_USE_POLICY, MEMORY_USE_POLICY_VERSION
-from memory_weave.retrieve import Retriever
-from memory_weave.store import Store
-from memory_weave.tools import ToolHandlers
-from memory_weave.util import normalize_ws, now
+from retold.config import RetoldConfig, TriggerConfig, load_config
+from retold.host import MemoryHost
+from retold.index.embedder import BgeM3Embedder, Embedder
+from retold.index.vector import VectorIndex
+from retold.ingest import EquivalenceJudge, Ingestor, NLICrossEncoderJudge, SessionBuffer
+from retold.models import Principal, Scope, Turn
+from retold.policy import AUTO_MEMORY_NOTICE, AUTO_MEMORY_USE_POLICY, MEMORY_USE_POLICY, MEMORY_USE_POLICY_VERSION
+from retold.retrieve import Retriever
+from retold.store import Store
+from retold.tools import ToolHandlers
+from retold.util import normalize_ws, now
 
 Provider = Literal["anthropic", "openai", "openrouter"]
 
@@ -460,7 +460,7 @@ class RunMetrics:
 
 def build_runtime(
     database_path: Path,
-    config: MemoryWeaveConfig,
+    config: RetoldConfig,
     embedder: Embedder,
     judge: EquivalenceJudge,
     *,
@@ -491,7 +491,7 @@ def run_conversation(
     conversation: Sequence[ConversationTurn] = CONVERSATION,
     *,
     trigger_mode: str = "tool_only",
-    config: MemoryWeaveConfig | None = None,
+    config: RetoldConfig | None = None,
 ) -> list[ToolTrace]:
     """Replay the fixed conversation, persist its transcript, and return every completed tool call in order."""
 
@@ -633,14 +633,14 @@ def run_experiment(
     provider: str = "scripted",
     runs: int = 3,
     database_dir: Path | None = None,
-    config: MemoryWeaveConfig | None = None,
+    config: RetoldConfig | None = None,
 ) -> dict[str, object]:
     """Run the conversation against fresh stores and aggregate the contract metrics the phase is meant to learn."""
 
     if runs <= 0:
         raise ValueError("runs must be positive.")
     if database_dir is None:
-        with TemporaryDirectory(prefix="memory-weave-vertical-slice-") as temporary:
+        with TemporaryDirectory(prefix="retold-vertical-slice-") as temporary:
             return _run_experiment(
                 Path(temporary),
                 model_factory,
@@ -681,10 +681,8 @@ def run_live(
     """Run one provider's hosted model plus local-model experiment only after the caller explicitly enables it."""
 
     _load_local_env()
-    if os.environ.get("MEMORY_WEAVE_LIVE") != "1":
-        raise RuntimeError(
-            "Live execution is disabled. Set MEMORY_WEAVE_LIVE=1 after installing the live dependencies."
-        )
+    if os.environ.get("RETOLD_LIVE") != "1":
+        raise RuntimeError("Live execution is disabled. Set RETOLD_LIVE=1 after installing the live dependencies.")
     resolved_provider = _live_provider(provider)
     resolved_model = _live_model(resolved_provider, model_id)
     config = load_config(config_path)
@@ -720,7 +718,7 @@ def _load_local_env() -> None:
 def _live_provider(provider: Provider | None) -> Provider:
     """Resolve and validate the requested hosted-model provider without silently changing providers."""
 
-    value = provider or os.environ.get("MEMORY_WEAVE_VERTICAL_SLICE_PROVIDER", "anthropic")
+    value = provider or os.environ.get("RETOLD_VERTICAL_SLICE_PROVIDER", "anthropic")
     if value not in {"anthropic", "openai", "openrouter"}:
         raise ValueError("provider must be anthropic, openai, or openrouter.")
     return cast(Provider, value)
@@ -729,12 +727,12 @@ def _live_provider(provider: Provider | None) -> Provider:
 def _live_model(provider: Provider, model_id: str | None) -> str:
     """Resolve the model from the call or environment and retain the historical Anthropic default."""
 
-    resolved = model_id or os.environ.get("MEMORY_WEAVE_VERTICAL_SLICE_MODEL")
+    resolved = model_id or os.environ.get("RETOLD_VERTICAL_SLICE_MODEL")
     if resolved:
         return resolved
     if provider == "anthropic":
         return _DEFAULT_ANTHROPIC_MODEL
-    raise ValueError(f"Set MEMORY_WEAVE_VERTICAL_SLICE_MODEL or pass --model for the {provider} provider.")
+    raise ValueError(f"Set RETOLD_VERTICAL_SLICE_MODEL or pass --model for the {provider} provider.")
 
 
 def _provider_model(provider: Provider, model_id: str) -> ToolModel:
@@ -755,7 +753,7 @@ def _run_experiment(
     provider: str,
     runs: int,
     trigger_mode: str,
-    config: MemoryWeaveConfig | None,
+    config: RetoldConfig | None,
     *,
     artifact_dir: Path | None,
 ) -> dict[str, object]:
@@ -1083,7 +1081,7 @@ def _session_id_from_principal(principal: Principal) -> str:
 def parse_args() -> argparse.Namespace:
     """Parse live-run controls without requiring users to edit the example file."""
 
-    parser = argparse.ArgumentParser(description="Run the Memory Weave Phase 9a vertical slice.")
+    parser = argparse.ArgumentParser(description="Run the Retold Phase 9a vertical slice.")
     parser.add_argument("--provider", choices=["anthropic", "openai", "openrouter"])
     parser.add_argument("--model")
     parser.add_argument("--config", type=Path)

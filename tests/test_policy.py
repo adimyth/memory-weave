@@ -5,22 +5,22 @@ from pathlib import Path
 
 import pytest
 
-from memory_weave.config import IngestionConfig, MemoryWeaveConfig
-from memory_weave.models import Record, Scope, SourceKind
-from memory_weave.policy.grants import readable_scopes, writable_scopes
-from memory_weave.policy.lifecycle import (
+from retold.config import IngestionConfig, RetoldConfig
+from retold.models import Record, Scope, SourceKind
+from retold.policy.grants import readable_scopes, writable_scopes
+from retold.policy.lifecycle import (
     has_authority,
     initial_confidence,
     initial_expiry,
     initial_status,
     reinforce,
 )
-from memory_weave.store import Store
+from retold.store import Store
 
 _NOW = datetime(2026, 9, 4, 12, 0, tzinfo=UTC)
 _AGENT_ID = "implementation-agent"
 _USER_ID = "aditya"
-_CONFIG = MemoryWeaveConfig()
+_CONFIG = RetoldConfig()
 
 
 @pytest.fixture
@@ -62,7 +62,7 @@ def test_grants_add_to_the_implicit_agent_and_user_private_scope(store: Store) -
     own_agent_scope = Scope(kind="agent", id=f"{_AGENT_ID}/{_USER_ID}")
     own_user_scope = Scope(kind="user", id=_USER_ID)
     another_user_scope = Scope(kind="user", id="someone-else")
-    project_scope = Scope(kind="project", id="memory-weave")
+    project_scope = Scope(kind="project", id="retold")
     store.set_grant(_AGENT_ID, own_user_scope, can_read=True, can_write=True)
     store.set_grant(_AGENT_ID, another_user_scope, can_read=True, can_write=True)
     store.set_grant(_AGENT_ID, project_scope, can_read=True, can_write=True)
@@ -81,7 +81,7 @@ def test_grants_add_to_the_implicit_agent_and_user_private_scope(store: Store) -
 
 
 def test_project_grant_does_not_create_user_scope_access(store: Store) -> None:
-    project_scope = Scope(kind="project", id="memory-weave")
+    project_scope = Scope(kind="project", id="retold")
     user_scope = Scope(kind="user", id=_USER_ID)
     store.set_grant(_AGENT_ID, project_scope, can_read=True, can_write=True)
 
@@ -115,7 +115,7 @@ def test_a_granted_private_scope_is_visible_only_to_its_encoded_user(store: Stor
 def test_initial_lifecycle_values_cover_every_source_kind(
     source_kind: SourceKind, status: str, confidence: float, expires: bool
 ) -> None:
-    config = MemoryWeaveConfig(ingestion=IngestionConfig(provisional_ttl_days=14))
+    config = RetoldConfig(ingestion=IngestionConfig(provisional_ttl_days=14))
 
     assert initial_status(source_kind) == status
     assert initial_confidence(source_kind) == confidence
@@ -131,7 +131,7 @@ def test_reinforce_refreshes_provisional_expiry_and_confirms_at_the_configured_c
         expires_at=_NOW + timedelta(days=1),
         reinforcements=1,
     )
-    config = MemoryWeaveConfig(ingestion=IngestionConfig(provisional_ttl_days=14, reinforcements_to_confirm=3))
+    config = RetoldConfig(ingestion=IngestionConfig(provisional_ttl_days=14, reinforcements_to_confirm=3))
 
     reinforced = reinforce(provisional, _NOW + timedelta(hours=1), config)
 
@@ -141,7 +141,7 @@ def test_reinforce_refreshes_provisional_expiry_and_confirms_at_the_configured_c
     assert reinforced.status == "provisional"
     assert reinforced.expires_at == _NOW + timedelta(days=14, hours=1)
 
-    confirm_config = MemoryWeaveConfig(ingestion=IngestionConfig(provisional_ttl_days=14, reinforcements_to_confirm=2))
+    confirm_config = RetoldConfig(ingestion=IngestionConfig(provisional_ttl_days=14, reinforcements_to_confirm=2))
     confirmed = reinforce(
         _record(
             "confirm",

@@ -9,11 +9,11 @@ numbers quoted are from the runs named, not estimates.
 real `BAAI/bge-m3` embedder at 1,024 dimensions. Rebuild it after any change to the seed or the embedder:
 
 ```bash
-HF_HUB_OFFLINE=1 MEMORY_WEAVE_INTEGRATION=1 uv run --extra local-models python -m tests.integration.fixture_1k
+HF_HUB_OFFLINE=1 RETOLD_INTEGRATION=1 uv run --extra local-models python -m tests.integration.fixture_1k
 ```
 
 Shape: four users (`aditya`, `priya`, `rohan`, `meera`), three agents (`research-agent`, `ops-agent`,
-`coding-agent`), two projects (`memory-weave`, `billing`), one organisation (`acme`); 486 semantic, 77
+`coding-agent`), two projects (`memory-weave`, the project's name when the fixture was built, and `billing`), one organisation (`acme`); 486 semantic, 77
 procedural, and 511 episodic records; 58 hand-written named records with stable ids that the labelled
 queries point at, the rest templated distractors over the same vocabulary; two superseded chains
 (`pref-aditya-shell`, `pref-priya-team`), one expired row and one past-expiry provisional inference, and
@@ -29,9 +29,9 @@ the fixture into a temporary directory with `copy_fixture`; never open the commi
 | Suite | Command | What it measures |
 | --- | --- | --- |
 | Unit | `uv run pytest` | Everything with fakes, including the synthetic isolation class and both adapters when their extras are installed. |
-| Integration | `HF_HUB_OFFLINE=1 MEMORY_WEAVE_INTEGRATION=1 uv run --extra local-models pytest tests/integration` | Real embedder and judge on the fixture: the dense-floor sweep, warm and cold latency, isolation. |
-| Slow | `MEMORY_WEAVE_RUN_SLOW=1 uv run pytest tests/integration/test_scale.py tests/integration/test_writer_contention.py -s` | The 50K store over 200 users and 10 agents, and four writers beside two extraction workers. |
-| Live | `MEMORY_WEAVE_LIVE=1` with keys in `.env` | Hosted extractor, reviewer, and rewriter once each; the utility-aware fitness suite in `benchmarks/`. |
+| Integration | `HF_HUB_OFFLINE=1 RETOLD_INTEGRATION=1 uv run --extra local-models pytest tests/integration` | Real embedder and judge on the fixture: the dense-floor sweep, warm and cold latency, isolation. |
+| Slow | `RETOLD_RUN_SLOW=1 uv run pytest tests/integration/test_scale.py tests/integration/test_writer_contention.py -s` | The 50K store over 200 users and 10 agents, and four writers beside two extraction workers. |
+| Live | `RETOLD_LIVE=1` with keys in `.env` | Hosted extractor, reviewer, and rewriter once each; the utility-aware fitness suite in `benchmarks/`. |
 
 Both adapters' suites run when their extras are present: `uv run --extra deepagents --extra crewai pytest`.
 
@@ -53,7 +53,7 @@ Writes carry their stages in the `record.created`, `record.reinforced`, `record.
 `WriteResult.timings_ms` the caller receives is complete. Extraction runs carry `transcript_prep`,
 `extractor_model`, `validation`, `candidate_review`, `writes`, `summary_write`, `dedup_and_contradiction`,
 and `total` on the `extraction.run` event. Utility-aware turns write one `turn_decisions` row each, with the
-stage outcome derivable by `memory_weave.policy.metrics.stage_outcome`; `memory-weave metrics` aggregates
+stage outcome derivable by `retold.policy.metrics.stage_outcome`; `retold metrics` aggregates
 them.
 
 ## Configuration flags that matter to a benchmark
@@ -66,7 +66,7 @@ with `reranker.floor`, both off and both measured off in `docs/usefulness-gate.m
 `lexical_min_matched_terms`, `relative_floor`, and the stricter `retrieval.gate.auto` block for host-issued
 searches; `retrieval.per_generator_k`, `rrf_k`, `default_k`, `token_budget`, `dedup_cosine`;
 `embedding.model` and `embedding.version`, which every stored vector and every search log carry; the
-utility-aware bundle, hashed by `memory_weave.policy.bundles.bundle_hash`, whose supported manifest is
+utility-aware bundle, hashed by `retold.policy.bundles.bundle_hash`, whose supported manifest is
 `benchmarks/bundles/bundle-2026-09-08-a.json`. A change to any of these is a new configuration; a change to
 any bundle component needs the full fitness suite before it serves.
 

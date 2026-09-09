@@ -238,8 +238,8 @@ def stage1(models: Models, policy_model: str, turns: Sequence[str]) -> dict[str,
 def stage1_retrieve(
     queries: dict[str, list[str]], records: dict[str, list[tuple[str, str, str | None, bool]]], top_k: int
 ):
-    from memory_weave.config import EmbeddingConfig
-    from memory_weave.index.embedder import BgeM3Embedder
+    from retold.config import EmbeddingConfig
+    from retold.index.embedder import BgeM3Embedder
 
     embedder = BgeM3Embedder(EmbeddingConfig())
     all_queries = sorted({q for qs in queries.values() for q in qs})

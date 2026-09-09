@@ -9,20 +9,20 @@ from typing import Any
 import pytest
 import yaml
 
-from memory_weave.config import EmbeddingConfig, MemoryWeaveConfig
-from memory_weave.index.embedder import BgeM3Embedder
-from memory_weave.index.vector import VectorIndex
-from memory_weave.models import Principal
-from memory_weave.policy import readable_scopes
-from memory_weave.store import Store
+from retold.config import EmbeddingConfig, RetoldConfig
+from retold.index.embedder import BgeM3Embedder
+from retold.index.vector import VectorIndex
+from retold.models import Principal
+from retold.policy import readable_scopes
+from retold.store import Store
 
 from .fixture_1k import NOW, copy_fixture
 
 pytestmark = [
     pytest.mark.integration,
     pytest.mark.skipif(
-        os.environ.get("MEMORY_WEAVE_INTEGRATION") != "1",
-        reason="set MEMORY_WEAVE_INTEGRATION=1 to run local-model integration tests",
+        os.environ.get("RETOLD_INTEGRATION") != "1",
+        reason="set RETOLD_INTEGRATION=1 to run local-model integration tests",
     ),
 ]
 
@@ -37,7 +37,7 @@ def _labelled() -> dict[str, list[dict[str, Any]]]:
 
 def test_configured_dense_floor_sits_in_the_best_f1_band(tmp_path: Path) -> None:
     store = Store(copy_fixture(tmp_path))
-    config = MemoryWeaveConfig(embedding=EmbeddingConfig())
+    config = RetoldConfig(embedding=EmbeddingConfig())
     embedder = BgeM3Embedder(config.embedding)
     index = VectorIndex(config.embedding)
     index.load(store)

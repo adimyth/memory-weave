@@ -1,6 +1,6 @@
-# Memory Weave vs. Amazon Bedrock AgentCore Memory
+# Retold vs. Amazon Bedrock AgentCore Memory
 
-This document compares Memory Weave's design against Amazon Bedrock AgentCore Memory, a managed long-term memory service for agents.
+This document compares Retold's design against Amazon Bedrock AgentCore Memory, a managed long-term memory service for agents.
 It is a comparison, not a roadmap.
 Nothing here changes the current design; where AgentCore does something we do not, the note says so and stops.
 
@@ -16,9 +16,9 @@ Our own design is described in [`components.md`](components.md), [`agent-memory-
 
 ## 1. Terminology mapping
 
-| AgentCore term | Memory Weave equivalent | Notes |
+| AgentCore term | Retold equivalent | Notes |
 | --- | --- | --- |
-| AgentCore Memory (the resource) | The SQLite store, i.e. one Memory Weave deployment | AgentCore treats "a memory" as a provisioned, named resource you configure with strategies. We have one store per deployment; there is no per-resource strategy configuration because there is no strategy concept at all (section 5). |
+| AgentCore Memory (the resource) | The SQLite store, i.e. one Retold deployment | AgentCore treats "a memory" as a provisioned, named resource you configure with strategies. We have one store per deployment; there is no per-resource strategy configuration because there is no strategy concept at all (section 5). |
 | Memory strategy | No equivalent | AgentCore's strategies are pluggable extraction policies you attach to a resource. Our extraction path is a single, fixed pipeline that always produces the same shapes: `semantic`, `episodic`, `procedural` records plus one session summary. Section 6 covers this gap directly. |
 | Namespace | `scope_kind` + `scope_id`, refined by `subject_entity_id`/`attribute` | AgentCore namespaces are arbitrary hierarchical path strings you design per strategy (`/strategy/{id}/actor/{id}/session/{id}/`), searchable by prefix. Our scope is a fixed four-way enum (`agent`, `user`, `project`, `org`) with no path hierarchy or prefix search; the current-fact key (`subject_entity_id`/`attribute`) does the job of narrowing to "this one thing" that a namespace path does for AgentCore. |
 | Memory record | `Record` | Direct equivalent: a structured, identified, retrievable unit of long-term memory. |
@@ -41,7 +41,7 @@ AgentCore names the same two operations we already use for writes, with one addi
 
 This matches our ingestion vocabulary closely. Our [HLD](agent-memory-hld.md#6-ingestion) and [LLD](agent-memory-lld.md) use the same two words for the same two decisions. Where we go further than AgentCore's public description is *how* consolidation decides:
 
-| Consolidation concern | AgentCore (as documented) | Memory Weave |
+| Consolidation concern | AgentCore (as documented) | Retold |
 | --- | --- | --- |
 | Same claim as an existing record | Not detailed publicly beyond "writes to a new or existing record" | Equivalence judge (`ingest/equivalence.py`, NLI cross-encoder) checks directed entailment both ways before reinforcing instead of duplicating. |
 | Conflicting claim about the same subject | Not detailed publicly | Source-rank table (`user_statement` > `system` > `tool_result`/`session_summary` > `agent_inference`) decides supersession vs. provisional-conflict; both outcomes are logged (`record_conflicts`, `events`). |
@@ -52,7 +52,7 @@ AgentCore's extraction/consolidation is asynchronous and strategy-scoped: each a
 
 ### The read APIs
 
-| AgentCore operation | Purpose | Memory Weave equivalent | Gap |
+| AgentCore operation | Purpose | Retold equivalent | Gap |
 | --- | --- | --- | --- |
 | `GetMemoryRecord` | Fetch one record by ID | `memory_get` tool, backed by `Store.get_record` | We already have this, and it returns more than AgentCore's flat fetch: conflicts (`record_conflicts`) and supersession lineage (`supersedes_id` chain), not just the record body. |
 | `ListMemoryRecords` | Enumerate records under a namespace, paginated, no ranking | No agent-facing equivalent | `Store` has internal listing primitives (`get_records`, `eligible_ids`) used by retrieval, but nothing exposed as a tool for "list everything in this scope." This is the one AgentCore read operation we do not cover at all today. |
@@ -87,7 +87,7 @@ Reflection is a capability we do not have at all today. Section 5 covers the gap
 
 You supposed we support all four strategies and store all four kinds of memory. That is roughly true for two of them, folded into an existing type for the third, and clearly not true for the fourth's most distinctive feature (Reflection). Details:
 
-| AgentCore strategy | What it extracts | Memory Weave coverage |
+| AgentCore strategy | What it extracts | Retold coverage |
 | --- | --- | --- |
 | **Semantic memory** | Standalone JSON facts ("order #XYZ-123 is linked to this case") | Covered directly by our `semantic` type: a declarative statement plus an entity link, written via explicit `memory_write` or session extraction. Close to a 1:1 match. |
 | **User preference memory** | JSON `{context, preference, categories}` — choices, styles, tastes | Not a distinct type. A preference like "prefers concise answers" is just a `semantic` record whose `attribute` happens to be `explanation_style`. The current-fact key (`subject_entity_id` + `attribute`) does the work AgentCore does with a dedicated schema, but there is no separate record kind, no `categories` field, and no strategy you could disable independently of general semantic facts. |
@@ -134,7 +134,7 @@ One detail in the current design already anticipates this: `ExtractionContext.pr
 
 ## 7. Summary
 
-| Dimension | AgentCore | Memory Weave |
+| Dimension | AgentCore | Retold |
 | --- | --- | --- |
 | Extraction model | Per-strategy, pluggable, async after every event/session | Single fixed pipeline, async at session end, plus sync explicit writes |
 | Consolidation | New vs. existing record, per strategy; conflict handling not publicly detailed | Source-rank supersession, NLI-based equivalence/contradiction, entity-attribute aliasing, all logged |

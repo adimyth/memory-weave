@@ -317,8 +317,8 @@ class Phase0:
     # -- embeddings -------------------------------------------------------------------------------------
 
     def _embed_store(self, store_ids: list[str]) -> None:
-        from memory_weave.config import EmbeddingConfig
-        from memory_weave.index.embedder import BgeM3Embedder
+        from retold.config import EmbeddingConfig
+        from retold.index.embedder import BgeM3Embedder
 
         if self._embedder is None:
             self._embedder = BgeM3Embedder(EmbeddingConfig())
@@ -711,7 +711,7 @@ def summarise(
         assigned = {i: (decisions or {}).get(i, {}).get("retrieval_category") for i in truth}
         # Inventory coverage: for each memory-needed turn, did the inventory the planner saw contain the true
         # category of the conditional record it needed? This is the metric that matters; label agreement is not.
-        from memory_weave.policy import RETRIEVAL_CATEGORIES
+        from retold.policy import RETRIEVAL_CATEGORIES
 
         covered = 0
         needed = 0
@@ -868,7 +868,7 @@ def main(argv: list[str] | None = None) -> int:
         "--retrieval",
         choices=("dense", "real"),
         default="dense",
-        help="dense: BGE-M3 top-k stand-in; real: the Memory Weave store, ingestor, and retriever",
+        help="dense: BGE-M3 top-k stand-in; real: the Retold store, ingestor, and retriever",
     )
     parser.add_argument(
         "--shadow-judge",

@@ -22,14 +22,14 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from langchain_core.outputs import ChatGeneration, ChatResult
 from langgraph.checkpoint.memory import InMemorySaver
 
-from memory_weave.adapters.deepagents import DeepAgentsMemoryAdapter
-from memory_weave.config import EmbeddingConfig, MemoryWeaveConfig
-from memory_weave.host import MemoryHost
-from memory_weave.index.embedder import FakeEmbedder
-from memory_weave.ingest import FakeExtractor, FakeJudge, TableReviewer
-from memory_weave.models import ExtractionOutput, Scope, SessionSummary
-from memory_weave.runtime import build_runtime
-from memory_weave.store import Store
+from retold.adapters.deepagents import DeepAgentsMemoryAdapter
+from retold.config import EmbeddingConfig, RetoldConfig
+from retold.host import MemoryHost
+from retold.index.embedder import FakeEmbedder
+from retold.ingest import FakeExtractor, FakeJudge, TableReviewer
+from retold.models import ExtractionOutput, Scope, SessionSummary
+from retold.runtime import build_runtime
+from retold.store import Store
 
 
 class ScriptedChatModel(BaseChatModel):
@@ -54,7 +54,7 @@ def main() -> None:
     host = MemoryHost(store)
     host.grant("assistant", Scope(kind="user", id="aditya"), read=True, write=True)
     host.provision_user("aditya", aliases=("Aditya",))
-    config = MemoryWeaveConfig(embedding=EmbeddingConfig(model="fake-embedder", version="1", dims=8))
+    config = RetoldConfig(embedding=EmbeddingConfig(model="fake-embedder", version="1", dims=8))
     embedder = FakeEmbedder(dims=8)
     summary = SessionSummary("Aditya said how they like answers and asked for a Python example.", [], [])
     runtime = build_runtime(

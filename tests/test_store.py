@@ -9,10 +9,10 @@ from typing import Any
 import numpy as np
 import pytest
 
-from memory_weave.cli import main
-from memory_weave.models import Record, Scope, Turn
-from memory_weave.store.migrations import migrate
-from memory_weave.store.store import Store
+from retold.cli import main
+from retold.models import Record, Scope, Turn
+from retold.store.migrations import migrate
+from retold.store.store import Store
 
 _NOW = datetime(2026, 9, 4, 12, 0, tzinfo=UTC)
 _USER_SCOPE = Scope(kind="user", id="aditya")
@@ -87,7 +87,7 @@ def _search_log_row(search_id: str) -> dict[str, Any]:
 
 
 def _legacy_schema() -> str:
-    current_schema = files("memory_weave.store").joinpath("schema.sql").read_text(encoding="utf-8")
+    current_schema = files("retold.store").joinpath("schema.sql").read_text(encoding="utf-8")
     return (
         current_schema.replace(
             "  subject         TEXT NOT NULL,              -- derived display value: "
@@ -443,9 +443,9 @@ def test_conflicts_entities_grants_sessions_events_and_search_log(store: Store) 
     assert store.conflicts_for(first.id) == [second.id]
     assert store.conflicts_for(second.id) == [first.id]
 
-    source = store.create_entity(kind="project", canonical="Memory Weave", scope=_USER_SCOPE, entity_id="entity-source")
+    source = store.create_entity(kind="project", canonical="Retold", scope=_USER_SCOPE, entity_id="entity-source")
     destination = store.create_entity(
-        kind="project", canonical="Memory Weave Core", scope=_USER_SCOPE, entity_id="entity-dest"
+        kind="project", canonical="Retold Core", scope=_USER_SCOPE, entity_id="entity-dest"
     )
     store.add_alias(source.id, "memory weave")
     store.add_alias(destination.id, "memory core")
@@ -461,7 +461,7 @@ def test_conflicts_entities_grants_sessions_events_and_search_log(store: Store) 
     assert store.grants_for("implementation-agent", can_read=True) == [_USER_SCOPE]
     assert store.grants_for("implementation-agent", can_write=True) == []
 
-    store.create_session("session-1", "implementation-agent", "aditya", "memory-weave", _NOW)
+    store.create_session("session-1", "implementation-agent", "aditya", "retold", _NOW)
     turn = Turn("session-1", 1, "user", "Keep answers concise.", _NOW)
     store.append_turn(turn)
     store.end_session("session-1", _NOW + timedelta(minutes=1))
@@ -489,7 +489,7 @@ def test_conflicts_entities_grants_sessions_events_and_search_log(store: Store) 
 def test_snapshot_uses_sqlite_backup_api(store: Store, tmp_path: Path) -> None:
     record = _record("record-for-snapshot")
     store.insert_record(record)
-    entity = store.create_entity(kind="project", canonical="Memory Weave", scope=_USER_SCOPE)
+    entity = store.create_entity(kind="project", canonical="Retold", scope=_USER_SCOPE)
     store.link_record_entity(record.id, entity.id)
     store.upsert_fts(record.id, record.content, record.subject, "memory weave")
     snapshot_path = tmp_path / "snapshot.sqlite"
@@ -551,7 +551,7 @@ def _legacy_store_with_unmapped_record(path: Path) -> None:
 
 
 def test_store_refuses_to_open_with_unmapped_legacy_subjects_unless_allowed(tmp_path: Path) -> None:
-    from memory_weave.store.migrations import MigrationIssuesError
+    from retold.store.migrations import MigrationIssuesError
 
     path = tmp_path / "legacy.sqlite"
     _legacy_store_with_unmapped_record(path)
@@ -656,7 +656,7 @@ def test_merge_entity_rebuilds_the_fts_alias_column_for_moved_records(store: Sto
 
 
 def test_records_for_entities_uses_a_temp_table_for_a_long_entity_list(store: Store) -> None:
-    entity = store.create_entity(kind="project", canonical="Memory Weave", scope=_USER_SCOPE, entity_id="memory-weave")
+    entity = store.create_entity(kind="project", canonical="Retold", scope=_USER_SCOPE, entity_id="retold")
     record = _record("long-entity-query")
     store.insert_record(record)
     store.link_record_entity(record.id, entity.id)

@@ -6,10 +6,10 @@ import random
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 
-from memory_weave.index.embedder import FakeEmbedder
-from memory_weave.models import MemoryType, Record, Scope
-from memory_weave.store import Store
-from memory_weave.util import render_subject
+from retold.index.embedder import FakeEmbedder
+from retold.models import MemoryType, Record, Scope
+from retold.store import Store
+from retold.util import render_subject
 
 _FIXTURE_START = datetime(2026, 1, 1, tzinfo=UTC)
 

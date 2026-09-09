@@ -16,19 +16,17 @@ from time import perf_counter
 
 import pytest
 
-from memory_weave.config import EmbeddingConfig, MemoryWeaveConfig
-from memory_weave.host import MemoryHost
-from memory_weave.index.embedder import FakeEmbedder
-from memory_weave.ingest import FakeExtractor, FakeJudge, TableReviewer, WriteRequest
-from memory_weave.models import CandidateRecord, ExtractionOutput, Principal, Scope, SessionSummary, Turn
-from memory_weave.runtime import build_runtime
-from memory_weave.store import Store
+from retold.config import EmbeddingConfig, RetoldConfig
+from retold.host import MemoryHost
+from retold.index.embedder import FakeEmbedder
+from retold.ingest import FakeExtractor, FakeJudge, TableReviewer, WriteRequest
+from retold.models import CandidateRecord, ExtractionOutput, Principal, Scope, SessionSummary, Turn
+from retold.runtime import build_runtime
+from retold.store import Store
 
 pytestmark = [
     pytest.mark.slow,
-    pytest.mark.skipif(
-        os.environ.get("MEMORY_WEAVE_RUN_SLOW") != "1", reason="set MEMORY_WEAVE_RUN_SLOW=1 to run scale tests"
-    ),
+    pytest.mark.skipif(os.environ.get("RETOLD_RUN_SLOW") != "1", reason="set RETOLD_RUN_SLOW=1 to run scale tests"),
 ]
 
 WRITERS = 4
@@ -44,7 +42,7 @@ def _percentile(values: list[float], q: float) -> float:
 
 
 def test_writes_under_extraction_contention_report_latency_and_lock_errors(tmp_path: Path) -> None:
-    config = MemoryWeaveConfig(embedding=EmbeddingConfig(model="fake-embedder", version="1", dims=32))
+    config = RetoldConfig(embedding=EmbeddingConfig(model="fake-embedder", version="1", dims=32))
     store = Store(tmp_path / "contention.sqlite")
     host = MemoryHost(store)
     users = [f"user-{index}" for index in range(WRITERS)]

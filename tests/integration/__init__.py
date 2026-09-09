@@ -1,1 +1,1 @@
-"""Integration suite: real local models against a realistic store. Skipped unless MEMORY_WEAVE_INTEGRATION=1."""
+"""Integration suite: real local models against a realistic store. Skipped unless RETOLD_INTEGRATION=1."""

@@ -5,22 +5,22 @@ from pathlib import Path
 
 import pytest
 
-from memory_weave.config import EvidenceConfig, IngestionConfig, MemoryWeaveConfig
-from memory_weave.ingest.evidence import session_turn_source_ref, validate_evidence
-from memory_weave.ingest.session import SessionBuffer
-from memory_weave.models import EvidenceSourceKind, Turn
-from memory_weave.store import Store
+from retold.config import EvidenceConfig, IngestionConfig, RetoldConfig
+from retold.ingest.evidence import session_turn_source_ref, validate_evidence
+from retold.ingest.session import SessionBuffer
+from retold.models import EvidenceSourceKind, Turn
+from retold.store import Store
 
 _NOW = datetime(2026, 9, 4, 12, 0, tzinfo=UTC)
 _SESSION_ID = "session-1"
-_CONFIG = MemoryWeaveConfig()
+_CONFIG = RetoldConfig()
 
 
 @pytest.fixture
 def store(tmp_path: Path) -> Store:
     database = Store(tmp_path / "memory.sqlite")
     _ = database.connection
-    database.create_session(_SESSION_ID, "implementation-agent", "aditya", "memory-weave", _NOW)
+    database.create_session(_SESSION_ID, "implementation-agent", "aditya", "retold", _NOW)
     yield database
     database.close()
 
@@ -194,7 +194,7 @@ def test_validate_evidence_treats_an_unknown_turn_role_as_inference(store: Store
 
 
 def test_validate_evidence_reads_its_minimum_length_from_config(session_buffer: SessionBuffer) -> None:
-    config = MemoryWeaveConfig(ingestion=IngestionConfig(evidence=EvidenceConfig(min_characters=100, min_words=2)))
+    config = RetoldConfig(ingestion=IngestionConfig(evidence=EvidenceConfig(min_characters=100, min_words=2)))
 
     evidence = validate_evidence(session_buffer, _SESSION_ID, "yes, we", "user_statement", config)
 

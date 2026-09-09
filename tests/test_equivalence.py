@@ -10,8 +10,8 @@ from typing import Any
 import numpy as np
 import pytest
 
-from memory_weave.config import EquivalenceConfig
-from memory_weave.ingest.equivalence import FakeJudge, NLICrossEncoderJudge
+from retold.config import EquivalenceConfig
+from retold.ingest.equivalence import FakeJudge, NLICrossEncoderJudge
 
 
 def test_fake_judge_uses_symmetric_configured_verdicts_and_a_distinct_default() -> None:
@@ -123,8 +123,8 @@ def test_nli_judge_serializes_model_inference() -> None:
 
 @pytest.mark.integration
 @pytest.mark.skipif(
-    os.environ.get("MEMORY_WEAVE_INTEGRATION") != "1",
-    reason="set MEMORY_WEAVE_INTEGRATION=1 to run local-model integration tests",
+    os.environ.get("RETOLD_INTEGRATION") != "1",
+    reason="set RETOLD_INTEGRATION=1 to run local-model integration tests",
 )
 def test_nli_judge_classifies_same_contradictory_and_distinct_claims() -> None:
     judge = NLICrossEncoderJudge(EquivalenceConfig())

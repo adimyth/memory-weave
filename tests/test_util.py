@@ -4,7 +4,7 @@ from datetime import UTC
 
 import pytest
 
-from memory_weave.util import Timer, normalize_alias, normalize_ws, now, uuid7
+from retold.util import Timer, normalize_alias, normalize_ws, now, uuid7
 
 
 def test_timer_records_ordered_stage_durations_and_total() -> None:

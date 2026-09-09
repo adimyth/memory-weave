@@ -13,14 +13,14 @@ from typing import Any
 
 import pytest
 
-from memory_weave.config import EmbeddingConfig, MemoryWeaveConfig, RerankerConfig, RetrievalConfig
-from memory_weave.index import BgeReranker, NoReranker, RerankError, rerank_with_timeout, reranker_from_config
-from memory_weave.index.embedder import FakeEmbedder
-from memory_weave.index.reranker import rerank
-from memory_weave.index.vector import VectorIndex
-from memory_weave.models import Candidate, GeneratorHit, Principal, Record, Scope, SearchRequest
-from memory_weave.retrieve import Retriever
-from memory_weave.store import Store
+from retold.config import EmbeddingConfig, RerankerConfig, RetoldConfig, RetrievalConfig
+from retold.index import BgeReranker, NoReranker, RerankError, rerank_with_timeout, reranker_from_config
+from retold.index.embedder import FakeEmbedder
+from retold.index.reranker import rerank
+from retold.index.vector import VectorIndex
+from retold.models import Candidate, GeneratorHit, Principal, Record, Scope, SearchRequest
+from retold.retrieve import Retriever
+from retold.store import Store
 
 _NOW = datetime(2026, 9, 8, 12, 0, tzinfo=UTC)
 _AGENT = "research-agent"
@@ -117,8 +117,8 @@ def test_rerank_rejects_a_reranker_that_returns_the_wrong_number_of_scores() -> 
 
 
 def test_reranker_from_config_is_a_no_op_unless_enabled() -> None:
-    assert isinstance(reranker_from_config(MemoryWeaveConfig()), NoReranker)
-    config = MemoryWeaveConfig(reranker=RerankerConfig(enabled=True, floor=0.5))
+    assert isinstance(reranker_from_config(RetoldConfig()), NoReranker)
+    config = RetoldConfig(reranker=RerankerConfig(enabled=True, floor=0.5))
     assert isinstance(reranker_from_config(config), BgeReranker)
 
 
@@ -138,7 +138,7 @@ def test_reranker_only_sees_records_that_passed_scope_and_gate(tmp_path: Path) -
         store.put_embedding(record.id, embedder.name, embedder.version, embedder.embed_documents([record.content])[0])
         store.upsert_fts(record.id, record.content, record.subject, "")
     model = FakeCrossEncoder({(query, mine.content): 0.8, (query, weak.content): 0.1})
-    config = MemoryWeaveConfig(
+    config = RetoldConfig(
         embedding=_EMBEDDING,
         retrieval=RetrievalConfig(per_generator_k=10, default_k=8),
         reranker=RerankerConfig(enabled=True, floor=0.5),
@@ -160,7 +160,7 @@ def test_reranker_only_sees_records_that_passed_scope_and_gate(tmp_path: Path) -
 
 
 def test_enabled_reranker_without_a_floor_is_rejected_at_load(tmp_path: Path) -> None:
-    from memory_weave.config import ConfigError, load_config
+    from retold.config import ConfigError, load_config
 
     path = tmp_path / "config.yaml"
     path.write_text("reranker:\n  enabled: true\n", encoding="utf-8")
@@ -170,8 +170,8 @@ def test_enabled_reranker_without_a_floor_is_rejected_at_load(tmp_path: Path) ->
 
 @pytest.mark.integration
 def test_real_reranker_orders_an_obvious_pair() -> None:
-    if os.environ.get("MEMORY_WEAVE_INTEGRATION") != "1":
-        pytest.skip("set MEMORY_WEAVE_INTEGRATION=1 to run local-model integration tests")
+    if os.environ.get("RETOLD_INTEGRATION") != "1":
+        pytest.skip("set RETOLD_INTEGRATION=1 to run local-model integration tests")
     reranker = BgeReranker(replace(RerankerConfig(), enabled=True, floor=0.5))
     scores = reranker.score_pairs(
         [
@@ -236,7 +236,7 @@ def test_timeout_falls_back_to_the_rrf_order_and_says_so_in_the_log(tmp_path: Pa
     weaker = _record("weaker", "Aditya's editor of choice is Vim, configured from dotfiles.")
     _seed(store, embedder, query, [(strong, 0.90), (weaker, 0.80)])
     slow = SlowOrBrokenReranker(delay_s=0.5, score=0.01)
-    config = MemoryWeaveConfig(
+    config = RetoldConfig(
         embedding=_EMBEDDING,
         retrieval=RetrievalConfig(per_generator_k=10, default_k=8),
         reranker=RerankerConfig(enabled=True, floor=0.5, timeout_ms=50),
@@ -267,7 +267,7 @@ def test_scoring_error_falls_back_or_raises_as_configured(tmp_path: Path) -> Non
     query = "preferred editor"
     _seed(store, embedder, query, [(_record("mine", "Aditya uses Vim as the preferred editor."), 0.90)])
     broken = SlowOrBrokenReranker(error=RuntimeError("model unavailable"))
-    base = MemoryWeaveConfig(embedding=_EMBEDDING, retrieval=RetrievalConfig(per_generator_k=10, default_k=8))
+    base = RetoldConfig(embedding=_EMBEDDING, retrieval=RetrievalConfig(per_generator_k=10, default_k=8))
     vector_index = VectorIndex(_EMBEDDING)
 
     fallback = replace(base, reranker=RerankerConfig(enabled=True, floor=0.5))
@@ -304,7 +304,7 @@ def test_cross_encoder_only_skips_relevance_floors_but_not_scope_or_policy(tmp_p
     )
     reranker = BgeReranker(RerankerConfig(enabled=True, floor=0.5), model_factory=lambda: model)
     retrieval = RetrievalConfig(per_generator_k=10, default_k=8)
-    rrf_then_ce = MemoryWeaveConfig(
+    rrf_then_ce = RetoldConfig(
         embedding=_EMBEDDING, retrieval=retrieval, reranker=RerankerConfig(enabled=True, floor=0.5)
     )
     ce_only = replace(rrf_then_ce, reranker=replace(rrf_then_ce.reranker, mode="cross_encoder_only"))
@@ -345,9 +345,9 @@ def test_rerank_with_timeout_returns_the_input_unchanged_on_timeout() -> None:
 
 
 def test_reranker_config_validation_and_ranking_name(tmp_path: Path) -> None:
-    from memory_weave.config import ConfigError, load_config
+    from retold.config import ConfigError, load_config
 
-    assert MemoryWeaveConfig().reranker.ranking == "rrf_only"
+    assert RetoldConfig().reranker.ranking == "rrf_only"
     assert RerankerConfig(enabled=True, floor=0.1, mode="cross_encoder_only").ranking == "cross_encoder_only"
     for body in (
         "reranker:\n  enabled: true\n  floor: 0.1\n  mode: bm25\n",
@@ -383,7 +383,7 @@ def test_cross_encoder_only_falls_back_to_the_gated_rrf_order_when_the_pass_time
     below_floor = _record("below", "Aditya keeps editor settings in dotfiles.")
     _seed(store, embedder, query, [(mine, 0.90), (below_floor, 0.20)])
     slow = SlowOrBrokenReranker(delay_s=0.5, score=0.9)
-    config = MemoryWeaveConfig(
+    config = RetoldConfig(
         embedding=_EMBEDDING,
         retrieval=RetrievalConfig(per_generator_k=10, default_k=8),
         reranker=RerankerConfig(enabled=True, floor=0.5, mode="cross_encoder_only", timeout_ms=50),

@@ -1,24 +1,24 @@
 # Next phases: background writes
 
-Local working note. Written 6 September 2026 after checking the current landscape against what Weave actually does.
+Local working note. Written 6 September 2026 after checking the current landscape against what Retold actually does.
 
-## Where Weave is today
+## Where Retold is today
 
 **Updated 8 September 2026.** Phase 10 is built. `ingest/extraction.py` claims a session atomically, runs the extractor and the reviewer before anything is written, validates evidence, temporal support, subject, and entity ambiguity twice, writes every accepted candidate through the same ingestor as `memory_write`, writes one summary keyed by `session:<id>`, and hands written semantic records to the activation service afterwards. `ingest/temporal.py` flags due records once and rewrites nothing. `SessionHooks` in `ingest/session.py` gives adapters the three LLD 12 calls plus the idle split. The hosted extractor and reviewer were run once together against the ten-turn test transcript with `gpt-4o`: two candidates accepted and written, one rejected by the reviewer because the quote did not support the duration the extractor had resolved, one rejected by the temporal validator because the extractor set a validity window from "for now", which the deterministic expression list does not count as temporal support, and the summary written. That is one run on one transcript, enough to show the prompts and parsers work, not an evaluation of extraction precision.
 
 One consequence for the utility-aware bundle: the phase added `retrieval.gate.dense_floor.session_summary`, which changes the retrieval configuration hash the bundle records. Nothing the fitness scenarios exercise touches summaries, but the rule is mechanical: the Phase 11 baseline run, with neither optional stage enabled, re-records the supported bundle under the new hash.
 
-Phases 11 and 12 followed the same day. The optional rewrite and rerank stages are built and measured in `usefulness-gate.md` section 8n, and both stay off. The operator surface in `memory_weave/operations.py` and the CLI covers expiry, retention, erasure of a record, a session, or a user, re-embedding with the floor-recalibration refusal, and snapshots; `memory_weave/runtime.py` is the composition root the adapters will use.
+Phases 11 and 12 followed the same day. The optional rewrite and rerank stages are built and measured in `usefulness-gate.md` section 8n, and both stay off. The operator surface in `retold/operations.py` and the CLI covers expiry, retention, erasure of a record, a session, or a user, re-embedding with the floor-recalibration refusal, and snapshots; `retold/runtime.py` is the composition root the adapters will use.
 
-Phase 13 added the Deep Agents adapter, `memory_weave/adapters/deepagents.py`, behind the `deepagents` extra, with the shared contract suite it must pass in `tests/adapter_contract.py`. Phase 14 added the CrewAI adapter, `memory_weave/adapters/crewai.py`, behind the `crewai` extra; it passes the same suite, and `tests/test_adapter_equivalence.py` shows both leave the same semantic records from the same conversation. The core contracts needed no change for the second framework.
+Phase 13 added the Deep Agents adapter, `retold/adapters/deepagents.py`, behind the `deepagents` extra, with the shared contract suite it must pass in `tests/adapter_contract.py`. Phase 14 added the CrewAI adapter, `retold/adapters/crewai.py`, behind the `crewai` extra; it passes the same suite, and `tests/test_adapter_equivalence.py` shows both leave the same semantic records from the same conversation. The core contracts needed no change for the second framework.
 
 Phase 15 (9 September) added the integration suite, the 1K fixture, the calibration sweep, latency, isolation, scale, and contention tests, and `docs/acceptance-report.md`. The precision gate was settled by a blind adjudication of one disputed label without changing the bundle (`usefulness-gate.md` 8o), and `main` was tagged `v1.0.0`. After the tag, the cross-encoder was given two placements, a timeout, and a fallback, and measured against RRF alone (8p): it stays off. The items still open below are the trigger-mode question and attribute-name drift.
 
 The paragraphs below are the note as written on 6 September, before the build.
 
-Weave has one write path: the chatting agent calls `memory_write` during the session. That is it.
+Retold has one write path: the chatting agent calls `memory_write` during the session. That is it.
 
-`memory_weave/ingest/session.py` is a `SessionBuffer`, a process-local cache over persisted transcripts. It is not extraction. There is no `ingest/extractor.py` and no `ingest/extraction.py`. Phase 10 in `implementation-plan.md` specifies both and neither is built.
+`retold/ingest/session.py` is a `SessionBuffer`, a process-local cache over persisted transcripts. It is not extraction. There is no `ingest/extractor.py` and no `ingest/extraction.py`. Phase 10 in `implementation-plan.md` specifies both and neither is built.
 
 So every claim in the README and in `current-landscape.md` about a session-end extractor describes a specification, not running code. The landscape document says so; this note is the plan for closing it.
 
@@ -34,9 +34,9 @@ Checked against each product's current documentation on 6 September 2026. Source
 | AgentCore | Yes, per enabled strategy | Events, after `CreateEvent` or `IngestData` | Strategies must be enabled |
 | Mem0 | Extraction on `add`, not a separate pass | The messages handed to `add` | On |
 | Claude Code | No. Claude writes memory files during the session | The session | Auto memory on by default |
-| Memory Weave | Specified, not built | | |
+| Retold | Specified, not built | | |
 
-Four independent products converged on the same shape: the chatting model is not the only thing that decides what gets remembered, and a second pass reads the transcript afterwards. Two of them independently named it dreaming. Weave's Phase 10 is in that family, so building it is not a novelty, it is catching up to the table stakes.
+Four independent products converged on the same shape: the chatting model is not the only thing that decides what gets remembered, and a second pass reads the transcript afterwards. Two of them independently named it dreaming. Retold's Phase 10 is in that family, so building it is not a novelty, it is catching up to the table stakes.
 
 ## What Phase 10 now covers, and what remains deferred
 
@@ -46,7 +46,7 @@ Cross-session consolidation remains deliberately deferred.
 
 ### Review before applying: moved into Phase 10
 
-Letta has an optional setting where a second background conversation revises the proposed memory updates before they are committed. Weave has an adjacent mechanism and it is not the same one: `policy/lifecycle.py` writes `provisional` for `agent_inference` and `confirmed` for direct evidence, with a TTL on provisional records. That is a judgement about the **source**, made at write time by a rule. It is not a reviewer looking at the candidate.
+Letta has an optional setting where a second background conversation revises the proposed memory updates before they are committed. Retold has an adjacent mechanism and it is not the same one: `policy/lifecycle.py` writes `provisional` for `agent_inference` and `confirmed` for direct evidence, with a TTL on provisional records. That is a judgement about the **source**, made at write time by a rule. It is not a reviewer looking at the candidate.
 
 The gap matters most for extraction, because an extractor proposes in bulk from a whole transcript with no user in the loop. Evidence location and entailment validation catch unsupported claims; the reviewer adds a separate judgement about durability, contextual completeness, and whether the candidate would change a future action.
 
@@ -62,11 +62,11 @@ What is missing is a pass that looks at the store as a whole when no new candida
 
 ### Time-driven review: moved into Phase 10
 
-The most interesting one, and nothing in Weave addresses it. OpenAI's stated example is a memory reading "you're going to Singapore in July" rewriting itself to "you went to Singapore in July 2026" once the trip is over, with no user action and no contradicting statement. The fact changed because the calendar moved.
+The most interesting one, and nothing in Retold addresses it. OpenAI's stated example is a memory reading "you're going to Singapore in July" rewriting itself to "you went to Singapore in July 2026" once the trip is over, with no user action and no contradicting statement. The fact changed because the calendar moved.
 
-Weave's supersession is triggered by a new claim on the same current-fact key. Nothing revisits a record because time passed. The store has the raw material: `event_at` on the record, `expires_at` on provisional records and session summaries. What it does not have is a pass that reads them.
+Retold's supersession is triggered by a new claim on the same current-fact key. Nothing revisits a record because time passed. The store has the raw material: `event_at` on the record, `expires_at` on provisional records and session summaries. What it does not have is a pass that reads them.
 
-This is not the same as Graphiti's validity windows. Graphiti answers "what was true in February" by keeping an interval. Time-driven revision answers "this record is now describing the past" by rewriting the record. A store could do either, both, or neither, and Weave currently does neither.
+This is not the same as Graphiti's validity windows. Graphiti answers "what was true in February" by keeping an interval. Time-driven revision answers "this record is now describing the past" by rewriting the record. A store could do either, both, or neither, and Retold currently does neither.
 
 **Decision.** The extractor may set `valid_from`, `valid_until`, and `review_at` only from temporal expressions in evidence, resolving relative expressions against the turn timestamp. A scheduled pass atomically flags records when `review_at` arrives and records `review_flagged_at`; it does not infer that a plan happened or rewrite the source-backed claim.
 
@@ -84,7 +84,7 @@ The gate stays as it is. None of the above is about retrieval. The background wr
 
 ## Two behaviours the experiment harness surfaced, 6 September 2026
 
-Found while running Weave through `agent-memory-experiments` against the same
+Found while running Retold through `agent-memory-experiments` against the same
 transcript as Mem0, LangMem, and Graphiti. Both reproduce in isolation, outside that
 harness, with two writes and no distractors. Neither is a harness artefact.
 
@@ -124,7 +124,7 @@ two facts that should merge. Whatever is deciding, it is not the current-fact ke
 
 ### 3. Retrieval behaviour, for the record
 
-Against a 45-row store, Weave returned fewer rows than its `k` on 9 of 15 probes,
+Against a 45-row store, Retold returned fewer rows than its `k` on 9 of 15 probes,
 which is the only system in that comparison where anything but the result cap ever
 binds. But on the two ordinary turns, the case the gate exists for, it returned a
 full eight rows every time. The floors are uncalibrated starting values, so this is a

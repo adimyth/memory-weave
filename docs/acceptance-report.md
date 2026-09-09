@@ -1,4 +1,4 @@
-# Acceptance report: Memory Weave v1
+# Acceptance report: Retold v1 (tagged as Memory Weave v1.0.0)
 
 Written 8 September 2026 at the end of Core Phase 15 and completed 9 September with the adjudication in section 3, against the sequence agreed that morning: merge the utility-aware branch into `main`, then Core Phases 10 to 15 in order, each gated. Every number below comes from a test or a result file named beside it. Where a gate is not met, or is met only under a reading the reader may not accept, this report says so rather than rounding it.
 

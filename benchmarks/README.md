@@ -1,6 +1,6 @@
 # Experiments
 
-What has been run against Memory Weave, what each experiment was supposed to show, and what it showed.
+What has been run against Retold, what each experiment was supposed to show, and what it showed.
 
 ## The vertical slice
 
@@ -29,7 +29,7 @@ memory when it should have stayed quiet.
 uv sync --extra live --extra local-models
 
 # set OPENAI_API_KEY and the model in .env, then
-HF_HUB_OFFLINE=1 MEMORY_WEAVE_LIVE=1 uv run python examples/vertical_slice.py \
+HF_HUB_OFFLINE=1 RETOLD_LIVE=1 uv run python examples/vertical_slice.py \
   --provider openai --model <model-id> --runs 3 --trigger hybrid
 ```
 
@@ -96,8 +96,8 @@ inventory and `--admission-prompt v3` is the decision-impact rule.
 ```bash
 HF_HUB_OFFLINE=1 uv run --extra live --extra local-models python benchmarks/shadow_run.py \
   --scenario benchmarks/scenarios/phase0_v5.json --gap-model gpt-4o --admission-model gpt-5.4
-uv run memory-weave --store <store.sqlite> metrics --json --rollback-check
-uv run memory-weave --store <store.sqlite> bundles record benchmarks/bundles/bundle-2026-09-08-a.json \
+uv run retold --store <store.sqlite> metrics --json --rollback-check
+uv run retold --store <store.sqlite> bundles record benchmarks/bundles/bundle-2026-09-08-a.json \
   --passed --evidence "docs/usefulness-gate.md 8m,8n; docs/acceptance-report.md" --by <you>
 ```
 

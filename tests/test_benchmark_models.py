@@ -43,7 +43,7 @@ def test_models_routes_openrouter_prefix_to_openrouter_client(monkeypatch: pytes
     _install_openai(monkeypatch, constructed)
     monkeypatch.setenv("OPENROUTER_API_KEY", "openrouter-test-key")
     monkeypatch.setenv("OPENROUTER_HTTP_REFERER", "https://example.test")
-    monkeypatch.setenv("OPENROUTER_APP_TITLE", "Memory Weave Test")
+    monkeypatch.setenv("OPENROUTER_APP_TITLE", "Retold Test")
     monkeypatch.setenv("OPENROUTER_PROVIDER", "deepinfra")
 
     text = Models().complete("openrouter:anthropic/claude-sonnet-4.6", "system", "user")
@@ -54,7 +54,7 @@ def test_models_routes_openrouter_prefix_to_openrouter_client(monkeypatch: pytes
         "base_url": "https://openrouter.ai/api/v1",
         "default_headers": {
             "HTTP-Referer": "https://example.test",
-            "X-OpenRouter-Title": "Memory Weave Test",
+            "X-OpenRouter-Title": "Retold Test",
         },
     }
     assert constructed[0].requests[0]["model"] == "anthropic/claude-sonnet-4.6"

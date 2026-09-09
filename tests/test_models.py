@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from memory_weave.models import EntityMention, Principal, Scope, SearchRequest, Turn
+from retold.models import EntityMention, Principal, Scope, SearchRequest, Turn
 
 
 def test_core_models_preserve_the_framework_neutral_contract() -> None:
@@ -15,7 +15,7 @@ def test_core_models_preserve_the_framework_neutral_contract() -> None:
         agent_id="research-agent",
         user_id="aditya",
         session_id="session-1",
-        project_id="memory-weave",
+        project_id="retold",
     )
     request = SearchRequest(
         queries=["Aditya explanation preference"],
@@ -37,7 +37,7 @@ def test_core_models_preserve_the_framework_neutral_contract() -> None:
 
     assert scope.kind == "user"
     assert mention.entity_id is None
-    assert principal.project_id == "memory-weave"
+    assert principal.project_id == "retold"
     assert request.k == 8
     assert request.trigger == "tool"
     assert turn.role == "user"
@@ -49,7 +49,7 @@ def test_principal_and_scope_are_immutable() -> None:
         agent_id="research-agent",
         user_id="aditya",
         session_id="session-1",
-        project_id="memory-weave",
+        project_id="retold",
     )
 
     with pytest.raises(FrozenInstanceError):

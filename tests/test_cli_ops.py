@@ -8,12 +8,12 @@ from pathlib import Path
 
 import pytest
 
-from memory_weave import cli, runtime
-from memory_weave.host import MemoryHost
-from memory_weave.index.embedder import FakeEmbedder
-from memory_weave.ingest import FakeExtractor, FakeJudge, TableReviewer
-from memory_weave.models import ExtractionOutput, Principal, Scope, SessionSummary, Turn
-from memory_weave.store import Store
+from retold import cli, runtime
+from retold.host import MemoryHost
+from retold.index.embedder import FakeEmbedder
+from retold.ingest import FakeExtractor, FakeJudge, TableReviewer
+from retold.models import ExtractionOutput, Principal, Scope, SessionSummary, Turn
+from retold.store import Store
 
 _NOW = datetime(2026, 9, 8, 12, 0, tzinfo=UTC)
 _CONFIG_YAML = """

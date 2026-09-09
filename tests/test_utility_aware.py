@@ -10,9 +10,9 @@ from pathlib import Path
 
 import pytest
 
-from memory_weave.host import MemoryHost
-from memory_weave.models import Principal, Record, Scope
-from memory_weave.policy import (
+from retold.host import MemoryHost
+from retold.models import Principal, Record, Scope
+from retold.policy import (
     AdmissionDecision,
     CandidateVerdict,
     Gap,
@@ -22,8 +22,8 @@ from memory_weave.policy import (
     UtilityAwareConfig,
     UtilityAwareOrchestrator,
 )
-from memory_weave.store import Store
-from memory_weave.util import render_subject
+from retold.store import Store
+from retold.util import render_subject
 
 _AT = datetime(2026, 9, 7, 12, 0, tzinfo=UTC)
 
@@ -114,7 +114,7 @@ def _retrieve_all(store):
 
 
 def _orchestrator(store, gaps, admission, *, approved: bool = True, **overrides):
-    from memory_weave.policy import BundleRegistry, bundle_components
+    from retold.policy import BundleRegistry, bundle_components
 
     config = UtilityAwareConfig(gap_enabled=True, admission_mode="hosted_judge", **overrides)
     registry = BundleRegistry(store)
@@ -266,7 +266,7 @@ def test_policy_bundle_is_persisted_with_every_decision(world) -> None:
 
 
 def test_serving_requires_an_approved_bundle_and_shadow_does_not(world) -> None:
-    from memory_weave.policy import BundleNotApprovedError, BundleRegistry, bundle_components
+    from retold.policy import BundleNotApprovedError, BundleRegistry, bundle_components
 
     store, principal, _ = world
     calls: list[str] = []
@@ -306,7 +306,7 @@ def test_serving_requires_an_approved_bundle_and_shadow_does_not(world) -> None:
 
 
 def test_metrics_assign_one_stage_outcome_per_decision_and_feed_rollback(world) -> None:
-    from memory_weave.policy import RollbackThresholds, aggregate, rollback_reasons, stage_outcome
+    from retold.policy import RollbackThresholds, aggregate, rollback_reasons, stage_outcome
 
     store, principal, _ = world
     calls: list[str] = []

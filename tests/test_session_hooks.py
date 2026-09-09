@@ -8,10 +8,10 @@ from pathlib import Path
 
 import pytest
 
-from memory_weave.config import EmbeddingConfig, IngestionConfig, MemoryWeaveConfig
-from memory_weave.index.embedder import FakeEmbedder
-from memory_weave.index.vector import VectorIndex
-from memory_weave.ingest import (
+from retold.config import EmbeddingConfig, IngestionConfig, RetoldConfig
+from retold.index.embedder import FakeEmbedder
+from retold.index.vector import VectorIndex
+from retold.ingest import (
     ExtractionRunner,
     FakeExtractor,
     FakeJudge,
@@ -20,12 +20,12 @@ from memory_weave.ingest import (
     SessionHooks,
     TableReviewer,
 )
-from memory_weave.models import EntityMention, ExtractionOutput, Principal, Scope, SessionSummary
-from memory_weave.store import Store
+from retold.models import EntityMention, ExtractionOutput, Principal, Scope, SessionSummary
+from retold.store import Store
 
 _NOW = datetime(2026, 9, 8, 12, 0, tzinfo=UTC)
 _PRINCIPAL = Principal("agent", "aditya", "thread-1", None)
-_CONFIG = MemoryWeaveConfig(
+_CONFIG = RetoldConfig(
     embedding=EmbeddingConfig(model="fake-embedder", version="1", dims=8),
     ingestion=IngestionConfig(session_idle_timeout_minutes=30),
 )

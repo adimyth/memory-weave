@@ -8,7 +8,7 @@ their expiry, and some rows are already expired.
 
 Build the snapshot once with the real embedder (about a minute on an M-series laptop):
 
-    HF_HUB_OFFLINE=1 MEMORY_WEAVE_INTEGRATION=1 uv run --extra local-models python -m tests.integration.fixture_1k
+    HF_HUB_OFFLINE=1 RETOLD_INTEGRATION=1 uv run --extra local-models python -m tests.integration.fixture_1k
 
 Tests copy `tests/fixtures/memory_1k.sqlite` into a temporary directory and open it there.
 """
@@ -21,12 +21,12 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-from memory_weave.config import EmbeddingConfig, MemoryWeaveConfig
-from memory_weave.host import MemoryHost
-from memory_weave.index.embedder import Embedder
-from memory_weave.models import Record, Scope
-from memory_weave.store import Store
-from memory_weave.util import render_subject
+from retold.config import EmbeddingConfig, RetoldConfig
+from retold.host import MemoryHost
+from retold.index.embedder import Embedder
+from retold.models import Record, Scope
+from retold.store import Store
+from retold.util import render_subject
 
 FIXTURE_PATH = Path(__file__).resolve().parents[1] / "fixtures" / "memory_1k.sqlite"
 NOW = datetime(2026, 9, 8, 12, 0, tzinfo=UTC)
@@ -628,10 +628,10 @@ def all_seeds() -> list[Seed]:
     return seeds
 
 
-def build_fixture(path: Path, embedder: Embedder, *, config: MemoryWeaveConfig | None = None) -> int:
+def build_fixture(path: Path, embedder: Embedder, *, config: RetoldConfig | None = None) -> int:
     """Write the fixture store at ``path`` with ``embedder`` and return the record count."""
 
-    config = config or MemoryWeaveConfig(
+    config = config or RetoldConfig(
         embedding=EmbeddingConfig(model=embedder.name, version=embedder.version, dims=embedder.dims)
     )
     if path.exists():
@@ -718,8 +718,8 @@ def copy_fixture(destination_dir: Path) -> Path:
     return target
 
 
-def fixture_config() -> MemoryWeaveConfig:
-    return MemoryWeaveConfig()
+def fixture_config() -> RetoldConfig:
+    return RetoldConfig()
 
 
 def scope_of(record: Record) -> Scope:
@@ -738,7 +738,7 @@ def describe(seeds: list[Seed]) -> dict[str, Any]:
 if __name__ == "__main__":
     import json
 
-    from memory_weave.index.embedder import BgeM3Embedder
+    from retold.index.embedder import BgeM3Embedder
 
     FIXTURE_PATH.parent.mkdir(parents=True, exist_ok=True)
     total = build_fixture(FIXTURE_PATH, BgeM3Embedder(EmbeddingConfig()))

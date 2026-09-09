@@ -1,6 +1,6 @@
 # The relevance gate, and the question it cannot answer
 
-This document is about the one unsolved problem in Memory Weave. Everything else in the system works:
+This document is about the one unsolved problem in Retold. Everything else in the system works:
 records are written with evidence, scoped correctly, superseded when they change, and retrieved through
 three channels with a full audit trail. The gate is what decides whether any of that reaches the model,
 and on host-issued searches it currently decides wrong about half the time.
@@ -66,7 +66,7 @@ record is pure noise. The gate has no signal that distinguishes this from:
 
 where the stored timezone is the whole answer. Both are on-topic. Only one needs memory.
 
-## 3. What this costs Memory Weave
+## 3. What this costs Retold
 
 Measured across 36 host-issued searches in the Phase 9a hybrid run, taking the best dense score in each:
 
@@ -113,10 +113,10 @@ Almost none of them see it, because almost none of them try to answer the second
 | LangMem | `BaseStore.search` returns up to `limit`, default 10, with no score threshold. | Nothing is ever withheld. |
 | Letta | Persona and user blocks live in the prompt; archival content is searched on demand. | The in-prompt half is always injected. |
 | File-based agents | A hot markdown slice is loaded at session start. | The hot slice is always present. |
-| Memory Weave | Every search passes a gate that can return nothing, and logs why. | Yes, and it is measured. |
+| Retold | Every search passes a gate that can return nothing, and logs why. | Yes, and it is measured. |
 
 The pattern is that returning something on every search is the norm, so the question "should anything
-have been returned here" is never asked and therefore never fails. Memory Weave is unusual in asking it,
+have been returned here" is never asked and therefore never fails. Retold is unusual in asking it,
 which is why the failure is visible and quantified here and nowhere else in the table. That is the
 design working as intended. The audit trail did its job. What it revealed is that the chosen signal is
 not up to the question.

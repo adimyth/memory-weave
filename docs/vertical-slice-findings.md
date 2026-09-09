@@ -132,7 +132,7 @@ partial cache hangs indefinitely inside the hub transfer library rather than fai
 ## Run command
 
 ```bash
-HF_HUB_OFFLINE=1 MEMORY_WEAVE_LIVE=1 uv run --extra live --extra local-models \
+HF_HUB_OFFLINE=1 RETOLD_LIVE=1 uv run --extra live --extra local-models \
   python examples/vertical_slice.py --provider openai --model <model-id> --runs 3 --trigger hybrid
 ```
 

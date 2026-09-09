@@ -10,11 +10,11 @@ from pathlib import Path
 
 import pytest
 
-from memory_weave.config import EmbeddingConfig, MemoryWeaveConfig, SessionsConfig
-from memory_weave.host import MemoryHost
-from memory_weave.index.embedder import FakeEmbedder
-from memory_weave.ingest import FakeExtractor, FakeJudge, SessionHooks, TableReviewer, WriteRequest
-from memory_weave.models import (
+from retold.config import EmbeddingConfig, RetoldConfig, SessionsConfig
+from retold.host import MemoryHost
+from retold.index.embedder import FakeEmbedder
+from retold.ingest import FakeExtractor, FakeJudge, SessionHooks, TableReviewer, WriteRequest
+from retold.models import (
     CandidateRecord,
     EntityMention,
     ExtractionOutput,
@@ -23,9 +23,9 @@ from memory_weave.models import (
     SearchRequest,
     SessionSummary,
 )
-from memory_weave.operations import OperationRefused, Operations
-from memory_weave.runtime import MemoryRuntime, build_runtime
-from memory_weave.store import Store
+from retold.operations import OperationRefused, Operations
+from retold.runtime import MemoryRuntime, build_runtime
+from retold.store import Store
 
 _NOW = datetime(2026, 9, 8, 12, 0, tzinfo=UTC)
 _AGENT = "agent"
@@ -35,7 +35,7 @@ _USER_SCOPE = Scope(kind="user", id=_USER)
 _OTHER_SCOPE = Scope(kind="user", id=_OTHER)
 _PROJECT_SCOPE = Scope(kind="project", id="weave")
 _EMBEDDING = EmbeddingConfig(model="fake-embedder", version="1", dims=8)
-_CONFIG = MemoryWeaveConfig(embedding=_EMBEDDING, sessions=SessionsConfig(retain_days=30))
+_CONFIG = RetoldConfig(embedding=_EMBEDDING, sessions=SessionsConfig(retain_days=30))
 
 TURN_SENTINEL = "ZEPHYR-TURN-7731"
 EVIDENCE_SENTINEL = "QUOKKA-PROJECT-4412"
@@ -73,7 +73,7 @@ class World:
     project_record: str
     other_record: str
 
-    def ops(self, config: MemoryWeaveConfig = _CONFIG) -> Operations:
+    def ops(self, config: RetoldConfig = _CONFIG) -> Operations:
         return Operations(self.store, config, actor="tester", current_time=self.clock)
 
     def events(self, kind: str | None = None) -> list[dict[str, object]]:
@@ -86,7 +86,7 @@ class World:
 
 
 def _build(
-    config: MemoryWeaveConfig, store: Store, clock: Clock, *, extractor: FakeExtractor | None = None
+    config: RetoldConfig, store: Store, clock: Clock, *, extractor: FakeExtractor | None = None
 ) -> MemoryRuntime:
     built = build_runtime(
         config,
@@ -417,7 +417,7 @@ def test_reembed_runs_without_a_search_log(tmp_path: Path) -> None:
 def test_snapshot_restore_preserves_lineage_activation_conflicts_reviews_and_decisions(
     world: World, tmp_path: Path
 ) -> None:
-    from memory_weave.policy import ActivationService, BundleRegistry, CategoryDecision
+    from retold.policy import ActivationService, BundleRegistry, CategoryDecision
 
     class Policy:
         def classify(self, content: str) -> CategoryDecision:

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from memory_weave.config import ConfigError, load_config
+from retold.config import ConfigError, load_config
 
 
 def test_load_config_uses_lld_defaults() -> None:
@@ -128,7 +128,7 @@ def test_load_config_rejects_unknown_key(tmp_path: Path) -> None:
 
 def test_load_config_rejects_unknown_top_level_key(tmp_path: Path) -> None:
     config_path = tmp_path / "memory.yaml"
-    config_path.write_text("not_a_memory_weave_section: true\n", encoding="utf-8")
+    config_path.write_text("not_a_retold_section: true\n", encoding="utf-8")
 
     with pytest.raises(ConfigError, match="root"):
         load_config(config_path)

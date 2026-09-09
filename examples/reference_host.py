@@ -1,6 +1,6 @@
 """Reference host adapter: how a consuming application wires the utility-aware path, canary-ready.
 
-Memory Weave is a library. The application that serves users owns the model clients, the traffic cohorts,
+Retold is a library. The application that serves users owns the model clients, the traffic cohorts,
 the deployment configuration, and the rollback decision. This adapter shows the integration contract that
 application must honour, and nothing else:
 
@@ -23,8 +23,8 @@ from dataclasses import dataclass, replace
 from datetime import datetime
 from typing import Literal
 
-from memory_weave.models import Principal, Record
-from memory_weave.policy import (
+from retold.models import Principal, Record
+from retold.policy import (
     AdmissionPolicy,
     BundleRegistry,
     GapPolicy,
@@ -39,8 +39,8 @@ from memory_weave.policy import (
     bundle_components,
     rollback_reasons,
 )
-from memory_weave.policy.utility_aware import Retrieve
-from memory_weave.store import Store
+from retold.policy.utility_aware import Retrieve
+from retold.store import Store
 
 # Measured on the Phase 0 splits with eight-candidate pools: planner about 1 s, judge 2 to 5 s at p95.
 MEASURED_GAP_TIMEOUT_MS = 4000
@@ -110,7 +110,7 @@ class ReferenceHost:
         )
 
     def bundle_hash(self) -> str:
-        from memory_weave.policy import bundle_hash
+        from retold.policy import bundle_hash
 
         return bundle_hash(bundle_components(self.config()))
 

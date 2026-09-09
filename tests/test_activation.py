@@ -7,9 +7,9 @@ from pathlib import Path
 
 import pytest
 
-from memory_weave.host import MemoryHost
-from memory_weave.models import Principal, Record, Scope, Turn
-from memory_weave.policy import (
+from retold.host import MemoryHost
+from retold.models import Principal, Record, Scope, Turn
+from retold.policy import (
     ActivationService,
     CategoryDecision,
     ProfileAssembler,
@@ -17,8 +17,8 @@ from memory_weave.policy import (
     inventory,
     verify_principal_evidence,
 )
-from memory_weave.store import Store
-from memory_weave.util import render_subject
+from retold.store import Store
+from retold.util import render_subject
 
 _AT = datetime(2026, 9, 7, 12, 0, tzinfo=UTC)
 
@@ -156,7 +156,7 @@ def test_recognised_forms_override_the_classifier() -> None:
 
 
 def test_review_resolution_and_direct_activation_are_checked_and_audited(world) -> None:
-    from memory_weave.policy import ActivationOperations
+    from retold.policy import ActivationOperations
 
     store, principal, entity_id = world
     text = "User likes it terse, sometimes."

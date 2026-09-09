@@ -7,13 +7,13 @@ from datetime import UTC, datetime
 import numpy as np
 import pytest
 
-from memory_weave.config import EmbeddingConfig, MemoryWeaveConfig
-from memory_weave.index.vector import VectorIndex
-from memory_weave.models import Candidate, GeneratorHit, LexicalMatch, LexicalTerm, Record, Scope, SearchRequest
-from memory_weave.retrieve.budget import fill_budget
-from memory_weave.retrieve.dedup import collapse_duplicates
-from memory_weave.retrieve.fusion import fuse
-from memory_weave.retrieve.gate import FloorGate
+from retold.config import EmbeddingConfig, RetoldConfig
+from retold.index.vector import VectorIndex
+from retold.models import Candidate, GeneratorHit, LexicalMatch, LexicalTerm, Record, Scope, SearchRequest
+from retold.retrieve.budget import fill_budget
+from retold.retrieve.dedup import collapse_duplicates
+from retold.retrieve.fusion import fuse
+from retold.retrieve.gate import FloorGate
 
 _NOW = datetime(2026, 9, 5, tzinfo=UTC)
 _SCOPE = Scope(kind="user", id="aditya")
@@ -64,7 +64,7 @@ def test_rrf_matches_the_documented_formula_to_four_decimal_places() -> None:
 
 
 def test_relative_floor_compares_candidates_with_the_same_channel_count() -> None:
-    config = MemoryWeaveConfig()
+    config = RetoldConfig()
     lexical = LexicalMatch((LexicalTerm("two", False, False),), 1)
     candidates = fuse(
         [
@@ -84,7 +84,7 @@ def test_relative_floor_compares_candidates_with_the_same_channel_count() -> Non
 
 
 def test_gate_drops_weak_dense_and_weak_lexical_candidates() -> None:
-    config = MemoryWeaveConfig()
+    config = RetoldConfig()
     weak_dense = Candidate("dense", GeneratorHit(1, 0.2), None, None, None, None, 0.02, 1, None, 0.02, None, None, None)
     weak_lexical = Candidate(
         "lexical",
@@ -110,7 +110,7 @@ def test_gate_drops_weak_dense_and_weak_lexical_candidates() -> None:
 
 
 def test_exact_entity_match_passes_the_gate_without_dense_or_lexical_evidence() -> None:
-    config = MemoryWeaveConfig()
+    config = RetoldConfig()
     entity = Candidate(
         "entity",
         None,

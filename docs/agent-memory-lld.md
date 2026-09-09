@@ -2,9 +2,9 @@
 
 This document specifies the implementation of decisions in `agent-memory-hld.md`.
 
-Language is Python 3.12. The package is called `memory_weave` and is distributed as `memory-weave`; the CLI command is `memory-weave`. Everything runs in one process with one SQLite file.
+Language is Python 3.12. The package is called `retold` and is distributed as `retold`; the CLI command is `retold`. Everything runs in one process with one SQLite file.
 
-Memory Weave gives an agent durable, scoped memory. It stores evidence-backed records in SQLite, searches them with dense, lexical, and entity retrieval, fuses the rankings with RRF, and returns only records the caller may read. It also keeps an audit trail for each write and search.
+Retold gives an agent durable, scoped memory. It stores evidence-backed records in SQLite, searches them with dense, lexical, and entity retrieval, fuses the rankings with RRF, and returns only records the caller may read. It also keeps an audit trail for each write and search.
 
 The document moves from static contracts to runtime behavior: package and configuration, storage and types, policy, ingestion, retrieval, integration, and tests. Sections 3 and 10 are the main references for data ownership and the search path.
 
@@ -23,7 +23,7 @@ The package mirrors the path a memory takes through the system. `store` holds du
 | `tools` and `adapters` | Framework-neutral tool handlers and framework-specific integration. |
 
 ```bash
-memory_weave/
+retold/
   __init__.py
   config.py          # typed config, loaded from YAML; every threshold, floor, model name, and timeout lives here
   models.py          # dataclasses for Record, Entity, Principal, Scope, SearchRequest, SearchResult, Candidate
@@ -31,7 +31,7 @@ memory_weave/
   host.py            # MemoryHost: grants and user provisioning, the host's administrative surface
   hosted.py          # CompletionClient: provider-neutral hosted model calls (Anthropic, OpenAI, OpenRouter)
   operations.py      # Operations: expire, retain, erase, reembed, snapshot, due-review flagging
-  cli.py             # memory-weave: migrate, grant, search, get, dump, ops, extract, reviews, metrics, bundles
+  cli.py             # retold: migrate, grant, search, get, dump, ops, extract, reviews, metrics, bundles
   log.py             # structured logging helpers
   util.py            # clock, ids, Timer
   store/
@@ -84,7 +84,7 @@ memory_weave/
 
 ## 2. Configuration
 
-Memory Weave loads its tunables from one YAML file through `load_config`. The following sections define that file's blocks.
+Retold loads its tunables from one YAML file through `load_config`. The following sections define that file's blocks.
 
 ### 2.1 Store and embedding
 
@@ -105,8 +105,8 @@ embedding:
 ```
 
 - `store.busy_timeout_seconds` is how long one connection waits for another's write lock. Every store transaction begins `IMMEDIATE`, so a writer queues behind a background extraction rather than failing at once; the wait is bounded by this value.
-- `version` tags each stored vector. `VectorIndex.load` accepts rows that match the current model and version. Bump it when the model or preprocessing changes, then run `memory-weave reembed`.
-- `reembed_batch_size` is how many records `memory-weave reembed` embeds per batch while rebuilding the vectors.
+- `version` tags each stored vector. `VectorIndex.load` accepts rows that match the current model and version. Bump it when the model or preprocessing changes, then run `retold reembed`.
+- `reembed_batch_size` is how many records `retold reembed` embeds per batch while rebuilding the vectors.
 - `dims` is the vector width. It must match the model's output.
 - `device` selects `mps` on Apple silicon, `cuda` when available, and `cpu` otherwise.
 - `max_chars` truncates content before embedding. Stored content is never truncated.
@@ -279,7 +279,7 @@ sessions:
   retain_days: 90
 ```
 
-- `retain_days` is how long a transcript is kept after its session ended once extraction has completed. `memory-weave retain` blanks older transcripts and keeps the turn rows; refer sections 3.5 and 16. A session that has not been extracted is kept regardless of age, because its evidence has not been consumed.
+- `retain_days` is how long a transcript is kept after its session ended once extraction has completed. `retold retain` blanks older transcripts and keeps the turn rows; refer sections 3.5 and 16. A session that has not been extracted is kept regardless of age, because its evidence has not been consumed.
 
 ## 3. Schema
 
@@ -496,7 +496,7 @@ CREATE TABLE search_log (
 | `source_ref` | Session turn, tool call, or document that supports the record. |
 | `creator_agent_id` | Agent that created the record. |
 | `evidence` | Verbatim supporting quote. |
-| `created_at` | Time when Memory Weave stored the row. |
+| `created_at` | Time when Retold stored the row. |
 | `event_at` | Time when the fact or event occurred. Defaults to `created_at`. |
 | `expires_at` | Time after which normal retrieval excludes the row. `NULL` means no expiry. |
 | `valid_from`, `valid_until` | Optional world-validity bounds copied from an explicit temporal statement. They do not control ordinary retrieval in the first version. |
@@ -521,7 +521,7 @@ Migration 2 moves the old subject string to the structured `subject_entity_id` a
 | `record_id` | Legacy memory that needs a primary entity or attribute repair. |
 | `issue` | Why the migration could not safely map the row, such as zero or multiple `about` links. |
 
-`migrate()` returns the number of unresolved rows. `Store` refuses to open a database that has unresolved rows unless constructed with `allow_migration_issues=True`, because an unmapped legacy record is an active fact that new writes can neither supersede nor conflict with. `memory-weave migrate` lists each unresolved record and exits with status 2 until an operator retires them with `--expire-unmapped` (which sets `status = expired` and appends a `record.status` event per row) or acknowledges them with `--allow-unmapped`. The backfill normalizes the legacy attribute segment with `normalize_attribute`, so a legacy key matches the slug a new write produces.
+`migrate()` returns the number of unresolved rows. `Store` refuses to open a database that has unresolved rows unless constructed with `allow_migration_issues=True`, because an unmapped legacy record is an active fact that new writes can neither supersede nor conflict with. `retold migrate` lists each unresolved record and exits with status 2 until an operator retires them with `--expire-unmapped` (which sets `status = expired` and appends a `record.status` event per row) or acknowledges them with `--allow-unmapped`. The backfill normalizes the legacy attribute segment with `normalize_attribute`, so a legacy key matches the slug a new write produces.
 
 ### 3.3 Conflict and retrieval-index tables
 
@@ -597,7 +597,7 @@ The retriever loads eligible record IDs into a temporary SQLite table and joins 
 | `can_read` | `1` when the agent may retrieve records from the scope. |
 | `can_write` | `1` when the agent may create or revise records in the scope. |
 
-`sessions` identifies an agent run. `session_turns` stores the transcript used by evidence validation and session extraction. Transcript text is not kept forever: `memory-weave retain` blanks the turns of extracted sessions older than `sessions.retain_days`, and `memory-weave erase` blanks them on request. Both keep the turn rows, so a `source_ref` still resolves to a tombstoned turn rather than to nothing.
+`sessions` identifies an agent run. `session_turns` stores the transcript used by evidence validation and session extraction. Transcript text is not kept forever: `retold retain` blanks the turns of extracted sessions older than `sessions.retain_days`, and `retold erase` blanks them on request. Both keep the turn rows, so a `source_ref` still resolves to a tombstoned turn rather than to nothing.
 
 | `sessions` field | Meaning |
 | --- | --- |
@@ -989,7 +989,7 @@ def readable_scopes(store, agent_id, user_id) -> list[Scope]:
 
 The user-scope condition blocks a grant on `user:X` unless the current principal is `X`. The same safety belt applies to a legacy or direct-store grant on a private agent scope: its encoded user suffix must match the current principal user. Cross-user reads use `org`, `project`, or an explicitly granted plain agent scope.
 
-`writable_scopes` follows the same rule with `can_write=True`. The caller always has read and write access to the agent-and-user private scope. `Principal` rejects `/` in `agent_id` and `user_id`, and `MemoryHost.grant` applies the same validation to an agent ID and user-scope ID. A host provisions every other scope through `MemoryHost.grant(agent_id, scope, read, write)` and may remove it with `MemoryHost.revoke(...)`. The `memory-weave grant` command wraps that host API.
+`writable_scopes` follows the same rule with `can_write=True`. The caller always has read and write access to the agent-and-user private scope. `Principal` rejects `/` in `agent_id` and `user_id`, and `MemoryHost.grant` applies the same validation to an agent ID and user-scope ID. A host provisions every other scope through `MemoryHost.grant(agent_id, scope, read, write)` and may remove it with `MemoryHost.revoke(...)`. The `retold grant` command wraps that host API.
 
 ### 6.2 Source rank and initial status
 
@@ -1105,7 +1105,7 @@ Reinforcement records an independent later observation of the same claim. The so
 
 ### 6.5 Expiry
 
-Retrieval treats `expires_at < now` as ineligible before candidate generation. The stored row, embedding, FTS row, and entity links remain available for `include_history` and audit. `memory-weave expire` changes eligible expired rows to `expired` and writes audit events. Retrieval does not depend on this maintenance command.
+Retrieval treats `expires_at < now` as ineligible before candidate generation. The stored row, embedding, FTS row, and entity links remain available for `include_history` and audit. `retold expire` changes eligible expired rows to `expired` and writes audit events. Retrieval does not depend on this maintenance command.
 
 ### 6.6 Evidence validation
 
@@ -1725,7 +1725,7 @@ The published JSON Schema declares every property of both shapes at the top leve
 
 Input: `{"id": string, "reason": string}`.
 
-The handler sets the record to `deleted`, retains a tombstone, removes its FTS row, and marks its in-memory vector dead. Durable content and its embedding remain in the database until a controlled erase removes them, but no tool returns them: `memory_get` on a forgotten record answers with the audit shape only, carrying `tombstone: true` and `null` for `content`, `evidence`, and `source_ref`. Content erasure is an admin CLI operation (`memory-weave erase --record <id>`), not an agent tool: a person must control that irreversible step. The tool description says so in as many words, so a model does not read "forget" as erasure.
+The handler sets the record to `deleted`, retains a tombstone, removes its FTS row, and marks its in-memory vector dead. Durable content and its embedding remain in the database until a controlled erase removes them, but no tool returns them: `memory_get` on a forgotten record answers with the audit shape only, carrying `tombstone: true` and `null` for `content`, `evidence`, and `source_ref`. Content erasure is an admin CLI operation (`retold erase --record <id>`), not an agent tool: a person must control that irreversible step. The tool description says so in as many words, so a model does not read "forget" as erasure.
 
 ## 12. Session buffer and ingestion hooks
 
@@ -1785,9 +1785,9 @@ CrewAI produces coarser dialogue than Deep Agents because it exposes step output
 
 Both adapters attach current-turn context to every search, even while rewriting is disabled. That avoids an adapter change when the flag is enabled later. If a framework needs framework-specific state in `records`, change the core contract instead of adding adapter-only fields.
 
-**Deep Agents, as built.** `memory_weave/adapters/deepagents.py` wires one `MemoryRuntime` into a `create_deep_agent` graph through two objects. The five tools are `BaseTool` subclasses whose `_run` receives the `RunnableConfig`, so the principal is derived from `configurable.agent_id`, `configurable.user_id`, and `configurable.thread_id` at call time and never from tool input. One middleware carries the hooks: `before_agent` opens the session; `before_model` records every human, assistant, and tool message not yet in the transcript, in order, through `SessionHooks.on_turn`, and in `auto` and `hybrid` modes runs the one host-issued search per user turn, appending the recalled block as a synthetic tool-call and tool-result pair that is marked and never recorded as a transcript turn; `wrap_model_call` is the utility-aware path, applied only to a model call that follows a user message: it adds the ambient profile to the system message, takes the model's reply as the draft, hands the orchestrator a regenerate callable that calls the model once more with the admitted records appended as a recalled block, and returns the regenerated reply only when the orchestrator produced one, so shadow mode serves the draft by construction. A draft that is itself a tool call skips the path. `after_agent` records the final reply. The host closes a session with `adapter.end_session(config)`; the hooks make the second close a no-op and schedule extraction once. The shared contract suite in `tests/adapter_contract.py` runs the same scripted conversation against every adapter.
+**Deep Agents, as built.** `retold/adapters/deepagents.py` wires one `MemoryRuntime` into a `create_deep_agent` graph through two objects. The five tools are `BaseTool` subclasses whose `_run` receives the `RunnableConfig`, so the principal is derived from `configurable.agent_id`, `configurable.user_id`, and `configurable.thread_id` at call time and never from tool input. One middleware carries the hooks: `before_agent` opens the session; `before_model` records every human, assistant, and tool message not yet in the transcript, in order, through `SessionHooks.on_turn`, and in `auto` and `hybrid` modes runs the one host-issued search per user turn, appending the recalled block as a synthetic tool-call and tool-result pair that is marked and never recorded as a transcript turn; `wrap_model_call` is the utility-aware path, applied only to a model call that follows a user message: it adds the ambient profile to the system message, takes the model's reply as the draft, hands the orchestrator a regenerate callable that calls the model once more with the admitted records appended as a recalled block, and returns the regenerated reply only when the orchestrator produced one, so shadow mode serves the draft by construction. A draft that is itself a tool call skips the path. `after_agent` records the final reply. The host closes a session with `adapter.end_session(config)`; the hooks make the second close a no-op and schedule extraction once. The shared contract suite in `tests/adapter_contract.py` runs the same scripted conversation against every adapter.
 
-**CrewAI, as built.** `memory_weave/adapters/crewai.py` has three parts because CrewAI drives a text-only model through a ReAct loop and offers no per-call configuration. Identity is bound when the adapter is built: `principal_from_inputs(inputs, agent_role)` takes `user_id` and `session_id` from the crew inputs and the agent id from the role slug. The five tools are `BaseTool` subclasses whose argument models are generated from the JSON schemas. `step_callback` records each action's tool result as a tool turn and each finish as an assistant turn; CrewAI invokes it twice per tool use, once with the bare result and once with the action, and only the action counts. `wrap_llm` returns a proxy around the host's model that records the task description as the user turn on the first call of each task, adds the ambient profile to the system message in the utility-aware modes, appends the host-issued recalled block to the task prompt in `auto` and `hybrid`, and applies the orchestrator to a first call whose reply is a final answer, regenerating by calling the model once more with the admitted records appended to the prompt. A first reply that is an action skips the path, as a tool-call draft does in Deep Agents. The policy text goes into the agent's backstory through `adapter.policy_text`, since CrewAI has no separate system prompt slot.
+**CrewAI, as built.** `retold/adapters/crewai.py` has three parts because CrewAI drives a text-only model through a ReAct loop and offers no per-call configuration. Identity is bound when the adapter is built: `principal_from_inputs(inputs, agent_role)` takes `user_id` and `session_id` from the crew inputs and the agent id from the role slug. The five tools are `BaseTool` subclasses whose argument models are generated from the JSON schemas. `step_callback` records each action's tool result as a tool turn and each finish as an assistant turn; CrewAI invokes it twice per tool use, once with the bare result and once with the action, and only the action counts. `wrap_llm` returns a proxy around the host's model that records the task description as the user turn on the first call of each task, adds the ambient profile to the system message in the utility-aware modes, appends the host-issued recalled block to the task prompt in `auto` and `hybrid`, and applies the orchestrator to a first call whose reply is a final answer, regenerating by calling the model once more with the admitted records appended to the prompt. A first reply that is an action skips the path, as a tool-call draft does in Deep Agents. The policy text goes into the agent's backstory through `adapter.policy_text`, since CrewAI has no separate system prompt slot.
 
 **The measured difference between the two.** `tests/test_adapter_equivalence.py` runs the contract conversation through both adapters and compares the semantic records by attribute, content, source, status, evidence, and activation: they are equal. The transcripts differ in shape, as this section predicted: CrewAI records one user turn per task, one tool turn per action, and one assistant turn per finish, so the Deep Agents transcript can hold more assistant turns for the same conversation. Search context differs accordingly: Deep Agents attaches the last user and assistant turns; CrewAI attaches the task description and the most recent step output, which may be a tool turn. Neither adapter carries a policy of its own: both call the same handlers, the same orchestrator, and the same hooks.
 
@@ -1865,23 +1865,23 @@ The CLI supports maintenance, debugging, and reproducible evaluation. It is not 
 
 | Command | Purpose |
 | --- | --- |
-| `memory-weave migrate` | Apply forward-only schema migrations and list any legacy record migration 2 could not map to one primary entity and attribute. Exits with status 2 while any remain; `--expire-unmapped` retires them, `--allow-unmapped` acknowledges them. |
-| `memory-weave search --agent A --user U "..."` | Run retrieval and print the corresponding log row. |
-| `memory-weave get <id>` | Print a full record with lineage and events. |
-| `memory-weave dump --scope user:U` | Print active records in one scope. |
-| `memory-weave expire` | Mark every active record past its expiry, provisional records and session summaries alike, as `expired`, one event each. |
-| `memory-weave reembed --model M --version V` | Re-embed every record with text and drop the old vectors, one `store.reembedded` event. Refuses when the latest logged search ran under a different embedding version with the same dense floors the configuration still carries, because that means nobody recalibrated the floors for the new model. |
-| `memory-weave erase --record <id> \| --session <id> \| --user <id> --reason R --yes` | Irreversibly erase durable content. A record loses its text, evidence, tags, embedding, lexical row, and entity links and keeps its tombstone row. A session keeps its turn rows with blank text so source references still resolve. A user loses every place their text can reach: every session, every record in the user scope and the private agent scopes, the content and evidence of any record in any scope sourced from those sessions, search logs and turn decisions, the payloads of events about the erased rows, and the entities and aliases in the user's scopes. Ids, kinds, and timestamps remain; the file is compacted afterwards so freed pages hold no residue. |
-| `memory-weave retain` | Blank the transcripts of sessions whose extraction completed and that ended more than `sessions.retain_days` ago. A session with no `extracted_at` is never blanked. |
-| `memory-weave grant A user:U --read --write` | Create or update a scope grant. |
-| `memory-weave extract <session_id>` | Re-run extraction for one session through candidate review. Atomic session claiming and source-reference idempotency prevent duplicate effects. |
-| `memory-weave review-due` | Atomically flag one bounded batch of records whose `review_at` has arrived. |
-| `memory-weave snapshot save\|load <path>` | Copy the SQLite database for evaluation fixtures, or replace the store file with a copy. A copy carries every table, so lineage, activation, conflicts, reviews, fitness results, and decision logs survive a restore; `load` needs `--yes` and a stopped host, because it replaces the file under any open connection. |
-| `memory-weave revoke A user:U` | Remove a scope grant. |
-| `memory-weave reviews list \| resolve <id> --as promote\|conditional\|reject --resolver R \| backlog --max-open N --max-age-days D` | The activation review queue: list open items, resolve one with an audited decision, or check the backlog against limits (exit 3 when breached). |
-| `memory-weave activation <record_id> ambient\|conditional --resolver R --reason R` | Directly promote or demote one record after the same eligibility checks the policy applies. |
-| `memory-weave metrics [--since] [--until] [--bundle H] [--json] [--rollback-check]` | Aggregate the turn-decision log into stage outcomes, rates, latency, cost, and review backlog; `--rollback-check` applies the rollback thresholds and exits 4 when breached. |
-| `memory-weave bundles list \| record <components.json> --passed\|--failed --evidence E --by B` | The fitness registry: list recorded results, or record one for a bundle so this store may serve it. |
+| `retold migrate` | Apply forward-only schema migrations and list any legacy record migration 2 could not map to one primary entity and attribute. Exits with status 2 while any remain; `--expire-unmapped` retires them, `--allow-unmapped` acknowledges them. |
+| `retold search --agent A --user U "..."` | Run retrieval and print the corresponding log row. |
+| `retold get <id>` | Print a full record with lineage and events. |
+| `retold dump --scope user:U` | Print active records in one scope. |
+| `retold expire` | Mark every active record past its expiry, provisional records and session summaries alike, as `expired`, one event each. |
+| `retold reembed --model M --version V` | Re-embed every record with text and drop the old vectors, one `store.reembedded` event. Refuses when the latest logged search ran under a different embedding version with the same dense floors the configuration still carries, because that means nobody recalibrated the floors for the new model. |
+| `retold erase --record <id> \| --session <id> \| --user <id> --reason R --yes` | Irreversibly erase durable content. A record loses its text, evidence, tags, embedding, lexical row, and entity links and keeps its tombstone row. A session keeps its turn rows with blank text so source references still resolve. A user loses every place their text can reach: every session, every record in the user scope and the private agent scopes, the content and evidence of any record in any scope sourced from those sessions, search logs and turn decisions, the payloads of events about the erased rows, and the entities and aliases in the user's scopes. Ids, kinds, and timestamps remain; the file is compacted afterwards so freed pages hold no residue. |
+| `retold retain` | Blank the transcripts of sessions whose extraction completed and that ended more than `sessions.retain_days` ago. A session with no `extracted_at` is never blanked. |
+| `retold grant A user:U --read --write` | Create or update a scope grant. |
+| `retold extract <session_id>` | Re-run extraction for one session through candidate review. Atomic session claiming and source-reference idempotency prevent duplicate effects. |
+| `retold review-due` | Atomically flag one bounded batch of records whose `review_at` has arrived. |
+| `retold snapshot save\|load <path>` | Copy the SQLite database for evaluation fixtures, or replace the store file with a copy. A copy carries every table, so lineage, activation, conflicts, reviews, fitness results, and decision logs survive a restore; `load` needs `--yes` and a stopped host, because it replaces the file under any open connection. |
+| `retold revoke A user:U` | Remove a scope grant. |
+| `retold reviews list \| resolve <id> --as promote\|conditional\|reject --resolver R \| backlog --max-open N --max-age-days D` | The activation review queue: list open items, resolve one with an audited decision, or check the backlog against limits (exit 3 when breached). |
+| `retold activation <record_id> ambient\|conditional --resolver R --reason R` | Directly promote or demote one record after the same eligibility checks the policy applies. |
+| `retold metrics [--since] [--until] [--bundle H] [--json] [--rollback-check]` | Aggregate the turn-decision log into stage outcomes, rates, latency, cost, and review backlog; `--rollback-check` applies the rollback thresholds and exits 4 when breached. |
+| `retold bundles list \| record <components.json> --passed\|--failed --evidence E --by B` | The fitness registry: list recorded results, or record one for a bundle so this store may serve it. |
 
 ## 17. Test plan for the implementation
 
@@ -1975,7 +1975,7 @@ Run one parameterized suite through both `memory_write` and session extraction. 
 - `follow-up` is not an identifier and matches only where its tokens are adjacent; `bge-m3` and `deploy.yml` are identifiers.
 - "I'm", "what's", and "don't" never survive as query terms.
 - A `Store` refuses to open with unresolved migration issues; `--expire-unmapped` retires them.
-- Migration 2 returns the count of legacy rows it could not map because they have zero or multiple `about` links, and records each in `migration_issues`. The `memory-weave migrate` command requires `--allow-unmapped` to complete successfully with any unresolved rows.
+- Migration 2 returns the count of legacy rows it could not map because they have zero or multiple `about` links, and records each in `migration_issues`. The `retold migrate` command requires `--allow-unmapped` to complete successfully with any unresolved rows.
 
 ### 17.4 Retrieval and result-contract tests
 

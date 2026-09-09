@@ -28,12 +28,12 @@ from examples.vertical_slice import (
     run_experiment,
     run_live,
 )
-from memory_weave.config import EmbeddingConfig, MemoryWeaveConfig, RetrievalConfig
-from memory_weave.index.embedder import FakeEmbedder
-from memory_weave.ingest import FakeJudge
-from memory_weave.models import Turn
-from memory_weave.tools import tool_schemas
-from memory_weave.util import now
+from retold.config import EmbeddingConfig, RetoldConfig, RetrievalConfig
+from retold.index.embedder import FakeEmbedder
+from retold.ingest import FakeJudge
+from retold.models import Turn
+from retold.tools import tool_schemas
+from retold.util import now
 
 _CLAIM = "The user prefers concise technical answers with a short rationale."
 _QUOTE = "I prefer concise technical answers, with a short rationale."
@@ -118,14 +118,14 @@ def _openai_response() -> object:
     return SimpleNamespace(choices=[SimpleNamespace(message=message)])
 
 
-def _config() -> MemoryWeaveConfig:
-    return MemoryWeaveConfig(
+def _config() -> RetoldConfig:
+    return RetoldConfig(
         embedding=EmbeddingConfig(model="fake-embedder", version="1", dims=8),
         retrieval=RetrievalConfig(default_k=8, per_generator_k=8),
     )
 
 
-def _runtime_factory(config: MemoryWeaveConfig, judge: FakeJudge | None = None) -> Callable[[Path, int], object]:
+def _runtime_factory(config: RetoldConfig, judge: FakeJudge | None = None) -> Callable[[Path, int], object]:
     def factory(path: Path, run: int):
         return build_runtime(path, config, FakeEmbedder(dims=8), judge or FakeJudge(), run=run)
 
@@ -303,7 +303,7 @@ def test_openai_and_openrouter_adapters_configure_the_openai_sdk(monkeypatch: py
     monkeypatch.setenv("OPENAI_API_KEY", "openai-test-key")
     monkeypatch.setenv("OPENROUTER_API_KEY", "openrouter-test-key")
     monkeypatch.setenv("OPENROUTER_HTTP_REFERER", "https://example.test")
-    monkeypatch.setenv("OPENROUTER_APP_TITLE", "Memory Weave Test")
+    monkeypatch.setenv("OPENROUTER_APP_TITLE", "Retold Test")
 
     OpenAIToolModel("openai-model")
     OpenRouterToolModel("provider/model")
@@ -315,7 +315,7 @@ def test_openai_and_openrouter_adapters_configure_the_openai_sdk(monkeypatch: py
             "base_url": "https://openrouter.ai/api/v1",
             "default_headers": {
                 "HTTP-Referer": "https://example.test",
-                "X-OpenRouter-Title": "Memory Weave Test",
+                "X-OpenRouter-Title": "Retold Test",
             },
         },
     ]
@@ -434,16 +434,14 @@ def test_experiment_keeps_completed_runs_and_uses_a_fresh_artifact_directory(tmp
 
 
 def test_live_runner_requires_an_explicit_opt_in(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("MEMORY_WEAVE_LIVE", "")
+    monkeypatch.setenv("RETOLD_LIVE", "")
 
     with pytest.raises(RuntimeError, match="Live execution is disabled"):
         run_live()
 
 
 @pytest.mark.live
-@pytest.mark.skipif(
-    os.environ.get("MEMORY_WEAVE_LIVE") != "1", reason="set MEMORY_WEAVE_LIVE=1 to run the hosted vertical slice"
-)
+@pytest.mark.skipif(os.environ.get("RETOLD_LIVE") != "1", reason="set RETOLD_LIVE=1 to run the hosted vertical slice")
 def test_live_vertical_slice_reports_three_runs() -> None:
     pytest.importorskip("anthropic")
     report = run_live(runs=3)

@@ -22,14 +22,14 @@ from crewai import Agent, Crew, Task  # noqa: E402
 from crewai.llms.base_llm import BaseLLM  # noqa: E402
 from pydantic import Field  # noqa: E402
 
-from memory_weave.adapters.crewai import CrewAIMemoryAdapter  # noqa: E402
-from memory_weave.config import EmbeddingConfig, MemoryWeaveConfig  # noqa: E402
-from memory_weave.host import MemoryHost  # noqa: E402
-from memory_weave.index.embedder import FakeEmbedder  # noqa: E402
-from memory_weave.ingest import FakeExtractor, FakeJudge, TableReviewer  # noqa: E402
-from memory_weave.models import ExtractionOutput, Scope, SessionSummary  # noqa: E402
-from memory_weave.runtime import build_runtime  # noqa: E402
-from memory_weave.store import Store  # noqa: E402
+from retold.adapters.crewai import CrewAIMemoryAdapter  # noqa: E402
+from retold.config import EmbeddingConfig, RetoldConfig  # noqa: E402
+from retold.host import MemoryHost  # noqa: E402
+from retold.index.embedder import FakeEmbedder  # noqa: E402
+from retold.ingest import FakeExtractor, FakeJudge, TableReviewer  # noqa: E402
+from retold.models import ExtractionOutput, Scope, SessionSummary  # noqa: E402
+from retold.runtime import build_runtime  # noqa: E402
+from retold.store import Store  # noqa: E402
 
 
 class ScriptedReActLLM(BaseLLM):
@@ -62,7 +62,7 @@ def main() -> None:
     host = MemoryHost(store)
     host.grant("research-assistant", Scope(kind="user", id="aditya"), read=True, write=True)
     host.provision_user("aditya", aliases=("Aditya",))
-    config = MemoryWeaveConfig(embedding=EmbeddingConfig(model="fake-embedder", version="1", dims=8))
+    config = RetoldConfig(embedding=EmbeddingConfig(model="fake-embedder", version="1", dims=8))
     embedder = FakeEmbedder(dims=8)
     summary = SessionSummary("Aditya said how they like answers.", [], [])
     runtime = build_runtime(

@@ -17,21 +17,19 @@ from time import perf_counter
 import numpy as np
 import pytest
 
-from memory_weave.config import EmbeddingConfig, MemoryWeaveConfig, RetrievalConfig
-from memory_weave.host import MemoryHost
-from memory_weave.index.embedder import FakeEmbedder
-from memory_weave.models import Principal, Record, Scope, SearchRequest
-from memory_weave.runtime import build_runtime
-from memory_weave.store import Store
-from memory_weave.util import render_subject
+from retold.config import EmbeddingConfig, RetoldConfig, RetrievalConfig
+from retold.host import MemoryHost
+from retold.index.embedder import FakeEmbedder
+from retold.models import Principal, Record, Scope, SearchRequest
+from retold.runtime import build_runtime
+from retold.store import Store
+from retold.util import render_subject
 
 from .fixture_1k import NOW
 
 pytestmark = [
     pytest.mark.slow,
-    pytest.mark.skipif(
-        os.environ.get("MEMORY_WEAVE_RUN_SLOW") != "1", reason="set MEMORY_WEAVE_RUN_SLOW=1 to run scale tests"
-    ),
+    pytest.mark.skipif(os.environ.get("RETOLD_RUN_SLOW") != "1", reason="set RETOLD_RUN_SLOW=1 to run scale tests"),
 ]
 
 RECORDS = 50_000
@@ -108,7 +106,7 @@ def test_fifty_thousand_records_search_under_the_lld_budget(tmp_path: Path) -> N
     started = perf_counter()
     store = _build(tmp_path / "scale.sqlite", embedder)
     print(f"\nbuilt {RECORDS} records over {USERS} users and {AGENTS} agents in {perf_counter() - started:.1f} s")
-    config = MemoryWeaveConfig(
+    config = RetoldConfig(
         embedding=EmbeddingConfig(model=embedder.name, version=embedder.version, dims=DIMS),
         retrieval=RetrievalConfig(per_generator_k=30, default_k=8),
     )

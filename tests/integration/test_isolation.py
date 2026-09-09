@@ -19,14 +19,14 @@ from typing import Any
 
 import pytest
 
-from memory_weave.config import EmbeddingConfig, MemoryWeaveConfig
-from memory_weave.host import MemoryHost
-from memory_weave.index.embedder import Embedder, FakeEmbedder
-from memory_weave.models import Principal, Record, Scope, SearchRequest
-from memory_weave.policy import readable_scopes
-from memory_weave.runtime import MemoryRuntime, build_runtime
-from memory_weave.store import Store
-from memory_weave.util import render_subject
+from retold.config import EmbeddingConfig, RetoldConfig
+from retold.host import MemoryHost
+from retold.index.embedder import Embedder, FakeEmbedder
+from retold.models import Principal, Record, Scope, SearchRequest
+from retold.policy import readable_scopes
+from retold.runtime import MemoryRuntime, build_runtime
+from retold.store import Store
+from retold.util import render_subject
 
 from .fixture_1k import NOW, PROJECT_GRANTS, USER_GRANTS, copy_fixture
 
@@ -147,7 +147,7 @@ def check_isolation(runtime: MemoryRuntime, grants: dict[str, tuple[str, ...]]) 
 
 
 def _synthetic_store(path: Path) -> tuple[Store, MemoryRuntime]:
-    config = MemoryWeaveConfig(embedding=EmbeddingConfig(model="fake-embedder", version="1", dims=16))
+    config = RetoldConfig(embedding=EmbeddingConfig(model="fake-embedder", version="1", dims=16))
     store = Store(path)
     host = MemoryHost(store)
     embedder: Embedder = FakeEmbedder(dims=16)
@@ -207,12 +207,12 @@ def test_synthetic_multi_user_store_has_zero_isolation_violations(tmp_path: Path
 
 @pytest.mark.integration
 @pytest.mark.skipif(
-    os.environ.get("MEMORY_WEAVE_INTEGRATION") != "1",
-    reason="set MEMORY_WEAVE_INTEGRATION=1 to run local-model integration tests",
+    os.environ.get("RETOLD_INTEGRATION") != "1",
+    reason="set RETOLD_INTEGRATION=1 to run local-model integration tests",
 )
 def test_fixture_store_has_zero_isolation_violations(tmp_path: Path) -> None:
     store = Store(copy_fixture(tmp_path))
-    runtime = build_runtime(MemoryWeaveConfig(), store)
+    runtime = build_runtime(RetoldConfig(), store)
     violations = check_isolation(runtime, USER_GRANTS)
     assert violations == [], "\n".join(f"{v.principal} {v.kind}: {v.detail}" for v in violations)
     store.close()

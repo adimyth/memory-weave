@@ -27,14 +27,14 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, ToolMe
 from langchain_core.outputs import ChatGeneration, ChatResult  # noqa: E402
 from langgraph.checkpoint.memory import InMemorySaver  # noqa: E402
 
-from memory_weave.adapters.base import principal_from_mapping  # noqa: E402
-from memory_weave.adapters.deepagents import DeepAgentsMemoryAdapter  # noqa: E402
-from memory_weave.config import EmbeddingConfig, MemoryWeaveConfig  # noqa: E402
-from memory_weave.host import MemoryHost  # noqa: E402
-from memory_weave.index.embedder import FakeEmbedder  # noqa: E402
-from memory_weave.ingest import FakeExtractor, FakeJudge, SessionHooks, TableReviewer  # noqa: E402
-from memory_weave.models import ExtractionOutput, Principal, Record, Scope, SessionSummary  # noqa: E402
-from memory_weave.policy import (  # noqa: E402
+from retold.adapters.base import principal_from_mapping  # noqa: E402
+from retold.adapters.deepagents import DeepAgentsMemoryAdapter  # noqa: E402
+from retold.config import EmbeddingConfig, RetoldConfig  # noqa: E402
+from retold.host import MemoryHost  # noqa: E402
+from retold.index.embedder import FakeEmbedder  # noqa: E402
+from retold.ingest import FakeExtractor, FakeJudge, SessionHooks, TableReviewer  # noqa: E402
+from retold.models import ExtractionOutput, Principal, Record, Scope, SessionSummary  # noqa: E402
+from retold.policy import (  # noqa: E402
     AdmissionDecision,
     BundleRegistry,
     CandidateVerdict,
@@ -43,12 +43,12 @@ from memory_weave.policy import (  # noqa: E402
     UtilityAwareConfig,
     bundle_components,
 )
-from memory_weave.policy.activation import ProfileBlock  # noqa: E402
-from memory_weave.runtime import MemoryRuntime, build_runtime  # noqa: E402
-from memory_weave.store import Store  # noqa: E402
+from retold.policy.activation import ProfileBlock  # noqa: E402
+from retold.runtime import MemoryRuntime, build_runtime  # noqa: E402
+from retold.store import Store  # noqa: E402
 
 _NOW = datetime(2026, 9, 8, 12, 0, tzinfo=UTC)
-_CONFIG = MemoryWeaveConfig(embedding=EmbeddingConfig(model="fake-embedder", version="1", dims=8))
+_CONFIG = RetoldConfig(embedding=EmbeddingConfig(model="fake-embedder", version="1", dims=8))
 MEMORY_TOOLS = {"memory_search", "memory_get", "memory_write", "memory_revise", "memory_forget"}
 
 
@@ -225,7 +225,7 @@ def test_hybrid_mode_appends_a_recalled_block_only_when_the_host_search_returns_
     driver = _driver(store, trigger_mode="hybrid")
     driver.runtime.ingestor.write(
         driver.principal,
-        __import__("memory_weave.ingest", fromlist=["WriteRequest"]).WriteRequest(
+        __import__("retold.ingest", fromlist=["WriteRequest"]).WriteRequest(
             type="semantic",
             content="The user prefers concise technical answers with a short rationale.",
             source_kind="agent_inference",
@@ -236,7 +236,7 @@ def test_hybrid_mode_appends_a_recalled_block_only_when_the_host_search_returns_
     driver.runtime.embedder.set_similarity("How should you answer my questions about answers", CANDIDATE, 0.9)  # type: ignore[attr-defined]
     driver.run_turn(ScriptedTurn("How should you answer my questions about answers", answer="Concisely."))
     messages = driver.last_state["messages"]
-    recalled = [m for m in messages if isinstance(m, ToolMessage) and m.additional_kwargs.get("memory_weave")]
+    recalled = [m for m in messages if isinstance(m, ToolMessage) and m.additional_kwargs.get("retold")]
     assert len(recalled) == 1 and recalled[0].content.startswith("recalled memory")
     roles = [turn.role for turn in driver.runtime.store.session_turns("thread-1")]
     assert roles == ["user", "assistant"], "the synthetic pair is not a transcript turn"
@@ -270,7 +270,7 @@ class FakeJudgeAdmitAll:
 
 
 def _seed_preference(driver: Driver) -> Record:
-    from memory_weave.ingest import WriteRequest
+    from retold.ingest import WriteRequest
 
     result = driver.runtime.ingestor.write(
         driver.principal,

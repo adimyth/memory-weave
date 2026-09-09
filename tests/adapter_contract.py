@@ -1,7 +1,7 @@
 """The framework contract suite: one set of assertions every adapter must pass.
 
 An adapter test builds a ``ContractDriver`` for its framework and calls ``run_contract``. The driver
-speaks the framework; the assertions speak Memory Weave. A behaviour that holds for one adapter and not
+speaks the framework; the assertions speak Retold. A behaviour that holds for one adapter and not
 the other is a contract gap, and it is caught here rather than in two diverging test files.
 """
 
@@ -12,9 +12,9 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
-from memory_weave.models import Principal, SearchRequest
-from memory_weave.runtime import MemoryRuntime
-from memory_weave.store import Store
+from retold.models import Principal, SearchRequest
+from retold.runtime import MemoryRuntime
+from retold.store import Store
 
 FRAMEWORK_MARKERS = ("langchain", "langgraph", "deepagents", "thread_id", "configurable", "crewai", "BaseTool")
 
@@ -155,6 +155,6 @@ def assert_isolated(driver_a: ContractDriver, driver_b: ContractDriver) -> None:
 
 
 def _user_scope(principal: Principal) -> Any:
-    from memory_weave.models import Scope
+    from retold.models import Scope
 
     return Scope(kind="user", id=principal.user_id)

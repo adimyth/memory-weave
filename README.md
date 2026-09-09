@@ -1,12 +1,12 @@
-# Memory Weave
+# Retold
 
 A local, provider-neutral long-term memory layer for AI agents. It stores evidence-backed records in one SQLite file, retrieves them through dense, lexical, and entity channels fused by reciprocal-rank fusion, returns only what the caller may read, and can return nothing. Every write and every search leaves a trace that explains itself.
 
-Version 1.0.0 (9 September 2026). Python 3.12, one process, one database file. Deep Agents and CrewAI adapters ship behind extras. The utility-aware host path, which decides whether a turn needs memory before ranking anything, is implemented and validated offline; it is off by default and waits on real-traffic validation. The [acceptance report](docs/acceptance-report.md) records every gate.
+Version 1.0.0 (9 September 2026), released under the project's previous name, Memory Weave; the package, CLI, and documents were renamed to Retold on 9 September and nothing else changed. Python 3.12, one process, one database file. Deep Agents and CrewAI adapters ship behind extras. The utility-aware host path, which decides whether a turn needs memory before ranking anything, is implemented and validated offline; it is off by default and waits on real-traffic validation. The [acceptance report](docs/acceptance-report.md) records every gate.
 
 ## 1. What it is, and what it is not
 
-Memory Weave gives an agent durable memory that outlives a conversation and can be shared across agents. An agent reaches it through five tools, `memory_search`, `memory_get`, `memory_write`, `memory_revise`, and `memory_forget`, and a host reaches it through a small Python API and a CLI. Records are facts, decisions, and dated experiences about a user, a project, or an organisation, each carrying its scope, its source, a verbatim evidence quote, and its lifecycle state.
+Retold gives an agent durable memory that outlives a conversation and can be shared across agents. An agent reaches it through five tools, `memory_search`, `memory_get`, `memory_write`, `memory_revise`, and `memory_forget`, and a host reaches it through a small Python API and a CLI. Records are facts, decisions, and dated experiences about a user, a project, or an organisation, each carrying its scope, its source, a verbatim evidence quote, and its lifecycle state.
 
 Three commitments shape everything else:
 
@@ -26,7 +26,7 @@ flowchart LR
         UA[Utility-aware orchestrator]
     end
 
-    subgraph Core["memory_weave"]
+    subgraph Core["retold"]
         Tools[Tool handlers: search, get, write, revise, forget]
         Policy[Policy: grants, authority, lifecycle, activation]
         Ingestor[Ingestor]
@@ -154,11 +154,11 @@ Set `HF_HUB_OFFLINE=1` once the model cache is warm; a partial cache hangs insid
 `build_runtime` is the composition root. It returns the store, embedder, vector index, judge, session buffer, ingestor, retriever, tool handlers, extraction runner, and session hooks wired together; any argument given replaces the configured piece, which is how tests and demos substitute fakes. It makes no model call and loads no weights until the first write, search, or extraction.
 
 ```python
-from memory_weave.config import load_config
-from memory_weave.host import MemoryHost
-from memory_weave.models import Scope
-from memory_weave.runtime import build_runtime
-from memory_weave.store import Store
+from retold.config import load_config
+from retold.host import MemoryHost
+from retold.models import Scope
+from retold.runtime import build_runtime
+from retold.store import Store
 
 store = Store("memory.sqlite")                       # applies migrations
 host = MemoryHost(store)
@@ -183,7 +183,7 @@ Both adapters wire one runtime into a framework and own nothing else: identity d
 
 ```python
 from deepagents import create_deep_agent
-from memory_weave.adapters.deepagents import DeepAgentsMemoryAdapter
+from retold.adapters.deepagents import DeepAgentsMemoryAdapter
 
 adapter = DeepAgentsMemoryAdapter(runtime)            # trigger_mode defaults to the config
 agent = create_deep_agent(
@@ -201,19 +201,19 @@ The principal comes from `configurable.agent_id`, `user_id`, and `thread_id` at 
 ### 3.4 Operate it
 
 ```bash
-memory-weave --store memory.sqlite migrate                       # forward-only schema migrations
-memory-weave grant assistant user:aditya --read --write
-memory-weave search --agent assistant --user aditya "answer style" --json
-memory-weave get <record_id> --agent assistant --user aditya    # lineage, conflicts, events
-memory-weave dump --scope user:aditya [--all-statuses]
-memory-weave expire | retain | review-due                        # lifecycle maintenance
-memory-weave extract <session_id> [--force]                     # run extraction through review
-memory-weave erase --user aditya --reason "request" --yes        # irreversible, compacts the file
-memory-weave reembed --model M --version V                       # refuses until the floors are recalibrated
-memory-weave snapshot save|load <path>
-memory-weave reviews list | resolve <id> --as promote --resolver R | backlog --max-open N --max-age-days D
-memory-weave metrics [--rollback-check]                          # the turn-decision log, by stage
-memory-weave bundles list | record <components.json> --passed --evidence E --by B
+retold --store memory.sqlite migrate                       # forward-only schema migrations
+retold grant assistant user:aditya --read --write
+retold search --agent assistant --user aditya "answer style" --json
+retold get <record_id> --agent assistant --user aditya    # lineage, conflicts, events
+retold dump --scope user:aditya [--all-statuses]
+retold expire | retain | review-due                        # lifecycle maintenance
+retold extract <session_id> [--force]                     # run extraction through review
+retold erase --user aditya --reason "request" --yes        # irreversible, compacts the file
+retold reembed --model M --version V                       # refuses until the floors are recalibrated
+retold snapshot save|load <path>
+retold reviews list | resolve <id> --as promote --resolver R | backlog --max-open N --max-age-days D
+retold metrics [--rollback-check]                          # the turn-decision log, by stage
+retold bundles list | record <components.json> --passed --evidence E --by B
 ```
 
 Every command takes `--store`, `--config`, and `--as` (the operator identity written to audit events). `memory_forget` is an agent tool and leaves a tombstone; erasure is an operator action.
@@ -222,8 +222,8 @@ Every command takes `--store`, `--config`, and `--as` (the operator identity wri
 
 ```bash
 uv run pytest                                                          # fakes only, no downloads
-HF_HUB_OFFLINE=1 MEMORY_WEAVE_INTEGRATION=1 uv run --extra local-models pytest tests/integration
-MEMORY_WEAVE_RUN_SLOW=1 uv run pytest tests/integration/test_scale.py tests/integration/test_writer_contention.py
+HF_HUB_OFFLINE=1 RETOLD_INTEGRATION=1 uv run --extra local-models pytest tests/integration
+RETOLD_RUN_SLOW=1 uv run pytest tests/integration/test_scale.py tests/integration/test_writer_contention.py
 uv run ruff check . && uv run ruff format --check . && uv run mypy      # strict
 ```
 
@@ -236,7 +236,7 @@ One YAML file, loaded by `load_config`; every value has a default and validation
 | Key | Default | What it controls |
 | --- | --- | --- |
 | `store.path`, `store.busy_timeout_seconds` | `./memory.sqlite`, 30 | The database and how long a writer waits for another's lock. Every transaction begins `IMMEDIATE`. |
-| `embedding.model`, `embedding.version`, `embedding.dims` | `BAAI/bge-m3`, `"1"`, 1024 | Every stored vector carries model and version; changing either is a migration (`memory-weave reembed`) that requires recalibrating the floors. |
+| `embedding.model`, `embedding.version`, `embedding.dims` | `BAAI/bge-m3`, `"1"`, 1024 | Every stored vector carries model and version; changing either is a migration (`retold reembed`) that requires recalibrating the floors. |
 | `retrieval.trigger.mode` | `tool_only` | Who calls `memory_search`. `auto_k` (4) and `auto_min_query_chars` (12) bound host-issued searches. |
 | `retrieval.per_generator_k`, `rrf_k`, `default_k`, `token_budget` | 30, 60, 8, 1500 | Candidates per channel, the fusion constant, results returned, and the tool-result ceiling. |
 | `retrieval.gate.dense_floor.<type>` | semantic 0.45, episodic 0.40, procedural 0.45, session_summary 0.50 | The cosine a dense-only candidate must reach. Swept on the labelled fixture: 0.45 sits inside the band whose F1 is within 90 percent of the best. |
@@ -253,7 +253,7 @@ One YAML file, loaded by `load_config`; every value has a default and validation
 | `ingestion.extraction_model`, `review_model`, `extraction_timeout_ms`, `review_timeout_ms`, `extraction_max_candidates` | `claude-haiku-4-5-20251001` for both, 60000, 30000, 20 | The two hosted models in the background write path. A timeout fails the run closed. |
 | `ingestion.session_idle_timeout_minutes`, `extraction_claim_timeout_minutes` | 30, 30 | The idle split for hosts without a session end, and how long a crashed worker's claim on a session lasts. |
 | `policy.source_rank.*` | user_statement 4, system 3, tool_result 2, session_summary 2, agent_inference 1 | Who wins a disagreement, and the initial status and confidence. |
-| `sessions.retain_days` | 90 | When `memory-weave retain` blanks an extracted transcript. |
+| `sessions.retain_days` | 90 | When `retold retain` blanks an extracted transcript. |
 
 The utility-aware path is configured by the host that owns the model clients, not by this file: `UtilityAwareConfig` carries `gap_enabled`, `admission_mode` (`disabled` or `hosted_judge`), `shadow`, `max_gaps` (3), `max_candidates` (8), the two stage timeouts, an optional `latency_budget_ms`, and the bundle; `ProfileAssembler` takes `max_records` (8) and `token_budget` (400). The reference host uses stage timeouts of 4 s and 8 s, measured on the fitness splits.
 
@@ -281,7 +281,7 @@ Two things are known and accepted rather than fixed: a turn that shares a subjec
 ## 6. Layout
 
 ```text
-memory_weave/
+retold/
   config.py, models.py, runtime.py, host.py, hosted.py, operations.py, cli.py
   store/      schema.sql, migrations.py, store.py
   index/      embedder.py, vector.py, reranker.py

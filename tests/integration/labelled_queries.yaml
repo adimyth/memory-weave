@@ -39,11 +39,11 @@ relevant:
   - {query: "what language does Meera write pipelines in", expected: [pref-meera-code_language], principal: [coding-agent, meera]}
   - {query: "earliest meeting time for Meera", expected: [pref-meera-working_hours], principal: [coding-agent, meera]}
   - {query: "when did Meera ship the dashboard redesign", expected: [event-meera-dashboard], principal: [coding-agent, meera]}
-  - {query: "what database does memory-weave use as its source of truth", expected: [proj-weave-store], principal: [research-agent, aditya]}
-  - {query: "embedding model used by memory-weave", expected: [proj-weave-embedder], principal: [coding-agent, aditya]}
-  - {query: "where is the memory-weave release runbook", expected: [proj-weave-runbook], principal: [coding-agent, rohan]}
-  - {query: "steps to release memory-weave", expected: [proc-weave-release], principal: [coding-agent, aditya]}
-  - {query: "how to switch memory-weave to a new embedding model", expected: [proc-weave-reembed], principal: [research-agent, aditya]}
+  - {query: "what database does retold use as its source of truth", expected: [proj-weave-store], principal: [research-agent, aditya]}
+  - {query: "embedding model used by retold", expected: [proj-weave-embedder], principal: [coding-agent, aditya]}
+  - {query: "where is the retold release runbook", expected: [proj-weave-runbook], principal: [coding-agent, rohan]}
+  - {query: "steps to release retold", expected: [proc-weave-release], principal: [coding-agent, aditya]}
+  - {query: "how to switch retold to a new embedding model", expected: [proc-weave-reembed], principal: [research-agent, aditya]}
   - {query: "what did the team learn about the relevance gate in September", expected: [event-weave-gate-finding], principal: [research-agent, priya]}
   - {query: "change data capture choice for billing", expected: [proj-billing-cdc], principal: [ops-agent, priya]}
   - {query: "billing API rate limit per tenant", expected: [proj-billing-rate-limit], principal: [ops-agent, rohan]}

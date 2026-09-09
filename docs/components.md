@@ -4,7 +4,7 @@ This guide explains the runtime components with concrete examples. Read the comp
 
 ## 1. System component map
 
-Memory Weave has one canonical store and three retrieval channels. The vector index and FTS5 index are derived search structures, not separate sources of truth.
+Retold has one canonical store and three retrieval channels. The vector index and FTS5 index are derived search structures, not separate sources of truth.
 
 ```text
 Agent framework
@@ -396,7 +396,7 @@ The append-only `events` table records memory changes. `search_log` records retr
 | `memory_revise` | Confirm, supersede, expire, or merge an entity. |
 | `memory_forget` | Mark a memory deleted with a reason. |
 
-An adapter integrates those tools with an agent framework. It registers the tool schemas, derives the principal, records session hooks, and attaches current-turn context to each search. The memory contract remains independent of the agent framework and model provider. `memory_weave/adapters/deepagents.py` is the first adapter: tools that read the principal from the run configuration at call time and one middleware for turn capture, host-issued recall, and the utility-aware wrap around answer-producing model calls; `memory_weave/adapters/crewai.py` is the second: tools with generated pydantic argument models, step callbacks for turns, and an LLM proxy that carries the same policy. `memory_weave/adapters/base.py` holds what every adapter shares.
+An adapter integrates those tools with an agent framework. It registers the tool schemas, derives the principal, records session hooks, and attaches current-turn context to each search. The memory contract remains independent of the agent framework and model provider. `retold/adapters/deepagents.py` is the first adapter: tools that read the principal from the run configuration at call time and one middleware for turn capture, host-issued recall, and the utility-aware wrap around answer-producing model calls; `retold/adapters/crewai.py` is the second: tools with generated pydantic argument models, step callbacks for turns, and an LLM proxy that carries the same policy. `retold/adapters/base.py` holds what every adapter shares.
 
 ## 15. Prompts and instructions
 
@@ -408,6 +408,6 @@ Three runtime components turn transcript text into a decision by calling a hoste
 | Candidate review | `ingestion.review_model` | `ingest/reviewer.py`, `StructuredLLMReviewer`, prompt `ingest/prompts/review_v1.md` | Built. A revision may only narrow content, attribute, temporal metadata, or confidence; `TableReviewer` serves the tests. |
 | Query rewriting | `retrieval.rewrite.model` | `retrieve/rewrite.py`, `HostedLLMQueryRewriter`, prompt `retrieve/prompts/rewrite_v1.md` | Built, off by default. A rewrite that introduces a name absent from the queries and context is refused and the raw queries are used. |
 
-The three prompts are versioned constants; the extraction ones are recorded on every `extraction.run` event, so a prompt change is tracked the way an embedding-model change is tracked by `embeddings.version` rather than silently changing behaviour. All three hosted components call the provider-neutral `CompletionClient` in `memory_weave/hosted.py`; the official Anthropic and OpenAI SDKs are chosen by model name and imported only when used.
+The three prompts are versioned constants; the extraction ones are recorded on every `extraction.run` event, so a prompt change is tracked the way an embedding-model change is tracked by `embeddings.version` rather than silently changing behaviour. All three hosted components call the provider-neutral `CompletionClient` in `retold/hosted.py`; the official Anthropic and OpenAI SDKs are chosen by model name and imported only when used.
 
 Prompt text is reasoning guidance, not a tunable, so it lives next to the code that uses it, under `ingest/prompts/`, and not in `config.yaml`. The YAML config holds thresholds and model *names*, values a calibration pass would sweep.

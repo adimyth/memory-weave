@@ -29,13 +29,13 @@ from crewai import Agent, Crew, Task  # noqa: E402
 from crewai.llms.base_llm import BaseLLM  # noqa: E402
 from pydantic import Field  # noqa: E402
 
-from memory_weave.adapters.crewai import CrewAIMemoryAdapter, agent_id_from_role, principal_from_inputs  # noqa: E402
-from memory_weave.config import EmbeddingConfig, MemoryWeaveConfig  # noqa: E402
-from memory_weave.host import MemoryHost  # noqa: E402
-from memory_weave.index.embedder import FakeEmbedder  # noqa: E402
-from memory_weave.ingest import FakeExtractor, FakeJudge, TableReviewer, WriteRequest  # noqa: E402
-from memory_weave.models import ExtractionOutput, Principal, Record, Scope, SessionSummary  # noqa: E402
-from memory_weave.policy import (  # noqa: E402
+from retold.adapters.crewai import CrewAIMemoryAdapter, agent_id_from_role, principal_from_inputs  # noqa: E402
+from retold.config import EmbeddingConfig, RetoldConfig  # noqa: E402
+from retold.host import MemoryHost  # noqa: E402
+from retold.index.embedder import FakeEmbedder  # noqa: E402
+from retold.ingest import FakeExtractor, FakeJudge, TableReviewer, WriteRequest  # noqa: E402
+from retold.models import ExtractionOutput, Principal, Record, Scope, SessionSummary  # noqa: E402
+from retold.policy import (  # noqa: E402
     AdmissionDecision,
     BundleRegistry,
     CandidateVerdict,
@@ -44,11 +44,11 @@ from memory_weave.policy import (  # noqa: E402
     UtilityAwareConfig,
     bundle_components,
 )
-from memory_weave.policy.activation import ProfileBlock  # noqa: E402
-from memory_weave.runtime import MemoryRuntime, build_runtime  # noqa: E402
-from memory_weave.store import Store  # noqa: E402
+from retold.policy.activation import ProfileBlock  # noqa: E402
+from retold.runtime import MemoryRuntime, build_runtime  # noqa: E402
+from retold.store import Store  # noqa: E402
 
-_CONFIG = MemoryWeaveConfig(embedding=EmbeddingConfig(model="fake-embedder", version="1", dims=8))
+_CONFIG = RetoldConfig(embedding=EmbeddingConfig(model="fake-embedder", version="1", dims=8))
 MEMORY_TOOLS = {"memory_search", "memory_get", "memory_write", "memory_revise", "memory_forget"}
 ROLE = "Research Assistant"
 

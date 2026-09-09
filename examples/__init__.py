@@ -1,1 +1,1 @@
-"""Small executable experiments that exercise Memory Weave without an agent framework."""
+"""Small executable experiments that exercise Retold without an agent framework."""

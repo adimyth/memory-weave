@@ -8,15 +8,15 @@ from pathlib import Path
 
 import pytest
 
-from memory_weave.config import EmbeddingConfig, MemoryWeaveConfig, RetrievalConfig
-from memory_weave.index.embedder import FakeEmbedder
-from memory_weave.index.vector import VectorIndex
-from memory_weave.ingest import FakeJudge, Ingestor, SessionBuffer
-from memory_weave.models import Explanation, Principal, Record, Scope, SearchResponse, SearchResult, Turn
-from memory_weave.retrieve import Retriever
-from memory_weave.store import Store
-from memory_weave.tools import TOOL_SCHEMAS, ToolHandlers, render_search, tool_schemas, validate_tool_input
-from memory_weave.tools.schemas import ToolInputError
+from retold.config import EmbeddingConfig, RetoldConfig, RetrievalConfig
+from retold.index.embedder import FakeEmbedder
+from retold.index.vector import VectorIndex
+from retold.ingest import FakeJudge, Ingestor, SessionBuffer
+from retold.models import Explanation, Principal, Record, Scope, SearchResponse, SearchResult, Turn
+from retold.retrieve import Retriever
+from retold.store import Store
+from retold.tools import TOOL_SCHEMAS, ToolHandlers, render_search, tool_schemas, validate_tool_input
+from retold.tools.schemas import ToolInputError
 
 _NOW = datetime(2026, 9, 5, 12, 0, tzinfo=UTC)
 _AGENT = "research-agent"
@@ -25,7 +25,7 @@ _SESSION = "session-1"
 _PRINCIPAL = Principal(_AGENT, _USER, _SESSION, None)
 _USER_SCOPE = Scope(kind="user", id=_USER)
 _EMBEDDING = EmbeddingConfig(model="fake-embedder", version="1", dims=8)
-_CONFIG = MemoryWeaveConfig(embedding=_EMBEDDING, retrieval=RetrievalConfig(per_generator_k=10, default_k=8))
+_CONFIG = RetoldConfig(embedding=_EMBEDDING, retrieval=RetrievalConfig(per_generator_k=10, default_k=8))
 
 
 @pytest.fixture
@@ -126,7 +126,7 @@ def test_write_targets_are_model_safe_session_specific_names(
     assert default_properties["write_target"]["enum"] == ["personal"]  # type: ignore[index]
     assert "scope" not in default_properties
 
-    project = Scope(kind="project", id="memory-weave")
+    project = Scope(kind="project", id="retold")
     project_session = "project-session"
     store.create_session(project_session, _AGENT, _USER, project.id, _NOW)
     project_principal = Principal(_AGENT, _USER, project_session, project.id)
@@ -152,9 +152,9 @@ def test_write_targets_are_model_safe_session_specific_names(
         "current_project",
     ]
 
-    payload = _write_payload("The Memory Weave project uses SQLite for durable records.")
+    payload = _write_payload("The Retold project uses SQLite for durable records.")
     payload["write_target"] = "current_project"
-    payload["entities"] = [{"kind": "project", "name": "Memory Weave", "role": "about"}]
+    payload["entities"] = [{"kind": "project", "name": "Retold", "role": "about"}]
     written = scoped_handlers.memory_write(project_principal, payload)
 
     assert written["ok"] is True
@@ -272,9 +272,7 @@ def test_revise_can_merge_entities_with_the_principal_write_authority(
 ) -> None:
     tool_handlers, _ = handlers
     source = store.create_entity(kind="project", canonical="Memory Layer", scope=_USER_SCOPE, entity_id="source")
-    destination = store.create_entity(
-        kind="project", canonical="Memory Weave", scope=_USER_SCOPE, entity_id="destination"
-    )
+    destination = store.create_entity(kind="project", canonical="Retold", scope=_USER_SCOPE, entity_id="destination")
 
     response = tool_handlers.memory_revise(
         _PRINCIPAL,
@@ -286,7 +284,7 @@ def test_revise_can_merge_entities_with_the_principal_write_authority(
         "entity": {
             "id": destination.id,
             "kind": "project",
-            "canonical": "Memory Weave",
+            "canonical": "Retold",
             "scope": {"kind": "user", "id": _USER},
             "status": "provisional",
         },

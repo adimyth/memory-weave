@@ -15,11 +15,11 @@ from collections.abc import Sequence
 from typing import Any
 
 from benchmarks.phase0_two_arm import _ADMISSION_SYSTEM_V3, _GAP_SYSTEM_V2
-from memory_weave.config import RERANKER_INERT_WHEN_DISABLED
-from memory_weave.models import Record
-from memory_weave.policy import AdmissionDecision, CandidateVerdict, Gap, GapDecision, ProfileBlock
-from memory_weave.policy.activation import POLICY_VERSION as TAXONOMY_VERSION
-from memory_weave.policy.utility_aware import GAP_CATEGORIES
+from retold.config import RERANKER_INERT_WHEN_DISABLED
+from retold.models import Record
+from retold.policy import AdmissionDecision, CandidateVerdict, Gap, GapDecision, ProfileBlock
+from retold.policy.activation import POLICY_VERSION as TAXONOMY_VERSION
+from retold.policy.utility_aware import GAP_CATEGORIES
 
 GAP_PROMPT_VERSION = "gap-v3c"
 ADMISSION_PROMPT_VERSION = "admission-v3"
@@ -146,7 +146,7 @@ def policy_bundle(
 ) -> dict[str, object]:
     """The versioned bundle recorded with every decision.
 
-    ``retrieval_config`` is the whole ``MemoryWeaveConfig`` when the caller has one: the hash then covers
+    ``retrieval_config`` is the whole ``RetoldConfig`` when the caller has one: the hash then covers
     the retrieval section and the reranker section together, because an enabled reranker changes what the
     judge sees as much as a gate floor does. A bare retrieval section or a plain mapping is hashed as given.
     """

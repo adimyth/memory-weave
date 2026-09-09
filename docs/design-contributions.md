@@ -10,7 +10,7 @@ The strongest claim is therefore not “we invented utility-aware memory.” Bot
 
 Most memory systems treat every stored fact the same: retrieve it if it looks relevant.
 
-Memory Weave does not. It has two kinds of memory:
+Retold does not. It has two kinds of memory:
 
 - **Ambient** — standing facts that should quietly shape many answers. Example: “I write tests in pytest” or “reply in English.” You should not have to re-prove that every turn.
 - **Conditional** — facts that are only worth injecting if they actually help this turn. Example: “Rohan left Nimbus in April.” That only matters when Rohan or Nimbus is relevant.
@@ -29,7 +29,7 @@ So the system does not let a model say “this is ambient” and make it so. Pro
 - Standing defaults (“I always…”, “by default…”) can become ambient.
 - Scoped ones (“for SQL queries…”) stay conditional.
 - Temporary ones (“just for this PR…”) never become ambient.
-- Ambiguous cases go to a human review queue (`memory-weave reviews list` / `reviews resolve`). The record stays conditional until a person resolves it.
+- Ambiguous cases go to a human review queue (`retold reviews list` / `reviews resolve`). The record stays conditional until a person resolves it.
 - High classifier confidence is not enough by itself. Confidence can send an unclear case to review; it cannot vote a record into the always-on profile.
 
 That is a state change with a gate, not retrieval. Retrieval is “find this fact.” This is “change how this fact is allowed to behave from now on.”
@@ -56,7 +56,7 @@ Several systems have something that *looks* like a table of contents. None of th
 | ChatGPT / Claude chat | The profile paragraph itself, every turn. | The facts, not a catalog of them. |
 | Mem0, Zep, AgentCore | Nothing catalog-like. Search returns the records. | The hits. |
 
-A directory listing is a table of contents of *artifacts*. Memory Weave’s inventory is a table of contents of *fact kinds*: `people and their roles`, `runtime and version constraints`, `document and repository locations`. No file names, no sentences, no values.
+A directory listing is a table of contents of *artifacts*. Retold’s inventory is a table of contents of *fact kinds*: `people and their roles`, `runtime and version constraints`, `document and repository locations`. No file names, no sentences, no values.
 
 That is the difference that matters for the planner. “We store version constraints” tells it that “What Node version is staging on?” might need a lookup. It does not tell it that Node is pinned to 20.
 
@@ -129,7 +129,7 @@ The judge sees:
 
 Then it asks: would any of these candidates improve that specific draft?
 
-That makes redundancy real. A fact can be on-topic and still useless, because the baseline answer is already good enough. TRACE-Memory has the closest research form of this: admit evidence only if it improves the response beyond public context. Memory Weave’s version is a runtime judge that looks at the actual draft, without needing TRACE-Memory’s trained admission model.
+That makes redundancy real. A fact can be on-topic and still useless, because the baseline answer is already good enough. TRACE-Memory has the closest research form of this: admit evidence only if it improves the response beyond public context. Retold’s version is a runtime judge that looks at the actual draft, without needing TRACE-Memory’s trained admission model.
 
 ## 6. Candidates are judged as a group, and using nothing is a valid win
 
@@ -229,7 +229,7 @@ The new subsystem can fail without poisoning the response. Conditional memory ha
 
 ## 11. The research idea became a control system you can actually run
 
-RUMS and TRACE-Memory are different papers in the same family: do not inject memory because it is relevant; inject it only if it changes the answer. They operationalize that family differently, and Memory Weave operationalizes a third serving shape around TRACE-Memory’s two stages. See the table below.
+RUMS and TRACE-Memory are different papers in the same family: do not inject memory because it is relevant; inject it only if it changes the answer. They operationalize that family differently, and Retold operationalizes a third serving shape around TRACE-Memory’s two stages. See the table below.
 
 What was built around those ideas is the operational machinery the experiments showed was actually needed:
 
@@ -244,7 +244,7 @@ What was built around those ideas is the operational machinery the experiments s
 - review backlog
 - fail-closed (withhold) semantics
 
-## 12. What Memory Weave did differently from RUMS and TRACE-Memory
+## 12. What Retold did differently from RUMS and TRACE-Memory
 
 RUMS and TRACE-Memory are not the same idea. Both refuse “retrieve by similarity and inject the hits.” After that they diverge.
 
@@ -252,9 +252,9 @@ RUMS asks: given memories we already have, which subset reduces the model’s un
 
 TRACE-Memory asks: given the question and public context, what user-specific information is missing, retrieve for those gaps, then admit evidence only if it improves the answer beyond the public-only path. That is two stages, missing-information retrieval plus incremental response utility, and its training needs logprobs even though inference can be text-only.
 
-Memory Weave is closer to TRACE-Memory’s two-stage serving shape than to RUMS’s entropy selection. It does not use RUMS entropy as a production signal, and it does not use TRACE-Memory’s trained query and admission policies. It uses a prompted planner plus a prompted draft-relative judge, then adds activation, inventory, and the control plane the experiments required.
+Retold is closer to TRACE-Memory’s two-stage serving shape than to RUMS’s entropy selection. It does not use RUMS entropy as a production signal, and it does not use TRACE-Memory’s trained query and admission policies. It uses a prompted planner plus a prompted draft-relative judge, then adds activation, inventory, and the control plane the experiments required.
 
-| | RUMS | TRACE-Memory | Memory Weave |
+| | RUMS | TRACE-Memory | Retold |
 | --- | --- | --- | --- |
 | Core idea | Select already-known user memories by how much they reduce response entropy | Generate public-conditioned information gaps, retrieve against them, then admit evidence only if it improves the answer beyond public context | Two-stage serving like TRACE-Memory (planner then judge), with draft-relative helpfulness rather than entropy or trained likelihood, plus ambient versus conditional activation |
 | Needs logits / trained policies | Yes, logits at selection time | Training needs logprobs; inference can be text-only | No. Prompted runtime judge against an actual draft |
@@ -263,7 +263,7 @@ Memory Weave is closer to TRACE-Memory’s two-stage serving shape than to RUMS�
 | Empty set | Allowed | Allowed | Allowed, and the log says why: planner silence, miss, judge, budget, or failure |
 | If the policy breaks | Not specified as a serving containment model | Not specified as a serving containment model | Return the baseline. Conditional memory never gets the benefit of the doubt |
 
-Cite both papers. Memory Weave did not invent “admit memory only if it improves the answer.” What it adds is a governed way to run a TRACE-like two-stage path on hosted models, with ambient activation and a content-free inventory, and to refuse a bundle that has not passed the fitness bar.
+Cite both papers. Retold did not invent “admit memory only if it improves the answer.” What it adds is a governed way to run a TRACE-like two-stage path on hosted models, with ambient activation and a content-free inventory, and to refuse a bundle that has not passed the fitness bar.
 
 ## References
 

@@ -9,19 +9,19 @@ from time import perf_counter
 
 import pytest
 
-from memory_weave.config import MemoryWeaveConfig
-from memory_weave.ingest import WriteRequest
-from memory_weave.models import Principal, SearchRequest
-from memory_weave.runtime import build_runtime
-from memory_weave.store import Store
+from retold.config import RetoldConfig
+from retold.ingest import WriteRequest
+from retold.models import Principal, SearchRequest
+from retold.runtime import build_runtime
+from retold.store import Store
 
 from .fixture_1k import copy_fixture
 
 pytestmark = [
     pytest.mark.integration,
     pytest.mark.skipif(
-        os.environ.get("MEMORY_WEAVE_INTEGRATION") != "1",
-        reason="set MEMORY_WEAVE_INTEGRATION=1 to run local-model integration tests",
+        os.environ.get("RETOLD_INTEGRATION") != "1",
+        reason="set RETOLD_INTEGRATION=1 to run local-model integration tests",
     ),
 ]
 
@@ -46,7 +46,7 @@ QUERIES = [
     "Rohan's meeting length preference",
     "what happened at the Goa offsite",
     "invoice queue backlog incident",
-    "embedding model for memory-weave",
+    "embedding model for retold",
     "hotfix procedure for the billing service",
 ]
 
@@ -58,9 +58,9 @@ def _percentile(values: list[float], q: float) -> float:
 
 def test_warm_search_and_write_meet_the_lld_budgets(tmp_path: Path) -> None:
     store = Store(copy_fixture(tmp_path))
-    runtime = build_runtime(MemoryWeaveConfig(), store)
+    runtime = build_runtime(RetoldConfig(), store)
     principal = Principal("coding-agent", "aditya", "latency-session", None)
-    store.create_session("latency-session", "coding-agent", "aditya", None, __import__("memory_weave.util").util.now())
+    store.create_session("latency-session", "coding-agent", "aditya", None, __import__("retold.util").util.now())
 
     def search(query: str) -> tuple[float, str]:
         request = SearchRequest([query], None, None, None, None, None, 8, False)

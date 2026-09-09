@@ -18,9 +18,9 @@ import test_crewai_adapter as crew  # noqa: E402
 import test_deepagents_adapter as deep  # noqa: E402
 from adapter_contract import run_contract  # noqa: E402
 
-from memory_weave.host import MemoryHost  # noqa: E402
-from memory_weave.models import Scope  # noqa: E402
-from memory_weave.store import Store  # noqa: E402
+from retold.host import MemoryHost  # noqa: E402
+from retold.models import Scope  # noqa: E402
+from retold.store import Store  # noqa: E402
 
 
 def _semantic_state(store: Store, user: str) -> list[tuple[str | None, str, str, str, str | None, str]]:

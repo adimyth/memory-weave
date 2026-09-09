@@ -14,10 +14,10 @@ from typing import Any
 
 import pytest
 
-from memory_weave.config import EmbeddingConfig, IngestionConfig, MemoryWeaveConfig
-from memory_weave.index.embedder import FakeEmbedder
-from memory_weave.index.vector import VectorIndex
-from memory_weave.ingest import (
+from retold.config import EmbeddingConfig, IngestionConfig, RetoldConfig
+from retold.index.embedder import FakeEmbedder
+from retold.index.vector import VectorIndex
+from retold.ingest import (
     ExtractionRunner,
     FakeExtractor,
     FakeJudge,
@@ -27,8 +27,8 @@ from memory_weave.ingest import (
     SessionBuffer,
     TableReviewer,
 )
-from memory_weave.ingest import ingestor as ingestor_module
-from memory_weave.models import (
+from retold.ingest import ingestor as ingestor_module
+from retold.models import (
     CandidateRecord,
     EntityMention,
     ExtractionOutput,
@@ -39,10 +39,10 @@ from memory_weave.models import (
     SessionSummary,
     Turn,
 )
-from memory_weave.policy import ActivationService, CategoryDecision
-from memory_weave.retrieve import Retriever
-from memory_weave.store import Store
-from memory_weave.util import render_subject
+from retold.policy import ActivationService, CategoryDecision
+from retold.retrieve import Retriever
+from retold.store import Store
+from retold.util import render_subject
 
 _NOW = datetime(2026, 9, 8, 12, 0, tzinfo=UTC)
 _AGENT_ID = "research-agent"
@@ -172,12 +172,12 @@ def buffer(store: Store) -> SessionBuffer:
 
 
 @pytest.fixture
-def config() -> MemoryWeaveConfig:
-    return MemoryWeaveConfig(embedding=_EMBEDDING, ingestion=IngestionConfig(dedup_candidate_cosine=0.80))
+def config() -> RetoldConfig:
+    return RetoldConfig(embedding=_EMBEDDING, ingestion=IngestionConfig(dedup_candidate_cosine=0.80))
 
 
 class World:
-    def __init__(self, store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig, clock: Clock) -> None:
+    def __init__(self, store: Store, buffer: SessionBuffer, config: RetoldConfig, clock: Clock) -> None:
         self.store = store
         self.buffer = buffer
         self.config = config
@@ -221,7 +221,7 @@ class World:
 
 
 @pytest.fixture
-def world(store: Store, buffer: SessionBuffer, config: MemoryWeaveConfig, clock: Clock) -> World:
+def world(store: Store, buffer: SessionBuffer, config: RetoldConfig, clock: Clock) -> World:
     return World(store, buffer, config, clock)
 
 
@@ -718,7 +718,7 @@ def test_activation_runs_after_extraction_and_keeps_temporary_preferences_condit
 def test_extracted_records_serve_both_the_ambient_profile_and_host_issued_retrieval(world: World) -> None:
     """The utility-aware path reads ambient records from the profile and conditional ones through auto search."""
 
-    from memory_weave.policy import ProfileAssembler
+    from retold.policy import ProfileAssembler
 
     class Policy:
         def classify(self, content: str) -> CategoryDecision:
@@ -792,13 +792,13 @@ def test_write_request_carries_temporal_metadata_into_the_record(world: World) -
 
 @pytest.mark.live
 def test_live_extractor_produces_at_least_one_validating_candidate(world: World) -> None:
-    if os.environ.get("MEMORY_WEAVE_LIVE") != "1":
-        pytest.skip("set MEMORY_WEAVE_LIVE=1 to run the hosted extractor")
-    from memory_weave.ingest import StructuredLLMExtractor, StructuredLLMReviewer, completion_client_for
+    if os.environ.get("RETOLD_LIVE") != "1":
+        pytest.skip("set RETOLD_LIVE=1 to run the hosted extractor")
+    from retold.ingest import StructuredLLMExtractor, StructuredLLMReviewer, completion_client_for
 
     ingestion = world.config.ingestion
-    extraction_model = os.environ.get("MEMORY_WEAVE_EXTRACTION_MODEL", ingestion.extraction_model)
-    review_model = os.environ.get("MEMORY_WEAVE_REVIEW_MODEL", ingestion.review_model)
+    extraction_model = os.environ.get("RETOLD_EXTRACTION_MODEL", ingestion.extraction_model)
+    review_model = os.environ.get("RETOLD_REVIEW_MODEL", ingestion.review_model)
     for model in (extraction_model, review_model):
         key = "ANTHROPIC_API_KEY" if model.startswith("claude-") else "OPENAI_API_KEY"
         if not os.environ.get(key):

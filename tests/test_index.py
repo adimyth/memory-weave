@@ -11,11 +11,11 @@ from typing import Any
 import numpy as np
 import pytest
 
-from memory_weave.config import EmbeddingConfig
-from memory_weave.index.embedder import BgeM3Embedder, FakeEmbedder
-from memory_weave.index.vector import VectorIndex
-from memory_weave.models import Record, Scope
-from memory_weave.store import Store
+from retold.config import EmbeddingConfig
+from retold.index.embedder import BgeM3Embedder, FakeEmbedder
+from retold.index.vector import VectorIndex
+from retold.models import Record, Scope
+from retold.store import Store
 
 _NOW = datetime(2026, 9, 4, 12, 0, tzinfo=UTC)
 _EMBEDDING_CONFIG = EmbeddingConfig(model="fake-embedder", version="1", dims=3, max_chars=200)
@@ -35,8 +35,8 @@ def _record(record_id: str) -> Record:
         type="semantic",
         version=1,
         content=f"Content for {record_id}.",
-        subject=f"project:memory-weave/{record_id}",
-        scope=Scope(kind="project", id="memory-weave"),
+        subject=f"project:retold/{record_id}",
+        scope=Scope(kind="project", id="retold"),
         source_kind="system",
         source_ref=None,
         creator_agent_id="implementation-agent",
@@ -326,8 +326,8 @@ def test_vector_index_refreshes_another_processes_embedding_and_status_changes(t
 
 @pytest.mark.slow
 @pytest.mark.skipif(
-    os.environ.get("MEMORY_WEAVE_RUN_SLOW") != "1",
-    reason="set MEMORY_WEAVE_RUN_SLOW=1 to run scale tests",
+    os.environ.get("RETOLD_RUN_SLOW") != "1",
+    reason="set RETOLD_RUN_SLOW=1 to run scale tests",
 )
 def test_vector_index_searches_fifty_thousand_vectors_under_ten_milliseconds() -> None:
     config = EmbeddingConfig(model="scale", version="1", dims=1024)
@@ -351,8 +351,8 @@ def test_vector_index_searches_fifty_thousand_vectors_under_ten_milliseconds() -
 
 @pytest.mark.integration
 @pytest.mark.skipif(
-    os.environ.get("MEMORY_WEAVE_INTEGRATION") != "1",
-    reason="set MEMORY_WEAVE_INTEGRATION=1 to run local-model integration tests",
+    os.environ.get("RETOLD_INTEGRATION") != "1",
+    reason="set RETOLD_INTEGRATION=1 to run local-model integration tests",
 )
 def test_bge_m3_places_paraphrases_closer_than_unrelated_text() -> None:
     embedder = BgeM3Embedder(EmbeddingConfig())
