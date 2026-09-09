@@ -71,6 +71,7 @@ retold/
     prompt.py        # the memory-use policy text, versioned
     activation.py    # ambient activation: eligibility, category policy, review queue, ProfileAssembler, inventory
     utility_aware.py # GapPolicy, AdmissionPolicy, UtilityAwareOrchestrator, turn decisions, bundle components
+    reference.py     # the measured planner, judge, classifier, retrieval settings, and supported bundle
     bundles.py       # bundle hash and the fitness registry that gates serving
     metrics.py       # stage outcomes, rates, latency, cost, and rollback thresholds over the decision log
   tools/
@@ -1694,6 +1695,8 @@ It returns the full records, including superseded lineage and conflicts. An agen
   "tags": {"type": "array", "items": {"type": "string"}}
 }
 ```
+
+A write that lands runs the activation policy on the record before it answers, the same policy the extractor's writes go through, and reports its outcome as `activation` and `activation_reason` in the tool result. A preference the model saves in the middle of a session is therefore eligible for the ambient profile on the same terms as one the session-end extractor finds: host-verified evidence in the principal's own turns, a promotable category, and a recognised global-default form. It fails closed to `conditional`, and a policy that errors leaves the write standing and records `record.activation_skipped`.
 
 The description tells the agent to write one fact per call and only information that would change a future action.
 It cannot write `system` or `session_summary`: the host and extractor own those source kinds, and the input enum excludes them.

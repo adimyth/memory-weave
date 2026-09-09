@@ -1,0 +1,96 @@
+name: ci
+
+# Every pull request and every push to main. The publish workflow repeats the lint, type, and test steps on
+# a tag; this is the gate that runs before anything is merged.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: python ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python }}
+          enable-cache: true
+      # Both adapter extras: the contract suite and the mode matrix are only meaningful with the frameworks
+      # installed, and they are what a framework release breaks first.
+      - run: uv sync --extra deepagents --extra crewai
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy
+      - run: uv run pytest -q -m "not integration and not live and not slow"
+
+  docs:
+    name: docs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - run: uv sync --extra docs
+      - run: uv run mkdocs build --strict
+
+  package:
+    name: wheel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.13"
+          enable-cache: true
+      - run: uv build
+      - name: check the distribution metadata the way an upload does
+        run: uvx twine check dist/*
+      - name: install the wheel into a clean environment and run it
+        run: |
+          set -euo pipefail
+          mkdir -p "${RUNNER_TEMP}/clean"
+          cp scripts/wheel_smoke.py "${RUNNER_TEMP}/clean/"
+          uv venv --python 3.13 "${RUNNER_TEMP}/clean/venv"
+          VIRTUAL_ENV="${RUNNER_TEMP}/clean/venv" uv pip install "$(ls dist/*.whl)[deepagents,crewai]"
+          cd "${RUNNER_TEMP}/clean"
+          # Run from outside the checkout: the smoke test must exercise the wheel, not the source tree.
+          ./venv/bin/python wheel_smoke.py --installed
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ github.sha }}
+          path: dist/
+
+  audit:
+    name: dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - name: audit the locked dependency set
+        run: |
+          set -euo pipefail
+          uv export --all-extras --no-hashes --no-dev --format requirements-txt > requirements-audit.txt
+          # The chromadb advisories below have no fixed release and reach us only through the crewai extra;
+          # Retold itself neither imports nor runs chromadb. Drop an ignore as soon as a fix ships.
+          uvx --from pip-audit pip-audit --no-deps --disable-pip -r requirements-audit.txt \
+            --ignore-vuln PYSEC-2026-311 \
+            --ignore-vuln GHSA-2wm9-hf6c-p5cr \
+            --ignore-vuln GHSA-36p7-vc44-83pf \
+            --ignore-vuln GHSA-xph7-9rjv-w5fr

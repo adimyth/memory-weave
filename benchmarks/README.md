@@ -2,6 +2,13 @@
 
 What has been run against Retold, what each experiment was supposed to show, and what it showed.
 
+The policies these runs measure are the ones the package ships. The planner, the judge, the record
+classifier, their prompts and versions, the retrieval settings every run uses, and the supported bundle live
+in `retold/policy/reference.py`; `shadow_adapter.py` and `phase0_real_retrieval.py` only adapt them to the
+run's model wrapper and add the retired prompt versions and the sweep knobs. A measurement here is therefore
+a measurement of installed code, and `tests/test_reference_policies.py` pins the rebuilt bundle against
+`bundles/bundle-2026-09-08-a.json`.
+
 ## The vertical slice
 
 One fixed twelve-turn conversation replayed through a real serving model and the five memory tools, three

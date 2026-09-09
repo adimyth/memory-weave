@@ -1,8 +1,6 @@
 # Retold vs. Amazon Bedrock AgentCore Memory
 
-This document compares Retold's design against Amazon Bedrock AgentCore Memory, a managed long-term memory service for agents.
-It is a comparison, not a roadmap.
-Nothing here changes the current design; where AgentCore does something we do not, the note says so and stops.
+**Status: a comparison written on 5 September 2026 against AgentCore's documentation of that date, reconciled with the built system on 9 September.** Where a passage described something Retold had specified but not yet built, it now names the code that does it. Where AgentCore still does something Retold does not, such as reflection or record enumeration, the note says so and stops. Nothing here is a roadmap or a design change.
 
 Sources read for this comparison, all fetched 2026-09-05:
 
@@ -107,7 +105,7 @@ Benefits of that model, as described in AgentCore's own docs and API shape:
 - **Independent tuning.** Instructions and output schema are per strategy, so you can tune the summary strategy's prompt without touching the semantic strategy's.
 - **Composability.** You can combine strategies ("You can combine multiple strategies when creating memories"), so the four are building blocks, not an exclusive choice.
 
-**Our model:** one fixed extraction pass (per the [LLD](agent-memory-lld.md), a single `Extractor.extract(transcript, context) -> ExtractionOutput`, not yet implemented in code — section 7) proposes candidates across all three record types plus one summary, in one call, at session end. There is no per-agent switch to say "this agent only cares about facts, skip episodic."
+**Our model:** one fixed extraction pass (a single `Extractor.extract(transcript, context) -> ExtractionOutput`, built in `retold/ingest/extraction.py` since this comparison was written) proposes candidates across all three record types plus one summary, in one call, at session end. There is no per-agent switch to say "this agent only cares about facts, skip episodic."
 
 Trade-offs, stated plainly rather than as a recommendation to change anything:
 

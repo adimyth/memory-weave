@@ -1,6 +1,6 @@
 # Next phases: background writes
 
-Local working note. Written 6 September 2026 after checking the current landscape against what Retold actually does.
+**Status: a historical working note, kept for the reasoning that led to Phase 10.** Written on 6 September 2026, when session extraction was specified and not built, and updated on 8 September when it was. Everything it proposed has shipped: read the first section for where the system ended up, and the sections after it as the argument made at the time, not as a description of the code. `docs/acceptance-report.md` and `README.md` describe what runs today.
 
 ## Where Retold is today
 
@@ -14,7 +14,7 @@ Phase 13 added the Deep Agents adapter, `retold/adapters/deepagents.py`, behind 
 
 Phase 15 (9 September) added the integration suite, the 1K fixture, the calibration sweep, latency, isolation, scale, and contention tests, and `docs/acceptance-report.md`. The precision gate was settled by a blind adjudication of one disputed label without changing the bundle (`usefulness-gate.md` 8o), and `main` was tagged `v1.0.0`. After the tag, the cross-encoder was given two placements, a timeout, and a fallback, and measured against RRF alone (8p): it stays off. The items still open below are the trigger-mode question and attribute-name drift.
 
-The paragraphs below are the note as written on 6 September, before the build.
+Everything below is the note as it was written on 6 September, before the build. It is left unedited: the present tense in it describes 6 September, not today.
 
 Retold has one write path: the chatting agent calls `memory_write` during the session. That is it.
 
@@ -34,7 +34,7 @@ Checked against each product's current documentation on 6 September 2026. Source
 | AgentCore | Yes, per enabled strategy | Events, after `CreateEvent` or `IngestData` | Strategies must be enabled |
 | Mem0 | Extraction on `add`, not a separate pass | The messages handed to `add` | On |
 | Claude Code | No. Claude writes memory files during the session | The session | Auto memory on by default |
-| Retold | Specified, not built | | |
+| Retold | Yes, at session end (Phase 10, built 8 September) | The session transcript | Host runs it through the session hooks |
 
 Four independent products converged on the same shape: the chatting model is not the only thing that decides what gets remembered, and a second pass reads the transcript afterwards. Two of them independently named it dreaming. Retold's Phase 10 is in that family, so building it is not a novelty, it is catching up to the table stakes.
 

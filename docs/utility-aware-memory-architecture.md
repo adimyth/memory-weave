@@ -183,11 +183,17 @@ UtilityAwareConfig(
 )
 ```
 
-The ambient profile's bounds are `ProfileAssembler(store, max_records=8, token_budget=400)`. The adapters expose the same switches through `memory_mode="utility_aware"` plus a `UtilityAwareConfig`; `examples/reference_host.py` shows per-stage kill switches over the same fields.
+The ambient profile's bounds are `ProfileAssembler(store, max_records=8, token_budget=400)`. It assembles a session's profile on that session's first turn and returns the same block for every later turn until `forget(session_id)` at session end, so a promotion, a review resolution, or an expiry landing mid-session cannot change the standing instructions between one turn and the next. The adapters expose the same switches through `memory_mode="utility_aware"` plus a `UtilityAwareConfig`; `examples/reference_host.py` shows per-stage kill switches over the same fields.
+
+The whole bundle that the fitness suite measured is in the package: `retold.policy.reference` holds the planner, the judge, and the record classifier with their prompts and versions, the retrieval settings every run used, and `supported_bundle()`, which returns the `UtilityAwareConfig` whose components hash to the recorded manifest. A host installs Retold, supplies a completion client, and gets the configuration that was measured rather than a manifest to copy. The benchmark harnesses import the same module, so the code that a run measures and the code that an application installs cannot drift apart.
+
+The utility-aware path requires `trigger_mode="tool_only"`. Host-issued search in `auto` and `hybrid` appends its results to the turn before the path runs, which would put candidates in front of the model whatever admission then decided; the adapters refuse the combination when they are constructed.
 
 Existing stores migrate records to `activation="conditional"`. Existing callers, tool schemas, and `tool_only` behavior remain compatible. The profile and the conditional path are independent: `profile_enabled=True` with `gap_enabled=False` renders the profile and never retrieves, and `profile_enabled=False` withholds the profile whatever the other switches say. Enabling a gap policy without admission may run in shadow mode but must not inject conditional memory. The reference host's kill switches map onto these fields one to one, and its default is shadow mode.
 
-`latency_budget_ms` is overridable per request through `TurnOptions`. A per-request value always wins over the configured default. Per-stage timeouts remain hard caps, so a generous budget cannot extend a stage beyond its own timeout.
+`latency_budget_ms` is overridable per request through `TurnOptions`. A per-request value always wins over the configured default. Per-stage timeouts remain hard caps, so a generous budget cannot extend a stage beyond its own timeout. A stage that reaches its timeout is abandoned rather than waited on: the planner and the judge run on daemon threads, and the turn returns at the timeout whether or not the call behind it has come back.
+
+The bundle a host declares has to describe the host it runs in. Pass the `RetoldConfig` that retrieval uses as `retrieval_config` and the orchestrator derives `retrieval_config_sha256` from it, refusing with `BundleMismatchError` when the declared manifest names a different one. That is what stops a fitness result earned under the measured retrieval settings from being cited by a host that retrieves with something else.
 
 ## 6. Audit and learning data
 

@@ -34,7 +34,9 @@ retold = "retold.cli:main"
 
 [project.optional-dependencies]
 local-models = [
-  "sentence-transformers>=3.0,<5",
+  # 5.x is the first line that runs on transformers 5, which is where the transformers advisories are fixed.
+  "sentence-transformers>=5.1,<6",
+  "transformers>=5.10",
   "protobuf>=4.25",
   "sentencepiece>=0.2",
 ]
@@ -59,7 +61,11 @@ docs = [
 ]
 
 [build-system]
-requires = ["hatchling>=1.27"]
+# Hatchling 1.30 emits Metadata-Version 2.5, which the current publishing toolchain rejects: `twine check`
+# fails with "'2.5' is not a valid metadata version" and an upload would not get past it. 1.29 emits 2.4,
+# which carries the PEP 639 license expression this project uses. Raise the ceiling when twine and PyPI
+# accept 2.5.
+requires = ["hatchling>=1.27,<1.30"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.sdist]

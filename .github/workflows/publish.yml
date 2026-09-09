@@ -17,13 +17,25 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.12"
-      - run: uv sync
+      - run: uv sync --extra deepagents --extra crewai
       - run: uv run ruff check . && uv run ruff format --check . && uv run mypy
       - run: uv run pytest -q
       - run: uv build
       - run: |
           test -n "$(ls dist/*.whl)" && test -n "$(ls dist/*.tar.gz)"
           uv run python -c "import tomllib,sys; v=tomllib.load(open('pyproject.toml','rb'))['project']['version']; t='${GITHUB_REF_NAME}'; sys.exit(0 if not t.startswith('v') or t=='v'+v else f'tag {t} does not match version {v}')"
+      # What the upload itself will check. A metadata version the toolchain does not accept fails here,
+      # before a tag has been half published.
+      - run: uvx twine check dist/*
+      - name: install the wheel into a clean environment and run it
+        run: |
+          set -euo pipefail
+          mkdir -p "${RUNNER_TEMP}/clean"
+          cp scripts/wheel_smoke.py "${RUNNER_TEMP}/clean/"
+          uv venv --python 3.12 "${RUNNER_TEMP}/clean/venv"
+          VIRTUAL_ENV="${RUNNER_TEMP}/clean/venv" uv pip install "$(ls dist/*.whl)[deepagents,crewai]"
+          cd "${RUNNER_TEMP}/clean"
+          ./venv/bin/python wheel_smoke.py --installed
       - uses: actions/upload-artifact@v4
         with:
           name: dist

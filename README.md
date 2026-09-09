@@ -6,7 +6,7 @@ Retold stores evidence-backed records in one SQLite file, retrieves them through
 
 - **Documentation:** [adimyth.in/retold](https://adimyth.in/retold/)
 - **Install:** `pip install "retold[local-models]"`
-- **Status:** version 1.0.1, MIT licensed. Python 3.12, one process, one database file. Adapters for Deep Agents and CrewAI.
+- **Status:** version 1.0.1, MIT licensed. Python 3.12 and 3.13, one process, one database file. Adapters for Deep Agents and CrewAI.
 - **The utility-aware host path**, which decides whether a turn needs memory before ranking anything, is built and validated offline, off by default, and waiting on real-traffic validation. The [acceptance report](docs/acceptance-report.md) records every gate. v1.0.0 was tagged under the project's previous name, Memory Weave.
 
 ## 1. What it is, and what it is not
@@ -149,6 +149,12 @@ Scope answers whose memory it is; a grant answers which agent may see it. Grants
 pip install "retold[local-models]"        # or: uv add "retold[local-models]"
 ```
 
+Until the 1.0.1 tag is pushed and the publish workflow has run, `retold` is not on PyPI yet; install from the repository in the meantime:
+
+```bash
+pip install "retold[local-models] @ git+https://github.com/adimyth/retold@main"
+```
+
 Extras: `local-models` (the bge-m3 embedder, the NLI judge, and the cross-encoder reranker; without it you supply an embedder and judge), `live` (the Anthropic and OpenAI SDKs for extraction, review, and rewriting), `deepagents`, and `crewai`. From a checkout:
 
 ```bash
@@ -204,7 +210,23 @@ agent.invoke({"messages": [...]}, {"configurable": {"thread_id": "s1", "agent_id
 adapter.end_session(config)
 ```
 
-The principal comes from `configurable.agent_id`, `user_id`, and `thread_id` at call time. The CrewAI adapter binds the principal when it is built, because CrewAI has no per-call configuration, and wraps the crew's LLM in a proxy that carries the same policy. To run the utility-aware path, pass `memory_mode="utility_aware"` with a `UtilityAwareConfig`, a gap policy, an admission policy, and a bundle registry. `examples/deepagents_demo.py` and `examples/crewai_demo.py` run the whole thing with fakes and no keys; `examples/reference_host.py` shows a host with per-stage kill switches, a metrics-driven rollback, and the bundle check; a freshly built reference host runs in shadow mode until the application switches regeneration on.
+The principal comes from `configurable.agent_id`, `user_id`, and `thread_id` at call time. The CrewAI adapter binds the principal when it is built, because CrewAI has no per-call configuration, and wraps the crew's LLM in a proxy that carries the same policy. To run the utility-aware path, pass `memory_mode="utility_aware"` with a `UtilityAwareConfig`, a gap policy, an admission policy, and a bundle registry. It requires `trigger_mode="tool_only"`: host-issued search in `auto` and `hybrid` would append candidates to the turn before admission decides anything, so the adapters refuse that combination when they are built. The bundle the fitness suite measured is in the package rather than in the benchmarks, so a host does not have to reproduce it:
+
+```python
+from retold.policy.reference import ReferenceAdmissionPolicy, ReferenceGapPolicy, supported_bundle, supported_retrieval_config
+
+config = supported_retrieval_config()           # the retrieval settings every fitness run used
+bundle = supported_bundle(shadow=True)          # planner, judge, classifier, taxonomy, caps, timeouts, retrieval hash
+adapter = DeepAgentsMemoryAdapter(
+    build_runtime(config, store),
+    memory_mode="utility_aware",
+    utility_config=bundle,
+    gap_policy=ReferenceGapPolicy(client, "gpt-4o"),
+    admission_policy=ReferenceAdmissionPolicy(client, "gpt-5.4"),
+)
+```
+
+The adapter passes its own `RetoldConfig` to the orchestrator, which derives the bundle's `retrieval_config_sha256` from it and refuses a bundle whose manifest names a different retrieval configuration. Serving means recording a passing fitness result for that exact bundle in the store and building again with `shadow=False`. `examples/deepagents_demo.py` and `examples/crewai_demo.py` run the whole thing with fakes and no keys; `examples/reference_host.py` shows a host with per-stage kill switches, a metrics-driven rollback, and the bundle check; a freshly built reference host runs in shadow mode until the application switches regeneration on.
 
 ### 3.4 Operate it
 
@@ -297,7 +319,8 @@ retold/
               extraction.py, temporal.py, session.py, prompts/
   retrieve/   retriever.py, generators.py, fusion.py, gate.py, freshness.py, dedup.py, budget.py,
               explain.py, rewrite.py, prompts/
-  policy/     grants.py, lifecycle.py, prompt.py, activation.py, utility_aware.py, bundles.py, metrics.py
+  policy/     grants.py, lifecycle.py, prompt.py, activation.py, utility_aware.py, bundles.py, metrics.py,
+              reference.py (the measured planner, judge, classifier, and supported bundle)
   tools/      schemas.py, handlers.py
   adapters/   base.py, deepagents.py, crewai.py
 examples/     deepagents_demo.py, crewai_demo.py, reference_host.py, vertical_slice.py
