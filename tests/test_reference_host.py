@@ -111,8 +111,8 @@ def _approve(store, host_config) -> None:
 def test_unapproved_bundle_can_only_run_in_shadow(world) -> None:
     store, principal = world
     with pytest.raises(BundleNotApprovedError):
-        _host(store, Gaps(True), Admission(True))
-    host = _host(store, Gaps(True), Admission(True), switches=KillSwitches(regeneration=False))
+        _host(store, Gaps(True), Admission(True), switches=KillSwitches(regeneration=True))
+    host = _host(store, Gaps(True), Admission(True))  # the default switches are shadow mode
     decision = host.serve_turn(principal, "when?", None, lambda: "draft", lambda r: "final")
     assert decision.disposition == "shadow_would_regenerate" and decision.response == "draft"
     assert host.is_serving() is False
@@ -120,7 +120,7 @@ def test_unapproved_bundle_can_only_run_in_shadow(world) -> None:
     from dataclasses import replace
 
     _approve(store, replace(host.config(), shadow=False))
-    host.set_switches(KillSwitches())
+    host.set_switches(KillSwitches(regeneration=True))
     assert host.config().gap_timeout_ms == MEASURED_GAP_TIMEOUT_MS
     assert host.config().admission_timeout_ms == MEASURED_ADMISSION_TIMEOUT_MS
     served = host.serve_turn(principal, "when?", None, lambda: "draft", lambda r: "final")
@@ -133,7 +133,7 @@ def test_kill_switches_are_independent_and_change_the_bundle_hash(world) -> None
     store, principal = world
     probe = _host(store, Gaps(True), Admission(True), switches=KillSwitches(regeneration=False))
     hashes = set()
-    for switches in (KillSwitches(), KillSwitches(admission=False), KillSwitches(gap=False)):
+    for switches in (KillSwitches(regeneration=True), KillSwitches(admission=False), KillSwitches(gap=False)):
         cfg = replace(
             probe.config(),
             gap_enabled=switches.gap,
@@ -141,7 +141,7 @@ def test_kill_switches_are_independent_and_change_the_bundle_hash(world) -> None
             shadow=not switches.regeneration,
         )
         _approve(store, cfg)
-    host = _host(store, Gaps(True), Admission(True))
+    host = _host(store, Gaps(True), Admission(True), switches=KillSwitches(regeneration=True))
     hashes.add(host.bundle_hash())
     host.disable("admission")
     hashes.add(host.bundle_hash())
@@ -160,10 +160,12 @@ def test_rollback_disables_the_newest_stage_on_breach_and_logs_it(world) -> None
 
     store, principal = world
     probe = _host(store, Gaps(True, fail=True), Admission(False), switches=KillSwitches(regeneration=False))
-    for switches in (KillSwitches(), KillSwitches(regeneration=False)):
+    for switches in (KillSwitches(regeneration=True), KillSwitches(regeneration=False)):
         _approve(store, replace(probe.config(), shadow=not switches.regeneration))
     thresholds = RollbackThresholds(min_turns=3, max_policy_failure_rate=0.1)
-    host = _host(store, Gaps(True, fail=True), Admission(False), thresholds=thresholds)
+    host = _host(
+        store, Gaps(True, fail=True), Admission(False), switches=KillSwitches(regeneration=True), thresholds=thresholds
+    )
     for _ in range(3):
         decision = host.serve_turn(principal, "q", None, lambda: "draft", lambda r: "final")
         assert decision.disposition == "baseline_policy_failure" and decision.response == "draft"
@@ -192,7 +194,7 @@ def test_per_request_budget_is_honoured_by_the_host(world) -> None:
     store, principal = world
     probe = _host(store, Gaps(True), Admission(True), switches=KillSwitches(regeneration=False))
     _approve(store, replace(probe.config(), shadow=False))
-    host = _host(store, Gaps(True), Admission(True))
+    host = _host(store, Gaps(True), Admission(True), switches=KillSwitches(regeneration=True))
     decision = host.serve_turn(principal, "q", None, lambda: "draft", lambda r: "final", latency_budget_ms=0)
     assert decision.disposition == "baseline_budget_exhausted" and decision.response == "draft"
     assert decision.requested_budget_ms == 0
@@ -204,7 +206,7 @@ def test_kill_switches_work_without_approving_the_degraded_bundles(world) -> Non
     store, principal = world
     probe = _host(store, Gaps(True), Admission(True), switches=KillSwitches(regeneration=False))
     _approve(store, replace(probe.config(), shadow=False))
-    host = _host(store, Gaps(True), Admission(True))
+    host = _host(store, Gaps(True), Admission(True), switches=KillSwitches(regeneration=True))
     assert host.serve_turn(principal, "q", None, lambda: "draft", lambda r: "final").disposition == "regenerated"
     host.disable("admission")  # no fitness result exists for this configuration; it must still be allowed
     assert (
@@ -214,5 +216,23 @@ def test_kill_switches_work_without_approving_the_degraded_bundles(world) -> Non
     host.disable("gap")
     assert host.serve_turn(principal, "q", None, lambda: "draft", lambda r: "final").disposition == "baseline_no_gaps"
     # Re-enabling everything brings the approval requirement back, and the original bundle is approved.
-    host.set_switches(KillSwitches())
+    host.set_switches(KillSwitches(regeneration=True))
     assert host.serve_turn(principal, "q", None, lambda: "draft", lambda r: "final").disposition == "regenerated"
+
+
+def test_default_switches_are_shadow_and_the_profile_switch_empties_the_profile(world) -> None:
+    store, principal = world
+    host = _host(store, Gaps(True), Admission(True))  # no approval needed: nothing serves by default
+    assert host.switches == KillSwitches() and host.switches.regeneration is False
+    assert host.is_serving() is False and host.config().shadow is True
+    decision = host.serve_turn(principal, "when?", None, lambda: "draft", lambda r: "final")
+    assert decision.disposition == "shadow_would_regenerate" and decision.response == "draft"
+    assert host.config().profile_enabled is True
+    host.disable("profile")
+    assert host.config().profile_enabled is False
+    assert host.profile_text(principal) == ""
+    withheld = host.serve_turn(principal, "when?", None, lambda: "draft", lambda r: "final")
+    assert withheld.profile_record_ids == []
+    assert host.bundle_hash() == _host(store, Gaps(True), Admission(True)).bundle_hash(), (
+        "profile is a switch, not a bundle component"
+    )

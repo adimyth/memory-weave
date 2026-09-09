@@ -95,6 +95,7 @@ class DeepAgentsMemoryAdapter:
         self._recorded: dict[str, set[str]] = {}
         self._searched: dict[str, set[str]] = {}
         self._profiles = ProfileAssembler(self._store)
+        self._utility_config = utility_config
         self._orchestrator: UtilityAwareOrchestrator | None = None
         self.decisions: list[TurnMemoryDecision] = []
         if memory_mode == "utility_aware":
@@ -243,6 +244,8 @@ class DeepAgentsMemoryAdapter:
         return decision
 
     def profile_block(self, principal: Principal) -> str:
+        if self._utility_config is not None and not self._utility_config.profile_enabled:
+            return ""
         return self._profiles.build(principal).text
 
 

@@ -12,8 +12,12 @@ The first release on PyPI.
 - The cross-encoder reranker gained two placements (`reranker.mode`: after the RRF relevance floors, or in place of them), a stage timeout, and a configured fallback; the search log records whether each pass applied, timed out, or failed. Both placements were measured against RRF alone and neither is enabled: each removed the expected record from the judge's pool on about one turn in five (`docs/usefulness-gate.md` section 8p).
 - The README was rewritten for integrators and every design document was brought up to the v1 state.
 
+- `UtilityAwareConfig.profile_enabled` makes the ambient profile a real switch: off, the draft sees no profile and the decision records no profile ids. The reference host's `profile` kill switch maps onto it, and the adapters honour it.
+- The reference host now defaults to shadow mode (`KillSwitches.regeneration=False`); an application turns serving on deliberately.
+
 ### Added
 
+- The MIT license.
 - A documentation site at https://adimyth.in/retold/, built from the README, the design documents, and the docstrings.
 - `py.typed`, so type checkers use the package's annotations.
 

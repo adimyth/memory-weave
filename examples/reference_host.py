@@ -8,7 +8,9 @@ application must honour, and nothing else:
   unapproved bundle runs in shadow mode; the constructor cannot be talked into serving it.
 - Stage timeouts and the per-turn budget come from measured latency, not from a configuration example.
 - Each stage has its own kill switch: profile, gap planning, admission, and regeneration. Flipping one
-  never changes the others, and every flip is a new bundle hash, so it is visible in the decision log.
+  never changes the others, and every flip of a bundle component is a new bundle hash, so it is visible in
+  the decision log. Regeneration is off by default: a freshly constructed host runs in shadow mode, deciding
+  and logging without changing a response, and an application turns serving on deliberately.
 - The rollback check reads the metrics aggregator over a window and disables the newest stage when a
   threshold is breached. The host decides when to call it; the library decides what it says.
 
@@ -56,7 +58,7 @@ class KillSwitches:
     profile: bool = True
     gap: bool = True
     admission: bool = True
-    regeneration: bool = True  # False means shadow mode: decide and log, never apply
+    regeneration: bool = False  # False means shadow mode: decide and log, never apply; the safe default
 
 
 class ReferenceHost:
@@ -103,6 +105,7 @@ class ReferenceHost:
             gap_enabled=self._switches.gap,
             admission_mode="hosted_judge" if self._switches.admission else "disabled",
             shadow=not self._switches.regeneration,
+            profile_enabled=self._switches.profile,
             gap_timeout_ms=self._gap_timeout_ms,
             admission_timeout_ms=self._admission_timeout_ms,
             latency_budget_ms=self._default_budget_ms,
@@ -116,6 +119,11 @@ class ReferenceHost:
 
     def is_serving(self) -> bool:
         return self._switches.gap and self._switches.regeneration
+
+    def profile_text(self, principal: Principal) -> str:
+        """The ambient profile the application should render into its baseline prompt; empty when switched off."""
+
+        return self._assembler.build(principal).text if self._switches.profile else ""
 
     def _build(self) -> UtilityAwareOrchestrator:
         # Raises BundleNotApprovedError when the switches would serve an unapproved bundle.
@@ -157,12 +165,12 @@ class ReferenceHost:
         *,
         latency_budget_ms: int | None = None,
     ) -> TurnMemoryDecision:
-        """Return the decision; the application sends `decision.response` to the user."""
+        """Return the decision; the application sends `decision.response` to the user.
 
-        if not self._switches.profile:
-            # Profile off: the baseline callable the application passes must not include the profile.
-            # The library cannot enforce what the application renders, so this is part of the contract.
-            pass
+        The baseline callable is the application's, so the profile it renders must come from
+        :meth:`profile_text`, which is empty while the profile switch is off.
+        """
+
         options = TurnOptions(latency_budget_ms if latency_budget_ms is not None else self._default_budget_ms)
         return self._orchestrator.prepare_turn(principal, turn, public_context, baseline, regenerate, options)
 

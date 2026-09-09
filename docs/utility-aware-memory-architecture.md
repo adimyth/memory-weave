@@ -173,6 +173,7 @@ UtilityAwareConfig(
     gap_enabled=False,            # True: plan gaps and retrieve against them
     admission_mode="disabled",   # "hosted_judge" is the only shipping admission policy
     shadow=False,                 # True: decide and log, never regenerate
+    profile_enabled=True,         # False: no ambient profile in the draft or the decision; a switch, not a bundle component
     max_gaps=3,
     max_candidates=8,
     gap_timeout_ms=2000,          # the reference host uses 4000 and 8000, measured on the Phase 0 splits
@@ -184,7 +185,7 @@ UtilityAwareConfig(
 
 The ambient profile's bounds are `ProfileAssembler(store, max_records=8, token_budget=400)`. The adapters expose the same switches through `memory_mode="utility_aware"` plus a `UtilityAwareConfig`; `examples/reference_host.py` shows per-stage kill switches over the same fields.
 
-Existing stores migrate records to `activation="conditional"`. Existing callers, tool schemas, and `tool_only` behavior remain compatible. Enabling only the profile feature does not enable host retrieval. Enabling a gap policy without admission may run in shadow mode but must not inject conditional memory.
+Existing stores migrate records to `activation="conditional"`. Existing callers, tool schemas, and `tool_only` behavior remain compatible. The profile and the conditional path are independent: `profile_enabled=True` with `gap_enabled=False` renders the profile and never retrieves, and `profile_enabled=False` withholds the profile whatever the other switches say. Enabling a gap policy without admission may run in shadow mode but must not inject conditional memory. The reference host's kill switches map onto these fields one to one, and its default is shadow mode.
 
 `latency_budget_ms` is overridable per request through `TurnOptions`. A per-request value always wins over the configured default. Per-stage timeouts remain hard caps, so a generous budget cannot extend a stage beyond its own timeout.
 

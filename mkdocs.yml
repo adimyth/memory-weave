@@ -64,6 +64,7 @@ markdown_extensions:
       alternate_style: true
   - pymdownx.arithmatex:
       generic: true
+  - pymdownx.magiclink
 
 extra_javascript:
   - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
@@ -85,8 +86,18 @@ plugins:
             signature_crossrefs: true
             filters: ["!^_"]
 
+validation:
+  links:
+    absolute_links: relative_to_docs
+
 nav:
   - Home: index.md
+  - Guide:
+      - Architecture: guide/architecture.md
+      - Using it: guide/using.md
+      - Configuration: guide/configuration.md
+      - What has been measured: guide/measured.md
+      - Changelog: changelog.md
   - Design:
       - Components, with examples: components.md
       - High-level design: agent-memory-hld.md

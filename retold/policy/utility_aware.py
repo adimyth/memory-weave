@@ -124,6 +124,9 @@ class UtilityAwareConfig:
     gap_enabled: bool = False
     admission_mode: Literal["disabled", "hosted_judge"] = "disabled"
     shadow: bool = False
+    # False renders no ambient profile: the draft sees public context only and the decision records no
+    # profile ids. A rollout switch like ``shadow``, recorded on every decision and not part of the bundle.
+    profile_enabled: bool = True
     max_gaps: int = 3
     max_candidates: int = 8
     gap_timeout_ms: int = 2000
@@ -237,7 +240,7 @@ class UtilityAwareOrchestrator:
     ) -> TurnMemoryDecision:
         timings: dict[str, float] = {}
         failures: list[str] = []
-        profile = self._profiles.build(principal)
+        profile = self._profiles.build(principal) if self._config.profile_enabled else ProfileBlock("", [], False)
         labels = inventory(self._store, principal)
         requested = options.latency_budget_ms
         effective = requested if requested is not None else self._config.latency_budget_ms

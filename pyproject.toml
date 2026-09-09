@@ -3,7 +3,21 @@ name = "retold"
 version = "1.0.1"
 description = "A framework-neutral long-term memory layer for AI agents."
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.12"
+authors = [{ name = "Aditya Mishra" }]
+keywords = ["agents", "memory", "llm", "retrieval", "sqlite"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Software Development :: Libraries",
+  "Typing :: Typed",
+]
 dependencies = [
   "numpy>=2.0",
   "PyYAML>=6.0.2",

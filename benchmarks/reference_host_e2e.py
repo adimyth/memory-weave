@@ -144,7 +144,7 @@ def main(argv: list[str] | None = None) -> int:
         evidence="docs/usefulness-gate.md 8k,8l",
         recorded_by="reference_host_e2e",
     )
-    host.set_switches(KillSwitches())
+    host.set_switches(KillSwitches(regeneration=True))
     print(f"serving bundle {host.bundle_hash()}")
     for turn in scenario["turns"]:
         d = host.serve_turn(

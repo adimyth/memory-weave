@@ -107,6 +107,7 @@ class CrewAIMemoryAdapter:
         self._current_task: str | None = None
         self._searched_tasks: set[str] = set()
         self._profiles = ProfileAssembler(self._store)
+        self._utility_config = utility_config
         self._orchestrator: UtilityAwareOrchestrator | None = None
         self.decisions: list[TurnMemoryDecision] = []
         if memory_mode == "utility_aware":
@@ -246,6 +247,8 @@ class CrewAIMemoryAdapter:
         return recalled_memory_block([description], payload)
 
     def profile_block(self, principal: Principal) -> str:
+        if self._utility_config is not None and not self._utility_config.profile_enabled:
+            return ""
         return self._profiles.build(principal).text
 
     def utility_turn(

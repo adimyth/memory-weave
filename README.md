@@ -1,8 +1,13 @@
 # Retold
 
-A local, provider-neutral long-term memory layer for AI agents. It stores evidence-backed records in one SQLite file, retrieves them through dense, lexical, and entity channels fused by reciprocal-rank fusion, returns only what the caller may read, and can return nothing. Every write and every search leaves a trace that explains itself.
+Long-term memory for AI agents that stays quiet until it changes the answer.
 
-Documentation: https://adimyth.in/retold/. Version 1.0.1 (9 September 2026); v1.0.0 was tagged under the project's previous name, Memory Weave, and the rename changed nothing else. Python 3.12, one process, one database file. Deep Agents and CrewAI adapters ship behind extras. The utility-aware host path, which decides whether a turn needs memory before ranking anything, is implemented and validated offline; it is off by default and waits on real-traffic validation. The [acceptance report](docs/acceptance-report.md) records every gate.
+Retold stores evidence-backed records in one SQLite file, retrieves them through dense, lexical, and entity channels fused by reciprocal-rank fusion, returns only what the caller may read, and can return nothing. Every write and every search leaves a trace that explains itself.
+
+- **Documentation:** [adimyth.in/retold](https://adimyth.in/retold/)
+- **Install:** `pip install "retold[local-models]"`
+- **Status:** version 1.0.1, MIT licensed. Python 3.12, one process, one database file. Adapters for Deep Agents and CrewAI.
+- **The utility-aware host path**, which decides whether a turn needs memory before ranking anything, is built and validated offline, off by default, and waiting on real-traffic validation. The [acceptance report](docs/acceptance-report.md) records every gate. v1.0.0 was tagged under the project's previous name, Memory Weave.
 
 ## 1. What it is, and what it is not
 
@@ -199,7 +204,7 @@ agent.invoke({"messages": [...]}, {"configurable": {"thread_id": "s1", "agent_id
 adapter.end_session(config)
 ```
 
-The principal comes from `configurable.agent_id`, `user_id`, and `thread_id` at call time. The CrewAI adapter binds the principal when it is built, because CrewAI has no per-call configuration, and wraps the crew's LLM in a proxy that carries the same policy. To run the utility-aware path, pass `memory_mode="utility_aware"` with a `UtilityAwareConfig`, a gap policy, an admission policy, and a bundle registry. `examples/deepagents_demo.py` and `examples/crewai_demo.py` run the whole thing with fakes and no keys; `examples/reference_host.py` shows a host with per-stage kill switches, a metrics-driven rollback, and the bundle check.
+The principal comes from `configurable.agent_id`, `user_id`, and `thread_id` at call time. The CrewAI adapter binds the principal when it is built, because CrewAI has no per-call configuration, and wraps the crew's LLM in a proxy that carries the same policy. To run the utility-aware path, pass `memory_mode="utility_aware"` with a `UtilityAwareConfig`, a gap policy, an admission policy, and a bundle registry. `examples/deepagents_demo.py` and `examples/crewai_demo.py` run the whole thing with fakes and no keys; `examples/reference_host.py` shows a host with per-stage kill switches, a metrics-driven rollback, and the bundle check; a freshly built reference host runs in shadow mode until the application switches regeneration on.
 
 ### 3.4 Operate it
 
@@ -258,7 +263,7 @@ One YAML file, loaded by `load_config`; every value has a default and validation
 | `policy.source_rank.*` | user_statement 4, system 3, tool_result 2, session_summary 2, agent_inference 1 | Who wins a disagreement, and the initial status and confidence. |
 | `sessions.retain_days` | 90 | When `retold retain` blanks an extracted transcript. |
 
-The utility-aware path is configured by the host that owns the model clients, not by this file: `UtilityAwareConfig` carries `gap_enabled`, `admission_mode` (`disabled` or `hosted_judge`), `shadow`, `max_gaps` (3), `max_candidates` (8), the two stage timeouts, an optional `latency_budget_ms`, and the bundle; `ProfileAssembler` takes `max_records` (8) and `token_budget` (400). The reference host uses stage timeouts of 4 s and 8 s, measured on the fitness splits.
+The utility-aware path is configured by the host that owns the model clients, not by this file: `UtilityAwareConfig` carries `gap_enabled`, `admission_mode` (`disabled` or `hosted_judge`), `shadow`, `profile_enabled`, `max_gaps` (3), `max_candidates` (8), the two stage timeouts, an optional `latency_budget_ms`, and the bundle; `ProfileAssembler` takes `max_records` (8) and `token_budget` (400). The reference host uses stage timeouts of 4 s and 8 s, measured on the fitness splits.
 
 ## 5. What has been measured
 
