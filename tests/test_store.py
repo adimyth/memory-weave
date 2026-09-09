@@ -149,7 +149,7 @@ def test_migrate_is_idempotent_and_creates_every_phase_one_table(tmp_path: Path)
             "migration_issues",
             "store_meta",
         } <= tables
-        assert connection.execute("SELECT COUNT(*) FROM schema_version").fetchone()[0] == 10
+        assert connection.execute("SELECT COUNT(*) FROM schema_version").fetchone()[0] == 11
         indexes = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type = 'index'")}
         assert {
             "records_index_version",
@@ -160,7 +160,7 @@ def test_migrate_is_idempotent_and_creates_every_phase_one_table(tmp_path: Path)
         connection.close()
         connection = sqlite3.connect(tmp_path / "memory.sqlite")
         migrate(connection)
-        assert connection.execute("SELECT COUNT(*) FROM schema_version").fetchone()[0] == 10
+        assert connection.execute("SELECT COUNT(*) FROM schema_version").fetchone()[0] == 11
     finally:
         connection.close()
 

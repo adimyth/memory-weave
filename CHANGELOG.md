@@ -21,6 +21,8 @@ measured policies moved into the package, and the release path proved end to end
 - `retold.__version__`.
 - `scripts/wheel_smoke.py`, an end-to-end check of an installed wheel: the bundle rebuilds, a tool write activates, one utility-aware turn decides and logs, both adapters build across the trigger-mode and memory-mode matrix, and the console script runs. CI installs the wheel with both adapter extras into a clean environment and runs it from outside the checkout.
 - A `ci` workflow: ruff, ruff format, mypy, and the test suite on Python 3.12 and 3.13 with both adapters installed, a strict documentation build, the wheel job above, and a `pip-audit` of the locked dependency set.
+- Turn decisions record `bundle_retrieval_verified` (migration 11), and a bundle that declares a retrieval hash while no retrieval configuration was given may not serve: the orchestrator refuses, and in shadow it warns and records the gap. A hash nothing checked reads like an approval of the configuration in front of it, so it is never allowed to pass silently.
+- The README says which capabilities are supported, which are experimental and why they are off, and which documents are historical.
 
 ### Changed
 

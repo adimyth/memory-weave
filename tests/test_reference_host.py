@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from examples.reference_host import MEASURED_ADMISSION_TIMEOUT_MS, MEASURED_GAP_TIMEOUT_MS, KillSwitches, ReferenceHost
+from retold.config import RetoldConfig
 from retold.host import MemoryHost
 from retold.models import Principal, Record, Scope
 from retold.policy import (
@@ -24,13 +25,15 @@ from retold.store import Store
 from retold.util import render_subject
 
 _AT = datetime(2026, 9, 7, 12, 0, tzinfo=UTC)
+# The host retrieves with this configuration, so the bundle's retrieval hash is derived from it rather
+# than written down; declaring one that nothing can check is refused, which the last test in this file shows.
+_RETRIEVAL = RetoldConfig()
 _BUNDLE = {
     "planner": "fake/gap-1",
     "judge": "fake/adm-1",
     "classifier": "fake/cat-1",
     "taxonomy": "t1",
     "inventory_builder": "i1",
-    "retrieval_config_sha256": "abc",
 }
 
 
@@ -100,12 +103,15 @@ def _host(store, gaps, admission, **kwargs) -> ReferenceHost:
         gap_policy=gaps,
         admission_policy=admission,
         bundle=_BUNDLE,
+        retrieval_config=_RETRIEVAL,
         **kwargs,
     )
 
 
 def _approve(store, host_config) -> None:
-    BundleRegistry(store).record(bundle_components(host_config), passed=True, evidence="suite", recorded_by="pytest")
+    BundleRegistry(store).record(
+        bundle_components(host_config, _RETRIEVAL), passed=True, evidence="suite", recorded_by="pytest"
+    )
 
 
 def test_unapproved_bundle_can_only_run_in_shadow(world) -> None:
@@ -236,3 +242,38 @@ def test_default_switches_are_shadow_and_the_profile_switch_empties_the_profile(
     assert host.bundle_hash() == _host(store, Gaps(True), Admission(True)).bundle_hash(), (
         "profile is a switch, not a bundle component"
     )
+
+
+def test_a_declared_retrieval_hash_nothing_can_check_never_serves(world) -> None:
+    from retold.policy import BundleMismatchError
+
+    store, _ = world
+    claimed = {**_BUNDLE, "retrieval_config_sha256": "abc"}
+
+    def build(**kwargs):
+        return ReferenceHost(
+            store,
+            retrieve=lambda p, q, c: [],
+            gap_policy=Gaps(True),
+            admission_policy=Admission(True),
+            bundle=claimed,
+            **kwargs,
+        )
+
+    # Shadow may run it: nothing is put in front of a user, and the decision records that the claim is
+    # unchecked. Serving may not, because the hash would read as an approval of the retrieval in front of it.
+    shadow = build(switches=KillSwitches(regeneration=False))
+    assert shadow.bundle_hash()
+    with pytest.raises(BundleMismatchError, match="nothing verified it"):
+        build(switches=KillSwitches(regeneration=True))
+
+
+def test_a_turn_records_whether_its_bundle_hash_was_verified(world) -> None:
+    store, principal = world
+    host = _host(store, Gaps(True), Admission(True))
+
+    decision = host.serve_turn(principal, "When should we meet?", None, lambda: "draft", lambda records: "final")
+
+    assert decision.bundle_retrieval_verified is True
+    row = store.turn_decisions(principal.session_id)[-1]
+    assert row["bundle_retrieval_verified"] is True

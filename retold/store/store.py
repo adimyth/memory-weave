@@ -377,15 +377,17 @@ class Store:
             "config",
             "bundle_hash",
             "usage",
+            "bundle_retrieval_verified",
         )
         values: list[object] = []
         for column in columns:
-            value = row.get(column) if column in ("bundle_hash", "usage") else row[column]
+            optional = ("bundle_hash", "usage", "bundle_retrieval_verified")
+            value = row.get(column) if column in optional else row[column]
             if column == "usage" and value is None:
                 value = {}
             if column == "at":
                 value = _dump_datetime(cast(datetime, value))
-            elif column == "shadow":
+            elif column in ("shadow", "bundle_retrieval_verified"):
                 value = int(bool(value))
             elif column in self._TURN_DECISION_JSON:
                 value = _dump_json(value)
@@ -433,6 +435,7 @@ class Store:
                     else ({} if column in ("usage", "timings_ms", "config") else [])
                 )
             item["shadow"] = bool(item["shadow"])
+            item["bundle_retrieval_verified"] = bool(item["bundle_retrieval_verified"])
             out.append(item)
         return out
 

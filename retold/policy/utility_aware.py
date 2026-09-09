@@ -19,6 +19,7 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field
 from typing import Any, Literal, Protocol, cast
 
+from retold.log import get_logger
 from retold.models import Principal, Record
 from retold.policy.activation import ProfileAssembler, ProfileBlock, inventory
 from retold.store import Store
@@ -160,6 +161,9 @@ class TurnMemoryDecision:
     shadow: bool = False
     bundle_hash: str | None = None
     usage: dict[str, dict[str, int]] = field(default_factory=dict)
+    # False means the bundle's retrieval hash is a claim this host could not check, because no retrieval
+    # configuration was given. Serving with an unverifiable claim is refused; shadow records it here.
+    bundle_retrieval_verified: bool = False
 
     @property
     def response(self) -> str:
@@ -273,10 +277,27 @@ class UtilityAwareOrchestrator:
         # whatever a manifest claims; without one the caller keeps the claim and the responsibility for it.
         components = bundle_components(config, retrieval_config)
         self._bundle_hash = bundle_hash(components)
+        self._retrieval_verified = retrieval_config is not None
+        declared = "retrieval_config_sha256" in components
         # Approval gates the ability to put memory in front of the user, which needs planning, admission,
         # and regeneration all on. Disabling any stage is a kill switch: it can only make the path safer,
         # so it must never be blocked by a missing fitness result for the degraded configuration.
         serving = config.gap_enabled and not config.shadow and config.admission_mode != "disabled"
+        # A declared retrieval hash that nothing checked is worse than none: it reads like an approval of
+        # the configuration in front of you. Serving requires the check; shadow warns and records the gap.
+        if declared and not self._retrieval_verified:
+            from retold.policy.bundles import BundleMismatchError
+
+            if serving:
+                raise BundleMismatchError(
+                    f"Bundle {self._bundle_hash} declares a retrieval configuration but none was given, so "
+                    "nothing verified it. Pass retrieval_config, or drop retrieval_config_sha256 from the "
+                    "bundle if this host's retrieval is not a RetoldConfig."
+                )
+            get_logger(__name__).warning(
+                "The bundle declares a retrieval configuration this host cannot verify.",
+                extra={"retold": {"bundle_hash": self._bundle_hash, "declared": components["retrieval_config_sha256"]}},
+            )
         if serving:
             if registry is None:
                 raise BundleNotApprovedError(
@@ -322,6 +343,7 @@ class UtilityAwareOrchestrator:
             failures=failures,
             shadow=self._config.shadow,
             bundle_hash=self._bundle_hash,
+            bundle_retrieval_verified=self._retrieval_verified,
         )
 
         path_enabled = self._config.gap_enabled and self._gap_policy is not None and effective != 0
@@ -518,6 +540,7 @@ class UtilityAwareOrchestrator:
             "config": asdict(self._config),
             "bundle_hash": decision.bundle_hash,
             "usage": decision.usage,
+            "bundle_retrieval_verified": decision.bundle_retrieval_verified,
         }
         self._store.insert_turn_decision(row)
         self._store.append_event(

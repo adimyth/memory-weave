@@ -273,6 +273,13 @@ def _migration_10(connection: sqlite3.Connection) -> None:
         connection.execute("ALTER TABLE search_log ADD COLUMN rerank_error TEXT")
 
 
+def _migration_11(connection: sqlite3.Connection) -> None:
+    """Record whether a turn's bundle hash was derived from the host's own retrieval configuration."""
+
+    if not _has_column(connection, "turn_decisions", "bundle_retrieval_verified"):
+        connection.execute("ALTER TABLE turn_decisions ADD COLUMN bundle_retrieval_verified INTEGER NOT NULL DEFAULT 0")
+
+
 MIGRATIONS: tuple[tuple[int, Migration], ...] = (
     (1, _migration_1),
     (2, _migration_2),
@@ -284,6 +291,7 @@ MIGRATIONS: tuple[tuple[int, Migration], ...] = (
     (8, _migration_8),
     (9, _migration_9),
     (10, _migration_10),
+    (11, _migration_11),
 )
 
 

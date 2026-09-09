@@ -195,6 +195,8 @@ Existing stores migrate records to `activation="conditional"`. Existing callers,
 
 The bundle a host declares has to describe the host it runs in. Pass the `RetoldConfig` that retrieval uses as `retrieval_config` and the orchestrator derives `retrieval_config_sha256` from it, refusing with `BundleMismatchError` when the declared manifest names a different one. That is what stops a fitness result earned under the measured retrieval settings from being cited by a host that retrieves with something else.
 
+A hash nobody checked is treated as worse than no hash, because it reads like an approval of whatever is in front of it. A bundle that declares `retrieval_config_sha256` while no retrieval configuration was given may not serve: the constructor raises. In shadow it runs, logs a warning, and every turn decision records `bundle_retrieval_verified`, so an audit can tell a hash that was derived from the runtime from one that was only claimed. A host whose retrieval is not a `RetoldConfig` leaves the field out of its bundle and nothing is claimed or enforced.
+
 ## 6. Audit and learning data
 
 `search_log` remains the audit record for an executed retrieval. A separate turn-decision log covers the wider policy, including turns where gap planning returns an empty list and no search occurs.

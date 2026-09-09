@@ -6,6 +6,9 @@ application must honour, and nothing else:
 
 - The bundle is declared once, hashed, and may serve only with a recorded passing fitness result. An
   unapproved bundle runs in shadow mode; the constructor cannot be talked into serving it.
+- The retrieval half of that hash is derived from the `RetoldConfig` the application retrieves with, passed
+  as `retrieval_config`. A bundle that names a different one is refused, and one that names a retrieval
+  configuration the host cannot produce may not serve at all: an unchecked hash reads like an approval.
 - Stage timeouts and the per-turn budget come from measured latency, not from a configuration example.
 - Each stage has its own kill switch: profile, gap planning, admission, and regeneration. Flipping one
   never changes the others, and every flip of a bundle component is a new bundle hash, so it is visible in

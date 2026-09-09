@@ -308,6 +308,36 @@ Sources: [acceptance-report.md](docs/acceptance-report.md), [usefulness-gate.md]
 
 Two things are known and accepted rather than fixed: a turn that shares a subject with a stored fact that does not answer it can still admit that fact through the relevance gate, and different sessions can record the same preference under different attribute slugs. Both are in [next-phases.md](docs/next-phases.md).
 
+## 5.1 Supported, experimental, historical
+
+Everything in the repository is one of three things, and the difference is what a run of it would prove.
+
+**Supported.** Measured, on by default or documented as a deliberate switch, and covered by the suites.
+
+| Capability | Where | Note |
+| --- | --- | --- |
+| Records, scopes, grants, supersession, lifecycle | `store/`, `ingest/` | The default path. |
+| Retrieval: dense, lexical, entity, RRF, the gate, the search log | `retrieve/` | `reranker.ranking` is `rrf_only`. |
+| Session extraction with a separate reviewer | `ingest/extraction.py` | Runs at session end through the hooks. |
+| The five tools and both adapters | `tools/`, `adapters/` | One shared contract suite; `trigger_mode` defaults to `tool_only`. |
+| The utility-aware path with the supported bundle | `policy/`, `policy/reference.py` | Off unless a host constructs it. Offline validated on blind splits and the shadow harness; real-traffic validation is still pending a consuming host. Serving needs a recorded fitness result for the exact bundle. |
+| The operator surface | `operations.py`, `cli.py` | Expiry, retention, erasure, re-embedding, snapshots, reviews, metrics, the bundle registry. |
+
+**Experimental.** Built, measured, and off, because the measurement did not justify turning them on. Each is a
+different bundle if enabled, so each needs its own fitness run before it may serve.
+
+| Capability | Switch | What the measurement said |
+| --- | --- | --- |
+| Cross-encoder reranking, both placements | `reranker.enabled`, `reranker.mode` | Removed the expected record from the judge's pool on about one turn in five ([usefulness-gate 8n, 8p](docs/usefulness-gate.md)). |
+| Hosted query rewriting | `retrieval.rewrite.enabled` | No measurable benefit (8n). |
+| `auto` and `hybrid` trigger modes | `retrieval.trigger.mode` | A control that isolates the host trigger from the model's own searching. Refused with `memory_mode="utility_aware"`, which owns the same decision. |
+
+**Historical.** Kept for the reasoning, not as a description of the code:
+[implementation-plan.md](https://github.com/adimyth/retold/blob/main/implementation-plan.md),
+[docs/next-phases.md](docs/next-phases.md), and the pre-implementation passages inside
+[docs/bedrock-agentcore-comparison.md](docs/bedrock-agentcore-comparison.md). Each says so at the top. Where they
+disagree with the code, the code is right and the document is a record of what was believed on its date.
+
 ## 6. Layout
 
 ```text
@@ -343,7 +373,7 @@ Evidence and findings:
 - [Acceptance report for v1](docs/acceptance-report.md)
 - [The gate, and the question it cannot answer](docs/gate.md); [usefulness, not relevance](docs/usefulness-gate.md), the experiment record
 - [Vertical-slice findings](docs/vertical-slice-findings.md), [benchmark handoff](BENCHMARK_HANDOFF.md), [benchmarks/README.md](benchmarks/README.md)
-- [Next phases](docs/next-phases.md), the working note with the open items
+- [Next phases](docs/next-phases.md), a historical working note kept for the reasoning behind Phase 10
 
 Context: [research notes](docs/agent-memory-research-notes.md) and the [Bedrock AgentCore comparison](docs/bedrock-agentcore-comparison.md). The landscape survey and the comparative benchmark plan are kept outside the repository.
 
