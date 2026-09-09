@@ -187,6 +187,13 @@ class Retriever:
                     for candidate in outcome.candidates
                     if candidate.rerank_score is not None and candidate.rerank_score >= reranker_config.floor
                 ]
+            elif reranker_config.mode == "cross_encoder_only":
+                # The pass that was to make the relevance decision did not run. Serving the ungated pool would
+                # serve every candidate the channels produced, so fall back to the relevance-gated RRF order.
+                gate_decision = self._gate.apply(candidates, records, request)
+                deduped, deduped_out = collapse_duplicates(
+                    gate_decision.kept, self._vector_index, self._config.retrieval.dedup_cosine
+                )
             # Otherwise the pass timed out or failed with fallback configured: the RRF order stands, nothing
             # is removed by the reranker, and the search log says which happened.
         timer.mark("rerank")

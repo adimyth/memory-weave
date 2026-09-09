@@ -372,3 +372,31 @@ def test_new_reranker_fields_do_not_change_a_disabled_bundle_hash() -> None:
         policy_bundle("gpt-4o", "gpt-5.4", enabled, None)["retrieval_config_sha256"]
         != policy_bundle("gpt-4o", "gpt-5.4", quick, None)["retrieval_config_sha256"]
     ), "an enabled reranker's timeout changes behaviour and so the bundle"
+
+
+def test_cross_encoder_only_falls_back_to_the_gated_rrf_order_when_the_pass_times_out(tmp_path: Path) -> None:
+    store = Store(tmp_path / "memory.sqlite")
+    store.set_grant(_AGENT, _USER_SCOPE, can_read=True, can_write=True)
+    embedder = FakeEmbedder(dims=_EMBEDDING.dims)
+    query = "preferred editor"
+    mine = _record("mine", "Aditya uses Vim as the preferred editor.")
+    below_floor = _record("below", "Aditya keeps editor settings in dotfiles.")
+    _seed(store, embedder, query, [(mine, 0.90), (below_floor, 0.20)])
+    slow = SlowOrBrokenReranker(delay_s=0.5, score=0.9)
+    config = MemoryWeaveConfig(
+        embedding=_EMBEDDING,
+        retrieval=RetrievalConfig(per_generator_k=10, default_k=8),
+        reranker=RerankerConfig(enabled=True, floor=0.5, mode="cross_encoder_only", timeout_ms=50),
+    )
+    retriever = Retriever(store, VectorIndex(_EMBEDDING), embedder, config, reranker=slow, current_time=lambda: _NOW)
+
+    response = _search(retriever, query, "auto")
+
+    # Without the cross-encoder there is no relevance decision left but the floors, so they apply again.
+    assert [result.record.id for result in response.results] == ["mine"]
+    log = store.read_search_log(response.search_id)
+    assert log is not None
+    assert log["rerank_status"] == "timeout"
+    assert [entry["record_id"] for entry in log["gated_out"]] == ["below"]
+    assert slow.finished.wait(2.0)
+    store.close()
