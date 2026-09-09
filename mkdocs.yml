@@ -1,6 +1,6 @@
 site_name: Retold
 site_description: Long-term memory for AI agents that stays quiet until it changes the answer.
-site_url: https://adimyth.github.io/retold/
+site_url: https://adimyth.in/retold/
 repo_url: https://github.com/adimyth/retold
 repo_name: adimyth/retold
 edit_uri: edit/main/docs/

@@ -13,7 +13,7 @@ dependencies = [
 [project.urls]
 Homepage = "https://github.com/adimyth/retold"
 Repository = "https://github.com/adimyth/retold"
-Documentation = "https://adimyth.github.io/retold/"
+Documentation = "https://adimyth.in/retold/"
 
 [project.scripts]
 retold = "retold.cli:main"

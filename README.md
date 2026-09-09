@@ -2,7 +2,7 @@
 
 A local, provider-neutral long-term memory layer for AI agents. It stores evidence-backed records in one SQLite file, retrieves them through dense, lexical, and entity channels fused by reciprocal-rank fusion, returns only what the caller may read, and can return nothing. Every write and every search leaves a trace that explains itself.
 
-Documentation: https://adimyth.github.io/retold/. Version 1.0.1 (9 September 2026); v1.0.0 was tagged under the project's previous name, Memory Weave, and the rename changed nothing else. Python 3.12, one process, one database file. Deep Agents and CrewAI adapters ship behind extras. The utility-aware host path, which decides whether a turn needs memory before ranking anything, is implemented and validated offline; it is off by default and waits on real-traffic validation. The [acceptance report](docs/acceptance-report.md) records every gate.
+Documentation: https://adimyth.in/retold/. Version 1.0.1 (9 September 2026); v1.0.0 was tagged under the project's previous name, Memory Weave, and the rename changed nothing else. Python 3.12, one process, one database file. Deep Agents and CrewAI adapters ship behind extras. The utility-aware host path, which decides whether a turn needs memory before ranking anything, is implemented and validated offline; it is off by default and waits on real-traffic validation. The [acceptance report](docs/acceptance-report.md) records every gate.
 
 ## 1. What it is, and what it is not
 

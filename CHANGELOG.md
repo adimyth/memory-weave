@@ -14,7 +14,7 @@ The first release on PyPI.
 
 ### Added
 
-- A documentation site at https://adimyth.github.io/retold/, built from the README, the design documents, and the docstrings.
+- A documentation site at https://adimyth.in/retold/, built from the README, the design documents, and the docstrings.
 - `py.typed`, so type checkers use the package's annotations.
 
 ## [1.0.0] - 2026-09-09
