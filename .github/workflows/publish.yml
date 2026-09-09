@@ -43,6 +43,9 @@ jobs:
 
   publish:
     needs: build
+    # Off until the trusted publisher exists on pypi.org: `gh variable set PYPI_PUBLISH --body true`, then
+    # re-run the tag's workflow. A tag whose upload cannot succeed still gets its build verified above.
+    if: vars.PYPI_PUBLISH == 'true'
     runs-on: ubuntu-latest
     environment:
       name: pypi

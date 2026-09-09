@@ -106,12 +106,14 @@ mid-session, and both adapters accept the refused combinations. They pass on `dc
 | Distribution metadata | accepted by the upload path | `twine check` passes on the wheel and the sdist. It failed before this round: hatchling 1.30 emits Metadata-Version 2.5 and the toolchain rejects it, so the build pins `hatchling>=1.27,<1.30`, which emits 2.4 | met |
 | Clean installation | wheel and sdist install and run | the wheel installs with both adapter extras into fresh 3.12 and 3.13 environments and passes 24 smoke checks run from outside the checkout; the sdist installs and imports | met for the built artifacts |
 | Known vulnerabilities in the locked set | none unfixed | five `transformers` advisories cleared by the version bump; four `chromadb` advisories have no fixed release, arrive only through the `crewai` extra, and are ignored by identifier in the audit job. Retold neither imports nor runs chromadb | met with that exception recorded |
-| Published package | `pip install retold` works | **not met.** The package is not on PyPI: the name is unregistered and the trusted publisher has not been created, so `v1.0.1` is not tagged | open |
+| Tagged release with installable artifacts | the wheel and sdist from CI attached to a GitHub release, and the wheel installs from that URL into a clean environment | `v1.0.1` tagged at the commit CI verified; the artifacts of that tag's build attached; clean install and the wheel smoke run from the release URL | met |
+| Published package | `pip install retold` works | **not met.** The package is not on PyPI: the name is unregistered and the trusted publisher has not been created. The publish job is gated on the `PYPI_PUBLISH` repository variable until it is | open |
 
 ### 8.4 What is still open
 
-Publication. Everything upstream of it is verified, including the metadata defect that would have failed the
-upload, but `retold` has no PyPI project and no pending publisher, so the tag has deliberately not been pushed:
-a tag whose publish job cannot succeed is worse than no tag. When a publisher exists for project `retold`, owner
-`adimyth`, repository `retold`, workflow `publish.yml`, environment `pypi`, pushing `v1.0.1` completes the
-release, and `pip install retold` in a clean environment is the last check.
+PyPI publication. Everything upstream of it is verified, including the metadata defect that would have failed
+the upload, but `retold` has no PyPI project and no pending publisher. `v1.0.1` is tagged and released on GitHub
+with the artifacts CI built, and the upload job of `publish.yml` is switched off by the `PYPI_PUBLISH` repository
+variable. When a publisher exists for project `retold`, owner `adimyth`, repository `retold`, workflow
+`publish.yml`, environment `pypi`: set the variable to `true`, re-run the tag's workflow, and `pip install retold`
+in a clean environment is the last check.

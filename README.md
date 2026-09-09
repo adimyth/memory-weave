@@ -149,10 +149,10 @@ Scope answers whose memory it is; a grant answers which agent may see it. Grants
 pip install "retold[local-models]"        # or: uv add "retold[local-models]"
 ```
 
-Until the 1.0.1 tag is pushed and the publish workflow has run, `retold` is not on PyPI yet; install from the repository in the meantime:
+`retold` is not on PyPI yet. Until it is, install the wheel attached to the [GitHub release](https://github.com/adimyth/retold/releases/tag/v1.0.1):
 
 ```bash
-pip install "retold[local-models] @ git+https://github.com/adimyth/retold@main"
+pip install "retold[local-models] @ https://github.com/adimyth/retold/releases/download/v1.0.1/retold-1.0.1-py3-none-any.whl"
 ```
 
 Extras: `local-models` (the bge-m3 embedder, the NLI judge, and the cross-encoder reranker; without it you supply an embedder and judge), `live` (the Anthropic and OpenAI SDKs for extraction, review, and rewriting), `deepagents`, and `crewai`. From a checkout:

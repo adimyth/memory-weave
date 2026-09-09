@@ -4,8 +4,9 @@ All notable changes to Retold. The format follows [Keep a Changelog](https://kee
 
 ## [1.0.1] - 2026-09-09
 
-The first release published to PyPI, with the closure work a v1 needed: four runtime defects fixed, the
-measured policies moved into the package, and the release path proved end to end on a clean install.
+The first release under the Retold name, with the closure work a v1 needed: four runtime defects fixed, the
+measured policies moved into the package, and the release path proved end to end on a clean install. The wheel
+and the sdist are attached to the GitHub release; PyPI publication follows once the trusted publisher exists.
 
 ### Fixed
 
