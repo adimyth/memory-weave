@@ -152,6 +152,22 @@ def tool_names_for(trigger_mode: TriggerMode) -> tuple[str, ...]:
     return MEMORY_TOOL_NAMES
 
 
+def check_modes(trigger_mode: TriggerMode, memory_mode: MemoryMode) -> None:
+    """Refuse the one combination that would put memory in front of the model without a judge.
+
+    Host-issued search in ``auto`` and ``hybrid`` appends its results to the turn before the utility-aware
+    path runs, so the model would see raw candidates whatever the admission policy went on to decide. The
+    two mechanisms answer the same question and only one of them can own the answer, so the utility-aware
+    path requires ``tool_only``.
+    """
+
+    if memory_mode == "utility_aware" and trigger_mode != "tool_only":
+        raise ValueError(
+            f"utility_aware memory mode needs trigger_mode='tool_only'; {trigger_mode!r} lets host-issued "
+            "search put records in front of the model before admission decides."
+        )
+
+
 def render_tool_result(name: str, arguments: Mapping[str, Any], payload: Mapping[str, Any]) -> str:
     """Render one tool result for the model: search as the LLD 10.9 blocks, everything else as JSON."""
 

@@ -85,7 +85,9 @@ def build_runtime(
         reranker=reranker or reranker_from_config(config),
         current_time=current_time,
     )
-    handlers = ToolHandlers(retriever, ingestor, store, vector_index, default_k=config.retrieval.default_k)
+    handlers = ToolHandlers(
+        retriever, ingestor, store, vector_index, default_k=config.retrieval.default_k, activation=activation
+    )
     ingestion = config.ingestion
     if extractor is None:
         extractor = StructuredLLMExtractor(

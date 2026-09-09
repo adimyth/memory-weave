@@ -19,6 +19,7 @@ from adapter_contract import (  # noqa: E402
     ScriptedTurn,
     TurnOutcome,
     assert_isolated,
+    assert_mode_matrix,
     run_contract,
 )
 from deepagents import create_deep_agent  # noqa: E402
@@ -318,7 +319,9 @@ def test_utility_aware_active_mode_regenerates_with_the_admitted_record(store: S
         gap_enabled=True, admission_mode="hosted_judge", shadow=False, bundle={"planner": "fake"}
     )
     registry = BundleRegistry(store)
-    registry.record(bundle_components(config), passed=True, evidence="tests", recorded_by="tester")
+    # The approval has to name the retrieval configuration the adapter will serve with, which is the
+    # runtime's own; a result recorded without it approves a bundle this host would not be running.
+    registry.record(bundle_components(config, _CONFIG), passed=True, evidence="tests", recorded_by="tester")
     driver = _driver(
         store,
         memory_mode="utility_aware",
@@ -387,3 +390,15 @@ def test_idle_split_continues_under_a_derived_session(store: Store, monkeypatch:
     driver.run_turn(ScriptedTurn("second, much later", answer="two"))
     assert driver.adapter.principal_from_run(driver.config).session_id == "thread-1~2"
     assert [turn.role for turn in store.session_turns("thread-1~2")] == ["user", "assistant"]
+
+
+def test_every_trigger_mode_against_every_memory_mode(store: Store) -> None:
+    config = UtilityAwareConfig(gap_enabled=True, admission_mode="hosted_judge", shadow=True)
+
+    def build(trigger: str, memory: str):
+        kwargs: dict[str, Any] = {"trigger_mode": trigger, "memory_mode": memory}
+        if memory == "utility_aware":
+            kwargs["utility_config"] = config
+        return _driver(store, **kwargs).adapter
+
+    assert_mode_matrix(build, lambda adapter: [tool.name for tool in adapter.tools()])

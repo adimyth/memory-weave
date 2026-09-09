@@ -23,6 +23,7 @@ from adapter_contract import (  # noqa: E402
     ScriptedTurn,
     TurnOutcome,
     assert_isolated,
+    assert_mode_matrix,
     run_contract,
 )
 from crewai import Agent, Crew, Task  # noqa: E402
@@ -303,7 +304,9 @@ def test_utility_aware_active_mode_regenerates_with_the_admitted_record(store: S
         gap_enabled=True, admission_mode="hosted_judge", shadow=False, bundle={"planner": "fake"}
     )
     registry = BundleRegistry(store)
-    registry.record(bundle_components(config), passed=True, evidence="tests", recorded_by="tester")
+    # The approval has to name the retrieval configuration the adapter will serve with, which is the
+    # runtime's own; a result recorded without it approves a bundle this host would not be running.
+    registry.record(bundle_components(config, _CONFIG), passed=True, evidence="tests", recorded_by="tester")
     driver = _driver(
         store,
         memory_mode="utility_aware",
@@ -349,3 +352,15 @@ def test_tool_call_drafts_skip_the_utility_path(store: Store) -> None:
     )
     driver.run_turn(ScriptedTurn("Look it up", tool_calls=[("memory_search", {"queries": ["vim"]})], answer="Done."))
     assert driver.adapter.decisions == []
+
+
+def test_every_trigger_mode_against_every_memory_mode(store: Store) -> None:
+    config = UtilityAwareConfig(gap_enabled=True, admission_mode="hosted_judge", shadow=True)
+
+    def build(trigger: str, memory: str):
+        kwargs: dict[str, Any] = {"trigger_mode": trigger, "memory_mode": memory}
+        if memory == "utility_aware":
+            kwargs["utility_config"] = config
+        return _driver(store, **kwargs).adapter
+
+    assert_mode_matrix(build, lambda adapter: [tool.name for tool in adapter.tools()])

@@ -13,12 +13,11 @@ for baseline and final generation so this module never depends on a model vendor
 from __future__ import annotations
 
 import json
+import threading
 import time
 from collections.abc import Callable, Mapping, Sequence
-from concurrent.futures import ThreadPoolExecutor
-from concurrent.futures import TimeoutError as FuturesTimeout
 from dataclasses import asdict, dataclass, field
-from typing import Any, Literal, Protocol
+from typing import Any, Literal, Protocol, cast
 
 from retold.models import Principal, Record
 from retold.policy.activation import ProfileAssembler, ProfileBlock, inventory
@@ -167,13 +166,33 @@ class TurnMemoryDecision:
         return self.final if self.final is not None else self.draft
 
 
-def bundle_components(config: UtilityAwareConfig) -> dict[str, object]:
-    """Everything that changes what the path does. Hashing this identifies a bundle."""
+def bundle_components(config: UtilityAwareConfig, retrieval_config: Any = None) -> dict[str, object]:
+    """Everything that changes what the path does. Hashing this identifies a bundle.
+
+    Pass the ``RetoldConfig`` the host retrieves with and the retrieval half of the hash is derived from it
+    rather than taken on trust. A manifest that declares a different ``retrieval_config_sha256`` is refused:
+    a bundle's fitness result was earned under one retrieval configuration, and a hash copied from that run
+    into a host that retrieves differently would claim an approval nothing measured.
+    """
+
+    from retold.policy.bundles import BundleMismatchError, retrieval_config_hash
+
+    declared = dict(config.bundle)
+    if retrieval_config is not None:
+        live = retrieval_config_hash(retrieval_config)
+        stated = declared.get("retrieval_config_sha256")
+        if stated is not None and stated != live:
+            raise BundleMismatchError(
+                f"The bundle declares retrieval_config_sha256 {stated!r} but this host retrieves with "
+                f"{live!r}. Record a fitness result for the configuration that will serve, or serve the "
+                "configuration the recorded result measured; refer retold.policy.reference."
+            )
+        declared["retrieval_config_sha256"] = live
 
     # Shadow versus serving is a mode, not a component: a fitness result earned in shadow approves the
     # same bundle for serving. Everything else that changes behaviour is part of the hash.
     return {
-        **dict(config.bundle),
+        **declared,
         "gap_enabled": config.gap_enabled,
         "admission_mode": config.admission_mode,
         "max_gaps": config.max_gaps,
@@ -184,12 +203,46 @@ def bundle_components(config: UtilityAwareConfig) -> dict[str, object]:
     }
 
 
+class _Detached[T]:
+    """One call on a daemon thread, abandoned as soon as it outlasts its timeout.
+
+    A pooled future does not bound anything on its own: the executor joins its worker when the block that
+    created it exits, so a stage that has already timed out still holds the turn until the call behind it
+    returns. A stage timeout is a latency promise, so the thread is abandoned instead. It is a daemon, so it
+    cannot hold the process open, and nothing it computes after the timeout is read.
+    """
+
+    def __init__(self, call: Callable[..., T], *args: Any) -> None:
+        self._value: T | None = None
+        self._error: BaseException | None = None
+        self._done = threading.Event()
+        threading.Thread(target=self._run, args=(call, args), daemon=True, name="retold-turn-stage").start()
+
+    def _run(self, call: Callable[..., T], args: tuple[Any, ...]) -> None:
+        try:
+            self._value = call(*args)
+        except BaseException as error:  # noqa: BLE001
+            self._error = error
+        finally:
+            self._done.set()
+
+    def result(self, timeout_s: float) -> T:
+        if not self._done.wait(timeout_s):
+            raise TimeoutError("The stage outlasted its timeout and was abandoned.")
+        if self._error is not None:
+            raise self._error
+        return cast(T, self._value)
+
+
 class UtilityAwareOrchestrator:
     """Deterministic orchestration of one turn. Fails closed to the draft on every error and budget path.
 
     Serving, meaning shadow is off and the path is enabled, requires a bundle registry that holds a passing
     fitness result for this configuration's bundle. Without one the constructor refuses, so a host cannot
     serve an unapproved bundle by accident. Shadow mode needs no approval.
+
+    ``retrieval_config`` is the ``RetoldConfig`` the ``retrieve`` callable searches with. Given it, the
+    bundle's retrieval hash is derived from that configuration and a manifest that disagrees is refused.
     """
 
     def __init__(
@@ -202,6 +255,7 @@ class UtilityAwareOrchestrator:
         *,
         profile_assembler: ProfileAssembler | None = None,
         registry: Any = None,
+        retrieval_config: Any = None,
         actor: str = "host",
         clock: Callable[[], float] = time.perf_counter,
     ) -> None:
@@ -215,7 +269,9 @@ class UtilityAwareOrchestrator:
         self._profiles = profile_assembler or ProfileAssembler(store)
         self._actor = actor
         self._clock = clock
-        components = bundle_components(config)
+        # With a retrieval configuration in hand the bundle describes the runtime that would serve it, not
+        # whatever a manifest claims; without one the caller keeps the claim and the responsibility for it.
+        components = bundle_components(config, retrieval_config)
         self._bundle_hash = bundle_hash(components)
         # Approval gates the ability to put memory in front of the user, which needs planning, admission,
         # and regeneration all on. Disabling any stage is a kill switch: it can only make the path safer,
@@ -280,22 +336,20 @@ class UtilityAwareOrchestrator:
 
         # Baseline and gap planning run concurrently; the gap call is charged only for what outlasts the draft.
         gap_timeout = self._config.gap_timeout_ms if effective is None else min(self._config.gap_timeout_ms, effective)
-        with ThreadPoolExecutor(max_workers=2) as pool:
-            draft_future = pool.submit(baseline)
-            gap_future = pool.submit(self._plan, turn, public_context, profile, labels)
-            decision.draft = draft_future.result()
-            draft_done = self._clock()
-            timings["draft"] = (draft_done - started) * 1000
-            budget_bound = effective is not None and effective <= self._config.gap_timeout_ms
-            try:
-                gap_decision = gap_future.result(timeout=max(0.0, gap_timeout / 1000))
-            except FuturesTimeout:
-                gap_decision = GapDecision(
-                    [], "gap", "timeout", gap_timeout, "budget_exhausted" if budget_bound else "gap_timeout"
-                )
-            except Exception as error:  # noqa: BLE001
-                gap_decision = GapDecision.failed("gap", type(error).__name__)
-            timings["gap_overhang"] = max(0.0, (self._clock() - draft_done) * 1000)
+        planning = _Detached(self._plan, turn, public_context, profile, labels)
+        decision.draft = baseline()
+        draft_done = self._clock()
+        timings["draft"] = (draft_done - started) * 1000
+        budget_bound = effective is not None and effective <= self._config.gap_timeout_ms
+        try:
+            gap_decision = planning.result(max(0.0, gap_timeout / 1000))
+        except TimeoutError:
+            gap_decision = GapDecision(
+                [], "gap", "timeout", gap_timeout, "budget_exhausted" if budget_bound else "gap_timeout"
+            )
+        except Exception as error:  # noqa: BLE001
+            gap_decision = GapDecision.failed("gap", type(error).__name__)
+        timings["gap_overhang"] = max(0.0, (self._clock() - draft_done) * 1000)
 
         decision.gap_status = gap_decision.status
         decision.gaps = list(gap_decision.gaps)[: self._config.max_gaps]
@@ -350,12 +404,13 @@ class UtilityAwareOrchestrator:
             else min(self._config.admission_timeout_ms, left)
         )
         admission_started = self._clock()
-        with ThreadPoolExecutor(max_workers=1) as pool:
-            future = pool.submit(self._admit, turn, public_context, profile, decision.draft, candidates)
-            try:
-                admission = future.result(timeout=max(0.0, admission_timeout / 1000))
-            except Exception as error:  # noqa: BLE001
-                admission = AdmissionDecision.failed("admission", type(error).__name__)
+        judging = _Detached(self._admit, turn, public_context, profile, decision.draft, candidates)
+        try:
+            admission = judging.result(max(0.0, admission_timeout / 1000))
+        except TimeoutError:
+            admission = AdmissionDecision([], [], "admission", "timeout", admission_timeout, "admission_timeout")
+        except Exception as error:  # noqa: BLE001
+            admission = AdmissionDecision.failed("admission", type(error).__name__)
         timings["admission"] = (self._clock() - admission_started) * 1000
         decision.admission_status = admission.status
         decision.verdicts = list(admission.verdicts)

@@ -284,3 +284,29 @@ def test_inventory_lists_labels_of_conditional_categories_only(world) -> None:
     labels = inventory(store, principal)
 
     assert labels == ["time zone and working hours"]
+
+
+def test_the_profile_is_assembled_once_a_session_and_reassembled_for_the_next(world) -> None:
+    store, principal, entity_id = world
+    from dataclasses import replace as replace_dataclass
+
+    first = _record("p1", "Answer briefly by default.", entity_id, status="confirmed")
+    store.insert_record(first)
+    store.set_activation("p1", "ambient")
+    assembler = ProfileAssembler(store)
+
+    opening = assembler.build(principal)
+    assert opening.record_ids == ["p1"]
+
+    second = _record("p2", "Reply in British English unless asked otherwise.", entity_id, status="confirmed")
+    store.insert_record(second)
+    store.set_activation("p2", "ambient")
+
+    assert assembler.build(principal) == opening, "a promotion mid-session must not change the standing profile"
+
+    later = replace_dataclass(principal, session_id="session-2")
+    store.create_session("session-2", "agent", "user-1", None, _AT)
+    assert assembler.build(later).record_ids == ["p1", "p2"], "the next session sees the promotion"
+
+    assembler.forget("session-1")
+    assert assembler.build(principal).record_ids == ["p1", "p2"], "a finished session's profile is not reused"

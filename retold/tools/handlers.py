@@ -19,6 +19,7 @@ from retold.ingest import (
 )
 from retold.models import EntityMention, MemoryType, Principal, Record, Scope, SearchRequest
 from retold.policy import readable_scopes, writable_scopes
+from retold.policy.activation import ActivationDecision, ActivationService
 from retold.retrieve import Retriever
 from retold.store import Store
 
@@ -39,6 +40,7 @@ class ToolHandlers:
         *,
         default_k: int = 8,
         write_targets: WriteTargetResolver | None = None,
+        activation: ActivationService | None = None,
     ) -> None:
         self._retriever = retriever
         self._ingestor = ingestor
@@ -46,6 +48,7 @@ class ToolHandlers:
         self._vector_index = vector_index
         self._default_k = default_k
         self._write_targets = write_targets or _personal_write_target
+        self._activation = activation
 
     def tool_schemas(self, principal: Principal) -> list[dict[str, object]]:
         """Return this principal's model-visible tools with only currently writable symbolic destinations."""
@@ -162,13 +165,14 @@ class ToolHandlers:
             if result.candidates:
                 details["candidates"] = [_ambiguity_candidate_payload(candidate) for candidate in result.candidates]
             return _error(result.outcome, result.note, **details)
-        return {
+        answer: dict[str, object] = {
             "ok": True,
             "record_id": result.record_id,
             "status": result.status,
             "outcome": result.outcome,
             "note": result.note,
         }
+        return self._with_activation(principal, result.record_id, answer)
 
     def memory_revise(self, principal: Principal, payload: Mapping[str, object]) -> dict[str, object]:
         """Apply a direct record lifecycle revision or a checked entity merge."""
@@ -206,7 +210,13 @@ class ToolHandlers:
         )
         if result.outcome in {"not_found", "scope_not_writable", "invalid_input", "invalid_source_kind"}:
             return _error(result.outcome, result.note)
-        return {"ok": True, "record_id": result.record_id, "status": result.status, "outcome": result.outcome}
+        answer: dict[str, object] = {
+            "ok": True,
+            "record_id": result.record_id,
+            "status": result.status,
+            "outcome": result.outcome,
+        }
+        return self._with_activation(principal, result.record_id, answer)
 
     def memory_forget(self, principal: Principal, payload: Mapping[str, object]) -> dict[str, object]:
         """Tombstone a writable record, remove its lexical row, and hide its live vector after commit."""
@@ -229,6 +239,37 @@ class ToolHandlers:
             )
         self._vector_index.remove(record.id, index_version=self._store.record_index_version(record.id))
         return {"ok": True, "record_id": record.id, "status": "deleted", "outcome": "forgotten"}
+
+    def _with_activation(
+        self, principal: Principal, record_id: str | None, payload: dict[str, object]
+    ) -> dict[str, object]:
+        """Run the activation policy on a record a tool just wrote, the way extraction runs it on its own.
+
+        A preference the model writes through ``memory_write``, or the successor a correction leaves behind,
+        is as eligible for the ambient profile as one the session-end extractor finds, and the policy is the
+        only thing allowed to decide either way. It fails closed to conditional, so the write's own answer
+        never depends on it: an activation failure is recorded and the write still stands.
+        """
+
+        decision = self._activate(principal, record_id)
+        if decision is not None:
+            payload["activation"] = decision.outcome
+            payload["activation_reason"] = decision.reason
+        return payload
+
+    def _activate(self, principal: Principal, record_id: str | None) -> ActivationDecision | None:
+        if self._activation is None or record_id is None:
+            return None
+        record = self._store.get_record(record_id)
+        if record is None or record.type != "semantic":
+            return None
+        try:
+            return self._activation.apply(principal, record_id)
+        except Exception as error:  # noqa: BLE001
+            self._store.append_event(
+                "record.activation_skipped", principal.agent_id, record_id, None, {"reason": type(error).__name__}
+            )
+            return None
 
     def _validated(self, tool_name: str, payload: Mapping[str, object]) -> Mapping[str, object] | dict[str, object]:
         try:

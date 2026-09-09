@@ -14,6 +14,7 @@ present in a principal's conditional store form the inventory a gap planner may 
 from __future__ import annotations
 
 import re
+import threading
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Literal, Protocol
@@ -267,7 +268,7 @@ class ActivationService:
                 },
             )
             review_id: str | None = None
-            if outcome == "promote":
+            if outcome == "promote" and record.activation != "ambient":
                 self._store.set_activation(record.id, "ambient")
                 self._store.append_event(
                     "record.activation_changed",
@@ -308,15 +309,57 @@ class ProfileBlock:
 
 
 class ProfileAssembler:
-    """Render the principal's ambient records into one bounded block, built once per session."""
+    """Render the principal's ambient records into one bounded block, built once per session.
 
-    def __init__(self, store: Store, *, max_records: int = 8, token_budget: int = 400, actor: str = "host") -> None:
+    The profile is what the model is told applies to every reply, so it has to be the same text for the
+    whole session: a promotion, a review resolution, or an expiry landing mid-session would otherwise
+    change the standing instructions between one turn and the next, and the turn decisions of one session
+    would no longer be comparable. The block is therefore assembled on the session's first turn and held
+    until the session ends, which is also what stops every turn from paying for the query.
+    """
+
+    def __init__(
+        self,
+        store: Store,
+        *,
+        max_records: int = 8,
+        token_budget: int = 400,
+        actor: str = "host",
+        max_cached_sessions: int = 512,
+    ) -> None:
         self._store = store
         self._max_records = max_records
         self._token_budget = token_budget
         self._actor = actor
+        self._max_cached_sessions = max_cached_sessions
+        self._lock = threading.Lock()
+        self._cached: dict[tuple[str, str], ProfileBlock] = {}
 
     def build(self, principal: Principal) -> ProfileBlock:
+        """Return this session's profile, assembling it on the first call and reusing it afterwards."""
+
+        key = (principal.user_id, principal.session_id) if principal.session_id is not None else None
+        if key is not None:
+            with self._lock:
+                cached = self._cached.get(key)
+            if cached is not None:
+                return cached
+        block = self._assemble(principal)
+        if key is not None:
+            with self._lock:
+                if len(self._cached) >= self._max_cached_sessions:
+                    self._cached.pop(next(iter(self._cached)))
+                self._cached[key] = block
+        return block
+
+    def forget(self, session_id: str) -> None:
+        """Drop a finished session's profile. The next session assembles a fresh one."""
+
+        with self._lock:
+            for key in [key for key in self._cached if key[1] == session_id]:
+                del self._cached[key]
+
+    def _assemble(self, principal: Principal) -> ProfileBlock:
         entity = _principal_entity(self._store, principal, self._actor).id
         records = self._store.ambient_records(Scope(kind="user", id=principal.user_id), entity)
         chosen: list[Record] = []

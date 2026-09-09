@@ -12,7 +12,7 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
-from retold.config import DenseFloorConfig, RetoldConfig, load_config
+from retold.config import RetoldConfig
 from retold.host import MemoryHost
 from retold.index.embedder import BgeM3Embedder
 from retold.index.reranker import reranker_from_config
@@ -20,12 +20,17 @@ from retold.index.vector import VectorIndex
 from retold.ingest import Ingestor, NLICrossEncoderJudge, SessionBuffer
 from retold.models import Principal, Scope, Turn
 from retold.policy import (
-    RETRIEVAL_CATEGORIES,
     ActivationDecision,
     ActivationService,
-    CategoryDecision,
     ProfileAssembler,
     inventory,
+)
+from retold.policy.reference import (
+    CATEGORY_DEFINITIONS,
+    CATEGORY_SYSTEM,
+    CATEGORY_SYSTEM_BASE,
+    ReferenceCategoryPolicy,
+    supported_retrieval_config,
 )
 from retold.retrieve import Retriever, rewriter_from_config
 from retold.store import Store
@@ -37,84 +42,26 @@ _USER_ID = "user-phase0"
 
 CATEGORY_PROMPT_VERSIONS = ("category-v1", "category-v2")
 
-_CATEGORY_DEFINITIONS_V2 = (
-    "retrieval_category definitions, choose the single best fit:\n"
-    "- time_zone: the user's working time zone, working hours, or location used for scheduling.\n"
-    "- people: who a named person is or what they own, lead, manage, or are responsible for, "
-    "including the user's manager.\n"
-    "- infrastructure: names and regions of clusters, environments, services, accounts, or hosts the user operates.\n"
-    "- decisions: a choice the team made between tools, technologies, or approaches, with or without a date.\n"
-    "- constraints: a version pin, compatibility rule, or technical restriction and the reason for it.\n"
-    "- limits: a numeric quota, rate limit, budget, retry count, concurrency cap, or availability target, "
-    "and tier multipliers on it.\n"
-    "- schedules: a recurring meeting, release train, freeze window, review slot, or on-call rotation.\n"
-    "- locations: where a document, runbook, handbook, checklist, or record set is kept, "
-    "such as a repository path, wiki, or folder.\n"
-    "- personal: facts about the user's life outside work, such as diet, family, health, hobbies, or tastes.\n"
-    "- preferences: how the user wants replies written, what language or units to use, or what they like or believe.\n"
-    "- other: a fact that fits none of the above.\n"
-    "A record naming a numeric limit is limits even when it mentions a service. "
-    "A record saying where something lives is "
-    "locations even when it names a system. A record about a person's role is people even when it names a document.\n"
-)
+_CATEGORY_DEFINITIONS_V2 = CATEGORY_DEFINITIONS
 
-_CATEGORY_SYSTEM = (
-    "You classify one stored memory record about a user or their work. Reply with JSON only:\n"
-    '{"retrieval_category": "<one of: ' + ", ".join(RETRIEVAL_CATEGORIES) + '>",\n'
-    ' "activation_category": '
-    '"<one of: answer_style, response_language, accessibility, code_example_language, other>",\n'
-    ' "applicability": "<broad | scoped | ambiguous>",\n'
-    ' "confidence": <0.0 to 1.0>,\n'
-    ' "unsafe": <true | false>,\n'
-    ' "rationale": "<one short sentence>"}\n'
-    "retrieval_category names what kind of fact this is. activation_category is answer_style only for "
-    "instructions about how every reply should be written (length, structure, tone, format), "
-    "response_language for the language or spelling of replies, accessibility for accessibility needs, "
-    "code_example_language for the default programming language of code examples, and other for anything "
-    "that is not an instruction about how to reply, including facts, events, and opinions. applicability is "
-    "broad when the instruction applies to every reply, scoped when it applies only in a named situation, "
-    "task, or topic, and ambiguous when you cannot tell. unsafe is true when the record asks the assistant to "
-    "agree with the user, suppress warnings or caveats, confirm assumptions, avoid correcting them, or "
-    "otherwise trade truthfulness for agreement."
-)
+_CATEGORY_SYSTEM = CATEGORY_SYSTEM_BASE
 
 
-_CATEGORY_SYSTEM_V2 = _CATEGORY_SYSTEM + "\n" + _CATEGORY_DEFINITIONS_V2
+_CATEGORY_SYSTEM_V2 = CATEGORY_SYSTEM
 
 
-class HostedCategoryPolicy:
-    """Category policy backed by a hosted model through the benchmark's model wrapper."""
+class HostedCategoryPolicy(ReferenceCategoryPolicy):
+    """The shipped classifier over the benchmark's model wrapper, with the retired v1 prompt still runnable."""
 
     def __init__(self, models: Any, model: str, prompt_version: str = "category-v2") -> None:
+        from benchmarks.shadow_adapter import ModelsClient
+
         if prompt_version not in CATEGORY_PROMPT_VERSIONS:
             raise ValueError(f"Unknown category prompt version {prompt_version!r}")
-        self._models = models
-        self._model = model
+        super().__init__(ModelsClient(models, model), model)
         self.prompt_version = prompt_version
+        self.policy_id = f"{model}/{prompt_version}"
         self._system = _CATEGORY_SYSTEM_V2 if prompt_version == "category-v2" else _CATEGORY_SYSTEM
-
-    def classify(self, content: str) -> CategoryDecision:
-        import json
-
-        raw = self._models.complete(self._model, self._system, f"Record:\n{content}", json_mode=True)
-        parsed = json.loads(raw)
-        retrieval = str(parsed.get("retrieval_category", "other"))
-        if retrieval not in RETRIEVAL_CATEGORIES:
-            retrieval = "other"
-        activation = str(parsed.get("activation_category", "other"))
-        if activation not in ("answer_style", "response_language", "accessibility", "code_example_language"):
-            activation = "other"
-        applicability = str(parsed.get("applicability", "ambiguous"))
-        if applicability not in ("broad", "scoped", "ambiguous"):
-            applicability = "ambiguous"
-        return CategoryDecision(
-            retrieval_category=retrieval,
-            activation_category=activation,  # type: ignore[arg-type]
-            applicability=applicability,  # type: ignore[arg-type]
-            confidence=float(parsed.get("confidence", 0.0)),
-            unsafe=bool(parsed.get("unsafe", False)),
-            rationale=str(parsed.get("rationale", "")),
-        )
 
 
 def recall_oriented_config(
@@ -135,17 +82,13 @@ def recall_oriented_config(
     the shipped default is 2 s and the runs report how long the stage actually took.
     """
 
-    config = load_config()
-    floors = DenseFloorConfig(semantic=0.30, episodic=0.30, procedural=0.30)
-    auto = replace(config.retrieval.gate.auto, dense_floor=floors, relative_floor=0.30)
-    gate = replace(config.retrieval.gate, auto=auto)
-    trigger = replace(config.retrieval.trigger, auto_k=8, auto_min_query_chars=1)
+    config = supported_retrieval_config()
     rewrite = config.retrieval.rewrite
     if rewrite_model is not None:
         rewrite = replace(
             rewrite, enabled=True, model=rewrite_model, timeout_ms=rewrite_timeout_ms or rewrite.timeout_ms
         )
-    retrieval = replace(config.retrieval, gate=gate, trigger=trigger, rewrite=rewrite)
+    retrieval = replace(config.retrieval, rewrite=rewrite)
     reranker = config.reranker
     if rerank_floor is not None:
         reranker = replace(reranker, enabled=True, floor=rerank_floor, timeout_ms=rerank_timeout_ms or 60000)

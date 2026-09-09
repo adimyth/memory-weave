@@ -76,12 +76,20 @@ class FakeGaps:
 
 
 class FakeAdmission:
-    def __init__(self, admit: list[str], verdict_for_rest: str = "insufficient", incomplete: bool = False) -> None:
+    def __init__(
+        self,
+        admit: list[str],
+        verdict_for_rest: str = "insufficient",
+        incomplete: bool = False,
+        delay_s: float = 0.0,
+    ) -> None:
         self._admit = admit
         self._rest = verdict_for_rest
         self._incomplete = incomplete
+        self._delay = delay_s
 
     def admit(self, turn, public_context, ambient_profile, draft, candidates) -> AdmissionDecision:
+        time.sleep(self._delay)
         verdicts = []
         for record in candidates:
             if self._incomplete:
@@ -368,3 +376,41 @@ def test_kill_switched_configurations_never_need_approval(world) -> None:
     )
     assert decision.disposition == "baseline_no_gaps"
     assert calls == ["baseline", "baseline"]
+
+
+def test_a_hung_planner_stops_costing_the_turn_at_its_timeout(world) -> None:
+    store, principal, _ = world
+    calls: list[str] = []
+    orchestrator = _orchestrator(
+        store, FakeGaps([Gap("preference", "tz")], delay_s=5.0), FakeAdmission(["tz"]), gap_timeout_ms=50
+    )
+
+    started = time.perf_counter()
+    decision = orchestrator.prepare_turn(principal, "q", None, *_generators(calls))
+    elapsed = time.perf_counter() - started
+
+    assert decision.disposition == "baseline_policy_failure"
+    assert decision.gap_status == "timeout"
+    assert decision.response == "draft"
+    assert elapsed < 1.0, "the timeout has to bound the turn, not only the decision the turn records"
+
+
+def test_a_hung_judge_stops_costing_the_turn_at_its_timeout(world) -> None:
+    store, principal, _ = world
+    calls: list[str] = []
+    orchestrator = _orchestrator(
+        store,
+        FakeGaps([Gap("preference", "tz")]),
+        FakeAdmission(["tz"], delay_s=5.0),
+        admission_timeout_ms=50,
+    )
+
+    started = time.perf_counter()
+    decision = orchestrator.prepare_turn(principal, "q", None, *_generators(calls))
+    elapsed = time.perf_counter() - started
+
+    assert decision.disposition == "baseline_policy_failure"
+    assert decision.admission_status == "timeout"
+    assert decision.response == "draft"
+    assert "admission:admission_timeout" in decision.failures
+    assert elapsed < 1.0, "the timeout has to bound the turn, not only the decision the turn records"

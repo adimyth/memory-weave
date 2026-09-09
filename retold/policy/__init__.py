@@ -16,7 +16,15 @@ from .activation import (
     recognise_form,
     verify_principal_evidence,
 )
-from .bundles import SUITE_VERSION, BundleNotApprovedError, BundleRegistry, FitnessRecord, bundle_hash
+from .bundles import (
+    SUITE_VERSION,
+    BundleMismatchError,
+    BundleNotApprovedError,
+    BundleRegistry,
+    FitnessRecord,
+    bundle_hash,
+    retrieval_config_hash,
+)
 from .grants import private_scope, readable_scopes, writable_scopes
 from .lifecycle import (
     has_authority,
@@ -56,6 +64,7 @@ __all__ = [
     "AdmissionDecision",
     "AdmissionPolicy",
     "BacklogStatus",
+    "BundleMismatchError",
     "BundleNotApprovedError",
     "BundleRegistry",
     "FitnessRecord",
@@ -65,6 +74,7 @@ __all__ = [
     "aggregate",
     "bundle_components",
     "bundle_hash",
+    "retrieval_config_hash",
     "render",
     "rollback_reasons",
     "stage_outcome",

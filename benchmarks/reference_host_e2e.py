@@ -96,7 +96,14 @@ def main(argv: list[str] | None = None) -> int:
 
     # 1. Enforcement: serving without a recorded result must be refused.
     try:
-        ReferenceHost(store, retrieve=retrieve, gap_policy=gap_policy, admission_policy=admission, bundle=bundle)
+        ReferenceHost(
+            store,
+            retrieve=retrieve,
+            gap_policy=gap_policy,
+            admission_policy=admission,
+            bundle=bundle,
+            retrieval_config=rr.config,
+        )
         print("FAIL: an unapproved bundle was allowed to serve")
         return 1
     except BundleNotApprovedError as error:
@@ -109,6 +116,7 @@ def main(argv: list[str] | None = None) -> int:
         gap_policy=gap_policy,
         admission_policy=admission,
         bundle=bundle,
+        retrieval_config=rr.config,
         switches=KillSwitches(regeneration=False),
     )
     from retold.policy import ProfileAssembler
@@ -129,7 +137,7 @@ def main(argv: list[str] | None = None) -> int:
         )
 
     # 3. Record the supported bundle's fitness the way a consuming application would, then serve.
-    components = bundle_components(host.config())
+    components = bundle_components(host.config(), rr.config)
     expected = json.loads(args.bundle_file.read_text())
     drift = {
         k: (components.get(k), expected.get(k))

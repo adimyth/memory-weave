@@ -43,6 +43,7 @@ from .base import (
     RECALLED_HEADER,
     MemoryMode,
     TriggerMode,
+    check_modes,
     policy_text,
     principal_from_mapping,
     recalled_memory_block,
@@ -89,6 +90,7 @@ class DeepAgentsMemoryAdapter:
         self._config = runtime.config
         self.trigger_mode: TriggerMode = trigger_mode or runtime.config.retrieval.trigger.mode
         self.memory_mode: MemoryMode = memory_mode
+        check_modes(self.trigger_mode, self.memory_mode)
         self._latency_budget_ms = latency_budget_ms
         self._lock = threading.Lock()
         self._sessions: dict[str, str] = {}
@@ -109,6 +111,7 @@ class DeepAgentsMemoryAdapter:
                 utility_config,
                 profile_assembler=self._profiles,
                 registry=registry,
+                retrieval_config=self._config,
                 actor="deepagents",
             )
 
@@ -151,6 +154,8 @@ class DeepAgentsMemoryAdapter:
     def end_session(self, run_context: Any) -> None:
         principal = self.principal_from_run(run_context)
         self._hooks.on_session_end(principal)
+        if principal.session_id is not None:
+            self._profiles.forget(principal.session_id)
 
     # -- tools ------------------------------------------------------------------------------------------
 

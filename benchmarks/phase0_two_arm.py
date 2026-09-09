@@ -39,6 +39,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from benchmarks.draft_delta_experiment import Models  # noqa: E402
 from benchmarks.fitness import combination_verdict, serving_summary  # noqa: E402
+from retold.policy.reference import ADMISSION_SYSTEM, GAP_SYSTEM_BASE  # noqa: E402
 
 _ADMITTING = ("helpful", "jointly_helpful")
 _VERDICTS = ("helpful", "redundant", "insufficient", "stale_or_conflicting", "potentially_harmful", "jointly_helpful")
@@ -63,24 +64,7 @@ _GAP_SYSTEM = (
     'empty list. Reply with JSON only: {"queries": ["...", "..."]}'
 )
 
-_GAP_SYSTEM_V2 = (
-    "You help a memory system decide what to look up before answering a user. You see the user's message "
-    "and the preferences already applied. Decide whether the correct or appropriate response depends on "
-    "facts specific to this user that public knowledge cannot supply. Ask: would two users in different "
-    "situations receive different correct responses?\n"
-    "- If the message asks for an explanation of a general concept, a best practice, how a tool works, or a "
-    "generic how-to, the answer is the same for everyone. Return an empty list, even if the user's "
-    "organisation might hold related records.\n"
-    "- If the message asks the assistant to act on the user's behalf or produce something tailored to their "
-    "situation, such as proposing or scheduling a time, writing a message to a specific person or role, "
-    "producing a command or code for their own systems or project, checking a plan against their team's "
-    "calendar, freezes, or policies, or stating what their team decided, uses, or owns, then the user-specific "
-    "inputs to that task are gaps: their time zone, the people and roles involved, system and environment "
-    "names, team schedules, prior decisions, and tooling or language choices for their project.\n"
-    "List up to 3 gaps as short search queries that name the missing fact, not the topic. Do not ask for "
-    "public facts or for anything already covered by the applied preferences. Reply with JSON only: "
-    '{"queries": ["...", "..."]}'
-)
+_GAP_SYSTEM_V2 = GAP_SYSTEM_BASE
 
 _GAP_SYSTEM_V3 = (
     _GAP_SYSTEM_V2
@@ -136,27 +120,7 @@ _ADMISSION_SYSTEM_V2 = (
     "Include every candidate id exactly once in verdicts."
 )
 
-_ADMISSION_SYSTEM_V3 = (
-    "You decide which stored memory records, if any, should be given to an assistant before it answers. You "
-    "see the user's message, the preferences already applied, a draft answer written without any of the "
-    "candidate records, and the candidate records with their recorded date and status. Evaluate the "
-    "candidates together. Give every candidate exactly one verdict:\n"
-    "- helpful: the record changes what the answer recommends, the time or date it proposes, the person it "
-    "addresses or names, the command or code it gives, a constraint or value it states, or a warning it "
-    "should raise. The draft asking the user for exactly this information also counts.\n"
-    "- jointly_helpful: it meets the helpful test only together with another candidate you are also admitting.\n"
-    "- redundant: it repeats what the draft, public knowledge, or the applied preferences already cover.\n"
-    "- insufficient: it concerns the request but changes none of the things listed under helpful. Background, "
-    "attribution, and usefulness for other work the user did not ask about are insufficient.\n"
-    "- stale_or_conflicting: it is marked superseded or conflicting, or a stronger candidate contradicts it. "
-    "Disagreeing with the draft is not a reason for this verdict; the draft was written without the records.\n"
-    "- potentially_harmful: using it risks factual distortion, agreeing with a false belief, suppressing "
-    "warnings, inappropriate personalisation, or exposing private information unrelated to the request.\n"
-    "Admit only candidates with verdict helpful or jointly_helpful. When you are not sure one of the listed "
-    "things would change, do not admit. An empty admitted list is the normal outcome. Reply with JSON only: "
-    '{"admitted": ["<id>", ...], "verdicts": [{"id": "<id>", "verdict": "<verdict>", "reason": "<one short '
-    'sentence>"}]}. Include every candidate id exactly once in verdicts.'
-)
+_ADMISSION_SYSTEM_V3 = ADMISSION_SYSTEM
 
 _ADMISSION_SYSTEM_V4 = (
     _ADMISSION_SYSTEM_V3

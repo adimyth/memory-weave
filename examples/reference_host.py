@@ -72,6 +72,7 @@ class ReferenceHost:
         gap_policy: GapPolicy,
         admission_policy: AdmissionPolicy,
         bundle: dict[str, object],
+        retrieval_config: object | None = None,
         switches: KillSwitches = KillSwitches(),
         default_budget_ms: int | None = None,
         thresholds: RollbackThresholds = RollbackThresholds(),
@@ -84,6 +85,10 @@ class ReferenceHost:
         self._gap_policy = gap_policy
         self._admission_policy = admission_policy
         self._bundle = dict(bundle)
+        # The configuration `retrieve` searches with. Given it, the bundle's retrieval hash is derived from
+        # the runtime instead of trusted, and a manifest that describes a different one is refused here
+        # rather than at the point where a decision claims an approval nothing measured.
+        self._retrieval_config = retrieval_config
         self._switches = switches
         self._default_budget_ms = default_budget_ms
         self._thresholds = thresholds
@@ -115,7 +120,7 @@ class ReferenceHost:
     def bundle_hash(self) -> str:
         from retold.policy import bundle_hash
 
-        return bundle_hash(bundle_components(self.config()))
+        return bundle_hash(bundle_components(self.config(), self._retrieval_config))
 
     def is_serving(self) -> bool:
         return self._switches.gap and self._switches.regeneration
@@ -135,6 +140,7 @@ class ReferenceHost:
             self.config(),
             profile_assembler=self._assembler,
             registry=self._registry,
+            retrieval_config=self._retrieval_config,
         )
 
     def set_switches(self, switches: KillSwitches) -> None:

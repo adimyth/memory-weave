@@ -42,6 +42,7 @@ from .base import (
     MemoryMode,
     TriggerMode,
     args_model_from_schema,
+    check_modes,
     policy_text,
     recalled_memory_block,
     render_tool_result,
@@ -102,6 +103,7 @@ class CrewAIMemoryAdapter:
         self._principal = principal
         self.trigger_mode: TriggerMode = trigger_mode or runtime.config.retrieval.trigger.mode
         self.memory_mode: MemoryMode = memory_mode
+        check_modes(self.trigger_mode, self.memory_mode)
         self._latency_budget_ms = latency_budget_ms
         self._lock = threading.Lock()
         self._current_task: str | None = None
@@ -121,6 +123,7 @@ class CrewAIMemoryAdapter:
                 utility_config,
                 profile_assembler=self._profiles,
                 registry=registry,
+                retrieval_config=self._config,
                 actor="crewai",
             )
 
@@ -196,6 +199,8 @@ class CrewAIMemoryAdapter:
     def end_session(self, run_context: Any = None) -> None:
         del run_context
         self._hooks.on_session_end(self.principal)
+        if self.principal.session_id is not None:
+            self._profiles.forget(self.principal.session_id)
 
     # -- tools ------------------------------------------------------------------------------------------
 

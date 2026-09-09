@@ -48,6 +48,7 @@ def _build_handlers(
     *,
     write_targets: Callable[[Principal], Mapping[str, Scope]] | None = None,
     session_id: str = _SESSION,
+    activation: object = None,
 ) -> tuple[ToolHandlers, FakeEmbedder]:
     embedder = FakeEmbedder(dims=_EMBEDDING.dims)
     vector_index = VectorIndex(_EMBEDDING)
@@ -63,7 +64,17 @@ def _build_handlers(
         current_time=lambda: _NOW,
     )
     retriever = Retriever(store, vector_index, embedder, _CONFIG, current_time=lambda: _NOW)
-    return ToolHandlers(retriever, ingestor, store, vector_index, write_targets=write_targets), embedder
+    return (
+        ToolHandlers(
+            retriever,
+            ingestor,
+            store,
+            vector_index,
+            write_targets=write_targets,
+            activation=activation,  # type: ignore[arg-type]
+        ),
+        embedder,
+    )
 
 
 def _write_payload(content: str = "The user prefers concise technical explanations.") -> dict[str, object]:
@@ -577,3 +588,48 @@ def test_get_omits_entities_the_caller_cannot_read(handlers: tuple[ToolHandlers,
     entity_ids = [entity["id"] for entity in fetched["records"][0]["record"]["entities"]]  # type: ignore[index]
     assert foreign_entity.id not in entity_ids
     assert "Other Project" not in str(fetched)
+
+
+class _BroadPreference:
+    """A category policy that calls everything a broadly applicable answer-style preference."""
+
+    def classify(self, content: str):
+        from retold.policy import CategoryDecision
+
+        return CategoryDecision("preferences", "answer_style", "broad", 0.9)
+
+
+def test_a_preference_written_through_the_tool_runs_the_activation_policy(store: Store) -> None:
+    from retold.policy import ActivationService
+
+    content = "Answer in British English by default."
+    store.append_turn(Turn(_SESSION, 2, "user", content, _NOW))
+    handlers, _ = _build_handlers(store, activation=ActivationService(store, _BroadPreference()))
+
+    payload = handlers.memory_write(
+        _PRINCIPAL,
+        {
+            "type": "semantic",
+            "content": content,
+            "attribute": "response_language",
+            "source_kind": "user_statement",
+            "evidence": content,
+            "entities": [{"kind": "person", "name": "Aditya", "role": "about"}],
+        },
+    )
+
+    assert payload["ok"] is True
+    assert payload["activation"] == "promote"
+    record = store.get_record(str(payload["record_id"]))
+    assert record is not None and record.activation == "ambient"
+    assert record.category == "preferences"
+    assert "record.activation_decided" in [event["kind"] for event in store.events_for(record.id)]
+
+
+def test_a_tool_write_without_an_activation_service_reports_no_activation(store: Store, handlers) -> None:
+    tools, _ = handlers
+    payload = tools.memory_write(_PRINCIPAL, _write_payload())
+    assert payload["ok"] is True
+    assert "activation" not in payload
+    record = store.get_record(str(payload["record_id"]))
+    assert record is not None and record.activation == "conditional"

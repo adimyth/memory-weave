@@ -11,9 +11,10 @@ from __future__ import annotations
 import hashlib
 import json
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, is_dataclass
 from typing import Any
 
+from retold.config import RERANKER_INERT_WHEN_DISABLED
 from retold.store import Store
 
 SUITE_VERSION = "fitness-suite-2026-09-07"
@@ -26,8 +27,35 @@ def bundle_hash(components: Mapping[str, Any]) -> str:
     return hashlib.sha256(canonical.encode()).hexdigest()[:16]
 
 
+def retrieval_config_hash(retrieval_config: Any) -> str:
+    """The retrieval half of a bundle hash, derived from the configuration a host actually retrieves with.
+
+    ``retrieval_config`` is the whole ``RetoldConfig`` when the caller has one: the hash then covers the
+    retrieval section and the reranker section together, because an enabled reranker changes what the judge
+    sees as much as a gate floor does. A bare retrieval section or a plain mapping is hashed as given.
+    """
+
+    if hasattr(retrieval_config, "retrieval") and hasattr(retrieval_config, "reranker"):
+        reranker = asdict(retrieval_config.reranker)
+        if not retrieval_config.reranker.enabled:
+            # Fields that do nothing while the reranker is off stay out of a disabled configuration's hash, so
+            # adding them later did not turn the supported bundle into a new one.
+            for key in RERANKER_INERT_WHEN_DISABLED:
+                reranker.pop(key, None)
+        hashed: Any = {"retrieval": asdict(retrieval_config.retrieval), "reranker": reranker}
+    elif is_dataclass(retrieval_config) and not isinstance(retrieval_config, type):
+        hashed = asdict(retrieval_config)
+    else:
+        hashed = retrieval_config
+    return hashlib.sha256(json.dumps(hashed, sort_keys=True, default=str).encode()).hexdigest()[:16]
+
+
 class BundleNotApprovedError(RuntimeError):
     """Raised when a host tries to serve with a bundle that has no recorded passing fitness result."""
+
+
+class BundleMismatchError(RuntimeError):
+    """Raised when a bundle's declared components do not describe the runtime that would serve them."""
 
 
 @dataclass(frozen=True, slots=True)

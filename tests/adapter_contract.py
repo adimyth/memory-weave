@@ -158,3 +158,41 @@ def _user_scope(principal: Principal) -> Any:
     from retold.models import Scope
 
     return Scope(kind="user", id=principal.user_id)
+
+
+MODE_MATRIX: tuple[tuple[str, str, bool], ...] = (
+    ("tool_only", "tool_only", True),
+    ("auto", "tool_only", True),
+    ("hybrid", "tool_only", True),
+    ("tool_only", "utility_aware", True),
+    # Host-issued search would put candidates in front of the model before admission decides.
+    ("auto", "utility_aware", False),
+    ("hybrid", "utility_aware", False),
+)
+
+
+def assert_mode_matrix(build: Any, tool_names: Any) -> None:
+    """Every trigger mode against every memory mode: what each combination registers, and what is refused.
+
+    ``build(trigger_mode, memory_mode)`` returns the framework's adapter; ``tool_names(adapter)`` returns the
+    names it registered. The refused combinations must fail at construction, not at the turn that would have
+    leaked a record past the judge.
+    """
+
+    import pytest
+
+    for trigger, memory, allowed in MODE_MATRIX:
+        if not allowed:
+            with pytest.raises(ValueError, match="tool_only"):
+                build(trigger, memory)
+            continue
+        adapter = build(trigger, memory)
+        assert adapter.trigger_mode == trigger
+        assert adapter.memory_mode == memory
+        names = set(tool_names(adapter))
+        assert ("memory_search" in names) is (trigger != "auto"), (
+            f"{trigger}/{memory} registered the wrong search surface"
+        )
+        assert {"memory_write", "memory_get", "memory_revise", "memory_forget"} <= names
+        orchestrating = getattr(adapter, "_orchestrator", None) is not None
+        assert orchestrating is (memory == "utility_aware")
