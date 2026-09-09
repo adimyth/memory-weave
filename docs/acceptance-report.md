@@ -58,8 +58,60 @@ A fresh clone of `main` at `a827db6` with `uv sync --all-extras`: Ruff clean, ev
 | `retrieval.trigger.mode = tool_only`, rewrite off, reranker off | The default. Conservative, and the only mode in which the model decides every search. |
 | `utility_aware`, bundle `bundle-2026-09-08-a` (`gpt-4o/gap-v3c`, `gpt-5.4/admission-v3`, `gpt-4o/category-v2`, `activation-v2-frozen`, `inventory-v1`, retrieval hash `e8c8c3309ab121de`, timeouts 4 s and 8 s) | Offline validated on the scripted splits and the shadow harness; a host may serve it only after recording that fitness result in its own store. Real-traffic validation is pending a consuming host. |
 | Rewrite on, reranker on, or both | Built, measured, and not supported: neither produced a measurable benefit (section 8n). Enabling either is a new bundle. |
-| Deep Agents and CrewAI adapters | Supported in `tool_only` and in both utility-aware modes, with fakes end to end; neither has run against a real serving model. |
+| Deep Agents and CrewAI adapters | Supported in `tool_only`, and in `tool_only` with `memory_mode="utility_aware"`, with fakes end to end; neither has run against a real serving model. `auto` and `hybrid` with `utility_aware` are refused at construction (section 8). |
 
 ## 7. Tag
 
 Every gate is met and measured. `main` is tagged `v1.0.0`: `tool_only` is the conservative default, the approved `utility_aware` bundle `bundle-2026-09-08-a` is offline validated, and real-traffic production validation remains pending a consuming host. Future work should follow measured demand: a production integration, retrieval misses, judge cost, latency pressure, or enough labelled traffic to justify distillation.
+
+
+## 8. v1.0.1 closure, 9 and 10 September 2026
+
+A review of the tagged tree before publication found eight gaps. This section records what each one was, what
+was done, and what was measured afterwards. Three commits carry the work: `db98a62`, `9662bc1`, and `dcda14b`.
+
+### 8.1 What was found and what closed it
+
+| # | Finding | Closed by | Evidence |
+| --- | --- | --- | --- |
+| 1 | Stage timeouts failed closed but did not bound latency: the executor joined its worker when the block exited, so a timed-out planner or judge still held the turn. | The planner and judge run on daemon threads that are abandoned at their timeout. | `test_a_hung_planner_stops_costing_the_turn_at_its_timeout`, `..._judge_...`: a 5 s policy against a 50 ms timeout returns in under 1 s. |
+| 2 | `memory_mode="utility_aware"` with `auto` or `hybrid` let host-issued search put records in front of the model before admission decided anything. | `check_modes` refuses the combination in both adapters at construction. | `test_every_trigger_mode_against_every_memory_mode`, both adapters, all six combinations. |
+| 3 | The validated planner, judge, and classifier lived under `benchmarks/`, which the wheel excludes, so a package user could not build the supported bundle. | They ship in `retold/policy/reference.py`; the harnesses import them. | `test_the_package_rebuilds_the_recorded_supported_bundle_exactly`; the wheel smoke rebuilds the bundle from an installed wheel alone. |
+| 4 | The bundle's retrieval hash was a written-down claim, and the fitness runs used recall-oriented settings the shipped defaults do not have. | `supported_retrieval_config()` ships those settings; the hash is derived from the runtime `RetoldConfig` and a disagreeing manifest is refused. | `bundle_components(supported_bundle(), supported_retrieval_config())` equals `bundles/bundle-2026-09-08-a.json`, retrieval hash `e8c8c3309ab121de`. |
+| 5 | A record written through `memory_write` never ran the activation policy, so a preference the model saved mid-session stayed conditional. | The tool handlers run it on writes and revisions and report the outcome. | `test_a_preference_written_through_the_tool_runs_the_activation_policy`. |
+| 6 | The ambient profile was rebuilt every turn, against a design that says it is fixed for the session. | `ProfileAssembler` assembles once per session and the adapters drop it at session end. | `test_the_profile_is_assembled_once_a_session_and_reassembled_for_the_next`. |
+| 7 | No pull-request CI; Python 3.13 advertised but never validated; known advisories in the optional extras; the artifact's metadata unproven against the publishing toolchain. | A `ci` workflow, a dependency bump, and a build-backend ceiling. | Section 8.3. |
+| 8 | Public documents described pre-implementation states. | Historical documents say so at the top; the README separates supported, experimental, and historical. | `README.md` section 5.1. |
+
+A ninth was found while closing the fourth: a bundle could declare a retrieval hash while no configuration was
+given to check it against, which reads like an approval of whatever retrieval is in front of it. Serving that
+now refuses; shadow warns and records `bundle_retrieval_verified` on every turn decision (migration 11).
+
+### 8.2 The regression tests were checked against the defect
+
+The six tests above were run against `bdce864`, the commit before the fixes, in a separate worktree. All six
+fail there, each on the behaviour it names: the planner test measures 5.00 s against its 1.0 s bound, the judge
+reports `failed` rather than `timeout`, the activation test cannot construct the handlers, the profile changes
+mid-session, and both adapters accept the refused combinations. They pass on `dcda14b`.
+
+### 8.3 Release gates
+
+| Gate | Required | Measured | Status |
+| --- | --- | --- | --- |
+| Standard suite | pass | 391 passed, 12 deselected, on 3.12 and on 3.13 | met |
+| Local-model and slow suites | pass | 9 passed in 191.7 s, macOS arm64, with `transformers` 5.16.1 and `sentence-transformers` 5.7.0 | met |
+| Ruff, format, strict mypy | clean | clean on both versions, 60 source files | met |
+| CI on every advertised version | pass on Ubuntu | run `34388291557`: `python 3.12`, `python 3.13`, `docs`, `wheel`, and `dependency audit` all green | met |
+| Documentation builds strictly | pass | `mkdocs build --strict`, no warnings | met |
+| Distribution metadata | accepted by the upload path | `twine check` passes on the wheel and the sdist. It failed before this round: hatchling 1.30 emits Metadata-Version 2.5 and the toolchain rejects it, so the build pins `hatchling>=1.27,<1.30`, which emits 2.4 | met |
+| Clean installation | wheel and sdist install and run | the wheel installs with both adapter extras into fresh 3.12 and 3.13 environments and passes 24 smoke checks run from outside the checkout; the sdist installs and imports | met for the built artifacts |
+| Known vulnerabilities in the locked set | none unfixed | five `transformers` advisories cleared by the version bump; four `chromadb` advisories have no fixed release, arrive only through the `crewai` extra, and are ignored by identifier in the audit job. Retold neither imports nor runs chromadb | met with that exception recorded |
+| Published package | `pip install retold` works | **not met.** The package is not on PyPI: the name is unregistered and the trusted publisher has not been created, so `v1.0.1` is not tagged | open |
+
+### 8.4 What is still open
+
+Publication. Everything upstream of it is verified, including the metadata defect that would have failed the
+upload, but `retold` has no PyPI project and no pending publisher, so the tag has deliberately not been pushed:
+a tag whose publish job cannot succeed is worse than no tag. When a publisher exists for project `retold`, owner
+`adimyth`, repository `retold`, workflow `publish.yml`, environment `pypi`, pushing `v1.0.1` completes the
+release, and `pip install retold` in a clean environment is the last check.
