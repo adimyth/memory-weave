@@ -10,6 +10,11 @@ dependencies = [
   "uuid6>=2024.7.10",
 ]
 
+[project.urls]
+Homepage = "https://github.com/adimyth/retold"
+Repository = "https://github.com/adimyth/retold"
+Documentation = "https://github.com/adimyth/retold#readme"
+
 [project.scripts]
 retold = "retold.cli:main"
 
