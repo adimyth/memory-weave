@@ -1,318 +1,324 @@
-# Agent Memory System
+# Memory Weave
 
-## 1. Introduction
+A local, provider-neutral long-term memory layer for AI agents. It stores evidence-backed records in one SQLite file, retrieves them through dense, lexical, and entity channels fused by reciprocal-rank fusion, returns only what the caller may read, and can return nothing. Every write and every search leaves a trace that explains itself.
 
-Agent Memory System is a long-term memory layer for AI agents. It does not depend on one model provider or agent framework. It stores facts, decisions, and dated experiences outside the conversation. Agents call `memory_search`, `memory_get`, `memory_write`, `memory_revise`, and `memory_forget` to retrieve, create, revise, or forget those records.
+Version 1.0.0 (9 September 2026). Python 3.12, one process, one database file. Deep Agents and CrewAI adapters ship behind extras. The utility-aware host path, which decides whether a turn needs memory before ranking anything, is implemented and validated offline; it is off by default and waits on real-traffic validation. The [acceptance report](docs/acceptance-report.md) records every gate.
 
-The transcript is raw material. Each record carries scope, source, evidence, lifecycle metadata, and retrieval context. The design runs locally. SQLite holds the canonical records. Vector, full-text, and entity indexes are rebuilt from that store.
+## 1. What it is, and what it is not
 
-The authoritative design for host-issued memory use is [Utility-aware memory architecture](docs/utility-aware-memory-architecture.md), with delivery stages in the [utility-aware memory implementation plan](docs/utility-aware-memory-implementation-plan.md). The current implementation still defaults to `tool_only`; the new ambient-profile and utility-aware host paths remain evaluation-gated and disabled until their acceptance criteria are met.
+Memory Weave gives an agent durable memory that outlives a conversation and can be shared across agents. An agent reaches it through five tools, `memory_search`, `memory_get`, `memory_write`, `memory_revise`, and `memory_forget`, and a host reaches it through a small Python API and a CLI. Records are facts, decisions, and dated experiences about a user, a project, or an organisation, each carrying its scope, its source, a verbatim evidence quote, and its lifecycle state.
 
-## 2. Why
+Three commitments shape everything else:
 
-An LLM call retains nothing. Replaying the transcript keeps one conversation coherent. It costs tokens, mixes temporary chat with durable claims, and does not carry knowledge into a later session or a different agent.
+1. **A bad record is worse than a missing one.** A claim attributed to the user must be supported by a quote from the transcript that entails it, or it is downgraded to an inference that expires unless reinforced. Contradictions are resolved by source authority, never by recency alone, and the losing record is kept as lineage.
+2. **An irrelevant retrieval is worse than an empty one.** Search ends with a gate that can return nothing and says why. Host-issued memory goes further: a record reaches the answer only if a judge decides it would change a draft written without it.
+3. **Nothing enters the prompt prefix.** Conditional memory is appended as a tool result, so provider-side prompt caching keeps working. The one exception is a bounded ambient profile of confirmed response preferences, assembled once at session start and never edited mid-session.
 
-You need a place for a user's preference, a project convention, or the outcome of a previous attempt. The store scopes that record, retrieves it for the matching task, and lets someone inspect or correct it.
+It is not a vector database, a transcript replay, a knowledge graph, or a hosted service. It does not do per-message extraction, automatic entity merging, cross-user consolidation, or image and audio memory. Single process, no sharding.
 
-## 3. Guarantees
+## 2. Architecture
 
-| Characteristic | What the system guarantees |
+```mermaid
+flowchart LR
+    subgraph Host["Host application or framework adapter"]
+        Agent[Serving model]
+        Hooks[Session hooks: start, turn, end]
+        UA[Utility-aware orchestrator]
+    end
+
+    subgraph Core["memory_weave"]
+        Tools[Tool handlers: search, get, write, revise, forget]
+        Policy[Policy: grants, authority, lifecycle, activation]
+        Ingestor[Ingestor]
+        Retriever[Retriever]
+        Extraction[Extraction runner: extractor, reviewer, temporal review]
+        Store[(SQLite: records, evidence, entities, grants, sessions, events, search log, turn decisions)]
+        Vec[Vector index, in process]
+        FTS[FTS5]
+    end
+
+    Agent -- tool calls --> Tools
+    Hooks --> Store
+    Hooks -- session end --> Extraction
+    UA -- gap queries --> Retriever
+    Tools --> Ingestor
+    Tools --> Retriever
+    Ingestor --> Policy
+    Retriever --> Policy
+    Ingestor --> Store
+    Extraction --> Ingestor
+    Store --> Vec
+    Store --> FTS
+    Retriever --> Vec
+    Retriever --> FTS
+    Retriever --> Store
+```
+
+The SQLite file is the only source of truth. The in-process vector matrix and the FTS5 table are derived from it and can be rebuilt. Everything the model can see passes through the tool handlers; everything the host does passes through the hooks, the orchestrator, or the operations surface. No component calls the serving model except the host.
+
+### 2.1 The record
+
+Every record carries the same envelope regardless of type. The identity of a current fact is `subject_entity_id` plus `attribute`, so "Aditya's editor" is one key with one live answer and a chain of superseded rows behind it.
+
+| Group | Fields | What it settles |
+| --- | --- | --- |
+| Identity | `id`, `type` (`semantic`, `episodic`, `procedural`), `version` | What kind of memory, and where in its lineage. |
+| Content | `content`, `subject_entity_id`, `attribute`, `subject`, `tags` | The text the model may read and the current-fact key it answers. |
+| Scope | `scope_kind`, `scope_id` | Who owns it: `agent`, `user`, `project`, or `org`. Access is a separate grant table. |
+| Source | `source_kind`, `source_ref`, `creator_agent_id`, `evidence` | Where it came from and the verbatim quote that supports it. |
+| Time | `created_at`, `event_at`, `expires_at`, `valid_from`, `valid_until`, `review_at` | Storage time, event time, lifecycle expiry, stated validity bounds, and a scheduled review. |
+| Trust | `confidence`, `status` (`provisional`, `confirmed`, `superseded`, `expired`, `deleted`), `activation` (`conditional`, `ambient`) | Lifecycle state and whether it must pass retrieval and admission on every turn. |
+| Lineage | `supersedes_id`, conflicts, `reinforcements` | What it replaced, what disagrees with it, and how often it has been seen again. |
+
+Source kinds are ranked: `user_statement` (4) over `system` (3) over `tool_result` and `session_summary` (2) over `agent_inference` (1). A record supersedes only an equal- or lower-ranked record on the same key. A direct user or tool claim starts `confirmed`; an inference starts `provisional` and expires in 30 days unless reinforced twice.
+
+### 2.2 Writing
+
+Two paths, and only two.
+
+- **Explicit write**, synchronous, during the session. The agent calls `memory_write` with a type, content, attribute, source kind, evidence, and entity mentions. The handler resolves the symbolic write target (`personal`, `current_project`) to a scope the principal may write, locates the evidence in the session transcript, checks that it entails the content with a local NLI cross-encoder, resolves entities by exact alias, compares against active records on the same key and on cosine-adjacent keys of the same entity, then reinforces, supersedes, conflicts, or creates. The FTS row, entity links, embedding, and audit event are written in the same transaction.
+- **Session extraction**, asynchronous, after the session ends. An extractor model reads the whole transcript and proposes candidates with quotes; a separate reviewer model accepts, rejects, or narrows each one, and may not strengthen its source, invent evidence, or change its scope; the candidates then take the same validation and ingestion path as an explicit write. One episodic session summary is always written. Temporal expressions in the evidence may set validity bounds and a `review_at` time; a worker later flags due records without rewriting them.
+
+Per-message extraction is deliberately absent. It charges every turn and stores guesses from an unfinished conversation.
+
+### 2.3 Reading
+
+`memory_search` runs the same pipeline whoever calls it:
+
+1. Resolve the principal's readable scopes from the grant table, then hard-filter records by scope, lifecycle, expiry, type, and time window. The filter is a SQL predicate computed before any candidate exists; scope is never a ranking signal.
+2. Optionally rewrite the query with current-turn context (off by default).
+3. Generate up to 30 candidates from each of three channels over the eligible set: dense cosine against `bge-m3` embeddings, BM25 through FTS5 over content, subject, and entity aliases, and exact entity-alias lookup.
+4. Fuse the three ranked lists with reciprocal-rank fusion (`k = 60`); apply episodic recency decay.
+5. Gate: each survivor must clear an absolute floor on its own (a per-type cosine floor, or enough matched lexical terms, or an exact entity match), then survivors far below the strongest are dropped. Host-issued searches use stricter floors, exclude session summaries, and get no entity exemption.
+6. Collapse near-duplicates, optionally rerank with a cross-encoder (off by default), fill `k` and a 1,500-token budget, pairing a provisional record with the confirmed record it conflicts with.
+7. Return results with explanations, or an empty result with the reason the best candidate missed, and write one `search_log` row with every candidate, score, decision, and stage timing.
+
+### 2.4 Deciding whether a turn needs memory
+
+The relevance gate answers "is this record about the same subject as the query". It cannot answer "does this turn need remembered state": measured on a scripted conversation, ordinary turns and memory-needed turns produced overlapping score distributions at every floor ([gate.md](docs/gate.md)). The utility-aware host path answers the second question with a different mechanism:
+
+```text
+session start   -> assemble the bounded ambient profile (confirmed response preferences only)
+user turn       -> draft an answer from the turn, public context, and profile
+                -> in parallel, a planner names 0 to 3 information gaps the draft is missing,
+                   given only a content-free inventory of the categories the store holds
+                -> no gaps: serve the draft (no retrieval, no added latency)
+                -> retrieve conditional candidates against the gap queries, not the turn
+                -> a judge compares the candidates with the draft and admits a subset, or nothing
+                -> admitted: regenerate once with the admitted records; otherwise serve the draft
+```
+
+Every stage fails closed to the draft. Every turn writes one decision row with its disposition (planner silent, retrieval miss, judge rejection, policy failure, budget exhausted, admitted) and per-stage timings. The planner carries precision, the judge carries safety, and a per-request latency budget can only shorten the path.
+
+The components that decide (planner model and prompt, judge model and prompt, category classifier, taxonomy, inventory builder, retrieval configuration, timeouts) are hashed into a bundle. A store serves a bundle only after a passing fitness result is recorded for it; otherwise the orchestrator runs in shadow mode, deciding and logging without changing a response. One bundle is supported today, and the models in it are configuration that passed a fixed test, not a recommendation that nearby models would:
+
+| Role | What passed | Measured alternatives |
+| --- | --- | --- |
+| Gap planner | `gpt-4o`, prompt `gap-v3c` | An 8B open-weight model run locally also passed. `gpt-5-nano` was unstable. |
+| Admission judge | `gpt-5.4`, prompt `admission-v3` | Two other frontier judges matched its recall and each admitted a misleading record. `gpt-4o` lost implicit recall. |
+| Category classifier | `gpt-4o`, `category-v2`, with deterministic form rules | |
+
+The path is closer to TRACE-Memory's two-stage shape than to RUMS's entropy selection, and cites both; what it adds is ambient-versus-conditional activation, a content-free inventory, joint draft-relative admission, and the control plane around them. [design-contributions.md](docs/design-contributions.md) makes the comparison; [utility-aware-memory-architecture.md](docs/utility-aware-memory-architecture.md) is the specification.
+
+### 2.5 Trigger modes
+
+`retrieval.trigger.mode` decides who calls `memory_search`. The pipeline is identical in every mode.
+
+| Mode | Who searches | Status |
+| --- | --- | --- |
+| `tool_only` | The model, through its tool. | The default and the conservative choice. Right for task agents whose work signals when memory matters. |
+| `auto` | The host, once per user turn; the search tool is not registered. | An experimental control. |
+| `hybrid` | Both. | The production candidate for assistants, gated on the utility-aware path proving itself on real traffic. |
+
+Models search well when the user points at the past and poorly when a stored preference should silently shape an answer. On the scripted slice the serving model searched on zero of six turns where memory applied. That is why the host path exists; it is also why `hybrid` is not yet recommended, because only the utility-aware path keeps a per-turn host search from polluting ordinary turns.
+
+### 2.6 Isolation
+
+Scope answers whose memory it is; a grant answers which agent may see it. Grants do not inherit. The only implicit scope is `agent:<agent_id>/<user_id>`, private to one pair; every user, project, organisation, and plain agent scope needs a host-provisioned grant. Tool input never carries an identity or a scope id: the adapter derives the `Principal` from the run, and `memory_write` takes a symbolic target. An operation on a record the caller cannot read answers exactly as it does for a record that never existed. Measured: zero cross-principal violations on a synthetic four-user store and on the 1,074-record fixture, across every log stage, `memory_get`, and grants.
+
+## 3. Using it
+
+### 3.1 Install
+
+```bash
+uv sync                                   # core: SQLite from the standard library, numpy, PyYAML
+uv sync --extra local-models              # bge-m3 embedder, NLI judge, cross-encoder reranker
+uv sync --extra live                      # Anthropic and OpenAI SDKs for extraction, review, rewriting
+uv sync --extra deepagents --extra crewai # the framework adapters
+```
+
+Set `HF_HUB_OFFLINE=1` once the model cache is warm; a partial cache hangs inside the hub library instead of failing. Hosted models read `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` from the environment; the runtime picks the SDK by model name, `claude-*` to Anthropic and anything else to OpenAI. The benchmark harness additionally routes `openrouter:<slug>` through OpenRouter and `local:<repo>` through a locally loaded open-weight model.
+
+### 3.2 Wire a host
+
+`build_runtime` is the composition root. It returns the store, embedder, vector index, judge, session buffer, ingestor, retriever, tool handlers, extraction runner, and session hooks wired together; any argument given replaces the configured piece, which is how tests and demos substitute fakes. It makes no model call and loads no weights until the first write, search, or extraction.
+
+```python
+from memory_weave.config import load_config
+from memory_weave.host import MemoryHost
+from memory_weave.models import Scope
+from memory_weave.runtime import build_runtime
+from memory_weave.store import Store
+
+store = Store("memory.sqlite")                       # applies migrations
+host = MemoryHost(store)
+host.grant("assistant", Scope(kind="user", id="aditya"), read=True, write=True)
+host.provision_user("aditya", aliases=("Aditya",))    # the principal's person entity
+
+runtime = build_runtime(load_config("config.yaml"), store)
+
+# Session hooks, called by the adapter or by your own loop.
+principal = ...                                       # Principal(agent_id, user_id, session_id, project_id)
+runtime.hooks.on_session_start(principal)
+principal = runtime.hooks.on_turn(principal, "user", "I prefer concise answers.")   # returns the principal to keep using
+result = runtime.handlers.memory_search(principal, {"queries": ["answer style"]})
+runtime.hooks.on_session_end(principal)               # hands the session to extraction exactly once
+```
+
+The handlers take the same JSON the tools take (`runtime.handlers.tool_schemas(principal)` returns the schemas with the write targets this principal may use) and return tool-safe dictionaries. A host that cannot signal session end gets an idle split after `ingestion.session_idle_timeout_minutes`.
+
+### 3.3 Use an adapter
+
+Both adapters wire one runtime into a framework and own nothing else: identity derivation, turn capture, tool registration, result rendering, and the host-issued search in `auto` and `hybrid`. They pass one shared contract suite and leave the same semantic records from the same conversation.
+
+```python
+from deepagents import create_deep_agent
+from memory_weave.adapters.deepagents import DeepAgentsMemoryAdapter
+
+adapter = DeepAgentsMemoryAdapter(runtime)            # trigger_mode defaults to the config
+agent = create_deep_agent(
+    model=model,
+    tools=adapter.tools(),
+    system_prompt=adapter.system_prompt("You are a helpful assistant."),
+    middleware=[adapter.middleware()],
+)
+agent.invoke({"messages": [...]}, {"configurable": {"thread_id": "s1", "agent_id": "assistant", "user_id": "aditya"}})
+adapter.end_session(config)
+```
+
+The principal comes from `configurable.agent_id`, `user_id`, and `thread_id` at call time. The CrewAI adapter binds the principal when it is built, because CrewAI has no per-call configuration, and wraps the crew's LLM in a proxy that carries the same policy. To run the utility-aware path, pass `memory_mode="utility_aware"` with a `UtilityAwareConfig`, a gap policy, an admission policy, and a bundle registry. `examples/deepagents_demo.py` and `examples/crewai_demo.py` run the whole thing with fakes and no keys; `examples/reference_host.py` shows a host with per-stage kill switches, a metrics-driven rollback, and the bundle check.
+
+### 3.4 Operate it
+
+```bash
+memory-weave --store memory.sqlite migrate                       # forward-only schema migrations
+memory-weave grant assistant user:aditya --read --write
+memory-weave search --agent assistant --user aditya "answer style" --json
+memory-weave get <record_id> --agent assistant --user aditya    # lineage, conflicts, events
+memory-weave dump --scope user:aditya [--all-statuses]
+memory-weave expire | retain | review-due                        # lifecycle maintenance
+memory-weave extract <session_id> [--force]                     # run extraction through review
+memory-weave erase --user aditya --reason "request" --yes        # irreversible, compacts the file
+memory-weave reembed --model M --version V                       # refuses until the floors are recalibrated
+memory-weave snapshot save|load <path>
+memory-weave reviews list | resolve <id> --as promote --resolver R | backlog --max-open N --max-age-days D
+memory-weave metrics [--rollback-check]                          # the turn-decision log, by stage
+memory-weave bundles list | record <components.json> --passed --evidence E --by B
+```
+
+Every command takes `--store`, `--config`, and `--as` (the operator identity written to audit events). `memory_forget` is an agent tool and leaves a tombstone; erasure is an operator action.
+
+### 3.5 Test it
+
+```bash
+uv run pytest                                                          # fakes only, no downloads
+HF_HUB_OFFLINE=1 MEMORY_WEAVE_INTEGRATION=1 uv run --extra local-models pytest tests/integration
+MEMORY_WEAVE_RUN_SLOW=1 uv run pytest tests/integration/test_scale.py tests/integration/test_writer_contention.py
+uv run ruff check . && uv run ruff format --check . && uv run mypy      # strict
+```
+
+Unit tests never download a model. The integration suite runs the real embedder and judge on the committed 1,074-record fixture: the dense-floor sweep, warm and cold latency, and isolation. The slow suite builds a 50K-record store and runs four writers beside two extraction workers. [BENCHMARK_HANDOFF.md](BENCHMARK_HANDOFF.md) says which log columns carry which stage and what was measured.
+
+## 4. Configuration
+
+One YAML file, loaded by `load_config`; every value has a default and validation rejects an inconsistent file. The full reference with the reasoning behind each value is [section 2 of the low-level design](docs/agent-memory-lld.md#2-configuration). The values below are the ones an integrator is likeliest to touch.
+
+| Key | Default | What it controls |
+| --- | --- | --- |
+| `store.path`, `store.busy_timeout_seconds` | `./memory.sqlite`, 30 | The database and how long a writer waits for another's lock. Every transaction begins `IMMEDIATE`. |
+| `embedding.model`, `embedding.version`, `embedding.dims` | `BAAI/bge-m3`, `"1"`, 1024 | Every stored vector carries model and version; changing either is a migration (`memory-weave reembed`) that requires recalibrating the floors. |
+| `retrieval.trigger.mode` | `tool_only` | Who calls `memory_search`. `auto_k` (4) and `auto_min_query_chars` (12) bound host-issued searches. |
+| `retrieval.per_generator_k`, `rrf_k`, `default_k`, `token_budget` | 30, 60, 8, 1500 | Candidates per channel, the fusion constant, results returned, and the tool-result ceiling. |
+| `retrieval.gate.dense_floor.<type>` | semantic 0.45, episodic 0.40, procedural 0.45, session_summary 0.50 | The cosine a dense-only candidate must reach. Swept on the labelled fixture: 0.45 sits inside the band whose F1 is within 90 percent of the best. |
+| `retrieval.gate.lexical_min_term_fraction`, `lexical_min_matched_terms`, `relative_floor`, `entity_exempt` | 0.5, 2, 0.5, true | The lexical-only floor, and the drop relative to the strongest survivor. |
+| `retrieval.gate.auto.*` | stricter floors, `exclude_source_kinds: [session_summary]`, `entity_exempt: false` | The gate for host-issued searches. The entity exemption was removed after it admitted memory on 3 of 12 ordinary turns and 0 of 6 that needed it. |
+| `retrieval.freshness.episodic_half_life_days`, `floor` | 30, 0.5 | Episodic decay. Semantic and procedural records do not decay. |
+| `retrieval.dedup_cosine` | 0.92 | Near-duplicate collapse among survivors. |
+| `retrieval.rewrite.enabled`, `model`, `timeout_ms` | false, `claude-haiku-4-5-20251001`, 800 | Query rewriting with current-turn context. Measured without benefit on gap queries; off. |
+| `reranker.enabled`, `model`, `floor`, `candidates`, `mode`, `timeout_ms`, `on_failure` | false, `BAAI/bge-reranker-v2-m3`, null, 30, `rrf_cross_encoder`, 2000, `fallback` | The cross-encoder. Enabling it requires a calibrated floor. `mode` places it after the RRF floors or in place of them; a timeout or error falls back to the RRF order and is recorded in the search log. Measured in both placements; off. |
+| `ingestion.evidence.min_characters`, `min_words`, `entail_floor` | 15, 3, 0.70 | What a quote must be to support a direct claim. |
+| `ingestion.equivalence.model`, `entail_floor`, `contradict_floor` | `cross-encoder/nli-deberta-v3-small`, 0.70, 0.70 | The local judge that decides same, contradicts, or distinct at write time. |
+| `ingestion.dedup_candidate_cosine`, `attribute_alias_cosine`, `max_entity_attributes` | 0.85, 0.80, 64 | Which existing records a write is compared against. |
+| `ingestion.provisional_ttl_days`, `reinforcements_to_confirm`, `summary_ttl_days` | 30, 2, 180 | Lifecycle of inferences and session summaries. |
+| `ingestion.extraction_model`, `review_model`, `extraction_timeout_ms`, `review_timeout_ms`, `extraction_max_candidates` | `claude-haiku-4-5-20251001` for both, 60000, 30000, 20 | The two hosted models in the background write path. A timeout fails the run closed. |
+| `ingestion.session_idle_timeout_minutes`, `extraction_claim_timeout_minutes` | 30, 30 | The idle split for hosts without a session end, and how long a crashed worker's claim on a session lasts. |
+| `policy.source_rank.*` | user_statement 4, system 3, tool_result 2, session_summary 2, agent_inference 1 | Who wins a disagreement, and the initial status and confidence. |
+| `sessions.retain_days` | 90 | When `memory-weave retain` blanks an extracted transcript. |
+
+The utility-aware path is configured by the host that owns the model clients, not by this file: `UtilityAwareConfig` carries `gap_enabled`, `admission_mode` (`disabled` or `hosted_judge`), `shadow`, `max_gaps` (3), `max_candidates` (8), the two stage timeouts, an optional `latency_budget_ms`, and the bundle; `ProfileAssembler` takes `max_records` (8) and `token_budget` (400). The reference host uses stage timeouts of 4 s and 8 s, measured on the fitness splits.
+
+## 5. What has been measured
+
+Every number is from a named run; nothing here is a target.
+
+| Claim | Evidence |
 | --- | --- |
-| Durable canonical store | SQLite holds the memory record, metadata, source data, event history, vector payload, and full-text index. You can rebuild the search indexes from it. |
-| Tool-mediated access | Agents use `memory_search`, `memory_get`, `memory_write`, `memory_revise`, and `memory_forget`. Conditional memory enters the conversation after a tool call or a utility-aware host decision. |
-| Stable prompt prefix | Integrators keep the base prompt stable for provider-side caching. The planned bounded ambient profile is assembled once per session; conditional memory is appended only after admission. |
-| Isolation | The retriever applies scope, principal identity, grants, lifecycle state, expiration, and record type as filters before ranking. An ineligible record stays out of the result. |
-| Source and evidence | A stored record includes its source, creator, timestamps, confidence, and a supporting transcript or tool quote. A direct user or tool claim must be supported by that quote. |
-| Lifecycle | A record is provisional, confirmed, superseded, expired, or forgotten. A revision stores the reason. |
-| Explainable retrieval | A result includes matched terms or entity, contributing channels, score components, and final rank. |
-| Entity linking | The service links records through entity aliases. It leaves an ambiguous name unmerged for review. |
-| Model and framework | The storage contract and tool schemas do not depend on one provider or framework. Deep Agents and CrewAI adapters ship behind the `deepagents` and `crewai` extras; both pass one shared contract suite and leave the same memory state from the same conversation. |
-| Background work | An agent waits for `memory_write` to finish. Session extraction, pre-apply candidate review, and due temporal review run off the message path. |
+| Ordinary turns receive no memory | Utility-aware path, configuration A on two blind splits: 1 of 20 and 0 of 20 ordinary-turn injections; 0 of 20 in the shadow harness. |
+| Stored facts are recalled when needed | Explicit stored-fact recall 10 of 10 and 9 of 10; implicit memory-needed recall 7 of 8 and 6 of 7. |
+| Admitted records are useful | Helpful precision 19 of 20 and 17 of 17, with one disputed label adjudicated blind by an independent reviewer and the scoring corrected rather than the model. |
+| Nothing unsafe is admitted or promoted | Zero placebo, misleading, private, or unsafe admissions across the suite; zero unsafe automatic promotions. |
+| Failures return the baseline | Every fail-closed branch of the orchestrator is tested; the one planner timeout observed in a run served the draft. |
+| No cross-principal leakage | Zero violations on the synthetic store and the 1K fixture. |
+| Search is cheap | Warm `memory_search` p50 23 ms, p95 28 ms on 1K records with the real embedder; p50 74 ms, p95 78 ms on 50K records. Write p50 26 ms. |
+| The similarity gate cannot decide whether a turn needs memory | Ordinary and memory-needed turns overlap at every floor; the trade is one-for-one. |
+| The cross-encoder does not help here | Both placements cut weak candidates from about six per turn to under half of one, and lost the expected record from the judge's pool on one turn in five. |
+| Rewriting does not help here | 2 to 5 of about 39 searches per split changed; 1.7 to 1.9 s each. |
 
-## 4. Ingestion
+Sources: [acceptance-report.md](docs/acceptance-report.md), [usefulness-gate.md](docs/usefulness-gate.md) sections 8c to 8p, [gate.md](docs/gate.md), [BENCHMARK_HANDOFF.md](BENCHMARK_HANDOFF.md).
 
-An agent can write a memory during a session. After the session ends, an extractor can propose more records from the transcript. A separate reviewer accepts, rejects, or narrows extracted candidates before accepted candidates enter the shared validation and persistence path. Time-sensitive records can later be flagged for review when an evidence-backed `review_at` time arrives; the system does not infer that a planned event happened.
+Two things are known and accepted rather than fixed: a turn that shares a subject with a stored fact that does not answer it can still admit that fact through the relevance gate, and different sessions can record the same preference under different attribute slugs. Both are in [next-phases.md](docs/next-phases.md).
 
-### 4.1 Write paths
+## 6. Layout
 
-```mermaid
-flowchart TD
-    subgraph Explicit[Explicit write: request path]
-        Agent[Agent] --> WriteTool[memory_write]
-        WriteTool --> WritePolicy[Validate caller, writable scope, required fields, and evidence]
-    end
-
-    subgraph Extracted[Session extraction: background path]
-        Turns[Session turns] --> SessionEnd[Session ends]
-        SessionEnd --> Extractor[Read transcript, session context, and known aliases]
-        Candidates[Propose memory candidates with evidence quotes]
-        EvidenceCheck[Validate candidate against transcript and existing memories]
-        Extractor --> Candidates --> Review[Review candidate before apply]
-        Review --> EvidenceCheck
-    end
-
-    WritePolicy --> Intake[Shared ingestion service]
-    EvidenceCheck --> Intake
+```text
+memory_weave/
+  config.py, models.py, runtime.py, host.py, hosted.py, operations.py, cli.py
+  store/      schema.sql, migrations.py, store.py
+  index/      embedder.py, vector.py, reranker.py
+  ingest/     ingestor.py, evidence.py, equivalence.py, entities.py, extractor.py, reviewer.py,
+              extraction.py, temporal.py, session.py, prompts/
+  retrieve/   retriever.py, generators.py, fusion.py, gate.py, freshness.py, dedup.py, budget.py,
+              explain.py, rewrite.py, prompts/
+  policy/     grants.py, lifecycle.py, prompt.py, activation.py, utility_aware.py, bundles.py, metrics.py
+  tools/      schemas.py, handlers.py
+  adapters/   base.py, deepagents.py, crewai.py
+examples/     deepagents_demo.py, crewai_demo.py, reference_host.py, vertical_slice.py
+benchmarks/   the fitness suite, scenario splits, the supported bundle manifest, saved results
+tests/        unit suite with fakes; integration/ with the real models and the 1K fixture
 ```
 
-### 4.2 Record validation and persistence
+## 7. Documents
 
-```mermaid
-flowchart TD
-    Intake[Validated write or extraction candidate] --> Normalize[Normalize content, type, scope, dates, source, and confidence]
-    Normalize --> Entities[Resolve exact entity aliases or create a reviewable link]
-    Entities --> Conflict[Detect duplicate, contradiction, or superseded record]
-    Conflict --> Embed[Create embedding]
-    Embed --> Persist[Write canonical record, evidence, entity links, and event]
-    Persist --> Index[Update derived indexes]
+Design, in reading order:
 
-    subgraph Store[SQLite source of truth and derived indexes]
-        Records[(records, evidence, events)]
-        EntityStore[(entities and aliases)]
-        Vectors[(embedding payloads and in-process vector matrix)]
-        FTS[(FTS5 full-text index)]
-    end
-
-    Persist --> Records
-    Persist --> EntityStore
-    Index --> Vectors
-    Index --> FTS
-    Index --> Result[Return record ID, lifecycle state, and validation result]
-```
-
-| Route | When it runs | What it is for |
-| --- | --- | --- |
-| Explicit write | During the agent's work, synchronously | The agent has a fact, decision, or correction worth retaining and supplies evidence for it. |
-| Session extraction | After the session ends, asynchronously | Facts or episodes the agent did not save. Each candidate cites a source turn. |
-
-Per-message extraction is out. It would charge every turn and store guesses from an unfinished conversation. The session-end pass reads the full transcript and can write one episodic summary plus durable candidates.
-
-## 5. Retrieval
-
-An agent starts retrieval by calling `memory_search`. The base prompt does not contain stored memories. The service finds records that caller may read, then runs dense, lexical, and entity generators sequentially. The relevance gate can return an empty list. The benchmark must justify adding generator concurrency.
-
-### 5.1 Access control and candidate generation
-
-```mermaid
-flowchart TD
-    Request[Agent calls memory_search with query, identity, scope, filters, and top_k]
-    Principal[Resolve principal, tenant, and grants]
-    Eligibility[Hard-filter canonical records by scope, grants, lifecycle, expiration, type, and time range]
-    Rewrite{Query rewriting enabled?}
-    SearchQuery[Retrieval query]
-    Request --> Principal --> Eligibility --> Rewrite
-    Rewrite -- No, default --> SearchQuery
-    Rewrite -- Yes --> Rewritten[Rewrite query for retrieval] --> SearchQuery
-
-    subgraph Candidates[Sequential candidate generators over eligible records]
-        DenseQuery[Embed retrieval query with BGE-M3]
-        DenseSearch[Exact cosine search over in-process vector matrix]
-        LexicalSearch[FTS5 BM25 lexical search]
-        EntityDetect[Detect exact entity names and aliases]
-        EntitySearch[Look up linked entity records]
-        DenseQuery --> DenseSearch
-        EntityDetect --> EntitySearch
-    end
-
-    SearchQuery --> DenseQuery
-    SearchQuery --> LexicalSearch
-    SearchQuery --> EntityDetect
-    Eligibility -. eligible record IDs .-> DenseSearch
-    Eligibility -. eligible record IDs .-> LexicalSearch
-    Eligibility -. eligible record IDs .-> EntitySearch
-```
-
-### 5.2 Ranking and result construction
-
-```mermaid
-flowchart TD
-    Dense[Dense candidates]
-    Lexical[Lexical candidates]
-    Entity[Entity candidates]
-    RRF[Combine ranked lists with reciprocal rank fusion]
-    Freshness[Apply episodic freshness adjustment]
-    Gate{Relevance and quality gate passed?}
-    Empty[Return an explainable empty result]
-    Dedupe[Deduplicate and suppress superseded records]
-    Rerank{Optional BGE reranker enabled?}
-    Budget[Apply top_k and token budget]
-    Explain[Attach matched terms or entities, channel scores, rank, and timings]
-    Log[Write search event and per-stage timings]
-    Results[Return bounded memory results to the agent]
-
-    Dense --> RRF
-    Lexical --> RRF
-    Entity --> RRF
-    RRF --> Freshness --> Gate
-    Gate -- No --> Empty --> Log --> Results
-    Gate -- Yes --> Dedupe --> Rerank
-    Rerank -- No, default --> Budget
-    Rerank -- Yes --> Reranker[BGE cross-encoder reranks shortlisted records] --> Budget
-    Budget --> Explain --> Log --> Results
-```
-
-| Channel | Current method | Best at |
-| --- | --- | --- |
-| Dense | BGE-M3 query embedding plus exact cosine similarity over the in-process matrix | Semantic matches where the query and memory use different words. |
-| Lexical | SQLite FTS5 with BM25 ranking | Exact terms, identifiers, error messages, commands, and code-like language. |
-| Entity | Exact canonical-name and alias lookup, then linked-record lookup | People, projects, systems, repositories, and other named subjects. |
-
-The service logs timing for candidate generation, fusion, reranking, and result construction. Query rewriting and the reranker are in the pipeline and off by default. Turn them on after the benchmark shows they earn their latency. The reranker has two placements, after the RRF relevance floors or in place of them, and a stage timeout that falls back to the RRF order and says so in the search log; both placements were measured against RRF alone in [usefulness-gate.md](docs/usefulness-gate.md) section 8p and neither is supported, because each removes the expected record from the judge's pool on one turn in five.
-
-## 6. Search trigger and the relevance gate
-
-Whether a stored memory reaches the model comes down to two decisions: who decides to search, and whether what the search found is worth showing. Both are configuration, both are logged, and both are measured by the benchmark.
-
-### 6.1 Who triggers a search
-
-`retrieval.trigger.mode` decides who calls `memory_search`. Everything after that call is the same in every mode.
-
-| Mode | Who searches | When to use it |
-| --- | --- | --- |
-| `tool_only` | The model, when it decides memory might help. | Agents that do tasks: coding, research, workflows. The task makes it obvious when the past matters ("like last time", "what did we decide about X"), and models search reliably in that situation. The default. |
-| `auto` | The host, once before every model turn, with the user's message as the query. The model has no search tool of its own. | Experiments only. It isolates the host trigger so the benchmark can measure it. Not for production, since the model cannot search for anything more specific than the current message. |
-| `hybrid` | Both. The host searches once per user turn; the model can also search whenever it wants. | Assistants that talk to one person across many sessions and should remember preferences without being asked. The host search catches what the model would never think to look for; the model's own searches handle targeted follow-ups, time windows, a particular person or project, or a provenance check before trusting a record. The intended production mode for assistants, once the benchmark confirms it. |
-
-The second and third modes exist because of one weakness in model-triggered search. Models search well when the user points at the past and poorly when nothing in the message does, even though a stored preference should still shape the answer. A user who once said "keep answers short" will not say it again, and a model that only searches when prompted will not look.
-
-> [!IMPORTANT]
-> Searching on every turn is normally where pollution comes from, because most memory layers then paste the top results into the prompt however weak they are. Here a host-issued search goes through the same gate as a model-issued one, so on an ordinary turn the usual outcome is that nothing comes back.
-
-When something does come back, it is appended to the conversation as a new message, the way a tool result would be. The system prompt and earlier messages are never edited. That matters for cost: providers cache the unchanged beginning of a prompt across calls, and the cache only hits if that beginning stays byte-for-byte identical. Editing memory into the system prompt every turn would break it; appending does not.
-
-### 6.2 The relevance gate
-
-Every search ends with a gate whose job is to return nothing unless something is worth returning.
-
-1. **Each candidate must clear a floor on its own.** It passes if it is an exact match on a named entity, or its embedding similarity is above the floor for its record type (episodic summaries are long and score lower against short queries, so they get a lower floor), or it matches enough of the query's words and at least two of them, unless one matched word is precise on its own, such as an identifier (`ERR42`, `bge-m3`) or an entity name. That last rule stops a one-word query like "deployment" from pulling in every record that mentions deployment.
-2. **Weak survivors are dropped relative to the strongest.** A record found by several retrieval channels scores well above one found by a single channel. Anything below a set fraction of the top survivor is dropped, except exact entity matches. When no record stands out, this step removes little.
-3. **If nothing is left, the result is empty**, and the response says which floors the best candidate missed. Every drop keeps its reason and every score is logged, so floors can be retuned by replaying old searches.
-
-The store already holds: prefers vim, drinks oat milk, last week's PR on the settings page, a note that the save button used to be green.
-
-**Type 1: a question the store can answer.** "What editor do I use?" The vim memory is the answer. Search should return it. If the floor is too strict, this fails.
-
-**Type 2: a question the store cannot answer.** "What's my dog's name?" There is no dog memory. Search will still find something weakly related. The right result is empty. If the floor is too loose, a random memory leaks through.
-
-**Type 3: not a memory question at all.** "Can you make the button blue?" Nobody asked about the past. In `auto` and `hybrid`, the host still searches, using that message as the query. The store is this person's real work, so search surfaces the old "save button was green" note: same user, overlapping words, middling score. That note is a true memory and still the wrong thing to paste into this turn. The right result is empty, same as type 2, for a different reason.
-
-> [!NOTE]
-> Type 2 and type 3 both want empty, and they are not the same test. Type 2 is easy to keep empty because nothing in the store is about a dog, so scores stay low. Type 3 is hard because the store is about this user's UI work, so scores look relevant enough. That is the case host search sees on most turns: "thanks", "look at this PR", "make the button blue".
-
-The numbers in config today are starting values. When the floors are chosen, they should hold on all three. LongMemEval and LoCoMo only contain types 1 and 2, because they only search on benchmark questions, never on ordinary chat. ***The type 3 sweep is specified in the low-level design as an offline pass over `search_log`. It is not in this repository yet.***
-
-The gate judges relevance to the query's words, not whether the task needed the memory. A coffee-habit memory will pass on any coffee question. In `tool_only` the model makes that call by choosing to search. In `auto` and `hybrid`, keeping type 3 empty is the intended check.
-
-### 6.3 How other systems handle this
-
-Public interfaces as of September 2026, only where the behaviour is unambiguous from the interface itself:
-
-- ChatGPT's memory feature places saved memories into the model's context for every conversation. There is no per-request decision about relevance.
-- Mem0's open-source `Memory.search` applies a similarity threshold, default `0.1`, then returns up to `top_k` results, default `20`. A cutoff that low admits almost any candidate, so in practice the caller receives the top results.
-- LangGraph's `BaseStore.search`, which LangMem builds on, returns up to `limit` results, default `10`, with no score threshold.
-
-In each of these, something is returned on every search. Here, an empty result is the expected outcome on an ordinary turn, and every non-empty one carries the reason it got through.
-
-## 6.4 Known blocker: the gate cannot separate relevance from usefulness
-
-This is the open problem in the design, and it is measured rather than suspected. The section below records the problem as first measured. Section 6.5 records the validated answer to it, which is the utility-aware host path.
-
-One mechanism is being asked two different questions.
-
-**"Is this record about the same subject as this query?"** is a property of a query-record pair, and
-cosine similarity estimates it. That is the question the gate was built for and the one it answers.
-
-**"Does this turn need remembered state?"** is a property of the turn alone. It does not depend on which
-records exist, and no comparison between a query and a record can reveal it.
-
-The two agree most of the time, which is why the design held together until it was measured. They come
-apart on exactly the case the gate exists to catch: a turn whose subject matter overlaps the store but
-whose answer does not depend on anything remembered. The store holds "use Python for code examples"; the
-user asks "should I use tabs or spaces in Python?". Cosine is right that they are related. Nothing about
-the answer changes because of what is remembered.
-
-The Phase 9a hybrid run measured it. Across 36 host-issued searches, the best dense score per search was:
-
-| Turn class | min | median | max |
-| --- | --- | --- | --- |
-| Ordinary, no memory needed | 0.44 | 0.56 | 0.63 |
-| Memory genuinely applies | 0.50 | 0.57 | 0.62 |
-
-The distributions overlap almost completely, and the ordinary turns reach a *higher* maximum. No dense
-floor separates the two classes: every threshold trades a useful recall for an unwanted injection at
-roughly one to one. Sweeping the floor from 0.55 to 0.65 takes ordinary injections from 6 of 12 down to
-3 of 12, but useful recall falls from 3 of 6 to 0 of 6.
-
-So the ordinary-turn injection target of under 5 percent is not reachable by tuning `dense_floor`. The
-gate needs a different signal, not a better threshold. Candidates, in the order the evidence supports
-them: the cross-encoder reranker as the final gate for host-issued searches, since it scores a
-query-record pair rather than a vector distance; a usefulness judgement distinct from the relevance
-gate; or accepting that `tool_only` is the supported mode and treating host-issued search as
-experimental until one of the above is measured.
-
-One change the data did justify and which is now the default: a host-issued search no longer exempts
-exact entity matches from the gate. Those matches admitted memory on 3 of 12 ordinary turns and on 0 of
-6 turns where memory applied, so the exemption was pure injection when the host, rather than the model,
-asked. A model-issued search keeps the exemption, because there the model named the entity on purpose.
-
-Full treatment, including how every other memory system faces the same problem and three ways to attack
-it that can each be validated offline: [the gate](docs/gate.md). Raw numbers and method:
-[Phase 9a findings](docs/vertical-slice-findings.md).
-
-## 6.5 What the utility-aware path showed, and what model-agnostic means here
-
-The answer to 6.4 is to stop scoring the query against the record and instead ask whether the record would change the answer. The host generates a draft with no conditional memory, a gap planner names the user-specific facts the draft is missing, retrieval runs on those gaps rather than on the turn, and a judge admits a record only if it would change the draft. The design is in [utility-aware memory architecture](docs/utility-aware-memory-architecture.md); the validation is in [usefulness-gate.md](docs/usefulness-gate.md) sections 8c and 8d.
-
-On a held-out scenario set of 36 turns, with `gpt-4o` planning gaps and `gpt-5.4` judging admission, the path produced 0 of 20 ordinary-turn injections, 9 of 10 explicit stored-fact recalls, 5 of 6 implicit recalls, no placebo, misleading, stale, or unrelated private record admitted, and identical gap decisions across three repeats on every turn. Turns that needed no memory added no latency, because gap planning finished before the draft did. Preferences about how to answer never reached the answer unless they were placed in the always-present ambient profile, so ambient activation is a prerequisite for rollout, not an option.
-
-A pre-registered run on a blind third split then held the safety half and missed the recall half: 0 of 20 ordinary injections and no unsafe admission again, but 8 of 10 explicit and 5 of 7 implicit recall against thresholds of 90% and 75%. The planner stayed silent on organisation-specific questions that lack a possessive such as "our" or "my". The fix was structural rather than a prompt edit: the planner now receives a bounded, content-free inventory of the fact categories the store holds for the principal. A pre-registered run on a blind fourth split, through the real ingestor and retriever, then passed: 1 of 20 ordinary injections, 9 of 10 explicit and 7 of 7 implicit recall, no unsafe admission, and stable gap decisions on every turn. The same run put ordinary turns in front of the judge for the first time and measured what it would admit if the planner had not been silent: nothing unsafe, but an adjacent fact on 3 of 19. The planner carries precision and the judge carries safety, and both numbers are now tracked. Sections 8e and 8f of the findings.
-
-Phase 1A was then built: activation and category on every record, host-verified evidence, deterministic promotion with a review queue, a profile assembler, and an inventory generated from the store. A blind fifth split, pre-registered before that code existed, passed with automatic promotion and a store-generated inventory: 0 of 20 ordinary injections, 10 of 10 explicit and 7 of 8 implicit recall, no unsafe admission, all three eligible preferences promoted and the unsafe one sent to review. An independent second build promoted only two of three, because the classifier read a code-language preference's override clause as a scope; that is now a deterministic rule rather than a classifier call, pending confirmation on the next split. A gap-anchored judge was evaluated in the same round and rejected: it admitted a placebo on the fourth split and cost a recall on the fifth while adding no precision. Section 8g of the findings.
-
-The same runs showed that the quality of this path depends on which model fills each role. Small reasoning models failed at both roles: unstable as planners, and as judges they admitted a misleading record and added tens of seconds. Planning passed with `gpt-4o`, which is still a full hosted chat model, and also with an 8B open-weight model run locally. Judging needed `gpt-5.4` on the full measurement. A plain-language account of what is distinctive relative to RUMS and TRACE-Memory, including the combination that passed and how to re-test a tweak, is in [design-contributions.md](docs/design-contributions.md).
-
-The utility-aware path has since run end to end in shadow mode through the real ingestion, activation, retrieval, and admission pipeline, with the harness asserting that served responses, record activation, session turns, and the review queue were byte-identical with shadow on and off. Its decision log reproduced the blind-split results: 0 of 20 hypothetical ordinary injections, 10 of 10 explicit and 7 of 8 implicit recall, nothing unsafe. Section 8j of the findings.
-
-The path is canary-ready and not yet in production. The library now ships the operating pieces a real host needs: a metrics aggregator over the turn-decision log that assigns every turn one stage outcome, planner silence, retrieval miss, judge rejection, policy failure, budget withholding, or admission, with rollback thresholds over it; a bundle registry that hashes every component that changes behaviour and refuses to serve a bundle without a recorded passing fitness result, shadow mode excepted; a review-queue CLI; and a reference host adapter in `examples/reference_host.py` showing the integration contract, per-stage kill switches, measured timeouts, and a metrics-driven rollback, tested with no network. The consuming application owns model clients, traffic, deployment, and rollback; production evidence starts when one sends real user turns through the shadow path.
-
-The per-role fitness test has now been run across vendors. The planner role passes on `gpt-4o` and on an 8B open-weight model run locally. For the judge role, three frontier models from OpenAI, Anthropic, and Google pass the easier tuning-split test, but on the full measurement, real retrieval with eight-candidate pools and ordinary turns reaching the judge, only `gpt-5.4` meets the safety and adjacency bar; the other two match its recall and admit a misleading record each. The fitness test did what it exists to do: it separated models that looked interchangeable. Judging needs more than frontier class; it needs to pass this measurement, and the supported bundle is the one that has. Sections 8i and 8l of the findings.
-
-> [!IMPORTANT]
-> **What model-agnostic means for this system.** It does not mean the path works identically with any model; for a component whose quality depends on a model's judgement, nothing can. It means the contracts, the fail-closed orchestration, the ambient profile, the gap-first retrieval, the turn-decision log, and the acceptance gates are all model-neutral, and any candidate model's fitness for each role can be measured before it is enabled. Run `benchmarks/evaluate_combination.py` against the committed scenario set; it prints `COMBINATION PASS` or `COMBINATION FAIL` per threshold and exits non-zero on failure. Changing a model, prompt, taxonomy, inventory builder, retrieval setting, or budget is a new combination and needs that run again. That is what vendor-neutrality looks like here: not indifference to the model, but a fixed acceptance test any combination must pass. The design already calibrates admission per serving-model family for exactly this reason. Model names in this README are the ones that passed that test on the date given; they are configuration, and the test is the contract.
-
-The utility-aware path sits in a family opened by two papers, which Memory Weave cites rather than claiming to have invented:
-
-- [RUMS](https://arxiv.org/abs/2604.14473) selects already-known user memories by how much they reduce response entropy.
-- [TRACE-Memory](https://arxiv.org/abs/2608.08446) generates public-conditioned information gaps, retrieves against them, and admits evidence only if it improves the answer beyond public context.
-
-Those are different ideas. Memory Weave is closer to TRACE-Memory's two-stage serving shape, with a prompted draft-relative judge, ambient versus conditional activation, and a content-free category inventory. The comparison is in [design-contributions.md](docs/design-contributions.md).
-
-## 7. Run and test the vertical slice
-
-The repository includes a provider-neutral integration harness for Anthropic, OpenAI, and OpenRouter. It replays a fixed conversation through a hosted model and the memory tools, saves one SQLite store per run, and writes a durable JSON result report. See [the vertical-slice guide](docs/vertical-slice-findings.md) for provider setup, deterministic checks, live-run commands, and saved-result locations.
-
-## 8. Tunables
-
-Not in this README yet: retrieval thresholds, `top_k`, token budgets, scope and lifecycle filters, embedding and reranker models, query rewriting, extraction policy, and timing instrumentation.
-
-## 9. Code structure
-
-Not in this README yet: package layout, SQLite schema, memory service boundaries, adapters, CLI, and tests.
-
-## 10. Design documents
-
-- [Research notes and initial design specification](docs/agent-memory-research-notes.md)
-- [Component guide with examples](docs/components.md)
+- [Components, with examples](docs/components.md)
 - [High-level design](docs/agent-memory-hld.md)
-- [Low-level design](docs/agent-memory-lld.md)
-- [Utility-aware memory architecture](docs/utility-aware-memory-architecture.md)
+- [Low-level design](docs/agent-memory-lld.md): configuration, schema, types, policy, ingestion, retrieval, tools, adapters, CLI, tests
+- [Utility-aware memory architecture](docs/utility-aware-memory-architecture.md) and its [implementation plan](docs/utility-aware-memory-implementation-plan.md)
 - [What is distinctive about this design](docs/design-contributions.md)
 
-## 11. References
+Evidence and findings:
+
+- [Acceptance report for v1](docs/acceptance-report.md)
+- [The gate, and the question it cannot answer](docs/gate.md); [usefulness, not relevance](docs/usefulness-gate.md), the experiment record
+- [Vertical-slice findings](docs/vertical-slice-findings.md), [benchmark handoff](BENCHMARK_HANDOFF.md), [benchmarks/README.md](benchmarks/README.md)
+- [Next phases](docs/next-phases.md), the working note with the open items
+
+Context: [research notes](docs/agent-memory-research-notes.md) and the [Bedrock AgentCore comparison](docs/bedrock-agentcore-comparison.md). The landscape survey and the comparative benchmark plan are kept outside the repository.
+
+## 8. References
 
 - *Response-Aware User Memory Selection for LLM Personalization* (RUMS). ICML 2026. https://arxiv.org/abs/2604.14473
 - *TRACE-Memory: Public-Conditioned Retrieval and Utility-Aware Evidence Admission for Personalized Generation.* 2026. https://arxiv.org/abs/2608.08446
 
 Commits follow [Conventional Commits](https://www.conventionalcommits.org/). After cloning, run `git config core.hooksPath .githooks`.
-
-The repo holds the design and a growing implementation.

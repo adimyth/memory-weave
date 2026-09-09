@@ -26,6 +26,9 @@ Agent framework
 | Entity resolver | Exact, scope-aware entity and alias lookup. | Entity mentions, aliases, grants, and scopes. | Entity IDs and entity-ranked candidate records, or an ambiguity error. |
 | Retriever | The search pipeline and result explanation. | Search request, eligible IDs, three candidate channels, and configuration. | Fused, gated, deduplicated, budgeted results plus `search_log`. |
 | Audit and search log | Why the system changed or returned a result. | Ingestor and retriever decisions and timers. | Append-only events and one complete search trace per request. |
+| Activation service and profile assembler | Which records are ambient, and the bounded profile a session starts with. | Committed semantic records about the principal, host-verified evidence, the category policy, the review queue. | Audited promote, conditional, or review decisions; one immutable `ProfileBlock` per session; the content-free category inventory. |
+| Utility-aware orchestrator | The host-issued memory decision: gap planning, gap-driven retrieval, draft-relative admission, fail-closed regeneration. | The turn, the draft, the profile, the inventory, a gap policy, an admission policy, the bundle registry. | One `TurnMemoryDecision` per turn, persisted with its disposition and timings; the regenerated answer only when a bundle with a recorded fitness result admitted records. |
+| Operations | Maintenance that the runtime never does on its own. | The store. | Expiry, transcript retention, erasure with compaction, re-embedding with floor-recalibration refusal, snapshots, due-review flagging. |
 
 The store owns the durable record and entity state. The ingestor updates the store, FTS5 row, entity links, and vector index as one write operation. At search time, the retriever applies the same eligible-ID set to dense, lexical, and entity channels before RRF combines their rankings.
 
@@ -346,7 +349,7 @@ Memory A ranks first because both channels found it near the top. Memory C has t
 | Episodic freshness | Reduces the score of an old episodic record. Semantic and procedural records keep their score. |
 | Relevance gate | Removes weak dense-only or lexical-only matches. An entity match passes the gate. |
 | Duplicate collapse | Keeps the higher-ranked record when two surviving records have near-identical embeddings. |
-| Optional reranker | Uses `bge-reranker-v2-m3` to score up to 30 survivors against the query. The initial configuration keeps it off until evaluation proves that its extra latency helps. |
+| Optional reranker | Uses `bge-reranker-v2-m3` to score the survivors against the query, after the RRF floors or in place of them, with a stage timeout that falls back to the RRF order. Off: measured in both placements, it cost recall on the blind splits (`usefulness-gate.md` 8n, 8p). |
 | Token budget | Selects whole records that fit the tool-result budget. |
 
 The response includes an explanation for each returned record:

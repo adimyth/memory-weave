@@ -127,6 +127,8 @@ partial cache hangs indefinitely inside the hub transfer library rather than fai
    5 percent target is the calibration work the benchmark plan describes, and the search log holds every
    candidate score needed to sweep the floors offline.
 
+**Status, 9 September 2026.** Item 3 is resolved by the utility-aware path; see `gate.md` and `usefulness-gate.md`. Item 2, attribute-name drift, is still open and listed in `next-phases.md`.
+
 ## Run command
 
 ```bash

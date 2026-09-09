@@ -1,6 +1,6 @@
 # Utility-aware memory architecture
 
-Status: authoritative design for host-issued memory use. The implementation is evaluation-gated and disabled by default until the acceptance criteria in [utility-aware-memory-implementation-plan.md](utility-aware-memory-implementation-plan.md) are met.
+Status: authoritative design for host-issued memory use. The implementation is complete through Phase 2 of [utility-aware-memory-implementation-plan.md](utility-aware-memory-implementation-plan.md) and the offline acceptance gates are met by one bundle, `benchmarks/bundles/bundle-2026-09-08-a.json` (`docs/acceptance-report.md`). It stays disabled by default: a host enables it by constructing the orchestrator with a `UtilityAwareConfig`, and the orchestrator refuses to serve a bundle whose fitness result is not recorded in the host's store. Phase 3, real-traffic validation, is pending a consuming host.
 
 This document defines how Memory Weave decides whether stored information will improve an answer. [usefulness-gate.md](usefulness-gate.md) remains the research and experiment record that motivated this design; where the two documents differ, this document is authoritative. [design-contributions.md](design-contributions.md) is a plain-language account of what is distinctive relative to RUMS and TRACE.
 
@@ -111,7 +111,7 @@ The budget covers everything the utility-aware path adds: the portion of gap pla
 
 Semantics, in order of evaluation:
 
-- Unset means the configured default `retrieval.trigger.latency_budget_ms` applies. A default of `null` means no per-request bound, and only the per-stage timeouts limit the path.
+- Unset means the configured default `UtilityAwareConfig.latency_budget_ms` applies. A default of `None` means no per-request bound, and only the per-stage timeouts limit the path.
 - A budget of zero skips gap planning, retrieval, and admission for that turn. The response is the baseline draft with the ambient profile. This is the pre-existing behavior for conditional memory and requires no separate mode flag.
 - A positive budget is a deadline measured from the moment the baseline draft completes. Gap planning still starts concurrently with the draft; its effective timeout is the smaller of `gap_policy.timeout_ms` and the remaining budget. The same clamp applies to admission.
 - Before regeneration, the orchestrator compares the remaining budget with the observed latency of this turn's baseline draft, which is the best available estimate of a second generation. If the remaining budget is smaller, admitted records are not applied, the draft is returned, and the decision is recorded as `admitted_not_applied` with reason `budget_exhausted`.
@@ -131,6 +131,7 @@ class GapPolicy(Protocol):
         turn: str,
         public_context: str | None,
         ambient_profile: ProfileBlock,
+        inventory: Sequence[str],   # the content-free category labels the store holds for the principal
     ) -> GapDecision: ...
 
 
@@ -141,11 +142,12 @@ class AdmissionPolicy(Protocol):
         public_context: str | None,
         ambient_profile: ProfileBlock,
         draft: str,
-        candidates: Sequence[SearchResult],
+        candidates: Sequence[Record],
     ) -> AdmissionDecision: ...
 
 
 class ProfileAssembler:
+    def __init__(self, store: Store, *, max_records: int = 8, token_budget: int = 400) -> None: ...
     def build(self, principal: Principal) -> ProfileBlock: ...
 
 
@@ -164,26 +166,23 @@ The orchestrator accepts callbacks for baseline and final generation so the core
 
 ## 5. Configuration and compatibility
 
-All features are opt-in:
+All features are opt-in, and they are configured by the host that owns the model clients rather than by the YAML file `load_config` reads, because the models, prompts, and timeouts are part of the bundle the host is accountable for. The host constructs the orchestrator with a `UtilityAwareConfig`:
 
-```yaml
-profile:
-  enabled: false
-  max_records: 8
-  token_budget: 400
-
-retrieval:
-  trigger:
-    latency_budget_ms: null # default per-turn budget for the utility-aware path; null: per-stage timeouts only
-    gap_policy:
-      enabled: false
-      max_gaps: 3
-      timeout_ms: 2000
-  admission:
-    mode: disabled          # disabled | hosted_judge
-    max_candidates: 8
-    timeout_ms: 2000
+```python
+UtilityAwareConfig(
+    gap_enabled=False,            # True: plan gaps and retrieve against them
+    admission_mode="disabled",   # "hosted_judge" is the only shipping admission policy
+    shadow=False,                 # True: decide and log, never regenerate
+    max_gaps=3,
+    max_candidates=8,
+    gap_timeout_ms=2000,          # the reference host uses 4000 and 8000, measured on the Phase 0 splits
+    admission_timeout_ms=2000,
+    latency_budget_ms=None,       # default per-turn budget; None: per-stage timeouts only
+    bundle={...},                 # planner, judge, classifier, taxonomy, inventory builder, retrieval hash
+)
 ```
+
+The ambient profile's bounds are `ProfileAssembler(store, max_records=8, token_budget=400)`. The adapters expose the same switches through `memory_mode="utility_aware"` plus a `UtilityAwareConfig`; `examples/reference_host.py` shows per-stage kill switches over the same fields.
 
 Existing stores migrate records to `activation="conditional"`. Existing callers, tool schemas, and `tool_only` behavior remain compatible. Enabling only the profile feature does not enable host retrieval. Enabling a gap policy without admission may run in shadow mode but must not inject conditional memory.
 

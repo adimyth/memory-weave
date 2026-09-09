@@ -189,7 +189,7 @@ Memory, skills, and optimization are adjacent but distinct layers.
 
 ## 13. Open experiments and research questions
 
-The baseline makes firm choices while leaving the following decisions open to experiment.
+The baseline makes firm choices while leaving the following decisions open to experiment. Status as of 9 September 2026: query rewriting and reranking were built and measured without benefit and stay off (`usefulness-gate.md` 8n, 8p); ambient memory became the audited activation tier of the utility-aware path, validated offline; the embedding model, vector algorithm, extraction cadence, entity strategy, and procedural promotion rows are unchanged.
 
 | Question | Baseline | Evidence needed before changing it |
 | --- | --- | --- |

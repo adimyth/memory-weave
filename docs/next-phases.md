@@ -12,6 +12,8 @@ Phases 11 and 12 followed the same day. The optional rewrite and rerank stages a
 
 Phase 13 added the Deep Agents adapter, `memory_weave/adapters/deepagents.py`, behind the `deepagents` extra, with the shared contract suite it must pass in `tests/adapter_contract.py`. Phase 14 added the CrewAI adapter, `memory_weave/adapters/crewai.py`, behind the `crewai` extra; it passes the same suite, and `tests/test_adapter_equivalence.py` shows both leave the same semantic records from the same conversation. The core contracts needed no change for the second framework.
 
+Phase 15 (9 September) added the integration suite, the 1K fixture, the calibration sweep, latency, isolation, scale, and contention tests, and `docs/acceptance-report.md`. The precision gate was settled by a blind adjudication of one disputed label without changing the bundle (`usefulness-gate.md` 8o), and `main` was tagged `v1.0.0`. After the tag, the cross-encoder was given two placements, a timeout, and a fallback, and measured against RRF alone (8p): it stays off. The items still open below are the trigger-mode question and attribute-name drift.
+
 The paragraphs below are the note as written on 6 September, before the build.
 
 Weave has one write path: the chatting agent calls `memory_write` during the session. That is it.

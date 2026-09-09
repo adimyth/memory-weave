@@ -9,6 +9,8 @@ The measurements here come from the Phase 9a vertical slice, three runs of a fix
 conversation against a hosted model. Full method and raw numbers are in
 [vertical-slice-findings.md](vertical-slice-findings.md).
 
+**Status, 9 September 2026.** This document is the measurement that motivated the utility-aware path. Direction 5.1, the profile block, became ambient activation. Direction 5.2 became the gap planner and draft-relative judge, which meet the injection, recall, and safety gates on scripted blind splits (`usefulness-gate.md` 8c onward, `acceptance-report.md`). Direction 5.3, the reranker, was measured in two placements and rejected (8n, 8p). The relevance gate described here still runs on every search as a candidate filter; it is no longer asked to decide whether a turn needs memory.
+
 ## 1. What the gate does today
 
 Every `memory_search` ends at the gate. It receives fused candidates, each carrying whatever evidence

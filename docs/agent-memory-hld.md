@@ -31,7 +31,7 @@ This document is the companion to `agent-memory-research-notes.md` (research and
 
 ## 2. System in brief
 
-Memory uses SQLite as its source of truth and three ways to find the same durable records: a vector index for similar meaning, SQLite FTS5 for words and identifiers, and entity links for exact identities. Agents interact with it through five tools: `memory_search`, `memory_get`, `memory_write`, `memory_revise`, and `memory_forget`. The current implementation admits records only after a search. The evaluation-gated design adds a bounded session-stable ambient profile plus gap-conditioned, draft-relative admission for host-issued conditional memory; the complete decision boundary is specified in [utility-aware-memory-architecture.md](utility-aware-memory-architecture.md). `memory_write` and `memory_search` are synchronous tool calls; session extraction, candidate review, and due temporal review run asynchronously.
+Memory uses SQLite as its source of truth and three ways to find the same durable records: a vector index for similar meaning, SQLite FTS5 for words and identifiers, and entity links for exact identities. Agents interact with it through five tools: `memory_search`, `memory_get`, `memory_write`, `memory_revise`, and `memory_forget`. In the default `tool_only` mode the model reaches conditional memory only through a search it chose to make. The utility-aware host path, a bounded session-stable ambient profile plus gap-conditioned, draft-relative admission for host-issued conditional memory, is implemented, validated offline on scripted blind splits, and disabled by default; a host may serve it only with a bundle whose fitness result is recorded. The decision boundary is specified in [utility-aware-memory-architecture.md](utility-aware-memory-architecture.md); the evidence is in [usefulness-gate.md](usefulness-gate.md) and [acceptance-report.md](acceptance-report.md). `memory_write` and `memory_search` are synchronous tool calls; session extraction, candidate review, and due temporal review run asynchronously.
 
 ### Store, vector index, and FTS
 
@@ -67,14 +67,14 @@ When an agent calls `memory_search`, the system follows the same sequence every 
 5. It gives episodic records a recency adjustment, then returns no memory at all if every candidate is weak and no exact entity match exists.
 6. It collapses near-duplicates, optionally reranks the survivors, and returns only as much information as fits the context budget. It logs every decision so the result can be explained later.
 
-Dense retrieval uses cosine similarity over `bge-m3` dense embeddings in the in-memory vector matrix. Lexical retrieval uses SQLite FTS5 with BM25 over `content`, `subject`, and entity aliases. Entity retrieval uses exact alias matches within an authorized scope, ordered by recency; it does not do fuzzy entity resolution or automatic entity merges. The optional reranker is `bge-reranker-v2-m3`. It is specified for the demo but disabled by default; the initial budget is an additional 100 ms mean latency for 30 candidates on the target laptop, with actual p50 and p95 measurements replacing that estimate.
+Dense retrieval uses cosine similarity over `bge-m3` dense embeddings in the in-memory vector matrix. Lexical retrieval uses SQLite FTS5 with BM25 over `content`, `subject`, and entity aliases. Entity retrieval uses exact alias matches within an authorized scope, ordered by recency; it does not do fuzzy entity resolution or automatic entity merges. The optional reranker is `bge-reranker-v2-m3`. It is built, measured, and disabled by default: in both placements, after the RRF floors and in place of them, it removed the expected record from the judge's candidate pool on about one turn in five, so it costs recall it does not repay; refer `usefulness-gate.md` sections 8n and 8p. Its measured stage cost is about 165 ms at p50 and up to 2 s at p95 on a laptop.
 
 ## 3. Memory types and how each is treated
 
 The four CoALA categories are used as engineering categories with different rules. Working memory is not stored by this system; the host framework owns the live conversation. The memory layer stores the other three.
 
 | Type | Stored as | Who can create it | Decays? | Retrieved by | Example |
-| --- | --- | --- | --- | --- |
+| --- | --- | --- | --- | --- | --- |
 | Semantic | A short declarative statement about a subject, plus entity links. | An agent recording an evidenced user statement, a trusted system or tool fact, a session extractor with evidence, or an explicit agent inference. The source and evidence determine its status. | No. Superseded by newer statements about the same subject. Provisional ones expire if never reinforced. | Dense, lexical, and entity. | “The user prefers concise technical answers.” |
 | Episodic | A dated account of what happened, what was decided, and why, with an event time. | The end-of-session extractor, which always writes a session summary and may write notable decisions, or an agent explicitly recording a meaningful event. | Yes. Recency weighting on event time. Never superseded, only appended. | Dense and lexical, with time filters. | “On 3 September, the team chose SQLite because the system is single-process.” |
 | Procedural | A named, versioned procedure: when it applies, the steps, and known pitfalls. | A human author, or an agent explicitly recording a reusable lesson after a task succeeds or fails. Automatic promotion from episodes is not allowed in the current design. | No. Versioned. A new version supersedes the old. | Lexical on name and trigger, dense on description. | “When changing the embedding model, re-embed the store and recalibrate retrieval gates.” |
@@ -88,7 +88,7 @@ Decision: the utility-aware architecture adds an explicit `ambient` activation t
 Every record, regardless of type, carries the same envelope. The content varies by type; the envelope does not.
 
 | Field group | Fields | Meaning | Example |
-| --- | --- | --- |
+| --- | --- | --- | --- |
 | Identity | `id`, `type`, `version` | Identifies the record, its memory category, and its revision in a lineage. | `mem_0142`, `semantic`, version `2` |
 | Content | `content`, `subject_entity_id`, `attribute`, `subject` | Holds the text the model may read and its system-owned current-fact identity. `subject` is derived from the entity ID and normalized attribute. | Content: “The user prefers concise technical answers.” Attribute: `answer_style` |
 | Scope | `scope_kind`, `scope_id` | States who owns the memory. The separate grant table determines which agents may access that scope. | `user`, `user_123` |
@@ -214,7 +214,7 @@ The scope filter runs before any candidate generator. Dense, lexical, and entity
 
 **Empty is a first-class answer.** The gate returns no results when the best candidate is weak on every signal: below the cosine floor on dense, below the BM25 floor on lexical, and not an entity match. The floors are configuration values, calibrated on the evaluation set and re-calibrated whenever the embedding model changes.
 
-**A reranker is specified but disabled by default.** The demo will include `bge-reranker-v2-m3` behind a feature flag. It reranks the surviving candidates after duplicate collapse, rather than the whole store. For 30 candidates, the initial performance budget is an additional 100 ms mean latency on the target laptop; the benchmark must report the real p50 and p95 by candidate count and hardware. It becomes the default only if it improves the final records entering context and downstream task outcomes enough to earn that cost.
+**A reranker is built, measured, and disabled by default.** `bge-reranker-v2-m3` sits behind `reranker.enabled`, reranks the surviving candidates after duplicate collapse rather than the whole store, and can be placed after the RRF relevance floors or in place of them (`reranker.mode`). A stage timeout falls back to the RRF order and records the outcome in the search log. Measured on the blind splits, either placement cut weak candidates by an order of magnitude and lost explicit recall below the 90 percent gate, because the judge already rejected the weak candidates and the cross-encoder cut expected records too; refer `usefulness-gate.md` sections 8n and 8p. It stays off until a floor calibrated on gap queries or a fine-tuned pair scorer changes that result.
 
 **Results carry explanations.** Each returned record includes an explanation object containing the raw and, if enabled, rewritten query; the generators that matched it; its rank and score from each generator; fused rank; any freshness adjustment; whether reranking changed its rank; its source kind, status, dates, and entity links; and why it survived the gate, duplicate collapse, and token budget. The response-level explanation also records why a search returned nothing. The agent can reject a record on that basis, and the user can inspect it.
 
@@ -259,7 +259,7 @@ Decision: entity resolution uses exact alias matches within scope. An extractor 
 | --- | --- | --- | --- |
 | Embedding | `bge-m3`, dense head only, 1024 dims, run locally | Open, multilingual, strong on short declarative text, no network call in the search path. | A Nomic Embed Text model for a smaller footprint. Any hosted embedding through the same interface. |
 | Extraction | A small hosted model with reliable structured output (Claude Haiku 4.5 or equivalent) | Extraction runs off the hot path; quality of evidence-grounded output matters more than speed. | A local instruction-tuned model. |
-| Reranker | `bge-reranker-v2-m3`, planned behind a disabled feature flag | Same family as the embedder; small enough to run locally. Its initial budget is an additional 100 ms mean latency for 30 candidates, to be replaced by benchmark data. | None. |
+| Reranker | `bge-reranker-v2-m3`, built behind a disabled feature flag | Same family as the embedder; small enough to run locally. Measured at about 165 ms p50 per search; disabled because it cost recall on the blind splits (`usefulness-gate.md` 8n, 8p). | None. |
 | Serving | Whatever the host framework uses | The memory layer never calls the serving model. | n/a |
 
 Every embedding row stores the model name and version. Changing the embedder is a migration that re-embeds the whole store and re-calibrates the gate floors. It is never silent.
@@ -278,7 +278,7 @@ Targets on a laptop, single process, store of up to 50K records.
 
 The in-memory vector matrix and same-process SQLite FTS5 queries are what make these numbers possible. A network hop to a separate vector database would consume much of the budget on its own.
 
-These are design targets, not claimed measurements. The benchmark establishes actual values before we call them performance characteristics.
+These were design targets. Phase 15 measured them on a laptop with the real embedder and judge: warm `memory_search` p50 23 ms and p95 28 ms on a 1K-record fixture, and p50 74 ms and p95 78 ms on a 50K-record store with a fixed 25 ms embedding cost; `memory_write` p50 26 ms, p95 471 ms when the write reaches the NLI judge; the first search after opening a store 2.6 s, which is the model load. The full table is in [../BENCHMARK_HANDOFF.md](../BENCHMARK_HANDOFF.md) and [acceptance-report.md](acceptance-report.md).
 
 ### Per-stage benchmark instrumentation
 
@@ -296,7 +296,7 @@ The benchmark report must show dense, lexical, entity, and reranker timing indep
 
 The contract is the record envelope, the scope and grant model, the tool schemas, and the ingestion events (`session_started`, `turn_completed`, `session_ended`). Adapters own everything framework-specific: how tools are registered, how agent and user ids are recovered from the run context, and how tool results are formatted for the model.
 
-Decision: the first two adapters are Deep Agents and CrewAI, as the research notes specify. They differ enough in session and identity handling that a contract surviving both is evidence of neutrality. The adapters are part of the experiment.
+Decision: the first two adapters are Deep Agents and CrewAI, as the research notes specify. They differ enough in session and identity handling that a contract surviving both is evidence of neutrality. Both are built; both pass one shared contract suite, and the equivalence test shows they leave the same semantic records from the same conversation without any change to the core contracts.
 
 ## 13. Observability
 
@@ -319,13 +319,13 @@ Every search writes one log row: raw request; rewritten query and rewrite status
 
 | Question | Current default | Experiment that settles it |
 | --- | --- | --- |
-| Does query rewriting help? | Rewrite stage planned but disabled. | Compare raw and rewritten query recall on the follow-up-question cases. |
-| Does the reranker earn its latency? | Off. | Compare final-context precision with and without. |
-| Are the gate floors right? | Calibrated once on the eval set. | Sweep floors against the no-memory cases. |
+| Does query rewriting help? | Built, measured, off. | Settled for now: the planner's gap queries are already standalone, so rewriting changed 2 to 5 of about 39 searches per split and cost 1.7 to 1.9 s each (`usefulness-gate.md` 8n). Revisit if model-written queries in `tool_only` show follow-up misses. |
+| Does the reranker earn its latency? | Built, measured in both placements, off. | Settled for now: it cost explicit recall on both blind splits (8n, 8p). Revisit with a floor calibrated on gap queries or a fine-tuned pair scorer. |
+| Are the gate floors right? | Swept on a labelled 1K fixture in Phase 15. | The configured semantic floor of 0.45 sits inside the band whose F1 is within 90 percent of the best (0.44 to 0.66); resweep after any embedder change. |
 | Is per-message extraction worth it? | Session-end only. | Compare recall of mid-session facts against pollution rate. |
-| Should anything be ambient? | Explicit ambient activation is designed but disabled. | Phase 1 of the [utility-aware implementation plan](utility-aware-memory-implementation-plan.md) validates the bounded session profile. |
-| Who triggers retrieval? | `tool_only`. | Agent-in-the-loop run comparing `tool_only`, `auto`, and `hybrid` on search rate when evidence existed, false-search rate, injection rate on ordinary turns, and accuracy. |
-| Is the gate strong enough for host-issued searches? | No. The current relevance gate remains a candidate filter. | Gap-conditioned retrieval and draft-relative admission must pass the [utility-aware architecture](utility-aware-memory-architecture.md) acceptance gates. |
+| Should anything be ambient? | Ambient activation is built, audited, and validated on the promotion split; the profile is off unless a host enables it. | Production evidence from a consuming host. |
+| Who triggers retrieval? | `tool_only`. | Production metrics from the utility-aware path in a consuming host decide whether `hybrid` becomes recommended; the offline gates are met. |
+| Is the gate strong enough for host-issued searches? | No. The relevance gate is a candidate filter; the utility-aware path makes the decision. | Passed offline: the supported bundle meets the injection, recall, and safety gates on scripted blind splits and the shadow harness. Real-traffic validation is pending. |
 | Can a similarity floor answer "does this turn need memory"? | No. Measured in Phase 9a: the score distributions for ordinary and memory-applicable turns overlap almost completely. | Settled. The replacement is specified in [utility-aware-memory-architecture.md](utility-aware-memory-architecture.md). |
 | Exact vs approximate vector search? | Exact. | Only revisit above 200K records. |
 

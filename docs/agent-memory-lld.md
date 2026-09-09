@@ -25,41 +25,61 @@ The package mirrors the path a memory takes through the system. `store` holds du
 ```bash
 memory_weave/
   __init__.py
-  config.py          # typed config, loaded from YAML, all thresholds live here
-  models.py          # dataclasses for Record, Entity, SearchRequest, SearchResult, Candidate
+  config.py          # typed config, loaded from YAML; every threshold, floor, model name, and timeout lives here
+  models.py          # dataclasses for Record, Entity, Principal, Scope, SearchRequest, SearchResult, Candidate
+  runtime.py         # build_runtime: the composition root the CLI, adapters, and benchmarks share
+  host.py            # MemoryHost: grants and user provisioning, the host's administrative surface
+  hosted.py          # CompletionClient: provider-neutral hosted model calls (Anthropic, OpenAI, OpenRouter)
+  operations.py      # Operations: expire, retain, erase, reembed, snapshot, due-review flagging
+  cli.py             # memory-weave: migrate, grant, search, get, dump, ops, extract, reviews, metrics, bundles
+  log.py             # structured logging helpers
+  util.py            # clock, ids, Timer
   store/
     schema.sql       # DDL, applied by migrations
     migrations.py    # versioned, forward-only
-    store.py         # Store: CRUD, FTS, event log, search log
+    store.py         # Store: CRUD, FTS, events, search log, turn decisions, reviews, fitness results
   index/
     embedder.py      # Embedder protocol + BgeM3Embedder + FakeEmbedder for tests
     vector.py        # VectorIndex: in-memory matrix over the store
-    reranker.py      # Reranker protocol + BgeReranker + NoReranker
+    reranker.py      # Reranker protocol + BgeReranker + NoReranker + rerank_with_timeout
   ingest/
     ingestor.py      # write path: validate, dedup, contradiction, supersede, link, embed
-    evidence.py      # validate_evidence: the one helper both write paths use to locate a quote and verify the claimed source
-    equivalence.py   # EquivalenceJudge protocol + NLICrossEncoderJudge + FakeJudge; decides same / contradicts / distinct
+    evidence.py      # validate_evidence: locate a quote and verify the claimed source
+    equivalence.py   # EquivalenceJudge protocol + NLICrossEncoderJudge + FakeJudge
+    entities.py      # exact alias resolution and ambiguity
     extractor.py     # Extractor protocol + StructuredLLMExtractor + FakeExtractor
-    session.py       # SessionBuffer: turns for the running session, used by extraction and evidence checks
+    reviewer.py      # CandidateReviewer protocol + StructuredLLMReviewer + TableReviewer
+    extraction.py    # ExtractionRunner: claim a session, extract, review, validate, write
+    temporal.py      # temporal-support validation and the due-review worker
+    session.py       # SessionBuffer and SessionHooks (session start, turn, end, idle split)
+    prompts/         # extract_v1.md, review_v1.md
   retrieve/
     retriever.py     # the pipeline
     rewrite.py       # QueryRewriter protocol + HostedLLMQueryRewriter + NoRewriter (default)
+    generators.py    # dense, lexical, and entity candidate generation
     fusion.py        # Reciprocal Rank Fusion
-    gate.py          # empty-result decision
+    gate.py          # FloorGate and the policy-only exclusion used by cross-encoder-only ranking
     freshness.py     # episodic recency
-    explain.py       # builds the per-result Explanation object and the response-level empty reason
+    dedup.py         # near-duplicate collapse
+    budget.py        # k and token-budget fill, with conflict-authority pairs
+    explain.py       # per-result Explanation and the response-level empty reason
+    stopwords.py
+    prompts/         # rewrite_v1.md
   policy/
-    grants.py        # readable/writable scope resolution
+    grants.py        # readable and writable scope resolution
     lifecycle.py     # source ranks, status transitions, expiry
+    prompt.py        # the memory-use policy text, versioned
+    activation.py    # ambient activation: eligibility, category policy, review queue, ProfileAssembler, inventory
+    utility_aware.py # GapPolicy, AdmissionPolicy, UtilityAwareOrchestrator, turn decisions, bundle components
+    bundles.py       # bundle hash and the fitness registry that gates serving
+    metrics.py       # stage outcomes, rates, latency, cost, and rollback thresholds over the decision log
   tools/
     schemas.py       # JSON schema for the five tools
     handlers.py      # tool name -> handler, framework-agnostic
   adapters/
-    base.py          # Adapter protocol
+    base.py          # what every adapter shares: principal derivation, policy text, rendering
     deepagents.py
     crewai.py
-  log.py             # structured logging helpers
-  cli.py             # inspect, search, dump, migrate, reembed
 ```
 
 ## 2. Configuration
@@ -1436,13 +1456,18 @@ def memory_search(principal, req: SearchRequest) -> SearchResponse:
     t.mark("dedup")
 
     reranked_out = []
+    rerank_status = "disabled"
     if cfg.reranker.enabled:
-        reranked_out.extend(record_reranker_shortlist_omissions(kept[cfg.reranker.candidates :]))
-        kept, reranked = rerank(
-            kept[: cfg.reranker.candidates], queries
-        )  # 10.7, scores every query, keeps the max per record
-        kept, below_floor = apply_reranker_floor(kept, cfg.reranker.floor)
-        reranked_out.extend(below_floor)
+        outcome = rerank_with_timeout(
+            kept[: cfg.reranker.candidates], queries, timeout_ms=cfg.reranker.timeout_ms, on_failure=cfg.reranker.on_failure
+        )  # 10.7, scores every query on copies in a worker thread, keeps the max per record
+        rerank_status = outcome.status
+        if outcome.status == "applied":
+            reranked = outcome.logged
+            reranked_out.extend(record_reranker_shortlist_omissions(kept[cfg.reranker.candidates :]))
+            kept, below_floor = apply_reranker_floor(outcome.candidates, cfg.reranker.floor)
+            reranked_out.extend(below_floor)
+        # timeout or failure with fallback: the RRF order stands; in cross_encoder_only mode the floors are re-applied
     t.mark("rerank")
 
     chosen, budget_out = fill_budget_with_authority_pairs(kept, req.k, cfg.token_budget)  # 10.8
@@ -1836,7 +1861,7 @@ The `warm` column separates the first cold call from later calls. The harness re
 
 ## 16. Operations and CLI
 
-The CLI supports maintenance, debugging, and reproducible evaluation. It is not an alternate policy path: commands use the same store and lifecycle rules as the runtime.
+The CLI supports maintenance, debugging, and reproducible evaluation. It is not an alternate policy path: commands use the same store and lifecycle rules as the runtime. Every command takes `--store <path>` (default `./memory.sqlite`), `--config <yaml>` (defaults apply without one), and `--as <actor>`, the operator identity recorded on audit events.
 
 | Command | Purpose |
 | --- | --- |
@@ -1851,9 +1876,12 @@ The CLI supports maintenance, debugging, and reproducible evaluation. It is not 
 | `memory-weave grant A user:U --read --write` | Create or update a scope grant. |
 | `memory-weave extract <session_id>` | Re-run extraction for one session through candidate review. Atomic session claiming and source-reference idempotency prevent duplicate effects. |
 | `memory-weave review-due` | Atomically flag one bounded batch of records whose `review_at` has arrived. |
-| `memory-weave snapshot save|load <path>` | Copy the SQLite database for evaluation fixtures, or replace the store file with a copy. A copy carries every table, so lineage, activation, conflicts, reviews, fitness results, and decision logs survive a restore; `load` needs `--yes` and a stopped host, because it replaces the file under any open connection. |
-| `memory-weave search --agent A --user U <query>` | Run `memory_search` as that principal and print the results and the log row. Scope follows the principal's grants, as for any tool call. |
-| `memory-weave dump --scope user:U` | Print active records in one scope, or every status with `--all-statuses`. |
+| `memory-weave snapshot save\|load <path>` | Copy the SQLite database for evaluation fixtures, or replace the store file with a copy. A copy carries every table, so lineage, activation, conflicts, reviews, fitness results, and decision logs survive a restore; `load` needs `--yes` and a stopped host, because it replaces the file under any open connection. |
+| `memory-weave revoke A user:U` | Remove a scope grant. |
+| `memory-weave reviews list \| resolve <id> --as promote\|conditional\|reject --resolver R \| backlog --max-open N --max-age-days D` | The activation review queue: list open items, resolve one with an audited decision, or check the backlog against limits (exit 3 when breached). |
+| `memory-weave activation <record_id> ambient\|conditional --resolver R --reason R` | Directly promote or demote one record after the same eligibility checks the policy applies. |
+| `memory-weave metrics [--since] [--until] [--bundle H] [--json] [--rollback-check]` | Aggregate the turn-decision log into stage outcomes, rates, latency, cost, and review backlog; `--rollback-check` applies the rollback thresholds and exits 4 when breached. |
+| `memory-weave bundles list \| record <components.json> --passed\|--failed --evidence E --by B` | The fitness registry: list recorded results, or record one for a bundle so this store may serve it. |
 
 ## 17. Test plan for the implementation
 
@@ -2032,7 +2060,7 @@ These choices do not block the initial implementation. Each has a safe default a
 | Stopwords and lexical tokenization | Use a frequency-based English list of about 180 stopwords, while preserving identifiers and proper nouns. | Multilingual cases enter evaluation. |
 | Exact subject lookup | Do not add a `subject` filter to `memory_search` yet. | Evaluation shows agents frequently need exact attribute lookups. |
 | Session end | Deep Agents supports both explicit end and idle-timeout splitting from the first version. | Adapter behavior shows one source is unreliable. |
-| Reranker floor | Leave it unset and reject `reranker.enabled` without one. The Phase 11 calibration found 0.01 as a recall-oriented candidate control and found that reranking cost explicit recall in the utility-aware path, so the stage stays off; refer `usefulness-gate.md` section 8n. | A retrieval evaluation shows a candidate pool the judge cannot handle without a pair-score cut. |
+| Reranker floor | Leave it unset and reject `reranker.enabled` without one. The Phase 11 calibration found 0.01 as a recall-oriented candidate control and found that reranking cost explicit recall in the utility-aware path in both placements, after the RRF floors and in place of them, so the stage stays off; refer `usefulness-gate.md` sections 8n and 8p. | A retrieval evaluation shows a candidate pool the judge cannot handle without a pair-score cut. |
 | Long session summaries | Write one summary record capped at 1,200 characters. | Long-session evaluation shows that one summary loses important context. |
 | Rewriter latitude | Resolve references, name the subject, and preserve query count. | Follow-up-question cases show misses that need broader rewrites. |
 | Generator concurrency | Run dense, lexical, and entity generators sequentially. | Measurement shows a thread pool improves latency enough to justify its complexity. |

@@ -118,18 +118,19 @@ Trade-offs, stated plainly rather than as a recommendation to change anything:
 
 ## 6. Instructions in our own design: current status
 
-Two places in our design call a hosted model and would need AgentCore-style Instructions: session extraction and query rewriting. As of this comparison, **neither has an instructions file, because neither is implemented yet**:
+Three places in our design call a hosted model and need AgentCore-style Instructions: session extraction, candidate review, and query rewriting. When this comparison was written on 5 September neither extraction nor rewriting existed; all three were built on 8 September:
 
-| Component | Config that names the model | Code that would hold the prompt | Status |
+| Component | Config that names the model | Code and prompt | Status |
 | --- | --- | --- | --- |
-| Session extraction | `ingestion.extraction_model: claude-haiku-4-5-20251001` | `ingest/extractor.py`, `StructuredLLMExtractor` | Not present in the repository. Only the `Extractor` protocol and its output dataclasses (`ExtractionContext`, `CandidateRecord`, `SessionSummary`) are specified, in `models.py`. `FakeExtractor` (the test double) is the only thing the design currently requires to exist. |
-| Query rewriting | `retrieval.rewrite.model: claude-haiku-4-5-20251001` | `retrieve/rewrite.py`, `HostedLLMQueryRewriter` | Only `NoRewriter` exists today (verified by reading the file); it returns queries unchanged and never calls a model. `HostedLLMQueryRewriter` and its prompt are specified in the HLD/LLD but not written. |
+| Session extraction | `ingestion.extraction_model: claude-haiku-4-5-20251001` | `ingest/extractor.py`, `StructuredLLMExtractor`, `ingest/prompts/extract_v1.md` | Built. |
+| Candidate review | `ingestion.review_model: claude-haiku-4-5-20251001` | `ingest/reviewer.py`, `StructuredLLMReviewer`, `ingest/prompts/review_v1.md` | Built; the reviewer may only narrow a candidate. |
+| Query rewriting | `retrieval.rewrite.model: claude-haiku-4-5-20251001` | `retrieve/rewrite.py`, `HostedLLMQueryRewriter`, `retrieve/prompts/rewrite_v1.md` | Built, off by default, measured without benefit in `usefulness-gate.md` 8n. |
 
-This maps directly onto AgentCore's Instructions/Output-schema split: once these are built, each one needs exactly that — natural-language instructions plus a structured output contract (`ExtractionOutput`'s dataclasses already are that contract for extraction).
+This maps directly onto AgentCore's Instructions/Output-schema split: each has natural-language instructions plus a structured output contract (`ExtractionOutput`'s dataclasses are that contract for extraction).
 
 One detail in the current design already anticipates this: `ExtractionContext.prompt_version` exists specifically so that a future change to the extraction prompt can be tracked the same way an embedding-model change is tracked by `embeddings.version` — i.e., recorded on the resulting `extraction.run` event, so a behavior change from re-prompting isn't silently invisible in the audit trail.
 
-**Where these should live, when built:** next to the code that uses them, not in `config.yaml`. The YAML config in `config.py` holds thresholds and model *names* (numbers you'd sweep in a calibration pass); the prompt text itself is reasoning guidance, not a tunable, so it belongs as a module-level constant (or a small `ingest/prompts.py` if it grows past one string) in the same module as `StructuredLLMExtractor`/`HostedLLMQueryRewriter`. This has been added to [`components.md`](components.md#15-prompts-and-instructions) as its own section so the location is documented before the code exists, not after.
+**Where they live:** next to the code that uses them, as versioned Markdown files under `ingest/prompts/` and `retrieve/prompts/`, not in `config.yaml`. The YAML config in `config.py` holds thresholds and model *names* (numbers you'd sweep in a calibration pass); the prompt text is reasoning guidance, not a tunable. Each prompt version is recorded on the resulting event so a prompt change is as visible as an embedding-model change. See [`components.md`](components.md#15-prompts-and-instructions).
 
 ## 7. Summary
 
@@ -138,7 +139,7 @@ One detail in the current design already anticipates this: `ExtractionContext.pr
 | Extraction model | Per-strategy, pluggable, async after every event/session | Single fixed pipeline, async at session end, plus sync explicit writes |
 | Consolidation | New vs. existing record, per strategy; conflict handling not publicly detailed | Source-rank supersession, NLI-based equivalence/contradiction, entity-attribute aliasing, all logged |
 | Reflection | Yes, episodic strategy only: cross-episode pattern extraction | No equivalent |
-| Instructions as config | Yes, first-class per-strategy prompt field | Not yet implemented for either extraction or rewriting; when built, belongs in code, not YAML |
+| Instructions as config | Yes, first-class per-strategy prompt field | Versioned prompt files beside the code for extraction, review, and rewriting; model names in YAML, prompt text not |
 | Record identity | Flat record + free-form namespace path | Structured current-fact key (`subject_entity_id` + `attribute`) plus flat scope |
 | Get-by-ID | `GetMemoryRecord` | `memory_get` (richer: includes conflicts and supersession lineage) |
 | List/enumerate | `ListMemoryRecords`, paginated | No agent-facing equivalent today |

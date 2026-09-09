@@ -97,8 +97,8 @@ inventory and `--admission-prompt v3` is the decision-impact rule.
 HF_HUB_OFFLINE=1 uv run --extra live --extra local-models python benchmarks/shadow_run.py \
   --scenario benchmarks/scenarios/phase0_v5.json --gap-model gpt-4o --admission-model gpt-5.4
 uv run memory-weave --store <store.sqlite> metrics --json --rollback-check
-uv run memory-weave --store <store.sqlite> bundles record benchmarks/bundles/bundle-2026-09-07-a.json \
-  --passed --evidence "docs/usefulness-gate.md 8k,8l" --by <you>
+uv run memory-weave --store <store.sqlite> bundles record benchmarks/bundles/bundle-2026-09-08-a.json \
+  --passed --evidence "docs/usefulness-gate.md 8m,8n; docs/acceptance-report.md" --by <you>
 ```
 
 ```bash
@@ -216,6 +216,6 @@ three executions produced four different slugs for one preference. Both are reco
 
 ## Not built yet
 
-The comparative benchmark in [../docs/benchmark-plan.md](../docs/benchmark-plan.md), covering LongMemEval
-and LoCoMo against Mem0 and LangMem, is specified and unbuilt. This directory holds only the vertical
-slice.
+The comparative benchmark covering LongMemEval and LoCoMo against Mem0 and LangMem is planned, in a
+document kept outside the repository, and unbuilt. This directory holds the vertical slice and the
+utility-aware fitness suite described above, nothing comparative.

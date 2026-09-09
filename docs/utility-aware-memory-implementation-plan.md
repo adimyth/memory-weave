@@ -207,7 +207,7 @@ Pending work, in order:
 **Step 6, monitoring and bundle enforcement, is implemented in the library, not optional.**
 
 - `memory_weave/policy/metrics.py` aggregates the turn-decision table. Every decision receives exactly one stage outcome: `path_disabled`, `planner_silence`, `retrieval_miss`, `judge_rejection`, `policy_failure`, `budget_withheld`, or `admitted`. The report carries served and shadow admission rates, planner fire rate, added latency for all turns and for gap turns at p50 and p95, token usage per model, the admitted-record distribution, harmful verdicts seen, failures, and the review backlog, filtered by time window and bundle hash and broken down per bundle. `rollback_reasons` applies `RollbackThresholds` and returns every breach. `memory-weave metrics [--since] [--until] [--bundle] [--json] [--rollback-check]` exposes it; the same function is callable by a host.
-- `memory_weave/policy/bundles.py` hashes the complete bundle: planner and judge model and prompt, classifier, taxonomy, inventory builder, retrieval configuration, admission mode, gap enablement, caps, stage timeouts, and budget. Shadow versus serving is a mode, not a component, so a result earned in shadow approves the same bundle for serving. `BundleRegistry` records fitness results; the orchestrator's constructor refuses to build a serving configuration whose bundle has no recorded pass, and needs no approval for shadow. Every turn decision records its bundle hash and token usage. `memory-weave bundles list | record <components.json> --passed|--failed --evidence --by` exposes the registry. The supported bundle's components are in `benchmarks/bundles/bundle-2026-09-07-a.json`; a consuming application records its fitness in its own store with one command and cites the suite results as evidence.
+- `memory_weave/policy/bundles.py` hashes the complete bundle: planner and judge model and prompt, classifier, taxonomy, inventory builder, retrieval configuration, admission mode, gap enablement, caps, stage timeouts, and budget. Shadow versus serving is a mode, not a component, so a result earned in shadow approves the same bundle for serving. `BundleRegistry` records fitness results; the orchestrator's constructor refuses to build a serving configuration whose bundle has no recorded pass, and needs no approval for shadow. Every turn decision records its bundle hash and token usage. `memory-weave bundles list | record <components.json> --passed|--failed --evidence --by` exposes the registry. The supported bundle's components are in `benchmarks/bundles/bundle-2026-09-08-a.json` (`bundle-2026-09-07-a` was its predecessor before Phase 10 and 11 changed the retrieval hash, section 8n); a consuming application records its fitness in its own store with one command and cites the suite results as evidence.
 
 **Step 7 stops at canary-ready.** Memory Weave has no consuming application in this repository, and none is invented here. `examples/reference_host.py` is the integration contract a real host must honour, exercised by `tests/test_reference_host.py` with fakes and no network:
 
@@ -252,6 +252,10 @@ Tests cover migration, default activation, host discovery of a principal-user cl
 
 Done when `profile.enabled=false` is byte-for-byte compatible at the tool response level, the enabled fixture automatically promotes and includes direct-evidence style and language records without returning them from conditional retrieval, no ineligible fixture is automatically promoted, every ambiguous fixture has a resolvable review item, and the Phase 0 promotion gate passes through the implemented path.
 
+### Phase 1 outcome, 7 and 8 September 2026
+
+Built as Phase 1A: `Record.activation` with migration to `conditional`, host-verified activation evidence, the category policy with deterministic form rules, the review queue and its CLI, `ProfileAssembler`, and the store-generated inventory. The promotion gate passed on the blind fifth split and on the promotion split across two independent builds with identical promoted sets; the one unsafe fixture went to review. `usefulness-gate.md` sections 8g and 8h.
+
 ## Phase 2: utility-aware host runtime
 
 Add `Gap`, `GapDecision`, and `GapPolicy` to a provider-neutral policy module. A gap contains `category` and `query`; categories are `preference`, `prior_decision`, `constraint`, `relationship_or_event`, and `task_state`. Enforce zero to three non-empty, deduplicated queries and convert invalid structured output into a failed decision.
@@ -276,7 +280,15 @@ Budget tests cover: unset budget uses the configured default; zero budget issues
 
 Done when one acceptance run through the implemented provider-neutral path passes both Phase 0 gates, shadow mode cannot alter the final response, a zero budget reproduces the pre-existing conditional-memory behavior byte-for-byte at the tool response level, and the existing model-issued search suite remains unchanged.
 
+### Phase 2 outcome, 7 to 9 September 2026
+
+Built: `GapPolicy`, `AdmissionPolicy`, `UtilityAwareOrchestrator` with `TurnOptions`, the turn-decision table, shadow mode with isolation asserted by the harness, and the hosted reference policies in `benchmarks/shadow_adapter.py`. The supported bundle, `benchmarks/bundles/bundle-2026-09-08-a.json`, passes the design gate on two blind splits and the shadow harness; the precision gate was settled by blind adjudication of one label without changing the bundle (section 8o). `docs/acceptance-report.md` records every gate.
+
 ## Phase 3: controlled rollout and production labels
+
+### Phase 3 status, 9 September 2026
+
+The operating pieces are built and tested with no network: per-stage kill switches, the bundle registry that refuses to serve an unapproved bundle, `memory-weave metrics` with rollback thresholds, the review-backlog check, and `examples/reference_host.py`. No consuming host has sent real traffic yet, so the rollout itself, the production labels, and the decision on the recommended trigger mode have not started. `tool_only` remains the default.
 
 Roll out in this order: activation-policy shadow decisions and review-queue operations; audited automatic activation for a small cohort; ambient profile rendering; full utility-aware decisions in shadow mode; hosted admission for an experimental cohort; and reconsideration of the recommended trigger mode only after production metrics meet the acceptance gates.
 

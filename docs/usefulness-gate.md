@@ -130,7 +130,7 @@ UsefulBench and FILCO both found that a small fine-tuned classifier on utility l
 
 ## 5. Why this rather than the three earlier directions
 
-Direction 5.1 is validated and kept. Direction 5.3, the reranker, still scores the pair and so cannot reach the usefulness question. It remains worth the free replay as a better candidate cap. Direction 5.2 is Tier A with the useful part removed: it asks for the verdict without asking for the gap, and the literature says the verdict alone is the weak form.
+Direction 5.1 is validated and kept. Direction 5.3, the reranker, still scores the pair and so cannot reach the usefulness question. It was later measured as a candidate cap in sections 8n and 8p and rejected there too: it cut the expected record from the judge's pool on one turn in five. Direction 5.2 is Tier A with the useful part removed: it asks for the verdict without asking for the gap, and the literature says the verdict alone is the weak form.
 
 The proposal adds one thing the earlier directions all lack: a source of ground truth that accumulates in production. Without Tier C the gate can only be tuned on scripted conversations. With it every host search becomes a labelled example.
 
