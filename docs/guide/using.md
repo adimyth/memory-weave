@@ -1,11 +1,11 @@
 # Using it
 
-Install, wire a host, use an adapter, operate the CLI, and run the suites.
+Install, open a store, grant an agent access, build the runtime, and hand it to an adapter.
 
 {%
   include-markdown "../../README.md"
-  start="## 3. Using it"
-  end="## 4. Configuration"
+  start="## Quick start"
+  end="## How it works"
   heading-offset=-1
   rewrite-relative-urls=true
 %}

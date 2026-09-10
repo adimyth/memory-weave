@@ -1,11 +1,11 @@
-# What has been measured
+# What the numbers say
 
-Every number is from a named run; nothing here is a target.
+Each claim and the run it comes from.
 
 {%
   include-markdown "../../README.md"
-  start="## 5. What has been measured"
-  end="## 6. Layout"
+  start="## What the numbers say"
+  end="## Status"
   heading-offset=-1
   rewrite-relative-urls=true
 %}

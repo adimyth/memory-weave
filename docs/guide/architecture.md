@@ -1,11 +1,11 @@
 # Architecture
 
-The record, both write paths, the search pipeline, the host decision, trigger modes, and isolation.
+The record, the two write paths, the search pipeline, and who searches. The centrepiece, deciding whether a turn needs memory, is on the [home page](../index.md).
 
 {%
   include-markdown "../../README.md"
-  start="## 2. Architecture"
-  end="## 3. Using it"
+  start="## How it works"
+  end="## Configuration"
   heading-offset=-1
   rewrite-relative-urls=true
 %}

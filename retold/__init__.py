@@ -3,6 +3,7 @@
 from importlib.metadata import PackageNotFoundError, version
 
 from .config import ConfigError, RetoldConfig, load_config
+from .host import MemoryHost
 from .models import (
     Candidate,
     CandidateRecord,
@@ -24,6 +25,8 @@ from .models import (
     SessionSummary,
     Turn,
 )
+from .runtime import MemoryRuntime, build_runtime
+from .store import Store
 
 try:
     __version__ = version("retold")
@@ -42,6 +45,8 @@ __all__ = [
     "ExtractionContext",
     "ExtractionOutput",
     "GeneratorHit",
+    "MemoryHost",
+    "MemoryRuntime",
     "RetoldConfig",
     "Principal",
     "Record",
@@ -52,6 +57,8 @@ __all__ = [
     "SearchResponse",
     "SearchResult",
     "SessionSummary",
+    "Store",
     "Turn",
+    "build_runtime",
     "load_config",
 ]
