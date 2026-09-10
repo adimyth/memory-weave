@@ -56,7 +56,7 @@ print(runtime.handlers.memory_search(me, {"queries": ["answer style"]}))
 runtime.hooks.on_session_end(me)
 ```
 
-Five tools do the same work from inside an agent: `memory_search`, `memory_get`, `memory_write`, `memory_revise`, `memory_forget`. The [Deep Agents and CrewAI adapters](guide/using.md#33-use-an-adapter) register them and derive the caller's identity from the run, never from tool input.
+Five tools do the same work from inside an agent: `memory_search`, `memory_get`, `memory_write`, `memory_revise`, `memory_forget`. Any framework can register them; the [Deep Agents and CrewAI adapters](guide/using.md#33-use-an-adapter) show how, deriving the caller's identity from the run and never from tool input.
 
 ## How a turn is decided
 

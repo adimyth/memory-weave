@@ -6,10 +6,10 @@ Retold stores evidence-backed records in one SQLite file, retrieves them through
 
 - **Documentation:** [adimyth.in/retold](https://adimyth.in/retold/)
 - **Install:** `pip install "retold[local-models]"`
-- **Status:** version 1.0.1, MIT licensed. Python 3.12 and 3.13, one process, one database file. Adapters for Deep Agents and CrewAI.
+- **Status:** version 1.0.1, MIT licensed. Python 3.12 and 3.13, one process, one database file. Any agent framework can register the five JSON-schema tools; adapters for Deep Agents and CrewAI ship as worked examples of that contract.
 - **The utility-aware host path**, which decides whether a turn needs memory before ranking anything, is built and validated offline, off by default, and waiting on real-traffic validation. The [acceptance report](docs/acceptance-report.md) records every gate. v1.0.0 was tagged under the project's previous name, Memory Weave.
 
-## 1. What it is, and what it is not
+## 1. Scope
 
 Retold gives an agent durable memory that outlives a conversation and can be shared across agents. An agent reaches it through five tools, `memory_search`, `memory_get`, `memory_write`, `memory_revise`, and `memory_forget`, and a host reaches it through a small Python API and a CLI. Records are facts, decisions, and dated experiences about a user, a project, or an organisation, each carrying its scope, its source, a verbatim evidence quote, and its lifecycle state.
 
