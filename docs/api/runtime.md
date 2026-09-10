@@ -1,5 +1,7 @@
 # Runtime and host
 
+::: retold.facade
+
 ::: retold.runtime
 
 ::: retold.host

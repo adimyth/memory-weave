@@ -1,6 +1,6 @@
 [project]
 name = "retold"
-version = "1.0.1"
+version = "1.1.0"
 description = "A framework-neutral long-term memory layer for AI agents."
 readme = "README.md"
 license = "MIT"

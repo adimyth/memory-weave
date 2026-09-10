@@ -34,6 +34,8 @@ jobs:
       - run: uv run ruff format --check .
       - run: uv run mypy
       - run: uv run pytest -q -m "not integration and not live and not slow"
+      - name: verify the framework-neutral quick start remains importable
+        run: uv run python -c "from examples.quickstart import main; assert callable(main)"
 
   docs:
     name: docs

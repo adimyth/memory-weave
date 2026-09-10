@@ -1,11 +1,5 @@
-# What the numbers say
+# What has been measured
 
-Each claim and the run it comes from.
+The [acceptance report](../acceptance-report.md) maps release gates to results and fixtures. The [utility-aware experiment record](../usefulness-gate.md) preserves the blind splits, rejected variants, and reproduction commands. The [benchmark directory](https://github.com/adimyth/retold/blob/main/benchmarks/README.md) describes the inputs and raw run artifacts.
 
-{%
-  include-markdown "../../README.md"
-  start="## What the numbers say"
-  end="## Documentation"
-  heading-offset=-1
-  rewrite-relative-urls=true
-%}
+Treat these as controlled offline measurements. They establish regression gates for Retold's supported configuration; they do not substitute for shadow evaluation on an application's traffic.

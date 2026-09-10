@@ -1,6 +1,6 @@
 # API reference
 
-The public surface a host integrates against, generated from the docstrings. Start from `build_runtime`, which wires every component over one store; the adapters, the CLI, and the benchmarks all go through it.
+The public surface a host integrates against, generated from the docstrings. Start with `Retold.open` for private per-user memory. Use `build_runtime`, explicit principals, scopes, and grants when a host needs framework adapters or shared memory.
 
 | Page | What it covers |
 | --- | --- |

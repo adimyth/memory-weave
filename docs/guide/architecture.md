@@ -1,11 +1,11 @@
 # Architecture
 
-The record, the two write paths, the search pipeline, and who searches. The centrepiece, deciding whether a turn needs memory, is on the [home page](../index.md).
+The write paths, retrieval pipeline, utility-aware decision, and supported deployment boundary.
 
 {%
   include-markdown "../../README.md"
-  start="## How it works"
-  end="## Configuration"
+  start="## Choose how memory is used"
+  end="## Configuration and deeper documentation"
   heading-offset=-1
   rewrite-relative-urls=true
 %}

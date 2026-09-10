@@ -139,6 +139,12 @@ def main() -> int:
 
         _check_adapters(runtime, config)
 
+        facade = retold.Retold(runtime)
+        private = facade.session(user_id="u2", session_id="facade-session")
+        private_written = private.remember("I prefer concise answers.", evidence="I prefer concise answers.")
+        check("the facade writes private memory without a grant", private_written.record_id is not None)
+        private.finish()
+
     result = subprocess.run([sys.executable, "-m", "retold.cli", "--help"], capture_output=True, text=True)
     check("the CLI entry point runs", result.returncode == 0, result.stderr.strip()[:200])
 

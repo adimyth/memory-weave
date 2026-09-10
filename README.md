@@ -1,6 +1,6 @@
 <h1 align="center">Retold</h1>
 
-<p align="center"><strong>Long-term memory for AI agents that stays quiet until it changes the answer.</strong></p>
+<p align="center"><strong>Long-term memory for AI agents, with evidence, isolation, and permission to return nothing.</strong></p>
 
 <p align="center">
   <a href="https://adimyth.in/retold/"><img alt="Documentation" src="https://img.shields.io/badge/docs-adimyth.in%2Fretold-black"></a>
@@ -9,200 +9,182 @@
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-green"></a>
 </p>
 
-Retold gives an agent durable, scoped memory in one SQLite file: facts, decisions, and dated experiences about a user or a project, each backed by a verbatim quote and a lifecycle. It retrieves through dense, lexical, and entity channels, returns only what the caller may read, and can return nothing. Every search explains itself.
+Retold gives Python agents long-term memory that would rather return nothing than inject a vaguely related fact. Facts, decisions, and dated experiences live in one SQLite file, each with a verbatim source quote and isolated by agent, user, project, or organization. Search explains why it returned a record or nothing.
 
-Retold exposes five tools as plain JSON schemas, so any agent framework can register them. Adapters for Deep Agents and CrewAI ship as worked examples. **[Documentation](https://adimyth.in/retold/)** · `pip install "retold[local-models]"`
+Storage, embeddings, retrieval, and evidence checks run locally. Background transcript extraction and the optional utility-aware path use a configured Anthropic or OpenAI model. An agent gets five tools: `memory_search`, `memory_get`, `memory_write`, `memory_revise`, and `memory_forget`.
+
+Deep Agents and CrewAI adapters register those tools.
 
 ## Decide before you retrieve
 
-Every memory layer retrieves by similarity and injects the top results. Similarity answers ***"is this record about the same subject as the turn?"*** It cannot answer ***"does this turn need remembered state?"***, and the two come apart on exactly the turns that matter: the store holds "use Python for code examples" and the user asks "tabs or spaces in Python?". Related, and irrelevant.
+Many agent-memory implementations retrieve by similarity and inject the top results. Similarity answers whether a record shares a subject with the current turn. It does not establish that remembered state would improve the answer.
 
-Measured on a scripted conversation, the best similarity score per turn looked like this:[^1]
+On one scripted conversation, the highest similarity scores overlapped:[^2]
 
 | Turn class | min | median | max |
 | --- | :-: | :-: | :-: |
 | Ordinary, no memory needed | 0.44 | 0.56 | **0.63** |
 | Memory genuinely applies | 0.50 | 0.57 | 0.62 |
 
-No threshold separates them. Every floor trades one useful recall for one unwanted injection.
+Two blind splits of the utility-aware path:
 
-Retold answers the second question with a different mechanism. The host drafts an answer without conditional memory while a planner identifies any specific stored facts that may be needed. Retold searches only for those facts, and a judge admits a record only if it would change the draft.
+| | Blind split 1 | Blind split 2 |
+| --- | :-: | :-: |
+| Injected on ordinary turns | 1 of 20 | 0 of 20 |
+| Recalled explicit stored facts | 10 of 10 | 9 of 10 |
+| Recalled implicit needs | 7 of 8 | 6 of 7 |
+
+A shadow run through the real orchestrator injected on 0 of 20 ordinary turns. The [acceptance report](docs/acceptance-report.md) and [experiment record](docs/usefulness-gate.md) link each claim to its run.
+
+The utility-aware host path runs the initial draft and missing-context planner concurrently. The planner sees content-free categories rather than records. Retold searches only when the planner names a missing fact, then a judge compares the candidates with the draft. The host revises once when at least one record would correct, complete, or personalize the answer.
+
+The design builds on [RUMS](https://arxiv.org/abs/2604.14473) and [TRACE-Memory](https://arxiv.org/abs/2608.08446). Retold adds an ambient-versus-conditional split, a content-free planner inventory, draft-relative admission, shadow mode, kill switches, decision logs, and measured bundle gating. [Read the full comparison](docs/design-contributions.md).
+
+## Try Retold in five minutes
+
+Retold is distributed through GitHub Releases while its PyPI trusted publisher is being configured. Python 3.12 or 3.13 is required.
+
+```bash
+python -m pip install "retold[local-models] @ https://github.com/adimyth/retold/releases/download/v1.1.0/retold-1.1.0-py3-none-any.whl"
+```
+
+The first write downloads BGE-M3 and an NLI evidence model. They occupy about 6 GB in the Hugging Face cache, so allow several minutes for the initial download. With both models cached, the complete example took 19 seconds on the development Apple Silicon Mac; later calls in the same process are faster.
+
+Save this as `quickstart.py` and run `python quickstart.py`:
+
+```python
+from retold import Retold
+
+with Retold.open("memory.sqlite") as retold:
+    with retold.session(user_id="aditya") as memory:
+        memory.remember("I prefer concise answers.", evidence="I prefer concise answers.")
+        result = memory.search("What kind of answers do I prefer?")
+        print(result.text)
+```
+
+The result includes the stored claim and the reason it passed retrieval:
+
+```text
+Recalled 1 memory for "What kind of answers do I prefer?".
+
+[01a08...] semantic · confirmed · user_statement · scope agent:assistant/aditya
+I prefer concise answers.
+matched: dense 0.82 (rank 1), lexical 2/3 (rank 1); passed dense 0.82 ≥ 0.45 (semantic)
+```
+
+The executable version lives at [`examples/quickstart.py`](https://github.com/adimyth/retold/blob/main/examples/quickstart.py). It needs no API key. `memory.remember` records the supplied quote as a trusted user turn and sends the claim through the same evidence, lifecycle, indexing, and retrieval policies used by the framework adapters.
+
+When you omit `attribute`, Retold derives a stable private key from the claim. A rephrased statement still reinforces the earlier record and a contradicting one still supersedes it, because the ingestor compares new claims with the existing records about the same subject. Supply an attribute such as `answer_style` when you want to name that subject yourself.
+
+The quote has to support the claim. "Aditya prefers concise answers." backed by "I prefer concise answers." is fine, because Retold knows who is speaking. A claim the quote does not support raises `UnsupportedEvidenceError` instead of being stored as a guess that expires in thirty days; pass `allow_inference=True` when a tentative record is what you want.
+
+## Add Retold to an agent
+
+The adapters register the memory tools, derive identity from trusted run configuration, capture turns, and schedule transcript extraction when the host ends a session.
+
+### Deep Agents
+
+```bash
+python -m pip install "retold[local-models,live,deepagents] @ https://github.com/adimyth/retold/releases/download/v1.1.0/retold-1.1.0-py3-none-any.whl"
+export ANTHROPIC_API_KEY="your-key"
+```
+
+[`examples/deepagents_live.py`](https://github.com/adimyth/retold/blob/main/examples/deepagents_live.py) contains a complete Anthropic integration. Download it or run `python examples/deepagents_live.py` from a source checkout. [`examples/deepagents_demo.py`](https://github.com/adimyth/retold/blob/main/examples/deepagents_demo.py) uses scripted model replies and fake memory models when you want to inspect adapter behavior without keys or model downloads.
+
+### CrewAI
+
+```bash
+python -m pip install "retold[local-models,live,crewai] @ https://github.com/adimyth/retold/releases/download/v1.1.0/retold-1.1.0-py3-none-any.whl"
+export ANTHROPIC_API_KEY="your-key"
+```
+
+[`examples/crewai_live.py`](https://github.com/adimyth/retold/blob/main/examples/crewai_live.py) contains the complete integration. Download it or run `python examples/crewai_live.py` from a source checkout. [`examples/crewai_demo.py`](https://github.com/adimyth/retold/blob/main/examples/crewai_demo.py) is the deterministic simulation.
+
+Both live examples grant one agent access to the user's shared scope. The framework-neutral quick start needs no grant because it writes to the implicit private scope for that agent and user.
+
+## Choose how memory is used
+
+Retold separates who requests a search from how retrieved records enter an answer.
+
+| Mode | Behavior | Status |
+| --- | --- | --- |
+| `tool_only` | The agent receives the five memory tools and calls them when its task needs memory. | Default |
+| `utility_aware` | The host drafts an answer, retrieves only for a specific missing fact, and admits records only when they would change the draft. | Opt-in |
+
+The utility-aware path needs host-supplied model clients and `supported_bundle()` from `retold.policy.reference`. A store serves the bundle only after recording a passing fitness result; otherwise the path runs in shadow mode. Planner, provider, judge, timeout, and latency-budget failures all serve the original draft and record the reason.
 
 ![Utility-aware memory path: draft first, retrieve only for specific missing context, and revise only with admitted records](docs/assets/utility-aware-path.svg)
 
-### How the decision works
+The default quick start does not invoke a hosted provider. Call `worker = memory.finish(extract=True)` when you want the facade to run background transcript extraction; Retold checks the provider dependency and API key before ending the session. Keep Retold open until `worker.join()` completes if the process is about to exit.
 
-1. **The host receives the user query.** The host is the application running the agent. It supplies the query, public conversation context, and the fixed ambient profile for the session.
-2. **The host starts two operations concurrently.** The response model drafts an answer without conditional memory. At the same time, the planner checks whether answering the query requires a specific user preference, prior decision, constraint, relationship, event, or task state.
-3. **The planner sees categories, not memory contents.** It receives a content-free inventory such as `prior decisions` or `project constraints`. When information is missing, it produces a short retrieval query that names the fact needed, such as `user's preferred language for code examples`.
-4. **If no stored context is needed, the host serves the original draft.** Retold performs no retrieval and no conditional memory enters the model context.
-5. **If stored context may be needed, Retold searches for that specific information.** It first restricts the search to records the caller may read, then retrieves and ranks candidates through its dense, lexical, and entity channels.
-6. **The admission judge compares the candidates with the original draft.** A record is admitted only when it would materially correct, complete, or personalize that draft. Topical similarity by itself is not enough.
-7. **If no candidate is admitted, the host serves the original draft.** Retrieved but unnecessary records never reach the response model.
-8. **If one or more records are admitted, the host revises the answer once.** Only the admitted records are supplied to the response model, and the resulting revision becomes the final response.
+## Security without setup ceremony
 
-Every stage fails closed to the draft: a timeout, a malformed policy reply, an unavailable provider, or an exhausted latency budget serves the draft and logs why. When the planner identifies no missing context, its work usually adds no latency because it runs alongside the initial draft.
+Retold derives identity from application-controlled configuration. A model can ask to use memory, but it cannot choose its principal, user, session, or raw scope ID.
 
-> [!IMPORTANT]
-> **Measured on two blind scenario splits and a shadow harness.** At most 1 of 20 ordinary turns received memory. Explicit stored facts were recalled 10 of 10 and 9 of 10 times, implicit needs 7 of 8 and 6 of 7. Nothing placebo, misleading, private, or unsafe was ever admitted.
-
-Two more things make this work in practice:
-
-- **An ambient profile.** Stable response preferences ("answer concisely", "reply in Hindi") never go through this path. An audited activation policy promotes them into a small profile that is fixed at session start.
-- **A bundle.** The models, prompts, taxonomy, and retrieval settings that produced those numbers are hashed together. A store serves a bundle only after a passing fitness result is recorded for it, and runs it in shadow mode otherwise.
-
-The path sits in the family opened by [RUMS](https://arxiv.org/abs/2604.14473) and [TRACE-Memory](https://arxiv.org/abs/2608.08446). What Retold adds:
-
-- the ambient-versus-conditional split;
-- a content-free inventory the planner sees instead of the records;
-- joint, draft-relative admission;
-- the control plane around them: shadow mode, per-stage kill switches, a decision log, and bundle gating.
-
-[The comparison in full](docs/design-contributions.md).
-
-## Three rules
-
-- **A bad record is worse than a missing one.** A claim attributed to the user must be backed by a transcript quote that entails it, or it becomes an inference that expires unless it is seen again. Contradictions are settled by source authority, and the losing record stays as lineage.
-- **An irrelevant retrieval is worse than an empty one.** Search ends with a gate that can return nothing and says why.
-- **Nothing enters the prompt prefix.** Memory arrives as a tool result, so provider-side prompt caching keeps working. The ambient profile is the one exception, and it is fixed for the session.
-
-## Quick start
-
-```bash
-pip install "retold[local-models]"     # bge-m3 embedder, NLI judge; add deepagents or crewai for an adapter
-```
-
-Three lines open a store, allow an agent to read and write one user's memory, and build the runtime:
-
-```python
-from retold import MemoryHost, Scope, Store, build_runtime, load_config
-
-store = Store("memory.sqlite")
-MemoryHost(store).grant("assistant", Scope(kind="user", id="aditya"), read=True, write=True)
-runtime = build_runtime(load_config(), store)
-```
-
-#### Integrating with Deep Agents or CrewAI
-
-Hand the runtime to an adapter and the framework does the rest: tools registered, identity taken from the run, turns captured, extraction scheduled at session end. The CrewAI adapter takes the same runtime; see the [guide](https://adimyth.in/retold/guide/using/).
-
-```python
-from deepagents import create_deep_agent
-from retold.adapters.deepagents import DeepAgentsMemoryAdapter
-
-adapter = DeepAgentsMemoryAdapter(runtime)
-agent = create_deep_agent(model=model, tools=adapter.tools(),
-                          system_prompt=adapter.system_prompt("You are a helpful assistant."),
-                          middleware=[adapter.middleware()])
-agent.invoke({"messages": [...]}, {"configurable": {"thread_id": "s1", "agent_id": "assistant", "user_id": "aditya"}})
-```
-
-The grant is the one deliberate step: isolation is enforced by scope and grant before anything is ranked, so an agent reads nothing it was not given.
-
-#### Integrating with any other framework
-
-The runtime works on its own. `runtime.handlers` is the five tools as Python calls, `runtime.hooks` records the session, and `runtime.handlers.tool_schemas(principal)` gives any framework the schemas to register.
-
-```python
-from retold import Principal
-
-me = Principal("assistant", "aditya", "session-1", None)
-runtime.hooks.on_session_start(me)
-runtime.hooks.on_turn(me, "user", "I prefer concise answers.")
-runtime.handlers.memory_write(me, {"type": "semantic", "content": "Aditya prefers concise answers.",
-                                   "attribute": "answer_style", "source_kind": "user_statement",
-                                   "evidence": "I prefer concise answers."})
-runtime.handlers.memory_search(me, {"queries": ["answer style"]})
-runtime.hooks.on_session_end(me)          # hands the transcript to extraction
-```
-
-To turn on the utility-aware path, build the adapter with `memory_mode="utility_aware"` and the measured bundle from `retold.policy.reference`. The [guide](https://adimyth.in/retold/guide/using/) walks through it, and `examples/` runs both adapters with fakes and no keys.
-
-## How it works
-
-### The record
-
-One envelope for every memory. A current fact is keyed by entity and attribute, so "Aditya's editor" has one live answer and a chain of superseded rows behind it.
-
-| | |
+| Concept | Meaning |
 | --- | --- |
-| **Type** | `semantic`, `episodic`, `procedural` |
-| **Scope** | `user`, `project`, `org`, or a private agent scope; access is a separate grant |
-| **Source** | `user_statement` › `system` › `tool_result` › `agent_inference`, ranked by authority, plus the verbatim `evidence` |
-| **Status** | `provisional` → `confirmed` → `superseded` / `expired` / `deleted` |
-| **Activation** | `conditional` (must pass retrieval and admission) or `ambient` (in the session profile) |
-| **Time** | created, event, expiry, stated validity bounds, scheduled review |
+| Principal | The agent and user making the request, plus the current session and optional project |
+| Scope | The owner of a set of records: a private agent-user pair, user, project, or organization |
+| Grant | Permission for an agent to read or write a shared scope |
+| Session | The conversation that supplies evidence and consumes memory |
 
-A user statement or tool result starts confirmed. An inference starts provisional and expires in 30 days unless it is seen again.
+Every agent-user pair receives an implicit private scope. The facade uses it, so two users of the same agent cannot read each other's memories and no grant is necessary.
 
-### Two ways in
+Applications use explicit grants when agents need shared memory:
 
-- **During the session**, the agent calls `memory_write` with content, evidence, and entity mentions. The quote is located in the transcript and checked for entailment with a local NLI model. The record is then compared with what exists and created, reinforced, superseded, or marked conflicting.
-- **After the session**, an extractor proposes candidates from the whole transcript. A separate reviewer accepts, rejects, or narrows each one before it takes the same validation path.
+```python
+from retold import MemoryHost, Scope
 
-There is no per-message extraction. It charges every turn and stores guesses from an unfinished conversation.
+host = MemoryHost(retold.store)
+host.grant("research-assistant", Scope("project", "retold"), read=True, write=True)
+```
 
-### One way out
+Retold filters by scope and grant before ranking candidates. A caller cannot infer a foreign record through search results, lookup errors, or decision logs.
 
-`memory_search` runs the same pipeline whoever calls it:
+## How Retold works
 
-1. Filter by scope, lifecycle, type, and time before any candidate exists.
-2. Generate candidates from three channels: dense (`bge-m3`), lexical (FTS5 BM25), and exact entity aliases.
-3. Fuse by reciprocal rank; decay old episodes.
-4. Gate each survivor on its own evidence, or return nothing and say why.
-5. Collapse near-duplicates; fill the result within a token budget.
-6. Log every candidate, score, decision, and stage timing.
+### Records enter through evidence checks
 
-Warm searches take about 23 ms on a thousand records and 74 ms on fifty thousand.
+During a session, an agent can call `memory_write` with a claim and source quote. After a session, an optional extractor and separate reviewer can propose memories from the transcript. Both paths apply the same evidence, entity, duplicate, contradiction, authority, and lifecycle rules.
 
-### Who searches
+A direct user statement or tool result starts confirmed. An agent inference starts provisional and expires after 30 days unless later evidence reinforces it. Superseded records remain as lineage.
 
-| Mode | Who calls `memory_search` | Status |
-| --- | --- | --- |
-| `tool_only` | The model, when it decides to. The utility-aware path runs beside it for the turns the model would never search for. | Default |
-| `auto`, `hybrid` | The host, on every user turn. | Experimental controls. Refused together with the utility-aware path, since they would put records in front of the model before admission decided anything. |
+### Searches can return nothing
 
-Full detail, with diagrams: [Architecture](https://adimyth.in/retold/guide/architecture/) · [Components](docs/components.md) · [Low-level design](docs/agent-memory-lld.md)
+`memory_search` uses one pipeline regardless of caller:
 
-## Configuration
+1. Filter by scope, grant, lifecycle, type, and time.
+2. Generate candidates from BGE-M3 embeddings, SQLite FTS5 BM25, and exact entity aliases.
+3. Fuse the channels by reciprocal rank and decay old episodic records.
+4. Gate each candidate against its own evidence.
+5. Remove near-duplicates and fit results within a token budget.
+6. Log candidates, scores, decisions, explanations, and stage timing.
 
-One YAML file, every value defaulted and validated. These are the keys an integrator is likely to touch; [the low-level design](docs/agent-memory-lld.md#2-configuration) explains all of them.
+Warm searches measured 23 ms at 1,000 records and 74 ms at 50,000 records on the project fixtures.[^1]
 
-| Key | Default | Allowed values | What it does |
-| --- | --- | --- | --- |
-| `retrieval.trigger.mode` | `tool_only` | `tool_only`, `auto`, `hybrid` | Who calls `memory_search`. |
-| `retrieval.gate.dense_floor.<type>` | 0.45 semantic, 0.40 episodic, 0.45 procedural, 0.50 session_summary | 0.0 to 1.0 per type | The cosine a dense-only candidate must reach. The defaults sit inside the band whose F1 is within 90% of the best on a labelled fixture. |
-| `retrieval.gate.auto.*` | stricter floors, `entity_exempt: false` | the same keys as `gate`, plus `exclude_source_kinds` | The gate for host-issued searches. |
-| `retrieval.default_k`, `retrieval.token_budget` | 8, 1500 | positive integers | Results returned and the tool-result ceiling. |
-| `embedding.model`, `embedding.version` | `BAAI/bge-m3`, `"1"` | any sentence-transformers model id; any string | Every stored vector carries both. Changing either is a migration (`retold reembed`) that recalibrates the floors. |
-| `ingestion.evidence.entail_floor` | 0.70 | 0.0 to 1.0 | How strongly a quote must support a direct claim. |
-| `ingestion.provisional_ttl_days`, `ingestion.reinforcements_to_confirm` | 30, 2 | positive integers | Lifecycle of inferences. |
-| `ingestion.extraction_model`, `ingestion.review_model` | `claude-haiku-4-5-20251001` | any `claude-*` id (Anthropic) or OpenAI model id | The two hosted models in the background write path. |
-| `reranker.enabled`, `retrieval.rewrite.enabled` | `false` | `true`, `false`; the reranker also needs `reranker.floor` | A cross-encoder and a query rewriter. Both built, both measured, neither helped. |
+## Is Retold a fit?
 
-The utility-aware path is configured by the host that owns the model clients, through `UtilityAwareConfig` and `supported_bundle()`, not through this file.
+Use Retold when you are building a Python agent that needs durable per-user or per-project memory, wants local storage and retrieval, and must preserve evidence, lifecycle, and access boundaries.
 
-## What the numbers say
+Current boundaries:
 
-- **It stays quiet.** On ordinary turns, the ones public memory benchmarks never test, the utility-aware path injected on at most 1 of 20, against a target of 5%.
-- **It still remembers.** Explicit stored facts came back 10 of 10 and 9 of 10 times; implicit needs 7 of 8 and 6 of 7. Every eligible response preference was promoted to the ambient profile, and the one unsafe candidate went to review.
-- **It never admitted anything harmful.** Zero placebo, misleading, private, or unsafe records across every run of the suite, and every fail-closed branch is tested.
-- **It leaks nothing.** Zero cross-principal violations on a synthetic four-user store and a 1,074-record fixture, checked at every log stage, through `memory_get`, and against grants.
-- **It is cheap to call.** Warm search p50 23 ms on 1K records and 74 ms on 50K; write p50 26 ms; four concurrent writers beside two extraction workers with zero lock errors.
-- **It knows what does not work.** A cross-encoder reranker and a query rewriter were built and measured in every placement; both removed the records the judge needed and neither is enabled. The only judge that passed the safety bar was one of three frontier models tried, and that result is pinned in the bundle rather than assumed of the next model.
+- Retold is a Python library backed by SQLite, not a hosted service or distributed database.
+- Python 3.12 and 3.13 are supported.
+- Real retrieval and evidence checks require about 6 GB of local model files.
+- Background extraction and utility-aware operation require configured Anthropic or OpenAI clients.
+- Utility-aware results come from controlled offline evaluation. Production users should begin in shadow mode and inspect their decision logs.
 
-All of it is in the [acceptance report](docs/acceptance-report.md) and the [experiment record](docs/usefulness-gate.md), with the run behind each number.
+## Configuration and deeper documentation
 
-## Documentation
+One validated YAML file controls retrieval floors, result and token budgets, embedding versions, inference lifecycle, extraction models, and optional reranking or query rewriting. The defaults reproduce the supported local retrieval configuration.
 
-**Guide:** [Architecture](https://adimyth.in/retold/guide/architecture/) · [Using it](https://adimyth.in/retold/guide/using/) · [Configuration](https://adimyth.in/retold/guide/configuration/) · [API reference](https://adimyth.in/retold/api/)
-
-**Design:** [Components](docs/components.md) · [High-level design](docs/agent-memory-hld.md) · [Low-level design](docs/agent-memory-lld.md) · [Utility-aware architecture](docs/utility-aware-memory-architecture.md) · [What is distinctive](docs/design-contributions.md)
-
-**Evidence:** [Acceptance report](docs/acceptance-report.md) · [Utility-aware experiments](docs/usefulness-gate.md) · [Experiments](benchmarks/README.md)
+- **Start integrating:** [Using Retold](https://adimyth.in/retold/guide/using/) and [API reference](https://adimyth.in/retold/api/)
+- **Understand the system:** [Architecture](https://adimyth.in/retold/guide/architecture/), [components](docs/components.md), and [low-level design](docs/agent-memory-lld.md)
+- **Inspect the evidence:** [Acceptance report](docs/acceptance-report.md), [utility-aware experiments](docs/usefulness-gate.md), and [benchmark fixtures](https://github.com/adimyth/retold/blob/main/benchmarks/README.md)
 
 ## License
 
 MIT. Commits follow [Conventional Commits](https://www.conventionalcommits.org/); after cloning, run `git config core.hooksPath .githooks`.
 
-[^1]: The Phase 9a vertical slice: one fixed twelve-turn conversation, replayed three times through a hosted model in `hybrid` mode, giving 36 host-issued searches. For each search the table takes the highest dense cosine among its candidates and groups the searches by whether the turn needed memory. It is a small sample from one scripted conversation with one embedder, and it was reproduced from scratch with the same shape. It measures the dense channel's best score, not the full gate. Method and per-turn results: [benchmarks/README.md](benchmarks/README.md).
+[^1]: The latency measurements use warm local search with a real embedder on the 1,000-record fixture and a fixed 25 ms embedding cost on the 50,000-record fixture. See [the acceptance report](docs/acceptance-report.md).
+[^2]: The similarity table comes from one fixed twelve-turn conversation replayed three times through a hosted model in `hybrid` mode. It describes 36 host-issued searches with one embedder and measures the dense channel's highest score rather than the complete retrieval gate. See [the benchmark record](https://github.com/adimyth/retold/blob/main/benchmarks/README.md).

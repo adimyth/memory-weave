@@ -1,11 +1,10 @@
-"""A short scripted conversation through the Deep Agents adapter, with the memory tool calls visible.
+"""A deterministic adapter simulation with scripted replies and visible memory tool calls.
 
 Runs with fakes for every model so it needs no keys and no weights:
 
     uv run --extra deepagents python examples/deepagents_demo.py
 
-Swap the scripted model for a real one and the fake embedder and judge for the local models to run it for
-real; the adapter does not change.
+Use ``deepagents_live.py`` for a real model and Retold's local embedding and evidence models.
 """
 
 from __future__ import annotations

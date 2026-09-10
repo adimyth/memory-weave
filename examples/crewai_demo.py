@@ -1,8 +1,10 @@
-"""The same scripted conversation as the Deep Agents demo, through a CrewAI crew.
+"""A deterministic CrewAI adapter simulation with scripted replies and fake memory models.
 
 Runs with fakes for every model so it needs no keys and no weights:
 
     CREWAI_DISABLE_TELEMETRY=true uv run --extra crewai python examples/crewai_demo.py
+
+Use ``crewai_live.py`` for a real model and Retold's local embedding and evidence models.
 """
 
 from __future__ import annotations
