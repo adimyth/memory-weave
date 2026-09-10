@@ -59,7 +59,7 @@ them.
 ## Configuration flags that matter to a benchmark
 
 `retrieval.trigger.mode` (`tool_only`, `auto`, `hybrid`); `retrieval.rewrite.enabled` and `reranker.enabled`
-with `reranker.floor`, both off and both measured off in `docs/usefulness-gate.md` section 8n;
+with `reranker.floor`, both off and both measured off in `docs/usefulness-gate.md`;
 `reranker.mode` (`rrf_cross_encoder` after the RRF floors, or `cross_encoder_only` in place of them, section
 8p), `reranker.timeout_ms`, and `reranker.on_failure` (`fallback` to the RRF order, or `fail`);
 `retrieval.gate.dense_floor.<type>` and `.session_summary`, `lexical_min_term_fraction`,

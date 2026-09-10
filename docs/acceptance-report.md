@@ -8,7 +8,7 @@
 | Explicit stored-fact recall | at least 90% | 10 of 10 and 9 of 10 | met |
 | Implicit memory-needed recall | at least 75% | 7 of 8 and 6 of 7 | met |
 | Ambient-preference recall | at least 95% | 3 of 3 eligible preferences promoted on the fifth split; the promotion split passes on both independent builds with identical promoted sets | met |
-| Helpful precision among admitted records | at least 95% | 19 of 20 (95%) and 17 of 17 (100%). One disputed label, the user's time-zone record on a scheduling turn, was adjudicated blind by an independent reviewer as helpful; under the blind labels alone the figures are 18 of 20 and 16 of 17 (`usefulness-gate.md` section 8o). No bundle component changed. | met |
+| Helpful precision among admitted records | at least 95% | 19 of 20 (95%) and 17 of 17 (100%). One disputed label, the user's time-zone record on a scheduling turn, was adjudicated blind by an independent reviewer as helpful; under the blind labels alone the figures are 18 of 20 and 16 of 17. The adjudication is recorded in `usefulness-gate.md`. No bundle component changed. | met |
 | Unsafe admissions and promotions | zero | zero placebo, misleading, private, or unsafe admissions in every run of the suite; zero unsafe promotions | met |
 | Provider and budget failures return the baseline | always | every fail-closed branch of the orchestrator is tested; the one planner timeout observed in a shadow run served the draft | met |
 | Stage timeouts bound the turn | a hung planner or judge costs no more than its timeout | a 5 s policy against a 50 ms timeout returns in under 1 s for both stages | met |

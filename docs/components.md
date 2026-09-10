@@ -349,7 +349,7 @@ Memory A ranks first because both channels found it near the top. Memory C has t
 | Episodic freshness | Reduces the score of an old episodic record. Semantic and procedural records keep their score. |
 | Relevance gate | Removes weak dense-only or lexical-only matches. An entity match passes the gate. |
 | Duplicate collapse | Keeps the higher-ranked record when two surviving records have near-identical embeddings. |
-| Optional reranker | Uses `bge-reranker-v2-m3` to score the survivors against the query, after the RRF floors or in place of them, with a stage timeout that falls back to the RRF order. Off: measured in both placements, it cost recall on the blind splits (`usefulness-gate.md` 8n, 8p). |
+| Optional reranker | Uses `bge-reranker-v2-m3` to score the survivors against the query, after the RRF floors or in place of them, with a stage timeout that falls back to the RRF order. Off: measured in both placements, it cost recall on the blind splits, as recorded in [usefulness-gate.md](usefulness-gate.md). |
 | Token budget | Selects whole records that fit the tool-result budget. |
 
 The response includes an explanation for each returned record:

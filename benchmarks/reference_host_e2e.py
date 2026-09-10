@@ -149,7 +149,7 @@ def main(argv: list[str] | None = None) -> int:
     BundleRegistry(store).record(
         dict(components, gap_enabled=True),
         passed=True,
-        evidence="docs/usefulness-gate.md 8k,8l",
+        evidence="docs/usefulness-gate.md; docs/acceptance-report.md",
         recorded_by="reference_host_e2e",
     )
     host.set_switches(KillSwitches(regeneration=True))

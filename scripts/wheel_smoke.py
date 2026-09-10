@@ -22,7 +22,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 # The retrieval hash of the supported bundle, recorded in benchmarks/bundles/bundle-2026-09-08-a.json and in
-# docs/usefulness-gate.md section 8p. The wheel has neither file, so the value is pinned here as well.
+# docs/usefulness-gate.md. The wheel has neither file, so the value is pinned here as well.
 SUPPORTED_RETRIEVAL_HASH = "e8c8c3309ab121de"
 _AT = datetime(2026, 9, 9, 12, 0, tzinfo=UTC)
 

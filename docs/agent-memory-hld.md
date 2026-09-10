@@ -1,6 +1,6 @@
 # Agent Memory System: High-Level Design
 
-This document is the companion to `agent-memory-research-notes.md` (research and initial design specification), `agent-memory-lld.md` (implementation detail), and [utility-aware-memory-architecture.md](utility-aware-memory-architecture.md) (the authoritative design for ambient profiles and host-issued memory decisions). It records the current design decisions and why they were made; every deliberately deferred decision names the experiment that will settle it.
+This document explains the system-level design and its major decisions. [agent-memory-lld.md](agent-memory-lld.md) specifies the implementation, [components.md](components.md) explains the parts through examples, and [utility-aware-memory-architecture.md](utility-aware-memory-architecture.md) is authoritative for ambient profiles and host-issued memory decisions.
 
 ## 1. Goals and non-goals
 
@@ -67,7 +67,7 @@ When an agent calls `memory_search`, the system follows the same sequence every 
 5. It gives episodic records a recency adjustment, then returns no memory at all if every candidate is weak and no exact entity match exists.
 6. It collapses near-duplicates, optionally reranks the survivors, and returns only as much information as fits the context budget. It logs every decision so the result can be explained later.
 
-Dense retrieval uses cosine similarity over `bge-m3` dense embeddings in the in-memory vector matrix. Lexical retrieval uses SQLite FTS5 with BM25 over `content`, `subject`, and entity aliases. Entity retrieval uses exact alias matches within an authorized scope, ordered by recency; it does not do fuzzy entity resolution or automatic entity merges. The optional reranker is `bge-reranker-v2-m3`. It is built, measured, and disabled by default: in both placements, after the RRF floors and in place of them, it removed the expected record from the judge's candidate pool on about one turn in five, so it costs recall it does not repay; refer `usefulness-gate.md` sections 8n and 8p. Its measured stage cost is about 165 ms at p50 and up to 2 s at p95 on a laptop.
+Dense retrieval uses cosine similarity over `bge-m3` dense embeddings in the in-memory vector matrix. Lexical retrieval uses SQLite FTS5 with BM25 over `content`, `subject`, and entity aliases. Entity retrieval uses exact alias matches within an authorized scope, ordered by recency; it does not do fuzzy entity resolution or automatic entity merges. The optional reranker is `bge-reranker-v2-m3`. It is built, measured, and disabled by default: in both placements, after the RRF floors and in place of them, it removed the expected record from the judge's candidate pool on about one turn in five, so it costs recall it does not repay; refer to [usefulness-gate.md](usefulness-gate.md). Its measured stage cost is about 165 ms at p50 and up to 2 s at p95 on a laptop.
 
 ## 3. Memory types and how each is treated
 
@@ -214,7 +214,7 @@ The scope filter runs before any candidate generator. Dense, lexical, and entity
 
 **Empty is a first-class answer.** The gate returns no results when the best candidate is weak on every signal: below the cosine floor on dense, below the BM25 floor on lexical, and not an entity match. The floors are configuration values, calibrated on the evaluation set and re-calibrated whenever the embedding model changes.
 
-**A reranker is built, measured, and disabled by default.** `bge-reranker-v2-m3` sits behind `reranker.enabled`, reranks the surviving candidates after duplicate collapse rather than the whole store, and can be placed after the RRF relevance floors or in place of them (`reranker.mode`). A stage timeout falls back to the RRF order and records the outcome in the search log. Measured on the blind splits, either placement cut weak candidates by an order of magnitude and lost explicit recall below the 90 percent gate, because the judge already rejected the weak candidates and the cross-encoder cut expected records too; refer `usefulness-gate.md` sections 8n and 8p. It stays off until a floor calibrated on gap queries or a fine-tuned pair scorer changes that result.
+**A reranker is built, measured, and disabled by default.** `bge-reranker-v2-m3` sits behind `reranker.enabled`, reranks the surviving candidates after duplicate collapse rather than the whole store, and can be placed after the RRF relevance floors or in place of them (`reranker.mode`). A stage timeout falls back to the RRF order and records the outcome in the search log. Measured on the blind splits, either placement cut weak candidates by an order of magnitude and lost explicit recall below the 90 percent gate, because the judge already rejected the weak candidates and the cross-encoder cut expected records too; refer to [usefulness-gate.md](usefulness-gate.md). It stays off until a floor calibrated on planner queries or a fine-tuned pair scorer changes that result.
 
 **Results carry explanations.** Each returned record includes an explanation object containing the raw and, if enabled, rewritten query; the generators that matched it; its rank and score from each generator; fused rank; any freshness adjustment; whether reranking changed its rank; its source kind, status, dates, and entity links; and why it survived the gate, duplicate collapse, and token budget. The response-level explanation also records why a search returned nothing. The agent can reject a record on that basis, and the user can inspect it.
 
@@ -259,7 +259,7 @@ Decision: entity resolution uses exact alias matches within scope. An extractor 
 | --- | --- | --- | --- |
 | Embedding | `bge-m3`, dense head only, 1024 dims, run locally | Open, multilingual, strong on short declarative text, no network call in the search path. | A Nomic Embed Text model for a smaller footprint. Any hosted embedding through the same interface. |
 | Extraction | A small hosted model with reliable structured output (Claude Haiku 4.5 or equivalent) | Extraction runs off the hot path; quality of evidence-grounded output matters more than speed. | A local instruction-tuned model. |
-| Reranker | `bge-reranker-v2-m3`, built behind a disabled feature flag | Same family as the embedder; small enough to run locally. Measured at about 165 ms p50 per search; disabled because it cost recall on the blind splits (`usefulness-gate.md` 8n, 8p). | None. |
+| Reranker | `bge-reranker-v2-m3`, built behind a disabled feature flag | Same family as the embedder; small enough to run locally. Measured at about 165 ms p50 per search; disabled because it cost recall on the blind splits, as recorded in [usefulness-gate.md](usefulness-gate.md). | None. |
 | Serving | Whatever the host framework uses | The memory layer never calls the serving model. | n/a |
 
 Every embedding row stores the model name and version. Changing the embedder is a migration that re-embeds the whole store and re-calibrates the gate floors. It is never silent.
@@ -278,7 +278,7 @@ Targets on a laptop, single process, store of up to 50K records.
 
 The in-memory vector matrix and same-process SQLite FTS5 queries are what make these numbers possible. A network hop to a separate vector database would consume much of the budget on its own.
 
-These were design targets. Phase 15 measured them on a laptop with the real embedder and judge: warm `memory_search` p50 23 ms and p95 28 ms on a 1K-record fixture, and p50 74 ms and p95 78 ms on a 50K-record store with a fixed 25 ms embedding cost; `memory_write` p50 26 ms, p95 471 ms when the write reaches the NLI judge; the first search after opening a store 2.6 s, which is the model load. The full table is in [../BENCHMARK_HANDOFF.md](../BENCHMARK_HANDOFF.md) and [acceptance-report.md](acceptance-report.md).
+These were design targets. Phase 15 measured them on a laptop with the real embedder and judge: warm `memory_search` p50 23 ms and p95 28 ms on a 1K-record fixture, and p50 74 ms and p95 78 ms on a 50K-record store with a fixed 25 ms embedding cost; `memory_write` p50 26 ms, p95 471 ms when the write reaches the NLI judge; the first search after opening a store 2.6 s, which is the model load. The full table is in the repository's `BENCHMARK_HANDOFF.md` and [acceptance-report.md](acceptance-report.md).
 
 ### Per-stage benchmark instrumentation
 
@@ -319,7 +319,7 @@ Every search writes one log row: raw request; rewritten query and rewrite status
 
 | Question | Current default | Experiment that settles it |
 | --- | --- | --- |
-| Does query rewriting help? | Built, measured, off. | Settled for now: the planner's gap queries are already standalone, so rewriting changed 2 to 5 of about 39 searches per split and cost 1.7 to 1.9 s each (`usefulness-gate.md` 8n). Revisit if model-written queries in `tool_only` show follow-up misses. |
+| Does query rewriting help? | Built, measured, off. | Settled for now: the planner's retrieval queries are already standalone, so rewriting changed 2 to 5 of about 39 searches per split and cost 1.7 to 1.9 s each, as recorded in [usefulness-gate.md](usefulness-gate.md). Revisit if model-written queries in `tool_only` show follow-up misses. |
 | Does the reranker earn its latency? | Built, measured in both placements, off. | Settled for now: it cost explicit recall on both blind splits (8n, 8p). Revisit with a floor calibrated on gap queries or a fine-tuned pair scorer. |
 | Are the gate floors right? | Swept on a labelled 1K fixture in Phase 15. | The configured semantic floor of 0.45 sits inside the band whose F1 is within 90 percent of the best (0.44 to 0.66); resweep after any embedder change. |
 | Is per-message extraction worth it? | Session-end only. | Compare recall of mid-session facts against pollution rate. |

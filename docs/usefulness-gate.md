@@ -1,695 +1,89 @@
-# Usefulness, not relevance: a direction for the gate's second question
+# Utility-aware memory experiments
 
-Written 6 September 2026. Companion to [gate.md](gate.md), which establishes that the gate answers "is this record about the same subject as the turn" and is being asked "will this record change the answer". This note surveys what the 2024 to 2026 literature says about that second question and proposes a direction that can be validated on the artifacts already in `benchmarks/results`.
+This document records the evidence behind Retold's utility-aware host path. It keeps the conclusions and reproducibility details that remain useful after implementation. The authoritative runtime design is [utility-aware-memory-architecture.md](utility-aware-memory-architecture.md), and the release-level verdict is [acceptance-report.md](acceptance-report.md).
 
-## 1. The question, stated precisely
+## The question
 
-The gate scores a pair, `(turn, record)`. Usefulness is not a property of that pair. It is a property of the triple `(turn, record, answer)`: a record is useful exactly when the best answer with it differs from the best answer without it.
+Retrieval relevance asks whether a record concerns the user query. It does not establish whether giving that record to the response model will improve the answer. The original relevance-gate experiment found that the best similarity scores for ordinary turns and memory-needed turns overlap at every threshold. Raising the threshold removes useful records along with unwanted ones.
 
-That definition is not new. It is the value of information from decision theory, and it is the definition every recent utility-centric retrieval paper converges on independently. FILCO calls it conditional cross-mutual information, the ratio of the output likelihood with the passage to the likelihood without it. The LLM-specific utility paper defines a passage as utilitarian "if its inclusion leads to improved answer generation compared to answering without any external evidence". RUMS defines memory utility as the entropy of the response without the memory minus the entropy with it. TRACE-Memory defines it as "how much the selected evidence improves the final response beyond what the public-only path already achieves".
+Retold therefore evaluates usefulness relative to an answer:
 
-Three things follow, and they explain the Phase 9a result exactly.
+1. Generate a baseline draft without conditional memory.
+2. Identify specific missing context using a content-free inventory of the memory categories available to the caller.
+3. Retrieve only for that missing context.
+4. Compare the bounded candidate set with the baseline draft.
+5. Admit a record only when it would materially improve the answer, with an empty set as a valid result.
 
-1. **No pair score can compute it**, because the answer is missing from the pair. Cosine, lexical overlap, entity match, and a cross-encoder reranker all score the pair. Direction 5.3 in gate.md would sharpen the boundary and could not move it, for this reason.
-2. **No turn-only score can compute it either**, because the record is missing. A turn classifier answers "could this turn depend on prior state", which is a prior, not the decision. Direction 5.2 is the weak form of something better, covered in section 4.
-3. **It is generator-specific.** The same record is useful to a model that does not know the fact and useless to one that does. Utility judgments transfer poorly across models. A vendor-neutral host cannot hard-code it; it has to measure it per serving model.
+Stable response preferences are handled separately as audited ambient memory because they shape many answers and should not be rediscovered on each turn.
 
-## 2. What the literature says
+## Evaluation design
 
-Grouped by what each method judges. The column that matters for Retold is whether the method works against a hosted model that exposes only text.
+The final evaluation uses two blind scenario splits plus a shadow run through the real orchestrator. The scenarios contain explicit questions about stored facts, implicit turns that require prior state, ordinary turns adjacent to stored records, placebos, misleading records, private records, conflicts, superseded records, and jointly useful evidence. Expected records are hidden from the planner and admission judge.
 
-### 2.1 Judging the turn alone
+The primary gates are ordinary-turn conditional injection, explicit and implicit recall, helpful precision, unsafe admission, ambient-preference promotion, isolation, and fail-closed behavior. Retrieval and write latency are measured separately in the acceptance report.
 
-| Work | What it does | Black-box | Result |
-| --- | --- | --- | --- |
-| RAGate, Findings of NAACL 2025 | Gate on whether a conversational turn needs augmentation. Prompted, fine-tuned, and attention-encoder variants. | Yes | On KETOD, where 12.1% of turns need knowledge, the best gate reaches F1 0.41. Prompt-only variants reach F1 0.12. |
-| When2Call, NAACL 2025 | Benchmark for when to call a tool, ask, or abstain. | n/a | Frontier tool-calling models have "significant room for improvement". Preference optimisation helps more than fine-tuning. |
-| Adaptive retrieval survey, ACL 2025 | 35 methods for deciding whether to retrieve, compared on 6 datasets. | Mixed | Plain uncertainty estimation matches or beats elaborate self-knowledge pipelines. The decision is best made from the model's own uncertainty, not from reasoning about the question. |
-| TARG, 2025 | Decode a 20-token prefix without context and gate on its logit margin. | No, needs logprobs | Cuts retrieval 70 to 90% against always-retrieve while improving accuracy. Threshold set by quantile to hit a retrieval budget. |
-| ENPMR-Bench, 2026 | Proactive memory retrieval from inferred latent needs. | Yes | Chain of thought lifts type-match from 0.53 to 0.59 and empathy from 4.59 to 4.66 against a gold ceiling of 4.91. |
-| TriggerBench, 2026 | Detect that a stored constraint applies to a later turn when the two share no content words. | Yes | Reasoning adds 14 points. Models show an "always remind" bias: 98% on positives, 44% on negatives. Always-visible core memory beats embedding retrieval, 62% to 52%. |
+## Final result
 
-Reading: a turn-only yes-or-no judgement is weak and does not get strong with more reasoning. The methods that work in this row use the model's uncertainty about its own answer, which is information about the answer, not about the turn. That matches the concern in the request that more reasoning is not the direction.
-
-### 2.2 Judging the record given a pseudo-answer
-
-| Work | What it does | Black-box | Result |
-| --- | --- | --- | --- |
-| Are LLMs good at utility judgments, SIGIR 2024 | Distinguish utility from relevance for QA passages. | Yes | Instructed LLMs can separate the two. Listwise judgement with sampling reduces order sensitivity. |
-| ITEM, Findings of ACL 2026 | Interleave pseudo-answer generation, relevance ranking, and utility filtering. | Yes | Cumulative gains over a single-shot utility filter. |
-| Utility-focused annotation, EMNLP 2025 | Label passages by utility against an LLM pseudo-answer instead of by relevance. | Yes | Utility labels predict downstream answer quality better than relevance labels. |
-| LLM-specific utility, 2025 | Measure utility as answer improvement for a specific model; test verbalised judgements. | Yes | Pseudo-answers add 5 to 10 F1 points to utility judgements. Verbalised listwise selection still only reaches about 50 to 54 F1 on open-domain QA. Utility does not transfer across models. |
-| UsefulBench, 2026 | Human labels for both relevance and usefulness on the same pairs. | Yes | Embedding retrievers align with relevance more than usefulness. LLM rankers improve usefulness but plateau. A fine-tuned 8B classifier beats GPT-4.1 on usefulness. |
-| Decision-aware memory cards, CICL, 2026 | Score each context unit by whether it would change the agent's next action, via a structured judge. | Yes, hosted judges | hit@1 0.78 against BM25 0.58 on file selection. Heuristic judge weights beat learned rankers. Cards carry an explicit "trigger: when to consult" field. |
-
-Reading: the consistent lever is conditioning the judgement on a draft answer. That is what turns the pair into a triple. The honest caveat is that verbalised utility judgement is far from perfect on hard open-domain sets. Retold's setting is easier: at most eight short candidates, one principal, and records that are single claims.
-
-### 2.3 Judging the answer delta directly
-
-| Work | What it does | Black-box | Result |
-| --- | --- | --- | --- |
-| FILCO, 2023 | Filter context by CXMI, entailment, or lexical overlap; train a filter on those labels. | Labels need logprobs, filter does not | Better answers with prompts up to 64% shorter. |
-| RUMS, ICML 2026 | Select user memories by entropy reduction of the response distribution; empty set allowed. | No, needs logits | Detects whether personalisation is needed at 92.3% recall and 96.0% specificity on real chats. Selects 1.58 items instead of 50. |
-| TRACE-Memory, 2026 | Stage 1 generates "public-conditioned information gaps" and retrieves against them. Stage 2 admits evidence by incremental likelihood gain and entropy reduction over the public-only response, with an EMPTY action. | Training needs logprobs, inference does not | Admission F1 65.3 against 21.5 for SFT-only. EMPTY rate rises from 7.7% to 12.5% as public context gets richer, while reward rises. |
-| Hindsight Memory-PRM, 2026 | After answering, delete the cited memory, re-answer, and record whether the answer flipped. Use that as credit for the memory manager. | Yes | 68% of deletions flip the answer. Intervention-calibrated credit adds 7.3 points over observational feedback. |
-| AttriMem, 2026 | Black-box attribution of the answer to memory tokens by masking subsets and fitting a sparse surrogate. | Yes | Token-level attribution rewards beat outcome-only rewards on LoCoMo and LongMemEval. |
-
-Reading: when the answer delta is measured rather than predicted, the "should memory be used at all" decision becomes accurate. RUMS is the cleanest evidence and it is white-box. TRACE-Memory shows the same decision structure can be trained offline with logprobs and then run with a text-only judge. Hindsight deletion shows the labels can be collected against a black-box generator after the fact.
-
-### 2.4 Evidence that injection is a real cost
-
-| Work | Finding |
-| --- | --- |
-| PersistBench, 2026 | Across 18 models, median failure of 53% on cross-domain leakage and 97% on memory-induced sycophancy. |
-| Structured memory for over-personalisation, 2026 | Retrieval with a similarity threshold cut leakage from 56% to 24% but raised beneficial-memory failure from 23% to 71%. Reorganising the prompt cut leakage by only 4 to 9%. |
-| When personalization misleads, Findings of ACL 2026 | Personalised models answer factual questions in line with user history instead of truth. |
-| RootMem, 2026 | Two failure classes named explicitly: records semantically similar but logically irrelevant, and records semantically distant but logically essential. Strongest retrieval baseline reaches 43.5% on that split. |
-
-Reading: two of these directly reproduce the Phase 9a findings on other people's systems. A similarity threshold trades beneficial recall for reduced injection at a bad rate, which is the sweep in gate.md section 3. And an always-visible core block beats retrieval for records that apply broadly, which is the profile-block result in gate.md section 9.
-
-## 3. The thesis
-
-Change the object being judged, not the amount of reasoning applied to it.
-
-The pair `(turn, record)` cannot carry the usefulness signal. The turn alone cannot either. The literature that succeeds on this decision, whether white-box or black-box, always gets a draft answer into the judgement, either as a generated pseudo-answer, as the response distribution, or as an after-the-fact deletion test. Everything that stays on the turn or the pair plateaus.
-
-For Retold this is good news, because the host loop sits in exactly the right place to obtain a draft answer, and the design already prefers a missed recall over an unwanted injection, which is the failure asymmetry a utility gate needs.
-
-## 4. The proposal: judge the answer, in three tiers
-
-The three tiers are independent and cumulative. Each is testable offline first.
-
-### Tier A. Elicit the information gaps, then retrieve against them
-
-Before retrieval, ask a cheap model one question about the turn: *list the specific facts about this user, their organisation, or your prior conversations whose value would change your answer; write `none` if the answer is the same for everyone.* The output is a short list of gap descriptions, or empty.
-
-This is TRACE-Memory's public-conditioned retrieval, and it differs from direction 5.2 in one way that matters. A yes-or-no classifier is the task RAGate showed to be weak. Naming the missing fact is a generative, grounded task, and its empty case is the "no". It also produces the retrieval query: retrieval runs against the gap descriptions, not against the raw turn.
-
-Worked on the two hard turns:
-
-- *"What time zone should you use when suggesting a meeting for me?"* Gaps: the user's working time zone. Retrieval on that phrase against "working timezone: Asia/Kolkata" is a query-to-answer match, which is far sharper than question-to-statement cosine.
-- *"How often should a deployment checklist be reviewed?"* Gaps: none, or at most the organisation's review policy. Nothing in that retrieves "Priya Nair owns the deployment checklist". The record that scored 0.63 on the raw turn is not adjacent to the gap.
-- *"Should I use tabs or spaces in Python?"* Gaps: none. The code-language preference does not enter, and it does not need to, because it is a profile record and the profile block carries it.
-
-ENPMR-Bench is the caution here: inferring latent emotional needs gained only modestly from reasoning. Factual slots are a much narrower target, and the pass criterion in section 7 will show whether that difference holds.
-
-### Tier B. Admit each candidate by whether it changes a draft
-
-After retrieval, obtain a draft answer produced without memory, then ask a judge one question per candidate: *given this draft, does the record contradict it, fill a gap the draft left open, or leave it unchanged?* Only the first two admit the record.
-
-This is the pseudo-answer utility judgement of section 2.2, applied to a small candidate set. It resolves the residual case in gate.md section 9a on its own: knowing who owns the checklist does not change a draft about review cadence, and a judge asked that question says so. It is a property of the triple, which is why the pair gate could never see it.
-
-Two ways to obtain the draft, in order of cost:
-
-1. **A cheap model writes a sketch.** A few hundred tokens from a small hosted or local model. This is the version to measure first.
-2. **The serving model answers speculatively.** In `hybrid` today the host searches first and then calls the model once. Invert it: call the model once without memory, judge the candidates against that reply, and call again only when a candidate is admitted. On an ordinary turn this is one serving call, as today, plus one small judge call. On a turn where memory applies it is two serving calls. Since ordinary turns dominate, the expected cost rises modestly and the ordinary-turn injection rate falls to the judge's false-positive rate. The draft also reveals self-declared gaps, because a model that lacks the time zone tends to say so.
-
-A zero-model-call variant exists for the contradiction half: the DeBERTa NLI cross-encoder already in the ingestion path can score `record` against `draft` for contradiction. It will not catch the gap-filling half, but it is free to measure.
-
-### Tier C. Collect hindsight labels and learn a calibrated, budgeted gate
-
-Every host-issued search already writes every candidate and every score to `search_log`. What is missing is the outcome. Add it after the answer is produced, by black-box attribution:
-
-- **Deletion test, offline.** For each record that was injected, re-answer the turn without it and ask a judge whether the answer materially changed. This is the 68%-flip measurement from Hindsight Memory-PRM, and it needs nothing from the serving model beyond text.
-- **Use test, online and cheap.** Does the final answer entail or cite the injected record? NLI again, or a one-line judge.
-
-Stored next to the existing scores, those labels turn the gate from tuned to learned: a small calibrated classifier over cosine, reranker score, gap-match score, Tier B verdict, record type, and serving model. Three consequences:
-
-1. **The threshold becomes a budget, not a cosine.** As TARG does, set the admission threshold by quantile so that host injection lands under a stated rate on ordinary turns. The benchmark plan's 5% target becomes a knob.
-2. **Calibration is per serving model**, which is what the non-transferability result in section 2.2 demands and what no vendor-neutral system can get from a fixed number.
-3. **Retold gets a metric nobody else reports**: usefulness precision, the fraction of injected records that changed an answer. Given gate.md section 4, that is the differentiator the audit trail was built to enable.
-
-UsefulBench and FILCO both found that a small fine-tuned classifier on utility labels beats prompting a frontier model for the same judgement. Once Tier C has labels, Tier B's judge is the thing it replaces.
-
-### How the tiers sit with the existing design
-
-- The **profile block** from gate.md section 9 stays. Records that shape *how* to answer are not gated by any tier. TriggerBench and PersistBench both support this.
-- **Model-issued searches** keep the current gate. The model named its intent, so the relevance question is the right one there.
-- **Host-issued searches** run Tier A, then existing retrieval with floors lowered to a recall setting, then Tier B as the final decision. `dense_floor` stops being the decision and becomes a candidate cap.
-- The **mode question** in next-phases.md narrows further. If host-issued search is gap-first and admission-judged, `hybrid` is no longer "inject on every turn through a threshold". It is "inject when a named gap is filled by a record that changes the draft", which is a defensible default in a way the current `hybrid` is not.
-
-## 5. Why this rather than the three earlier directions
-
-Direction 5.1 is validated and kept. Direction 5.3, the reranker, still scores the pair and so cannot reach the usefulness question. It was later measured as a candidate cap in sections 8n and 8p and rejected there too: it cut the expected record from the judge's pool on one turn in five. Direction 5.2 is Tier A with the useful part removed: it asks for the verdict without asking for the gap, and the literature says the verdict alone is the weak form.
-
-The proposal adds one thing the earlier directions all lack: a source of ground truth that accumulates in production. Without Tier C the gate can only be tuned on scripted conversations. With it every host search becomes a labelled example.
-
-## 6. Risks the literature names
-
-- **Verbalised utility judgements are imperfect.** About 50 to 54 F1 on open-domain QA with many passages. The setting here is smaller, but this is the number to beat, and section 7 measures it before anything is built.
-- **Judges have an "always remind" bias.** TriggerBench measured 44% on negatives. Tier B's prompt must make "unchanged" the default and the pass criterion must be measured on ordinary turns, not on applicable ones.
-- **Self-declared gaps can be invented.** A model asked what it is missing may list things it does not need. Tier A's output is a retrieval query, not an admission, so an invented gap costs a retrieval that Tier B then rejects. Measure the empty rate on ordinary turns.
-- **Latency.** Tier A and Tier B each add a small-model call on the host path. The speculative-answer variant adds a second serving call only on admitted turns. Budget both explicitly and log them in `timings_ms`.
-- **Utility is generator-specific.** A Tier B judge that is a different model from the serving model is estimating general utility, not this model's. That is acceptable for admission and is why Tier C calibrates per serving model afterwards.
-- **The sample is still one scripted conversation.** The topical channel has never been exercised by a "what did we decide about X" turn. That gap in the script must be closed before any conclusion about topical recall.
-
-## 7. Validation, in order, on artifacts that already exist
-
-All three experiments read the two completed attempt directories under `benchmarks/results/vertical-slice`. The twelve turns are labelled by category in `examples/vertical_slice.py`.
-
-**Experiment 1, Tier A, about 36 cheap calls.** For each turn in each of the three hybrid runs, run the gap-elicitation prompt. Record whether the list is empty. Embed each non-empty gap and score it against the stored records with the existing embedder. Produce the two distributions from gate.md section 3, but on gap-to-record scores instead of turn-to-record scores.
-Pass: empty on at least 11 of 12 ordinary-turn instances per run, non-empty with the right slot on the two applicable turns that are not covered by the profile block, and the checklist-ownership record no longer the top topical score on the review-cadence turn.
-
-**Experiment 2, Tier B, about 36 draft calls plus one judge call per logged candidate.** For each host search in `search_log`, generate a no-memory draft for the turn, then run the admission judge over every fused candidate. Also run the NLI-only contradiction variant with zero model calls. Report ordinary-turn injection and applicable recall exactly as the floor sweep does.
-Pass: ordinary-turn injection at or below 1 in 12 with applicable recall unchanged. The interesting failure is the judge admitting the ownership record on the review-cadence turn; if it does, the prompt is wrong, not the approach.
-
-**Experiment 3, Tier C, first labels, about 15 re-answer calls.** For each of the 15 host searches in the hybrid run that returned memory, re-answer the turn without the returned record and judge whether the answer changed. This tells us how many of the 5 ordinary-turn injections actually altered an answer and how many of the applicable-turn recalls did. It is the first measurement of usefulness precision and the seed of the label set.
-
-**Then** add the missing episodic turns to the script, re-run the slice once, and repeat the three experiments on the new log before deciding what to build.
-
-## 8. First result: Tier B replayed on the logged searches
-
-Run on 6 September 2026 with `benchmarks/draft_delta_experiment.py` against the three hybrid run databases. Inputs are the 18 host-issued searches on the six evaluation turns (two where memory applies, four ordinary, times three runs), with the five dense candidates each search logged. The draft is written by `gpt-5.6-luna`, the same model that served the original run, from the bare user turn with no memory and no conversation history. The judge sees the turn, the draft, and all five candidates in one call and returns one verdict per candidate. Result files are under `benchmarks/results/draft-delta/`.
-
-An earlier pass of this script was discarded: it labelled facts by the first eight characters of the record id, which are identical across records, so the judge's verdicts were assigned to the wrong candidates. The runs below use positional labels.
-
-**Turn level. A turn counts as injected when at least one candidate is admitted.**
-
-| Configuration | Ordinary turns injected, of 12 | Applicable turns recalled, of 6 |
-| --- | --- | --- |
-| Relevance gate as shipped | 5 | 3 |
-| Judge `gpt-5-nano`, default prompt | 3 | 6 |
-| Judge `gpt-5-nano`, default prompt, low reasoning effort | 4 | 4 |
-| Judge `gpt-5-nano`, strict prompt | 0 | 0 |
-| Draft also from `gpt-5-nano`, judge `gpt-5-nano` | 6 | 6 |
-| Judge `gpt-5.4`, default prompt | 8 | 3 |
-
-Read on its own that table says the approach is unstable. Split by record type it says something specific.
-
-**Record level, topical candidates only, on ordinary turns.** These are the records the judge would actually be deciding on once profile records live in the always-present block. There are 24 such judgments per configuration.
-
-| Judge | False admits of 24 | Ownership record on the review-cadence turn |
-| --- | --- | --- |
-| `gpt-5-nano`, default | 3 | unchanged 2 of 3 |
-| `gpt-5-nano`, low effort | 4 | admitted 3 of 3 |
-| `gpt-5-nano`, strict | 0 | unchanged 3 of 3 |
-| `gpt-5.4`, default | 0 | unchanged 3 of 3 |
-
-With `gpt-5.4` as judge the residual case from gate.md section 9a is closed on every run, with the reason "who owns the checklist does not change the recommended review cadence", and no topical record is admitted on any ordinary turn. The location record, which scored as high as the ownership record, is also judged unchanged 4 of 4 times.
-
-**Record level, the time-zone turn.** The draft from the serving model was "Which time zone are you in?" on every run. The `gpt-5.4` judge and the default-prompt `gpt-5-nano` judge both admitted the time-zone record 3 of 3 times. The strict-prompt `gpt-5-nano` judge called it unchanged 3 of 3 times, reasoning that the draft "asks for the user's time zone without asserting a value". That is a judge failure, not an approach failure, and it is why the strict row recalls nothing.
-
-**Why the `gpt-5.4` row shows 8 ordinary turns injected.** Every one of those admissions is the response-style preference, "concise answers that include the important trade-off", judged as filling a gap because the draft is not written that way. That verdict is correct: a style preference does change every answer. It is the category error from gate.md section 9 confirmed from the other side, and it is the reason profile records must bypass the judge and sit in the profile block. Excluding profile records, the `gpt-5.4` configuration injects on 0 of 12 ordinary turns and recalls the time-zone turn 3 of 3 times.
-
-**What did not work.** The Python-example turn was never recalled through the code-language record, in any configuration, because the draft asked the user to paste the file rather than writing code, so there was no code for the preference to change. The draft's shape decides which gaps exist. This is a real limit of judging against a single draft, and it is another record the profile block covers.
-
-**Cost and latency per turn, measured.**
-
-| Call | Model | Prompt tokens | Completion tokens | Mean latency |
+| Measure | Required | Fifth blind split | Fourth blind split | Verdict |
 | --- | --- | --- | --- | --- |
-| Draft | `gpt-5.6-luna` | 55 | 130 | 2.5 s |
-| Judge | `gpt-5.4` | 420 | 160 | 1.9 s |
-| Judge | `gpt-5-nano`, default | 425 | 1440 | 7.4 s |
-| Judge | `gpt-5-nano`, low effort | 430 | 560 | 3.5 s |
+| Ordinary turns receiving conditional memory | at most 5% | 1 of 20 | 0 of 20 | pass |
+| Explicit stored-fact recall | at least 90% | 10 of 10 | 9 of 10 | pass |
+| Implicit memory-needed recall | at least 75% | 7 of 8 | 6 of 7 | pass |
+| Helpful precision among admitted records | at least 95% | 19 of 20 | 17 of 17 | pass |
+| Unsafe admissions or promotions | zero | zero | zero | pass |
 
-The small reasoning model was slower and produced worse verdicts than the larger model, because it spent its budget on reasoning tokens and still misjudged. In the speculative design the draft is the real first answer, so the added cost on an ordinary turn is one judge call, about two seconds and 600 tokens with `gpt-5.4`. A second serving call happens only on admitted turns, which with the profile block in place was 3 of 18 searches here.
+The shadow harness preserved cross-principal isolation on every check, admitted nothing unsafe, and returned the baseline draft on policy failure and timeout. The supported bundle is `benchmarks/bundles/bundle-2026-09-08-a.json`; its retrieval configuration hash is `e8c8c3309ab121de`.
 
-**What this establishes and what it does not.** On this conversation, a draft-conditioned judge with a competent model separates topical records that change the answer from topical records that merely share a subject, which no floor on any pair score could do. The sample is 18 searches, 108 record judgments per configuration, six distinct turns, one conversation, and no turn that asks for an earlier decision. The next measurement is the same replay on a script that contains such turns.
+## What the experiments established
 
-## 8b. Second result: the RUMS and TRACE-Memory signals replayed on the same searches
+- A similarity floor can filter weak candidates but cannot decide whether a turn needs memory.
+- Asking for the specific missing fact produces better retrieval queries than searching with the raw user query.
+- Comparing candidates with a baseline draft separates useful context from context that merely shares a topic.
+- The planner carries most of the ordinary-turn precision because it can choose not to retrieve. The admission judge carries safety and final usefulness.
+- An admission judge must see the bounded candidate set together because some records become useful only in combination.
+- Utility judgments are model-dependent. The planner role transferred to an open-weight 8B model, but the admission role did not meet the full bar outside the selected frontier model.
+- The path must be evaluated as one versioned bundle containing models, prompts, taxonomy, inventory builder, retrieval configuration, limits, and timeouts.
 
-Run on 7 September 2026 with `benchmarks/utility_signal_experiment.py`. Same 18 searches and same logged candidates as section 8. The frozen model is Llama-3.1-8B-Instruct run locally, the model family RUMS used. RUMS settings follow the paper: N=5 sampled continuations of at most 20 tokens, utility is the drop in mean per-token entropy when a record is added. TRACE Stage 1 uses `gpt-5.4` as a prompted stand-in for the paper's trained query policy, with retrieval by the project's BGE-M3 embedder over every active record in the run. TRACE Stage 2 computes the paper's reward directly: the mean per-token log-likelihood gain of a reference reply with the record versus without, where the reference is the reply the serving model actually gave on that turn. A placebo record, "User's favourite colour is green", is scored on every search to show the noise floor. Result file under `benchmarks/results/utility-signals/`.
+## Approaches measured and not selected
 
-Both papers use these signals offline to train a small model that runs at inference. What is measured here is whether the signals themselves separate the classes on this data, which is the precondition for anything trained on them to work.
-
-**The two cases that matter, per run.**
-
-| Case | Dense cosine | RUMS utility | TRACE likelihood gain |
-| --- | --- | --- | --- |
-| Time-zone record on the time-zone turn | 0.61 to 0.62 | +0.19, +0.28, +0.37 | +0.95, +0.88, +0.66 |
-| Ownership record on the review-cadence turn | 0.62 to 0.63 | -0.13, -0.13, +0.04 | -0.14, -0.20, -0.13 |
-| Placebo record, all 18 searches | n/a | median -0.05, max +0.14 | median -0.05, max +0.19 |
-
-Cosine cannot tell these two apart. Both utility signals do, on every run, with the time-zone record well above the placebo noise and the ownership record at or below it.
-
-**RUMS threshold sweep on the best candidate per search, all candidates.**
-
-| tau | Ordinary injected, of 12 | Applicable recalled, of 6 |
+| Approach | Result | Decision |
 | --- | --- | --- |
-| 0.05 | 5 | 6 |
-| 0.10 | 0 | 3 |
-| 0.29, the paper's value | 0 | 1 |
+| Similarity threshold as a turn-level gate | Ordinary and memory-needed score distributions overlap | Keep it only as a candidate relevance filter |
+| Query rewriting before retrieval | Usually left planner queries unchanged and added roughly 1.7 to 1.9 seconds per applied search | Built, disabled by default |
+| Cross-encoder after reciprocal-rank fusion | Removed expected records often enough to fail explicit recall | Built, disabled by default |
+| Cross-encoder instead of the relevance floors | Reduced candidate volume but failed explicit and implicit recall | Built, disabled by default |
+| Small reasoning model as admission judge | Slower and less reliable than the selected judge | Not selected |
+| Alternative frontier judges on the shadow set | Matched recall but admitted misleading or private records | Not selected |
+| RUMS-style entropy reduction | Distinguished some useful facts but misread response-style preferences and requires model logits | Retained as research context only |
+| TRACE-style likelihood gain | Separated the key useful and merely related cases offline but requires a reference response | Useful as an offline label, not a request-path policy |
 
-At tau 0.10 the three recalls are exactly the three time-zone turns and nothing ordinary passes. The three misses are the Python-example turn, where the reply asks for the file and no preference can sharpen it. The style preference gets negative RUMS utility everywhere, between -0.2 and -0.45, because telling the model how to write widens its choices rather than narrowing them. Entropy reduction measures certainty, not quality, so it is the wrong signal for how-to-answer records.
+RRF-only retrieval remains the supported configuration. The admission judge already rejects most weak candidates, so an aggressive pre-judge reranker loses recall without producing a corresponding safety or precision gain.
 
-**TRACE likelihood gain, topical records only, on ordinary turns.** 24 judgments.
+## Label adjudication
 
-| Admission rule | Ordinary turns injected, of 12 | Applicable recalled, of 6 |
-| --- | --- | --- |
-| gain > 0.05 | 2 | 6 |
-| gain > 0.10 | 1 | 6 |
+One recurring admission was not covered by the original required-record labels: a user time-zone record on a scheduling query. A blind reviewer, shown the user query, the records already required, and the disputed record without seeing the original label or judge verdict, classified the time-zone record as helpful but optional. The original labels remain unchanged. Precision is reported both under the strict labels and under the adjudication overlay, and recall continues to count only required records.
 
-The remaining false admits are the two checklist records on the trade-off-formatting turn, at +0.06 to +0.15, inside the placebo band. With all candidates included the style preference is admitted on every turn with gains of +0.4 to +1.15, and under TRACE's definition that is correct: the reference replies were written under that preference, so it genuinely raises their likelihood. Same conclusion as section 8: profile records belong in the profile block, not in front of any gate.
+The prompt and verdicts are stored in `benchmarks/scenarios/overlays/label_adjudication.json`. `benchmarks/rescore.py` applies the overlay to saved results without calling a model.
 
-**TRACE Stage 1 alone.** The prompted policy returned an empty query list on 12 of 12 ordinary searches and on the 3 Python-example searches, and on the time-zone turn returned "user time zone or current location", "preferred working hours for meetings", "organization/team default time zone for scheduling". Retrieval on those queries put the time-zone record first at cosine 0.75, against 0.51 for the next record. The turn itself scored it at 0.62 against 0.49. Searching for the gap instead of the turn widened the margin from 0.13 to 0.24 and retrieved nothing at all on every ordinary turn.
+## Reproducing the evidence
 
-**Cost.** RUMS needs eight sampled generations per search on the local 8B model, 16 to 25 seconds each here. That is not a serving-path cost in either paper and should not be one here. The TRACE likelihood gain is a single teacher-forced pass per record, under a second, but needs a reference reply, so it is an offline label. Stage 1 is one hosted call per turn, about two seconds, and is usable on the serving path today.
+The committed inputs and harnesses are:
 
-**What this changes in the recommendation.** Nothing in the direction, two things in the plan. First, Tier A should be built as TRACE Stage 1 specifies: generate gap queries, retrieve on them, and treat an empty list as no host search, since on this data that alone achieves 0 of 12 ordinary injections. Second, Tier C now has a concrete labeler: the TRACE likelihood gain, computed offline with a local model against the reply the serving model actually gave, is a cheaper and less noisy label than the RUMS entropy and needs no sampling. RUMS as a whole is not the fit: its labels need a white-box model, its inference classifier assumes a fixed profile schema, and its signal misreads style preferences.
+- `benchmarks/scenarios/phase0_v4.json` and `phase0_v5.json` for the two blind recall splits.
+- `benchmarks/scenarios/promotion_v1.json` and `benchmarks/promotion_split.py` for ambient activation.
+- `benchmarks/phase0_two_arm.py` for the end-to-end planner, retrieval, admission, and regeneration evaluation.
+- `benchmarks/shadow_adapter.py` for the real orchestrator path and isolation checks.
+- `benchmarks/evaluate_combination.py` and `benchmarks/fitness.py` for bundle-level fitness.
+- `benchmarks/rerank_calibration.py` and `benchmarks/pool_stats.py` for the rejected cross-encoder placements.
+- `benchmarks/rescore.py` for label-overlay rescoring.
 
-## 8c. Phase 0 of the implementation plan: two-arm validation on a held-out scenario set
+Raw result directories are intentionally gitignored. The accepted aggregate values are recorded here and in [acceptance-report.md](acceptance-report.md); the bundle manifest records the exact selected components.
 
-Run on 7 September 2026 with `benchmarks/phase0_two_arm.py` on `benchmarks/scenarios/phase0.json`. The scenario set is hand-authored and was not derived from any model run: 24 records and 36 turns. Records include two ambient-eligible preferences, eleven conditional facts including two unrelated private facts, one jointly useful pair, one superseded and one conflicting record, two redundant public facts, two placebos, and two misleading records. Turns are 10 explicit stored-fact questions, 6 implicit memory-needed turns, and 20 ordinary turns, several of them topically adjacent to stored records. Expected record sets and reference facts were never shown to a policy.
+## Research basis
 
-The online path is the one the architecture specifies: draft and gap planning run concurrently, the gap queries drive dense retrieval over the scenario records with the project's BGE-M3 embedder, a placebo is appended to every candidate set, and a hosted judge admits jointly against the draft with EMPTY as the default. Draft and regeneration use `gpt-5.6-luna`; gap planning, admission, and reference checking use `gpt-5.4`. Retrieval is dense-only and stands in for the full candidate pipeline. The result file is under `benchmarks/results/phase0/`.
+The architecture is closest to two lines of work:
 
-| Measure | Ambient arm | Conditional arm |
-| --- | --- | --- |
-| Ordinary turns with any conditional injection | 0 of 20 | 0 of 20 |
-| Explicit stored-fact recall | 9 of 10 | 8 of 10 |
-| Implicit memory-needed recall | 2 of 6 | 1 of 6 |
-| Placebo, misleading, stale, redundant, or unrelated private records admitted | 0 | 0 |
-| Usefulness precision, admitted records that were expected | 12 of 12 | 10 of 10 |
-| Memory turns answered correctly, draft alone | 1 of 16 | 1 of 16 |
-| Memory turns answered correctly, after the path | 12 of 16 | 9 of 16 |
-| Style and language preferences reaching the answer | every turn, by construction | 0 of 36 turns |
-| Turns with no gaps, added latency | 24 of 36, 0.0 s | 25 of 36, 0.0 s |
-| Turns with gaps, added latency p50 and p95 | 3.7 s and 4.1 s | 3.1 s and 4.3 s |
-| Policy failures | 0 | 0 |
+- *Response-Aware User Memory Selection for LLM Personalization* (RUMS), ICML 2026, evaluates memory by its effect on the response distribution.
+- *TRACE-Memory: Public-Conditioned Retrieval and Utility-Aware Evidence Admission for Personalized Generation*, 2026, separates missing-information planning from evidence admission.
 
-**Design gate: pass.** Ordinary injection 0 of 20, explicit recall 9 of 10, no placebo or misleading record admitted. Every admission across both arms was an expected record. The two records that share a subject with an ordinary turn but do not answer it, checklist ownership on the review-cadence question and the tabs belief on the tabs-or-spaces question, were never admitted because gap planning returned an empty list on every ordinary turn, so those turns never reached retrieval.
-
-**Promotion gate: blocker confirmed.** In the conditional arm the style and language preferences reached the answer on no turn at all. Gap planning does not ask for how-to-answer preferences, so they are never retrieved and the judge never sees them. Leaving them conditional does not cause injection, it causes total loss. Ambient activation is required for those records to have any effect, which is what Phase 1 builds.
-
-**Where the path is weak.** Every miss but one is gap planning returning no queries. It declined to look anything up for "suggest a time tomorrow for a sync", "draft a message asking for a review of the deployment checklist", "is Thursday afternoon a good time for a migration", and "show me an example that parses a TOML file", each of which a stored record would have changed. The judge was never the cause of a miss on those turns. The one judge miss was the sentence-transformers record on the "why did we pin" question, which it marked stale or conflicting because the record's wording, a pin below 5 explained by a failure in 6, reads as inconsistent. The same record was admitted on the "which constraint" question.
-
-Gap planning was also not stable between arms: the time-zone question produced three queries in the ambient arm and none in the conditional arm, with the only input difference being the applied-preferences text. Explicit recall sits exactly on the 90% threshold with ten questions, so one flip either way changes the verdict.
-
-**Cost of the run.** 149 calls to `gpt-5.4` and 92 to `gpt-5.6-luna` for 72 turn evaluations including reference checks. Per served turn: one gap call always, one admission call on a third of turns, one regeneration on a third of turns. Added latency on turns without gaps was zero because the gap call finished before the draft every time.
-
-**What this means for the plan.** The design gate passes and the promotion blocker is measured rather than assumed. The implicit-need number is the one to carry forward: the gap planner's conservatism is what makes ordinary injection zero, and the same conservatism costs two thirds of the implicit turns. The Phase 2 gap prompt and the choice of gap model should be tuned against the implicit-turn class on a fresh scenario split, not against this set.
-
-## 8d. Gap-planner tuning on a separate split, and one confirmation on the test set
-
-Run on 7 September 2026. Section 8c showed that every miss but one came from the gap planner returning no queries. This section chooses the gap model and prompt, and checks cheaper admission models, without tuning against the section 8c set.
-
-**Protocol.** A second scenario set, `benchmarks/scenarios/phase0_tune.json`, was hand-authored before any run against it, with a different persona, different systems and people, and 28 turns: 8 explicit stored-fact questions, 8 implicit memory-needed turns, 12 ordinary turns. All selection happened on this split, ambient arm only, since the promotion question was settled in section 8c. Gap planning was run three times per turn to measure decision stability. Drafts were cached so every configuration was judged against identical drafts, and the reference checker was held at `gpt-5.4` throughout. The section 8c set was then run once per surviving configuration, both arms, and is reported without further selection.
-
-A second gap prompt, v2, was written after reading the section 8c misses. It was written from the category of failure, turns that ask the assistant to act on the user's behalf, not from the specific turns, but it has seen that set's failure pattern and the test-set numbers below should be read with that in mind. The prompt asks whether two users in different situations would receive different correct answers, names explanations of general concepts as gap-free, and names tasks tailored to the user's situation as having the user-specific inputs of that task as gaps.
-
-**Gap planner, tuning split, admission held at `gpt-5.4`.**
-
-| Gap model and prompt | Ordinary injected, of 12 | Explicit recall, of 8 | Implicit recall, of 8 | Decision agreement across 3 repeats | Added latency on gap turns, p50 | Safety admissions |
-| --- | --- | --- | --- | --- | --- | --- |
-| `gpt-5.4`, v1 | 0 | 5 | 4 | 86% | 3.4 s | 0 |
-| `gpt-5.4`, v2 | 0 | 7 | 7 | 100% | 3.5 s | 0 |
-| `gpt-4o`, v1 | 0 | 8 | 7 | 89% | 3.2 s | 0 |
-| `gpt-4o`, v2 | 0 | 8 | 7 | 96% | 3.4 s | 0 |
-| `gpt-5-nano`, v1 | 0 | 8 | 5 | 64% | 18.1 s | 0 |
-| `gpt-5-nano`, v2 | 0 | 6 | 5 | 93% | 13.8 s | 0 |
-
-Two things stand out. The v1 prompt on `gpt-5.4`, the configuration from section 8c, drops to 5 of 8 explicit recall on the fresh split, so the 9 of 10 in section 8c was the optimistic end of its range. And `gpt-4o` is less conservative than `gpt-5.4` with the same prompt, which on this task is the missing recall. `gpt-5-nano` is excluded as a gap planner: unstable, fired gaps on 5 of 12 ordinary turns in at least one repeat, and so slow that its reasoning outlasted the draft and added about 2 seconds even on empty-gap turns.
-
-Choice: gap planner `gpt-4o` with prompt v2. It ties the best recall, has the second-best stability, and is the cheapest non-reasoning option.
-
-**Admission model, tuning split, gap planner held at `gpt-4o` v2.**
-
-| Admission model | Ordinary injected, of 12 | Explicit recall, of 8 | Implicit recall, of 8 | Placebo or misleading admitted | Usefulness precision | Added latency on gap turns, p50 |
-| --- | --- | --- | --- | --- | --- | --- |
-| `gpt-5.4` | 0 | 8 | 7 | 0 | 16 of 18 | 3.4 s |
-| `gpt-4o` | 0 | 7 | 6 | 0 | 14 of 16 | 4.4 s |
-| `gpt-5-nano` | 0 | 7 | 6 | 1 misleading | 14 of 19 | 22.0 s |
-
-`gpt-5-nano` is excluded as a judge: it admitted the "do not mention risks" record on a request to a manager, admitted three unrelated records on the Friday-freeze question, and marked the correct Node pin as stale because it disagreed with the draft. `gpt-4o` is within one turn of `gpt-5.4` on each recall metric here, with one visibly wrong reason where it confused the draft's language choice with the user's request.
-
-**Confirmation on the held-out test set, gap planner `gpt-4o` v2, both arms, three gap repeats.**
-
-| Measure | Admission `gpt-5.4`, ambient | Admission `gpt-5.4`, conditional | Admission `gpt-4o`, ambient | Admission `gpt-4o`, conditional |
-| --- | --- | --- | --- | --- |
-| Ordinary injected, of 20 | 0 | 0 | 0 | 0 |
-| Explicit recall, of 10 | 9 | 9 | 9 | 8 |
-| Implicit recall, of 6 | 5 | 5 | 3 | 4 |
-| Placebo, misleading, stale, redundant, or private admitted | 0 | 0 | 0 | 0 |
-| Usefulness precision | 15 of 16 | 15 of 19 | 13 of 14 | 13 of 15 |
-| Memory turns correct after the path, of 16 | 14 | 13 | 12 | 10 |
-| Gap decision agreement | 100% | 100% | 100% | 100% |
-| Added latency, gap turns, p50 and p95 | 3.4 s, 5.4 s | 3.5 s, 5.0 s | 3.7 s, 4.7 s | 3.6 s, 6.0 s |
-| Added latency, empty-gap turns | 0.0 s on 21 | 0.0 s on 21 | 0.0 s on 21 | 0.0 s on 21 |
-| Design gate | pass | | pass | |
-
-Against section 8c, with `gpt-5.4` admission: implicit recall 2 of 6 to 5 of 6, memory turns correct 12 of 16 to 14 of 16, gap decision agreement to 100% in both arms, ordinary injection unchanged at 0 of 20, safety admissions unchanged at 0. The remaining misses are the same two: the sentence-transformers record judged stale because of its wording, and the TOML-example turn where the planner still sees a general request.
-
-`gpt-4o` as judge is weaker on the test set than the tuning split suggested: implicit recall 3 of 6, with reasons such as calling the manager's name potentially harmful on a request that asked for it, and calling the checklist owner insufficient for a message asking for a checklist review. It stays the cost fallback with that recall penalty stated.
-
-**Two things to carry forward.** In the conditional arm with `gpt-5.4`, the judge admitted the checklist owner and location on the migration-timing question as "helpful for the next action". Those were memory-needed turns, so they are not counted as injection, but they are over-admission and they pull usefulness precision to 15 of 19. Larger candidate pools invite this, and the admission prompt's definition of helpful should be tightened before Phase 2 against a third split, not this one. And the two time-zone admissions on questions about times stated in IST or BRT were scored as unexpected because the ground truth did not list them; they are defensible, and the ground truth was left as written rather than edited after the fact.
-
-**Cost per served turn, measured.** One `gpt-4o` gap call on every turn, about 300 prompt tokens and under 10 completion tokens. One `gpt-5.4` admission call on roughly 40% of turns, about 600 prompt and 80 completion tokens. One regeneration on roughly 35% of turns. Nothing else on the request path.
-
-## 8e. Pre-registered run on a blind third split: recall thresholds not met
-
-Run on 7 September 2026. After sections 8c and 8d, a third scenario set, `benchmarks/scenarios/phase0_final.json`, was written blind with a new persona, systems, people, and facts, and 38 turns: 10 explicit stored-fact questions, 8 implicit memory-needed turns, 20 ordinary turns. Two changes were made in advance and run once, with the pass criteria fixed before the run: zero ordinary injection, at least 90% explicit recall, at least 75% implicit recall, no placebo or misleading admission.
-
-The two changes: the admission prompt's definition of helpful was tightened to require that the requested answer itself would say something different, with background, attribution, and usefulness for follow-up work named as insufficient; and the code-example-language preference was treated as ambient, so it sits in the profile rather than being something the planner must rediscover. Configuration: `gpt-4o` planning with prompt v2, `gpt-5.4` judging with the tightened prompt, ambient arm, three gap repeats.
-
-| Measure | Result | Criterion | Met |
-| --- | --- | --- | --- |
-| Ordinary turns injected | 0 of 20 | 0 | yes |
-| Explicit stored-fact recall | 8 of 10 | at least 9 of 10 | no |
-| Implicit memory-needed recall | 5 of 7 | at least 75% | no, 71% |
-| Placebo, misleading, stale, redundant, or private admitted | 0 | 0 | yes |
-| Usefulness precision | 13 of 14 | | |
-| Gap decision agreement across repeats | 38 of 38 | | |
-| Memory turns answered correctly, before and after | 1 of 18 to 11 of 18 | | |
-| Added latency, empty-gap turns | 0.0 s on 23 of 38 | | |
-| Added latency, gap turns, p50 and p95 | 3.8 s and 5.8 s | | |
-
-**Verdict: fail on the recall thresholds, pass on injection and safety.** This is the honest reading and it is recorded as such; the split is not rerun and nothing is tuned against it.
-
-**The misses, and what caused each.**
-
-- *"Why is Python pinned to 3.11?"* and *"What rate limit applies to partner-tier API keys?"*: the planner returned no gaps on every repeat. Both are questions about an organisation's own decisions, and both lack a possessive. On the tuning split the same planner recalled *"What availability target applies to the checkout tier?"* and missed *"Why is Node pinned to 20?"*, which has the same shape. The planner is keying on surface cues such as "our", "my", and "we", and a blind split with fewer of them exposed that. This is the largest finding of the run and it is a property of the planner, not of the judge.
-- *"Write a one-line note on our infrastructure tooling for the new-hire guide."*: the planner produced a gap, "infrastructure tooling description", but dense retrieval on it returned the conflicting Pulumi record at 0.46 and not the Terraform decision, which fell below the third rank. The judge correctly rejected the conflicting record. This is the first retrieval-stage miss in any run and it is a limit of the dense-only, top-three-per-query stand-in used here; the production candidate pipeline has lexical and entity channels that this replay does not.
-- *"Can I schedule a load test for Tuesday morning?"*: the planner produced gaps, retrieval found the design-review record, and the tightened judge marked it insufficient with the reason that the answer "need not change based on it alone", while admitting the time-zone record. The earlier prompt would have admitted both. The tightening bought precision on the checklist over-admission case in section 8d and paid for it here with a missed warning. That is the trade the tightening makes, and this run shows it is not free.
-
-**What worked, and is now confirmed on a blind split.** Ordinary injection is zero for the fourth set of ordinary turns in a row, 72 ordinary turns across three splits with no conditional injection. No placebo, misleading, stale, redundant, or unrelated private record has been admitted in any run. Gap decisions were identical across all three repeats on all 38 turns. The code-example-language preference placed ambient produced a Go example on the YAML turn with no retrieval at all, which settles that it belongs in the profile. Empty-gap turns added no latency.
-
-**A caveat that applies to every run so far.** Zero ordinary injection has been achieved entirely by the planner: on every ordinary turn in every split, gap planning returned an empty list, so no ordinary turn has ever reached the judge. The judge's false-admission rate on ordinary turns is therefore unmeasured, and the placebo rejections all come from memory-needed turns. A planner change that fires more often, which the recall misses call for, will put ordinary turns in front of the judge for the first time, and that number must be measured when it does.
-
-**What this means.** The architecture's safety half is established across three splits. Its recall half is bounded by a planner that decides from surface cues, and the two levers tried so far, prompt wording and model choice, have moved it from 2 of 6 to about 5 of 7 and no further. The next change is structural rather than a prompt edit: give the planner a bounded, content-free index of what kinds of facts the store holds for this principal, such as time zone, manager, clusters, tooling decisions, and API limits, so that a question about a rate limit or a version pin can be recognised as possibly organisation-specific without a possessive in the sentence. That change must be written and evaluated on a fourth split, with the judge's ordinary-turn false-admission rate measured alongside, and with the admission prompt's tightening revisited against the warning case above.
-
-## 8f. Pre-registered run on a blind fourth split with structural changes: pass, and the judge measured alone
-
-Run on 7 September 2026. Section 8e left three specific causes: a planner that decides from possessives, a dense-only retrieval stand-in that missed once, and an admission rule that traded an over-admission for a missed warning. It also left one unmeasured number: no ordinary turn had ever reached the judge. A fourth split, `benchmarks/scenarios/phase0_v4.json`, was written blind with a new persona and with half of the explicit questions carrying no possessive on purpose. Four changes were made in advance and run once with the criteria fixed beforehand: at most 1 of 20 ordinary injections, at least 9 of 10 explicit recall, at least 75% implicit recall, no placebo, misleading, or unrelated private admission.
-
-The four changes:
-
-1. **Category inventory for the planner.** The gap prompt now includes a bounded, content-free list of the fact categories the store holds for this principal, from a fixed ten-item taxonomy such as "runtime and version constraints" and "limits and quotas", with one sentence saying a question in one of those categories may need memory without "my", "our", or "we". No record content reaches the planner.
-2. **Decision-impact admission rule.** Helpful now means the record changes what the answer recommends, the time it proposes, the person it addresses, the command or code it gives, a constraint it states, or a warning it should raise.
-3. **Real retrieval.** Records are written through `memory_write` with session-turn evidence, so the ingestor applies its own evidence, lifecycle, and supersession rules, and retrieval runs through `memory_search` with `trigger="auto"` and the host gate loosened to recall-oriented floors. All 20 records were confirmed; the stale time zone and the older REST record were superseded by the system itself.
-4. **Shadow judging.** On every turn where the planner returned no gaps, the raw turn was retrieved on the old relevance path and the judge was run without its result being applied, to measure what it would admit if the planner had fired.
-
-Configuration: `gpt-4o` planning, `gpt-5.4` judging, ambient arm with three ambient preferences including code-example language, three gap repeats.
-
-| Measure | Result | Criterion | Met |
-| --- | --- | --- | --- |
-| Ordinary turns injected | 1 of 20 | at most 1 | yes, on the line |
-| Explicit stored-fact recall | 9 of 10 | at least 9 | yes |
-| Implicit memory-needed recall | 7 of 7 | at least 75% | yes |
-| Placebo, misleading, or unrelated private admitted | 0 | 0 | yes |
-| Memory turns with gaps, every repeat | 17 of 17 | | |
-| Gap decision agreement across repeats | 38 of 38 | | |
-| Usefulness precision | 17 of 20 | | |
-| Memory turns answered correctly, before and after | 1 of 18 to 16 of 18 | | |
-| Added latency, empty-gap turns | 0.0 s on 20 of 38 | | |
-| Added latency, gap turns, p50 and p95 | 4.2 s and 6.3 s | | |
-| Shadow judge: ordinary turns with candidates | 19 | | |
-| Shadow judge: ordinary turns it would have injected | 3 of 19 | | |
-| Shadow judge: unsafe admissions | 0 | | |
-
-**Verdict: pass.** Against section 8e, explicit recall 8 to 9 of 10, implicit 5 of 7 to 7 of 7, and the planner fired on every memory-needed turn on every repeat, including both no-possessive questions that failed last time, "why is Go pinned to 1.22" and "what concurrency limit applies to the ingest service". The category inventory did what it was built to do.
-
-**The one injection.** "How should I prepare for a conversation with my manager about a conference trip?" The possessive fired the planner, retrieval returned the manager's name, and the judge admitted it on the grounds that knowing the name changes how the advice addresses the conversation. The name is not needed for that answer. This is the judge over-admitting an adjacent fact, and it is the same behaviour the shadow measurement quantifies below.
-
-**The one explicit miss is a scoring artefact.** On "where are architecture decision records kept", the draft, written with no memory, guessed the convention `docs/adr/`, which happened to be the stored location. The judge marked the record redundant, correctly, and the answer was right. Recall as scored counts it as a miss because the record was not admitted; answer correctness counts it as correct.
-
-**The number that was missing: what the judge does on ordinary turns.** On 19 ordinary turns the judge saw real candidate sets for the first time. It admitted nothing unsafe: no placebo, misleading, or private record across 19 sets that all contained a forced placebo. It would have injected an adjacent fact on 3 of 19, about 16%: the team's gRPC decision on a general gRPC-versus-REST question, and the Go pin on both a go.mod question and a timer-versus-ticker question, each with a reason of the form "the answer should warn about this project's version". That is three times the injection budget. Two conclusions follow. The judge is reliable on the harm categories and not reliable on topical adjacency, and the near-zero injection across four splits is the planner's silence doing the work. The planner is load-bearing for precision; the judge is load-bearing for safety. Any change that makes the planner fire on more ordinary turns must be measured against this shadow number, not assumed safe because the judge exists.
-
-**Retrieval through the real pipeline.** With recall-oriented floors every search returned eight candidates, which is the intended behaviour: the gate is a candidate control and admission decides. The redundant-record admission, the gRPC-uses-HTTP/2 fact admitted as jointly helpful alongside the gRPC decision, is a small cost of that larger pool and is the case the decision-impact rule should reject; it is one of 20 admissions.
-
-**Cost per served turn.** One `gpt-4o` planning call always, about 480 prompt tokens with the inventory. One `gpt-5.4` admission call on 18 of 38 turns, about 700 prompt and 150 completion tokens with eight candidates. One regeneration on 17 of 38.
-
-**Status of the Phase 0 claims after four splits.** Ordinary injection across 92 ordinary turns and four personas: 1. Unsafe admissions: 0 in every run, including 19 shadow judgments. Explicit recall: 9 of 10 on the two most recent blind splits. Implicit recall: 7 of 7 on the fourth split after the structural change, 5 of 7 before it. Gap decisions stable across repeats on every turn of the last two splits. The design gate is met on a blind split with the real retrieval pipeline, and the remaining risk is named and measured: the judge's 16% adjacency admission rate when it is exercised.
-
-## 8g. Blind fifth split with Phase 1A: automatic promotion, store-generated inventory, and the gap-anchored judge
-
-Run on 7 September 2026. Phase 1A was built between the fourth and fifth splits: an activation field and retrieval category on every record, a category policy that proposes classifications, host verification of the claim in the principal's own user turns, deterministic promotion rules, a durable review queue, a profile assembler, and an inventory generated from the store's categories. The fifth split, `benchmarks/scenarios/phase0_v5.json`, was written and its thresholds registered before any of that existed. No record in it carries a category the pipeline can read. Every record was written conditional through `memory_write`; the activation policy decided what became ambient; the planner's inventory came from the store.
-
-Two configurations, both pre-registered, each an independent store build and a single run:
-
-- **A**: store-generated inventory, `gpt-4o` planner with prompt v3, `gpt-5.4` judge with the decision-impact rule.
-- **B**: identical, with the judge gap-anchored: admission requires naming the planner gap the record resolves, enforced in code.
-
-| Measure | A | B | Threshold |
-| --- | --- | --- | --- |
-| Ordinary turns injected | 0 of 20 | 0 of 20 | at most 1 |
-| Explicit stored-fact recall | 10 of 10 | 10 of 10 | at least 9 |
-| Implicit memory-needed recall, conditional records | 7 of 8 | 7 of 9 | at least 75% |
-| Placebo, misleading, or unrelated private admitted | 0 | 0 | 0 |
-| Eligible preferences promoted automatically | 3 of 3 | 2 of 3 | 3 of 3 |
-| Unsafe automatic promotion | 0 | 0 | 0 |
-| Scoped preference kept conditional | yes | yes | yes |
-| Verdict | **pass** | **fail on promotion** | |
-
-Also measured: gap decisions identical across three repeats on 39 of 39 turns in A and 37 of 39 in B; usefulness precision 18 of 19 in both; retrieval-category assignment matched the hidden labels on 15 of 24 in both; shadow judge on ordinary turns would have injected on 2 of 20 in A, and nothing unsafe; empty-gap turns added no latency; gap turns added 4.2 s at p50 and 5.3 s at p95.
-
-**Automatic promotion and the store-generated inventory work.** In A the policy promoted exactly the three broad preferences, sent the "agree when confident" record and one other to review as unsafe, kept the SQL-style preference conditional as scoped, rejected a third-party fact as not about the principal, and generated a nine-label inventory from the store. With that inventory the planner fired on every explicit question including the no-possessive ones, and explicit recall reached 10 of 10 for the first time. The profile did its job without retrieval: the CSV-parsing turn came back in Kotlin.
-
-**Promotion is not yet deterministic, and B showed it.** B's independent store build classified "code examples in Kotlin unless another language is requested" as scoped, with stated confidence 1.0, where A's build had classified the same sentence as broad. The clause "unless another language is requested" reads to the classifier as a condition. The rule then did what it is written to do and kept the record conditional. Over the two builds, eligible-preference promotion was 5 of 6, under the plan's 95% requirement. The fix is a rule, not a prompt: a default code-example language is broad by definition, its override clause is the normal shape of such a preference, and the deterministic rule should treat `code_example_language` as broad unless the policy flags it ambiguous or unsafe. That change is made in code with a unit test and is not validated on a blind split yet.
-
-**The gap-anchored judge is rejected.** On the fourth split, run offline before B, anchoring kept recall unchanged, left the served injection unchanged on the same "my manager" turn, and admitted a placebo for the first time in any run, the five-a-side football record as resolving a gap about recurring events. On the fifth split it cost the SQL-style preference: the planner named gaps about dialect and schema, retrieval found the record, and the anchored judge rejected it as a style preference rather than a listed fact. Its shadow number is zero by construction, since a turn with no gaps has nothing admissible, so it measures nothing. Anchoring did not constrain the judge; it gave it a different sentence to write. The decision-impact judge stays.
-
-**What the shadow judge says after two splits.** With the decision-impact rule, the judge would have injected an adjacent fact on 3 of 19 ordinary turns on the fourth split and 2 of 20 on the fifth, and nothing unsafe on either. The two cases on the fifth split are the Kotlin pin on a Gradle question and the manager's name on a laptop-request question, the same two shapes as before. The planner still carries precision; the judge still carries safety; the adjacency rate is stable at around one in eight when the judge is reached.
-
-**Category accuracy is low and it did not matter here.** The classifier agreed with the hidden labels on 15 of 24 records, disagreeing mostly between "limits", "constraints", and "other". The inventory nonetheless covered every question the planner needed to fire on, because the planner uses the inventory as a hint that organisation-specific facts exist, not as a lookup. It would matter for a store whose only records fall in a mislabelled category, and the taxonomy and prompt should be tightened in Phase 1B.
-
-**Status after five splits.** Ordinary injection across 112 ordinary turns and five personas: 1. Unsafe admissions on the served path: 0 in every run. Explicit recall on the last three blind splits: 8, 9, 10 of 10. Implicit recall: 5 of 7, 7 of 7, 7 of 8. The design gate holds with automatic promotion and a store-generated inventory. The one open defect is the applicability flip on the code-language preference, and its fix is deterministic.
-
-## 8h. Promotion split: the frozen rule across two independent builds
-
-Run on 7 September 2026. After section 8g the promotion rule was frozen as form recognition: a sentence with an override clause such as "unless another language is requested" or "by default" is a global default and is promoted whatever the classifier says about applicability; a sentence opening with a scope such as "when reviewing SQL" or "for Kubernetes questions" stays conditional; a sentence with a temporal bound such as "until Friday" or "this week" is never ambient; the classifier's applicability is consulted only for sentences no rule recognises; its self-reported confidence can route a case to review and can never promote. A blind promotion-only split, `benchmarks/scenarios/promotion_v1.json`, was written after the freeze: four global defaults, three explicit overrides, three topic-scoped preferences, three temporary preferences, three unsafe preferences, and two control facts. Pass requires two independent store builds to each promote exactly the seven eligible records with nothing unsafe promoted.
-
-**First run: rule correct on 36 of 36 decisions, split failed on one record.** Both builds produced identical activation decisions and every one matched the registered outcome. The split still failed because "User wants replies in English" left the profile as superseded: the ingestor's cross-attribute contradiction path had aliased "This week, user wants answers in Spanish" onto the same attribute and let the later, contradicting statement replace the standing one. That is the existing supersession rule doing what it was written to do, and it is wrong for this case. A temporary instruction is not a new value for a durable preference.
-
-**Fix, in the ingestor.** A record the form rule recognises as temporary no longer supersedes a non-temporary record on the same or an aliased attribute; it is created alongside it. A later standing statement still supersedes an earlier temporary one. Unit-tested in `tests/test_ingestor.py`.
-
-**Second run: pass.** Both builds promoted exactly the seven eligible records, agreed with each other, promoted nothing unsafe, sent all three unsafe preferences to review, kept all three scoped and all three temporary preferences conditional, and left both control facts conditional. The promotion gate is now met by rule across two independent builds, which is the criterion the fourth and fifth splits could not satisfy with one build each.
-
-| Form | Records | Outcome, both builds |
-| --- | --- | --- |
-| Global default | 4 | promote |
-| Explicit override | 3 | promote, by the override-clause rule |
-| Topic-scoped | 3 | conditional |
-| Temporary | 3 | conditional, coexisting with any standing preference |
-| Unsafe | 3 | review |
-| Facts about the user or others | 2 | conditional |
-
-**A caveat that stays.** The split was run twice: once, failed for the ingestion reason above, then again after that fix. The fix touched supersession, not the promotion rule, and the rule's decisions were already correct on every record in the first run. The rerun is disclosed here rather than presented as a first pass.
-
-## 8i. Second-vendor matrix with an open-weight model: portable planner, non-portable judge
-
-Run on 7 September 2026. The hosted second-vendor keys are not configured in this environment, so the second vendor is Meta's open-weight Llama 3.1 8B Instruct, run locally on the laptop with greedy decoding. The tuning split, ambient arm, identical cached drafts, reference checker held at `gpt-5.4`. Each role was swapped in turn while the other stayed at its selected model.
-
-| Configuration | Ordinary injected, of 12 | Ordinary turns where planner fired | Explicit, of 8 | Implicit, of 8 | Unsafe admitted | Usefulness precision | Gap-turn latency p50 |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| Reference: `gpt-4o` planner, `gpt-5.4` judge | 0 | 0 | 8 | 7 | 0 | 16 of 18 | 3.4 s |
-| Llama 8B planner, `gpt-5.4` judge | 0 | 6 | 8 | 8 | 0 | 17 of 18 | 4.1 s |
-| `gpt-4o` planner, Llama 8B judge | 0 | 0 | 7 | 3 | 0 | 11 of 23 | 13.6 s |
-
-**The planner role is portable to an 8B open-weight model.** Recall matched or beat the reference, nothing unsafe was admitted, and the served injection stayed at zero. The nuance matters: the open-weight planner fired on 6 of 12 ordinary turns where `gpt-4o` fired on none, and every one of those candidate sets was rejected by the `gpt-5.4` judge. In that configuration the judge, not the planner, held the injection line. The planner is portable; the division of labour is not fixed, and a permissive planner needs the judge's adjacency rate measured before it ships.
-
-**The judge role is not portable to an 8B model.** With Llama 8B judging, implicit recall fell to 3 of 8, twelve unrelated or redundant records were admitted across memory-needed turns, the event-bus decision on a scaffold request, the manager's name on a slot proposal, a kubectl command on a Slack message, one call returned malformed output, and each admission call took about 14 seconds. Nothing unsafe was admitted, which repeats the pattern seen with `gpt-5-nano` and `gpt-4o`: weaker judges fail on adjacency and precision, not on harm. Zero ordinary injection here is entirely the `gpt-4o` planner's silence.
-
-**What this establishes about vendor neutrality.** The fitness test ranked a candidate model per role in about half an hour and a few dollars, and gave different answers for the two roles. That is the mechanism the design relies on. With only one frontier vendor tested for the judge, the claim was partly earned at this point; the section below completes it.
-
-### Frontier judges from three vendors
-
-Run later the same day, once an OpenRouter key was configured. Same tuning split, same cached drafts, `gpt-4o` planner held fixed, reference checker held at `gpt-5.4`, so the only variable is the judge. Claude's first run lost 8 of 15 admission calls to a transport defect, the model wrapping its JSON in a code fence that OpenRouter passes through; the wrapper now extracts the first balanced JSON object for any OpenRouter model in JSON mode, and both runs below are after that fix.
-
-| Judge | Ordinary injected, of 12 | Explicit, of 8 | Implicit, of 8 | Unsafe admitted | Usefulness precision | Policy failures | Gap-turn latency p50 and p95 | Judge completion tokens, 16 calls |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `gpt-5.4`, OpenAI, reference | 0 | 8 | 7 | 0 | 16 of 18 | 0 | 3.4 s, 4.8 s | about 2,400 |
-| Claude Sonnet 4.6, Anthropic via OpenRouter | 0 | 8 | 8 | 0 | 17 of 19 | 0 | 6.9 s, 11.0 s | 4,255 |
-| Gemini 2.5 Pro, Google via OpenRouter | 0 | 8 | 8 | 0 | 17 of 19 | 0 | 13.5 s, 29.5 s | 25,348 |
-| Llama 3.1 8B Instruct, open weight, local | 0 | 7 | 3 | 0 | 11 of 23 | 1 | 13.6 s, 25.4 s | 3,223 |
-
-All three frontier judges pass the fitness test; the two OpenRouter judges recover the one implicit turn `gpt-5.4` missed, at higher latency, and Gemini at roughly ten times the completion tokens because it reasons at length. The extra admissions in all three frontier runs are the same defensible time-zone record on turns about times stated in BRT.
-
-**The claim, as now earned.** The design is provider-neutral in the sense that matters: the contracts, orchestration, activation, inventory, logs, and gates are model-neutral, and the fitness test ranks any candidate per role. The planner role is validated on a hosted mid-tier model and an 8B open-weight model. The judge role is validated on frontier models from three vendors, OpenAI, Anthropic, and Google, and has failed on every non-frontier candidate tried, `gpt-5-nano`, `gpt-4o`, and Llama 8B. Judging needs a frontier-class model; it does not need a particular vendor's.
-
-## 8j. Phase 2 in shadow mode: the orchestrator beside the served path, isolation asserted
-
-Run on 7 September 2026 with `benchmarks/shadow_run.py`, after the pre-registration in the implementation plan. The core orchestrator, `retold/policy/utility_aware.py`, ran with hosted adapters for the planner and judge against a real store built through the ingestor and the activation policy. Each scenario was replayed twice with identical cached drafts: served-only, with the orchestrator disabled, and shadow-on, with gap planning, real retrieval through `memory_search`, and hosted admission running but never regenerating. The harness asserted that the served responses, every record's status and activation, the session turns, and the review queue were identical across the two passes, then scored the shadow decision log alone. Every decision carries the policy bundle: `gpt-4o/gap-v3c`, `gpt-5.4/admission-v3`, taxonomy `activation-v2-frozen`, `inventory-v1`, a retrieval-config hash, and the budget.
-
-**The first fifth-split run failed on a configuration value and passed the isolation test while doing so.** The orchestrator's default admission timeout was 2 seconds, taken from the architecture document's configuration example. The judge takes 2 to 3 seconds with 7 or 8 real candidates. Every one of the 18 gap turns ended as `baseline_policy_failure` with `admission:TimeoutError`; served responses were untouched; recall as scored was zero; failures were reported as failures, not as recall misses, which is what the pre-registration required. Stage timeouts must be set from measured latency, as the plan already said, and the harness now takes them as flags. The core default is left as written and is not a serving value.
-
-**Results with timeouts set from measurement, gap 4 seconds and admission 8 seconds.**
-
-| Measure | Vertical-slice conversation, 6 turns | Fifth split, 39 turns | Gate |
-| --- | --- | --- | --- |
-| Served responses, record status and activation, session turns, reviews identical across passes | all four identical | all four identical | required |
-| Hypothetical ordinary-turn injection | 0 of 4 | 0 of 20 | at most 5% |
-| Hypothetical explicit stored-fact recall | 1 of 1 | 10 of 10 | at least 90% |
-| Hypothetical implicit recall, conditional records | none applicable | 7 of 8 | at least 75% |
-| Unsafe admissions | 0 | 0 | 0 |
-| Unexpected admissions | none | time zone on the migration-timing turn | reported |
-| Policy failures | none | none | reported separately |
-| Budget withholds | none | none | reported separately |
-| Automatic promotion | style correction and Python examples ambient; the corrected style record superseded the original | all three eligible preferences ambient, including the Kotlin default by the frozen rule | |
-| Verdict | pass | pass | |
-
-On the slice conversation the activation policy promoted the corrected style preference and the Python-examples default, the ingestor superseded the original style statement with its correction as it always has, and the time-zone record was the only conditional admission. On the fifth split the planner fired on every explicit question, the judge admitted the expected record on all ten, the one implicit miss is the SQL-style preference the planner still reads as a generic request, and the one unexpected admission is the time-zone record on a turn about a time stated in ET.
-
-**What this establishes.** The orchestrator runs end to end through the real ingestion, activation, retrieval, and admission path with a proven zero effect on what is served, and its shadow log reproduces the recall and injection results of the blind splits. It also produced its first operational finding, a timeout default below measured latency, and handled it the way the design says it should. What it does not establish: behaviour on production traffic with real users and provider drift, which is the canary's job and follows the review CLI.
-
-## 8k. Category taxonomy, measured by inventory coverage, run through the full fitness suite
-
-Run on 7 September 2026, the first step of the execution sequence. The metric is inventory coverage: for every memory-needed turn, whether the true category of each conditional record it needs would appear in the inventory the planner sees. Label agreement with hidden labels is reported as a diagnostic only.
-
-**Baseline, classifier prompt v1.** The prompt listed the eleven category keys with no definitions. On the fourth and fifth splits, coverage was 16 of 19 on each, with the same three records uncovered on both: the document-location record labelled infrastructure instead of locations, and both rate-limit records labelled infrastructure instead of limits. Label agreement was 14 of 23 and 14 of 24.
-
-**Change, classifier prompt v2.** One-line definitions with examples for each category, plus three disambiguation rules: a numeric limit is limits even when it names a service, a place where something is kept is locations even when it names a system, a person's role is people even when it names a document. No taxonomy keys changed. Measured with the classification-only evaluator, `benchmarks/classify_eval.py`, which needs no store:
-
-| Split | Coverage v1 | Coverage v2 | Agreement v1 | Agreement v2 |
-| --- | --- | --- | --- | --- |
-| Fourth | 16 of 19 | 19 of 19 | 14 of 23 | 20 of 23 |
-| Fifth | 16 of 19 | 19 of 19 | 14 of 24 | 22 of 24 |
-
-The remaining disagreements are on public-knowledge records the scenario had labelled decisions, such as "gRPC uses HTTP/2", which the classifier puts under infrastructure or other; those records are redundant by design and the label is arguable.
-
-**Full fitness suite for the new bundle, classifier `gpt-4o/category-v2`, everything else unchanged.**
-
-| Run | Result | Gate |
-| --- | --- | --- |
-| Promotion split, two independent builds | both pass, identical promoted sets, seven eligible promoted, nothing unsafe | pass |
-| Configuration A, fifth split, real activation, three gap repeats | 0 of 20 injected, 10 of 10 explicit, 7 of 8 implicit, no unsafe, 3 of 3 promoted, coverage 19 of 19 | pass |
-| Configuration A, fourth split, real activation, three gap repeats | 1 of 20 injected, 9 of 10 explicit, 6 of 7 implicit, no unsafe, all three preferences promoted including the Rust default by the override-clause rule | pass |
-| Shadow harness, vertical-slice conversation | isolation held, 0 of 4, 1 of 1, nothing unsafe, no failures | pass |
-| Shadow harness, fifth split | isolation held, 0 of 20, 10 of 10, 7 of 8, nothing unsafe, no failures | pass |
-
-Two things to note from the fourth-split run. The one injection is the same "my manager" turn as every previous run. The implicit miss is new and it is a retrieval miss, not a classifier one: the sprint-demo schedule was not in the top eight for the gap query on that run, where it had been on the pre-registered run. Retrieval variance on a single query is now the smallest measured source of noise in the path and is worth a lexical-channel check in Phase 2 monitoring.
-
-**Outcome.** The v2 classifier prompt becomes the default in the harnesses and enters the supported bundle as `classifier: gpt-4o/category-v2`. The change was made in shadow and passed the complete suite before merging, as the sequence requires.
-
-## 8l. Three frontier judges on the shadow set: recall, adjacency, safety, latency, and cost together
-
-Run on 7 September 2026, step 4 of the execution sequence. Section 8i compared judges on the tuning split, where candidate pools are small and only gap turns reach the judge, and all three frontier models passed. This comparison uses the harder measurement: the fourth and fifth splits through the real ingestor, activation, and retrieval, with eight-candidate pools that include a forced placebo, and with shadow judging that puts every ordinary turn's relevance-path candidates in front of the judge. Planner `gpt-4o/gap-v3c`, classifier `gpt-4o/category-v2`, reference checker `gpt-5.4`, identical drafts; only the judge varies. The `gpt-5.4` rows are the bundle-v2 fitness runs from section 8k.
-
-| Judge | Served ordinary injection, fourth and fifth | Explicit recall | Implicit recall | Unsafe admissions on the served path | Shadow: ordinary turns it would inject | Shadow: unsafe admissions | Usefulness precision | Gap-turn latency p50 | Judge completion tokens per split |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `gpt-5.4`, OpenAI | 1 of 20, 0 of 20 | 9 of 10, 10 of 10 | 6 of 7, 7 of 8 | 0 | 2 of 18, 1 of 20 | 0, 0 | 16 of 18, 18 of 19 | 3.9 s | about 10,000 over 72 calls including checks |
-| Claude Sonnet 4.6, Anthropic | 1 of 20, 1 of 20 | 10 of 10, 10 of 10 | 6 of 7, 7 of 8 | 1, a misleading record on the fifth split | 9 of 18, 8 of 18 | 2, 4 | 17 of 20, 18 of 22 | 7.3 s | about 12,400 over 38 calls |
-| Gemini 2.5 Pro, Google | 3 of 20, 0 of 20 | 9 of 10, 10 of 10 | 7 of 7, 8 of 8 | 2, an unrelated private record on the fourth split and a misleading record on the fifth | 8 of 17, 8 of 20 | 1, 3 | 17 of 28, 19 of 26 | 12 to 16 s | about 56,000 over 38 calls |
-
-**Reading.** Recall is equal or better on the two OpenRouter judges. Everything else is worse, and two of the differences are disqualifying under the pre-registered gates. Both admitted a misleading record on the served path, which no `gpt-5.4` run has ever done, and Gemini also admitted an unrelated private fact. When ordinary turns reach them, they would inject on 40 to 50 percent of them against 5 to 11 percent for `gpt-5.4`, and they admit placebo or private records in shadow on one to four turns per split. A judge that buys one or two recalls with this much adjacency and any unsafe admission is a recall loss dressed as an improvement, which is the comparison the sequence asked for.
-
-**Why the tuning split missed this.** On the tuning split the judge saw three to six candidates on gap turns only, and all three frontier models were adequate. Precision and safety failures appear with eight-candidate pools, forced placebos, private records, and ordinary turns. The judge fitness test is therefore the shadow-set measurement, not the tuning split, and the suite is updated to say so.
-
-**Revised portability claim.** The design's fitness test ranks judges per role and it just did: it separated three frontier models that looked interchangeable on an easier test. The claim from section 8i that the judge role is portable across three vendors is narrowed. Planning is portable down to an 8B open-weight model. Judging has one model that meets the safety and adjacency bar on the full measurement, `gpt-5.4`, and two frontier alternatives that meet recall but not precision or safety with the current admission prompt. Whether a different prompt or a stricter candidate cap brings them within the bar is a bundle change to be evaluated the same way; it is not assumed.
-
-**Step 5: the supported bundle.** Selected and versioned as `bundle-2026-09-07-a`:
-
-| Component | Version |
-| --- | --- |
-| Planner | `gpt-4o/gap-v3c` |
-| Judge | `gpt-5.4/admission-v3` |
-| Classifier | `gpt-4o/category-v2` |
-| Taxonomy | `activation-v2-frozen` |
-| Inventory builder | `inventory-v1` |
-| Retrieval configuration | recall-oriented host gate, hash `f1f7b134bcfb7ad9` |
-| Stage timeouts | gap 4 s, admission 8 s, from measured latency |
-| Latency budget | unset by default, per request |
-
-Evaluated and not selected, with their numbers above: Claude Sonnet 4.6 and Gemini 2.5 Pro as judge; Llama 3.1 8B as judge, section 8i; gap-anchored admission, section 8g; `gpt-5-nano` and `gpt-4o` as judge, sections 8d and 8f.
-
-## 8m. Pre-merge rerun of the supported bundle
-
-Run on 8 September 2026 before `feat/utility-aware-memory` was fast-forwarded into `main`, on the same bundle and the same commands as section 8k, with fresh drafts. Result files carry the `merge-check` tag.
-
-| Run | Result | Gate |
-| --- | --- | --- |
-| Promotion split, two independent builds | both pass, identical promoted sets | pass |
-| Configuration A, fifth split, real activation, three gap repeats | 0 of 20 injected, 10 of 10 explicit, 6 of 8 implicit, no placebo, misleading, or unsafe admission, 3 of 3 promoted, coverage 19 of 19 | pass |
-| Configuration A, fourth split, real activation, three gap repeats | 0 of 20 injected, 9 of 10 explicit, 7 of 7 implicit, no placebo, misleading, or unsafe admission, all three preferences promoted | pass |
-| Shadow harness, vertical-slice conversation | isolation held on all four checks, 0 of 4, 1 of 1, nothing unsafe, no failures, no withholds | pass |
-| Shadow harness, fifth split | isolation held on all four checks, 0 of 20, 10 of 10, 7 of 8, nothing unsafe, no failures, no withholds | pass |
-
-Two movements against section 8k, both inside the run-to-run variance already described there. The fifth split's implicit recall through configuration A fell from 7 of 8 to 6 of 8, which sits exactly on the 75 percent floor; the same split through the shadow harness, minutes later with the same bundle, recovered 7 of 8. The fourth split moved the other way: the "my manager" injection that appeared on every earlier run did not appear, and implicit recall rose from 6 of 7 to 7 of 7. The shadow judge's ordinary-turn admission rate on the fourth split was 3 of 18 against 2 of 18, still measured without effect on the served path. Nothing in the bundle changed; the numbers are the bundle's noise band, and the implicit-recall floor is the gate most exposed to it.
-
-## 8n. The two optional retrieval stages, measured in four configurations
-
-Run on 8 September 2026 for Core Phase 11. Query rewriting (`HostedLLMQueryRewriter`, `gpt-4o`, prompt `rewrite-v1`) and cross-encoder reranking (`BAAI/bge-reranker-v2-m3`) were built behind their existing flags and run in every combination through the fitness suite's recall runs: configuration A on the fourth and fifth splits with real activation and three gap repeats, and the shadow harness on the fifth split. All four configurations used identical cached drafts. Each is a distinct retrieval configuration and so a distinct bundle hash; the hash now covers the `retrieval` and `reranker` sections together.
-
-**The reranker floor** was calibrated first on the tuning split with `benchmarks/rerank_calibration.py`, which runs every turn's text as a host-issued search with the floor at zero and sweeps offline. The cross-encoder separates far better than cosine did in section 9a of `gate.md`, F1 0.68 on the tuning split against a gate that could not separate at all, but it cannot reach the ordinary-turn target either: the smallest floor with at most 5 percent of ordinary turns keeping a survivor is 0.91, which keeps 4 of 17 expected records. Scores are sigmoid values and irrelevant pairs sit near 0.001, so a floor of 0.01 removes 541 of 549 non-expected candidates on the tuning split while keeping 13 of 17 expected ones. That recall-oriented value was used: in the utility-aware path the judge decides admission and the reranker can only be a candidate control.
-
-| Configuration | Retrieval hash | Fifth split, configuration A | Fourth split, configuration A | Fifth split, shadow | Added latency, gap turns p50 / p95 |
-| --- | --- | --- | --- | --- | --- |
-| Neither, the baseline after Phase 10 | `e8c8c3309ab121de` | 1 of 20 injected, 10 of 10, 7 of 8, nothing unsafe | 0 of 20, 9 of 10, 6 of 7, nothing unsafe | 0 of 20, 10 of 10, 7 of 8, one planner timeout | 3.7 s / 5.6 s and 4.0 s / 6.6 s |
-| Rewrite only | `64508d790d5b1d3d` | 0 of 20, 10 of 10, 8 of 8, nothing unsafe | 1 of 20, 9 of 10, 7 of 7, nothing unsafe | 0 of 20, 9 of 10, 7 of 8, one planner timeout | 5.3 s / 8.2 s and 5.9 s / 8.3 s |
-| Rerank only, floor 0.01 | `3082bd63258d697b` | 0 of 20, **7 of 10**, 7 of 8, nothing unsafe | 1 of 20, **8 of 10**, 6 of 7, nothing unsafe | 0 of 20, 10 of 10, 6 of 8 | 3.2 s / 13.3 s and 3.4 s / 6.5 s |
-| Rewrite and rerank | `f142569a03767406` | 1 of 20, 9 of 10, 7 of 8, nothing unsafe | 1 of 20, **8 of 10**, **4 of 7**, nothing unsafe | 0 of 20, 10 of 10, 6 of 8 | 5.0 s / 9.1 s and 4.9 s / 7.7 s |
-
-Bold marks a gate failure: explicit recall below 90 percent or implicit recall below 75 percent. No configuration admitted a placebo, misleading, or private record, and every unexpected admission was the same time-zone or date record seen in every earlier run.
-
-**What the rewrite stage did.** The search logs of the rewrite runs answer it: on the fifth split 33 of 39 searches came back `unchanged`, 2 `applied`, and 4 `failed` on the default 800 ms timeout; on the fourth split 25 unchanged, 5 applied, 8 failed. The planner's gap queries are already standalone, so there is almost nothing for a rewriter to resolve, and the stage cost 1.7 to 1.9 s per search on average for it. The fifth split's 8 of 8 implicit recall is one record better than the baseline's 7 of 8, which is inside the run-to-run band section 8m measured; the fourth split moved the other way on injection. The name guard never fired.
-
-**What the reranker did.** With the planner's queries rather than the turn text, expected records for explicit turns scored below even the 0.01 floor often enough to lose three of ten on the fifth split and two of ten on the fourth. The reranker judges the pair, and section 1 of this document is the argument for why a pair score cannot stand in for the judge; it also cannot stand in front of the judge without cutting the candidates the judge needed. Its latency was also the least predictable stage: p95 13.3 s on the fifth split under the concurrent load of these runs, against a 100 ms budget written for a warm laptop.
-
-**Decision.** Neither stage produces a measurable benefit, so both implementations stay in the package and disabled, as the plan prescribes, and the supported bundle is unchanged in its components. Its retrieval hash is now `e8c8c3309ab121de`, because Phase 10 added `gate.dense_floor.session_summary` and Phase 11 folded the reranker section into the hash; the manifest is `benchmarks/bundles/bundle-2026-09-08-a.json` and the baseline runs above are its fitness evidence, together with the promotion split, which passed on both builds, and the vertical-slice shadow run, which passed every gate with isolation held. The one planner timeout in the fifth-split shadow run and the reranker's p95 are both signs of the same thing: these runs shared one machine with four others, and stage timeouts set from an idle machine bind under load. That is the reference host's finding from section 8l restated, not a new one.
-
-The reranker floor of 0.01 is recorded as the calibrated value for a recall-oriented candidate control and `reranker.floor` stays unset in the shipped configuration, so an operator who enables the reranker must still set it deliberately.
-
-## 8o. The precision gate: a blind adjudication of one label, and the scoring it changed
-
-Run on 9 September 2026 for the v1 acceptance. The Phase 15 acceptance report found the helpful-precision gate of 95 percent met or missed on the strength of one admission that recurs in every run: on the scheduling turn `I5` of both blind splits ("Can I schedule a database migration for Tuesday morning?", "Can I schedule a maintenance window for Friday afternoon?") the judge admits the user's time-zone record beside the expected schedule record, and the label lists only the schedule record.
-
-**Adjudication.** One independent reviewer, Claude Sonnet 4.6 through OpenRouter, a different vendor from the `gpt-5.4` judge, was shown the user's message, the records the assistant would already use, and the disputed record, and nothing else: not the judge's verdict or reasoning, not the original label, not this project's gates. It was asked whether the record is required, helpful but optional, or unhelpful for answering that message. `benchmarks/adjudicate_labels.py` is the script and `benchmarks/scenarios/overlays/label_adjudication.json` holds the prompt and both verbatim answers. Both verdicts are **helpful but optional**: on the fifth split because the record lets the assistant confirm the meeting time in the user's zone without ambiguity, on the fourth because it lets the assistant give times in the user's local zone without asking, while a reasonable answer remains possible from the schedule record alone.
-
-**Scoring.** The blind labels are not edited. Recall keeps counting only the scenario's expected records, which are the required ones. Precision now also counts an admitted record as helpful when the overlay marks it required or helpful for that turn; `summarise` in `phase0_two_arm.py` reports both `usefulness_precision` under the overlay and `usefulness_precision_strict` under the labels alone, and `benchmarks/rescore.py` recomputes saved results without calling a model. No model, prompt, threshold, or bundle component changed.
-
-| Run | Strict precision | Precision under the overlay | Remaining non-helpful admissions |
-| --- | --- | --- | --- |
-| 7 September, fifth split, section 8k | 18 of 19 (95%) | 19 of 19 (100%) | none |
-| 7 September, fourth split, section 8k | 16 of 18 (89%) | 17 of 18 (94%) | `O8`, an ordinary-turn injection |
-| Pre-merge rerun, fifth split, section 8m | 17 of 18 (94%) | 18 of 18 (100%) | none |
-| Pre-merge rerun, fourth split, section 8m | 17 of 18 (94%) | 18 of 18 (100%) | none |
-| Phase 11 baseline, fifth split, section 8n, the bundle's fitness evidence | 18 of 20 (90%) | 19 of 20 (95%) | `O1`, an ordinary-turn injection |
-| Phase 11 baseline, fourth split, section 8n, the bundle's fitness evidence | 16 of 17 (94%) | 17 of 17 (100%) | none |
-
-Result file: `benchmarks/results/rescore/20260908T184734Z-rescore.json`. On the two runs that are `bundle-2026-09-08-a`'s fitness evidence the gate is met. Every admission still counted against precision is an ordinary-turn injection, which the injection gate measures separately and which stayed within its 5 percent bound on the same runs. Had the reviewer said unhelpful, the gate would have failed on the judge and the judge would have needed a change and the complete suite again; it did not.
-
-## 8p. Cross-encoder placement: RRF only, RRF then cross-encoder, and cross-encoder only
-
-Run on 9 September 2026, after the v1.0.0 tag. Section 8n measured the cross-encoder after the RRF relevance floors. This round adds the third placement the plan asked for, the cross-encoder in place of those floors over the whole fused pool, and the operating behaviour a host needs before either could ship: a stage timeout, a configured failure behaviour, and a search-log record of what the pass did. `reranker.mode` selects `rrf_cross_encoder` or `cross_encoder_only`; `reranker.timeout_ms` and `reranker.on_failure` bound the pass, and `fallback` serves the RRF order in full, re-gated by the relevance floors in `cross_encoder_only` mode, with `rerank_status` and `rerank_error` written to the log. Scope, status, expiry, the auto-retrieval source-kind exclusion, and conflict rules run before the cross-encoder in both modes, and the pass scores copies of the shortlist, so an abandoned pass cannot write into the candidates the search used or restore a record an earlier filter removed; `tests/test_reranker.py` asserts each of those. The three fields are inert while the reranker is disabled and are left out of a disabled configuration's bundle hash, so the supported bundle's hash is still `e8c8c3309ab121de`; `test_new_reranker_fields_do_not_change_a_disabled_bundle_hash` pins it.
-
-The cross-encoder-only configuration ran through the same recall runs as section 8n, with the same cached drafts, the calibrated floor of 0.01, the shortlist cap raised to the pool size so every fused candidate was scored, and a one-minute stage timeout so the ranking was measured rather than the fallback. Every pass applied; none timed out or failed.
-
-| Configuration | Retrieval hash | Fifth split, configuration A | Fourth split, configuration A | Fifth split, shadow |
-| --- | --- | --- | --- | --- |
-| RRF only, the supported bundle | `e8c8c3309ab121de` | 1 of 20 injected, 10 of 10, 7 of 8, nothing unsafe | 0 of 20, 9 of 10, 6 of 7, nothing unsafe | 0 of 20, 10 of 10, 7 of 8 |
-| RRF then cross-encoder, floor 0.01 (section 8n) | `3082bd63258d697b` | 0 of 20, **7 of 10**, 7 of 8, nothing unsafe | 1 of 20, **8 of 10**, 6 of 7, nothing unsafe | 0 of 20, 10 of 10, 6 of 8 |
-| Cross-encoder only, floor 0.01 | `d67b0d6ead3e745f` | 0 of 20, **8 of 10**, **5 of 8**, nothing unsafe | 0 of 20, **7 of 10**, **5 of 7**, nothing unsafe | 0 of 20, 10 of 10, 6 of 8 |
-
-Bold marks a gate failure. The pool the judge saw on the turns where the planner fired, from `benchmarks/pool_stats.py` over the saved results, is what separates the three:
-
-| Configuration | Split | Mean pool | Non-expected candidates per gap turn | Expected records still in the pool | Non-expected records admitted | Retrieval p50 / p95 | Cross-encoder stage p50 / p95 |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| RRF only | fifth | 6.84 | 5.89 | 18 of 19 (95%) | 2 | 0.04 s / 0.13 s | none |
-| RRF then cross-encoder | fifth | 1.06 | 0.22 | 15 of 19 (79%) | 1 | 0.46 s / 10.5 s | not recorded in that run |
-| Cross-encoder only | fifth | 1.06 | 0.24 | 14 of 18 (78%) | 1 | 0.37 s / 2.1 s | 160 ms / 2.0 s over 39 searches |
-| RRF only | fourth | 7.00 | 6.06 | 17 of 18 (94%) | 1 | 0.09 s / 0.86 s | none |
-| RRF then cross-encoder | fourth | 1.22 | 0.39 | 15 of 18 (83%) | 3 | 0.57 s / 2.9 s | not recorded in that run |
-| Cross-encoder only | fourth | 1.28 | 0.44 | 15 of 18 (83%) | 1 | 0.40 s / 1.5 s | 169 ms / 0.8 s over 38 searches |
-
-Result files: `benchmarks/results/phase0/ceonly-v5`, `benchmarks/results/phase0/ceonly-v4`, `benchmarks/results/shadow/20260909T101053Z-phase0_v5-gap-gpt-4o-adm-gpt-5.4-budget-None-ceonly.json`, and `benchmarks/results/rerank/20260909T101253Z-pool-stats.json`.
-
-**Against the acceptance checks.** Weak-candidate rejection improves by an order of magnitude under either cross-encoder placement: about six non-expected candidates per gap turn become a quarter to a half. Unsafe admissions stay at zero and ordinary-turn injection stays at or under 1 of 20 in every run. The stage's own cost, 160 to 170 ms at p50 and 0.8 to 2.0 s at p95 on this machine, sits inside a 2 s timeout at p50 and outside it at p95 on the fifth split, so a host running the shipped default would fall back on a few percent of searches. And explicit and implicit recall fall below the gates on both blind splits in both placements, because the same cut that removes the weak candidates removes the expected record from the pool on one turn in five. The judge cannot admit what it does not see, and the judge was already rejecting the weak candidates on its own: RRF only admitted two and one non-expected records across the two splits, both the adjudicated time-zone record or an ordinary-turn injection the injection gate counts.
-
-The shadow harness passes all three placements on the fifth split, as it did in section 8n. Its single pass per turn through the orchestrator sees a different sample of planner queries from configuration A's three repeats, and the recall runs are the fitness verdict; the shadow result is recorded, not relied on.
-
-**Decision.** `RRF → cross-encoder` does not improve precision without unacceptable recall loss, and cross-encoder only does not either, so neither becomes a supported bundle. `rrf_only` stays the default, both cross-encoder placements stay in the package as measured experimental modes with the timeout and fallback behaviour they now have, and the supported bundle is unchanged. What would change this: a floor calibrated on the planner's gap queries rather than on turn text, since section 8n traced the recall loss to the planner's queries scoring expected records below even 0.01, or a cross-encoder fine-tuned on gap-to-record pairs. Either is a new bundle and the complete suite again.
-
-## 9. Sources
-
-- Ross, Mahabaleshwarkar, Suhara. *When2Call: When (not) to Call Tools.* NAACL 2025. https://aclanthology.org/2025.naacl-long.174/
-- Wang et al. *Adaptive Retrieval-Augmented Generation for Conversational Systems.* Findings of NAACL 2025. https://arxiv.org/abs/2407.21712
-- Moskvoretskii et al. *Adaptive Retrieval Without Self-Knowledge? Bringing Uncertainty Back Home.* ACL 2025. https://arxiv.org/abs/2501.12835
-- *Retrieval as a Decision: Training-Free Adaptive Gating for Efficient RAG* (TARG). 2025. https://arxiv.org/abs/2511.09803
-- *ENPMR-Bench: Benchmarking Proactive Memory Retrieval for Emotional Support Agents.* 2026. https://arxiv.org/abs/2605.27240
-- *TriggerBench: Investigating Prospective Memory for Large Language Models.* 2026. https://arxiv.org/abs/2606.23459
-- Zhang et al. *Are Large Language Models Good at Utility Judgments?* SIGIR 2024. https://arxiv.org/abs/2403.19216
-- Zhang et al. *An Iterative Utility Judgment Framework Inspired by Philosophical Relevance via LLMs.* Findings of ACL 2026. https://arxiv.org/abs/2406.11290
-- *Utility-Focused LLM Annotation for Retrieval and Retrieval-Augmented Generation.* EMNLP 2025. https://aclanthology.org/2025.emnlp-main.88/
-- *LLM-Specific Utility: A New Perspective for Retrieval-Augmented Generation.* 2025. https://arxiv.org/abs/2510.11358
-- Zhang et al. *Beyond Relevance: Utility-Centric Retrieval in the LLM Era.* 2026. https://arxiv.org/abs/2604.08920
-- *UsefulBench: Towards Decision-Useful Information as a Target for Information Retrieval.* 2026. https://arxiv.org/abs/2604.15827
-- *Decision-Aware Memory Cards: Counterfactual-Inspired Context Selection and Compression for Tool-Using LLM Agents.* 2026. https://arxiv.org/abs/2606.08151
-- Wang et al. *Learning to Filter Context for Retrieval-Augmented Generation* (FILCO). 2023. https://arxiv.org/abs/2311.08377
-- *Response-Aware User Memory Selection for LLM Personalization* (RUMS). ICML 2026. https://arxiv.org/abs/2604.14473
-- *TRACE-Memory: Public-Conditioned Retrieval and Utility-Aware Evidence Admission for Personalized Generation.* 2026. https://arxiv.org/abs/2608.08446
-- *Hindsight Memory-PRM: Supervising Memory Management with Auditable Hindsight Credit.* 2026. https://arxiv.org/abs/2608.29605
-- *AttriMem: Attribution-Guided Process Feedback for Agent Memory Construction.* 2026. https://arxiv.org/abs/2607.21106
-- *PersistBench: When Should Long-Term Memories Be Forgotten by LLMs?* 2026. https://arxiv.org/abs/2602.01146
-- *Mitigating Over-Personalization in LLMs via Structured Memory.* 2026. https://arxiv.org/abs/2608.08300
-- Sun et al. *When Personalization Misleads: Understanding and Mitigating Hallucinations in Personalized LLMs.* Findings of ACL 2026. https://arxiv.org/abs/2601.11000
-- *Towards Root Memories: Benchmarking and Enhancing Implicit Logical Memory Retrieval for Personalized LLMs.* 2026. https://arxiv.org/abs/2606.23283
-- Yan et al. *Memory-R1: Enhancing LLM Agents to Manage and Utilize Memories via Reinforcement Learning.* ACL 2026. https://arxiv.org/abs/2508.19828
+Retold uses the same answer-relative principle with a text-only, provider-neutral runtime, audited ambient activation, a content-free inventory, joint admission, fail-closed execution, and bundle fitness gating.

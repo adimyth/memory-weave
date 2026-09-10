@@ -60,20 +60,14 @@ uv run --extra live python benchmarks/draft_delta_experiment.py <artifact-dir> \
   --draft-model gpt-5.6-luna --judge-model gpt-5.4
 ```
 
-This one does make model calls. It replays the logged host-issued searches through a draft-then-judge
-usefulness gate: a draft answer with no memory, then one judge call per search asking whether each logged
-candidate would change that draft. Results land in `results/draft-delta/`. Method and findings are in
-[../docs/usefulness-gate.md](../docs/usefulness-gate.md) section 8.
+This one does make model calls. It replays the logged host-issued searches through a draft-then-judge usefulness gate: a draft answer with no memory, then one judge call per search asking whether each logged candidate would change that draft. Results land in `results/draft-delta/`. The durable method and findings are in [../docs/usefulness-gate.md](../docs/usefulness-gate.md).
 
 ```bash
 HF_HUB_OFFLINE=1 uv run --extra live --extra local-models python benchmarks/utility_signal_experiment.py \
   <artifact-dir> --policy-model gpt-5.4
 ```
 
-Replays the same searches through the utility signals of RUMS (entropy reduction) and TRACE-Memory (gap
-queries, then likelihood gain of the recorded reply), using a local Llama-3.1-8B-Instruct as the frozen
-model. Takes about eight minutes on an M4 Pro. Results land in `results/utility-signals/`; findings are in
-[../docs/usefulness-gate.md](../docs/usefulness-gate.md) section 8b.
+Replays the same searches through the utility signals of RUMS (entropy reduction) and TRACE-Memory (planner queries, then likelihood gain of the recorded reply), using a local Llama-3.1-8B-Instruct as the frozen model. Takes about eight minutes on an M4 Pro. Results land in `results/utility-signals/`; the durable findings are in [../docs/usefulness-gate.md](../docs/usefulness-gate.md).
 
 ```bash
 HF_HUB_OFFLINE=1 uv run --extra live --extra local-models python benchmarks/evaluate_combination.py \
@@ -87,7 +81,7 @@ HF_HUB_OFFLINE=1 uv run --extra live --extra local-models python benchmarks/phas
   --draft-model gpt-5.6-luna --policy-model gpt-5.4
 ```
 
-Phase 0 of the utility-aware memory plan: the gap-planning plus draft-relative admission path, run twice over the hand-authored scenario set in `scenarios/phase0.json`, once with style and language preferences ambient and once with them conditional. Prints the design gate, the promotion gate, and a combination verdict on the ambient arm. Results land in `results/phase0/`; findings are in [../docs/usefulness-gate.md](../docs/usefulness-gate.md) section 8c. `--fail-on-verdict` exits 1 when that combination bar is missed; `evaluate_combination.py` sets it.
+Runs the missing-context planner plus draft-relative admission path twice over the hand-authored scenario set in `scenarios/phase0.json`, once with style and language preferences ambient and once with them conditional. Prints the design gate, the promotion gate, and a combination verdict on the ambient arm. Results land in `results/phase0/`; the final findings are in [../docs/usefulness-gate.md](../docs/usefulness-gate.md). `--fail-on-verdict` exits 1 when that combination bar is missed; `evaluate_combination.py` sets it.
 
 `--gap-model`, `--admission-model`, `--gap-prompt v1|v2`, and `--gap-repeats N` vary one stage at a time
 and measure gap-decision stability; `--draft-cache` keeps drafts identical across configurations.
@@ -105,7 +99,7 @@ HF_HUB_OFFLINE=1 uv run --extra live --extra local-models python benchmarks/shad
   --scenario benchmarks/scenarios/phase0_v5.json --gap-model gpt-4o --admission-model gpt-5.4
 uv run retold --store <store.sqlite> metrics --json --rollback-check
 uv run retold --store <store.sqlite> bundles record benchmarks/bundles/bundle-2026-09-08-a.json \
-  --passed --evidence "docs/usefulness-gate.md 8m,8n; docs/acceptance-report.md" --by <you>
+  --passed --evidence "docs/usefulness-gate.md; docs/acceptance-report.md" --by <you>
 ```
 
 ```bash
@@ -142,8 +136,7 @@ uv run python benchmarks/pool_stats.py benchmarks/results/phase0/phase11-baselin
 Judge-pool statistics from saved results, no model call: on every turn where the planner fired, how many
 candidates reached the judge, how many of them the scenario never expected, whether the expected records
 were still in the pool, and the retrieval time. This is the comparison between ranking configurations,
-because the cross-encoder can only decide what the judge sees. Results land in `results/rerank/`; section 8p
-of [../docs/usefulness-gate.md](../docs/usefulness-gate.md) has the three-way comparison.
+because the cross-encoder can only decide what the judge sees. Results land in `results/rerank/`; [../docs/usefulness-gate.md](../docs/usefulness-gate.md) records the decision from the three-way comparison.
 
 ```bash
 uv run --extra live python benchmarks/adjudicate_labels.py --reviewer openrouter:anthropic/claude-sonnet-4.6
@@ -155,8 +148,7 @@ records already expected, and the record under review, never the judge's reasoni
 land in `scenarios/overlays/label_adjudication.json`; the blind labels are never edited. Recall counts only
 the expected (required) records; precision also counts records the overlay marks helpful, and `summarise`
 reports both `usefulness_precision` and `usefulness_precision_strict`. `rescore.py` recomputes saved results
-under the overlay with no model call. Findings in [../docs/usefulness-gate.md](../docs/usefulness-gate.md)
-section 8o.
+under the overlay with no model call. Findings are in [../docs/usefulness-gate.md](../docs/usefulness-gate.md).
 
 The shadow harness runs the orchestrator beside the served path with isolation asserted; `metrics`
 aggregates any store's turn-decision log into stage outcomes, rates, latency, cost, and backlog; `bundles
@@ -207,9 +199,7 @@ host asked. `tool_only` is therefore not a working mode on this evidence.
 **`hybrid` delivers and pollutes.** It recalled on the turns that needed it, and on 5 of 12 that did
 not, against a target of under 5 percent.
 
-**The gate cannot be tuned out of this.** Score distributions for "needs memory" and "does not" overlap
-almost completely, with ordinary turns reaching the higher maximum. No floor separates them. Full
-treatment in [../docs/gate.md](../docs/gate.md).
+**The gate cannot be tuned out of this.** Score distributions for "needs memory" and "does not" overlap almost completely, with ordinary turns reaching the higher maximum. No floor separates them. The durable conclusion and its replacement are in [../docs/usefulness-gate.md](../docs/usefulness-gate.md).
 
 **But most of it dissolves.** Every record returned on a turn that needed memory was a preference about
 the user. Those apply to every turn, so gating them is meaningless; they belong in an always-present
@@ -217,9 +207,7 @@ block. Of the two false injections, turn 11 matched a preference and disappears 
 turn 10 is the accepted residual case: a turn about the deployment checklist matching checklist facts
 that do not answer it.
 
-**Two things are accepted rather than fixed:** that residual adjacency, and attribute-name drift, where
-three executions produced four different slugs for one preference. Both are recorded in
-[../docs/next-phases.md](../docs/next-phases.md).
+The utility-aware path replaced this broad host search. Attribute-name drift remains visible in the raw historical results but is not a current roadmap item.
 
 ## Not built yet
 

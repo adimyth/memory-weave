@@ -10,11 +10,6 @@ docs_dir: docs
 site_dir: site
 strict: true
 
-# Two working notes live in docs/ but are gitignored; they must not enter the site even when present locally.
-exclude_docs: |
-  current-landscape.md
-  benchmark-plan.md
-
 hooks:
   - .mkdocs/hooks.py
 
@@ -103,18 +98,11 @@ nav:
       - High-level design: agent-memory-hld.md
       - Low-level design: agent-memory-lld.md
       - Utility-aware memory architecture: utility-aware-memory-architecture.md
-      - Utility-aware implementation plan: utility-aware-memory-implementation-plan.md
       - What is distinctive: design-contributions.md
-      - Research notes: agent-memory-research-notes.md
-      - Bedrock AgentCore comparison: bedrock-agentcore-comparison.md
   - Evidence:
       - Acceptance report (v1): acceptance-report.md
-      - The relevance gate: gate.md
-      - Usefulness, not relevance: usefulness-gate.md
-      - Vertical-slice findings: vertical-slice-findings.md
-      - Benchmark handoff: benchmark-handoff.md
-      - Experiments: benchmarks.md
-      - Next phases: next-phases.md
+      - Utility-aware experiments: usefulness-gate.md
+      - Background writes: next-phases.md
   - API:
       - Overview: api/index.md
       - Configuration: api/config.md

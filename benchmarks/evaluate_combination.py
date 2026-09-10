@@ -28,7 +28,7 @@ from pathlib import Path
 from benchmarks.fitness import combination_verdict, serving_summary
 from benchmarks.phase0_two_arm import main as phase0_main
 
-# The combination that passed configuration A on the fifth split. See docs/usefulness-gate.md section 8g
+# The combination that passed configuration A on the fifth split. See docs/usefulness-gate.md.
 # and docs/design-contributions.md. gap-v3 here is the inventory-aware prompt; the served orchestrator
 # prompt is gap-v3c, which adds a structured category on each gap.
 SUPPORTED = {
