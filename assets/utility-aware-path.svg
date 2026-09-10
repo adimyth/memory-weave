@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 840" width="1040" height="840" role="img" aria-labelledby="title description">
+  <title id="title">How Retold decides whether to use memory</title>
+  <desc id="description">A vertical flow starts with a user turn and a draft made without conditional memory. The host checks whether stored context is needed. If it is, Retold searches for the missing context and tests whether it would materially change the draft. Useful memory produces one revision. Every other path preserves the original draft. Both paths end at the same served answer.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 10 5 0 10z" fill="#6b6460"/>
+    </marker>
+    <style>
+      .frame { fill: #fbfaf7; stroke: #d9d4cc; stroke-width: 1.2; }
+      .zone { fill: #f4f1ea; stroke: #d9d4cc; stroke-width: 1; }
+      .card { fill: #fffefa; stroke: #a39b90; stroke-width: 1.25; }
+      .decision { fill: #edf4f2; stroke: #2f7375; stroke-width: 1.4; }
+      .revision { fill: #f7ede8; stroke: #b65c45; stroke-width: 1.4; }
+      .fallback { fill: #f9f7f3; stroke: #a39b90; stroke-width: 1.2; }
+      .output { fill: #e8efea; stroke: #597d48; stroke-width: 1.4; }
+      .line { fill: none; stroke: #6b6460; stroke-width: 1.5; marker-end: url(#arrow); }
+      .context { fill: none; stroke: #a39b90; stroke-width: 1.25; stroke-dasharray: 5 4; marker-end: url(#arrow); }
+      .rail { fill: none; stroke: #a39b90; stroke-width: 1.3; }
+      .eyebrow { fill: #8a8178; font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size: 10px; font-weight: 750; letter-spacing: .11em; }
+      .title { fill: #111111; font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size: 20px; font-weight: 750; }
+      .subtitle { fill: #625b55; font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size: 12px; }
+      .label { fill: #24201d; font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size: 13px; font-weight: 700; text-anchor: middle; }
+      .sub { fill: #625b55; font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size: 11px; text-anchor: middle; }
+      .side-label { fill: #625b55; font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size: 10px; font-weight: 700; text-anchor: middle; }
+    </style>
+  </defs>
+
+  <rect class="frame" x="1" y="1" width="1038" height="838" rx="16"/>
+  <text class="eyebrow" x="36" y="42">UTILITY-AWARE MEMORY</text>
+  <text class="title" x="36" y="72">Decide whether memory is useful before retrieving it.</text>
+  <text class="subtitle" x="36" y="96">The centre path is the only route that retrieves memory. The side path preserves the original draft.</text>
+
+  <rect class="zone" x="28" y="124" width="984" height="310" rx="12"/>
+  <text class="eyebrow" x="48" y="150">HOST</text>
+
+  <rect class="card" x="310" y="148" width="420" height="54" rx="10"/>
+  <text class="label" x="520" y="171">User turn</text>
+  <text class="sub" x="520" y="190">plus public context</text>
+  <path class="line" d="M520 202 V218"/>
+
+  <rect class="card" x="310" y="218" width="420" height="54" rx="10"/>
+  <text class="label" x="520" y="241">Draft an answer</text>
+  <text class="sub" x="520" y="260">without conditional memory</text>
+  <path class="line" d="M520 272 V288"/>
+
+  <rect class="card" x="310" y="288" width="420" height="54" rx="10"/>
+  <text class="label" x="520" y="311">Check whether stored context is needed</text>
+  <text class="sub" x="520" y="330">using only the kinds of memory available</text>
+  <path class="line" d="M520 342 V358"/>
+
+  <rect class="decision" x="310" y="358" width="420" height="54" rx="10"/>
+  <text class="label" x="520" y="390">Is stored context needed?</text>
+
+  <path class="line" d="M730 385 H790"/>
+  <rect class="fallback" x="790" y="358" width="190" height="54" rx="10"/>
+  <text class="side-label" x="885" y="381">No memory needed</text>
+  <text class="sub" x="885" y="400">keep original draft</text>
+
+  <rect class="zone" x="28" y="452" width="984" height="250" rx="12"/>
+  <text class="eyebrow" x="48" y="478">RETOLD</text>
+
+  <path class="line" d="M520 412 V480"/>
+  <rect class="card" x="310" y="480" width="420" height="54" rx="10"/>
+  <text class="label" x="520" y="503">Search for the missing context</text>
+  <text class="sub" x="520" y="522">scope filtered before ranking</text>
+  <path class="line" d="M520 534 V550"/>
+
+  <rect class="decision" x="310" y="550" width="420" height="54" rx="10"/>
+  <text class="label" x="520" y="574">Would retrieved context change the draft?</text>
+  <text class="sub" x="520" y="593">judge all candidates together</text>
+
+  <path class="context" d="M310 245 H270 V577 H310"/>
+
+  <path class="line" d="M730 577 H790"/>
+  <rect class="fallback" x="790" y="550" width="190" height="54" rx="10"/>
+  <text class="side-label" x="885" y="573">No useful context</text>
+  <text class="sub" x="885" y="592">keep original draft</text>
+
+  <path class="line" d="M520 604 V620"/>
+  <rect class="revision" x="310" y="620" width="420" height="54" rx="10"/>
+  <text class="label" x="520" y="643">Revise the answer once</text>
+  <text class="sub" x="520" y="662">with admitted records only</text>
+
+  <rect class="zone" x="28" y="720" width="984" height="92" rx="12"/>
+  <text class="eyebrow" x="48" y="746">OUTPUT</text>
+
+  <path class="line" d="M520 674 V750"/>
+  <rect class="output" x="310" y="750" width="420" height="42" rx="10"/>
+  <text class="label" x="520" y="776">Serve the answer</text>
+
+  <path class="rail" d="M980 385 H995 V771"/>
+  <path class="rail" d="M980 577 H995"/>
+  <circle cx="995" cy="577" r="2.5" fill="#a39b90"/>
+  <path class="line" d="M995 771 H730"/>
+</svg>

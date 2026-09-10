@@ -1,0 +1,2644 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Long-term memory for AI agents that stays quiet until it changes the answer.">
+      
+      
+      
+        <link rel="canonical" href="https://adimyth.in/retold/components/">
+      
+      
+        <link rel="prev" href="../changelog/">
+      
+      
+        <link rel="next" href="../agent-memory-hld/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Components, with examples - Retold</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="black" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#agent-memory-system-components" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Retold" class="md-header__button md-logo" aria-label="Retold" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Retold
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Components, with examples
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="black" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/adimyth/retold" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    adimyth/retold
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../guide/architecture/" class="md-tabs__link">
+          
+  
+  
+  Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
+          
+  
+  
+  Design
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../acceptance-report/" class="md-tabs__link">
+          
+  
+  
+  Evidence
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../api/" class="md-tabs__link">
+          
+  
+  
+  API
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Retold" class="md-nav__button md-logo" aria-label="Retold" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Retold
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/adimyth/retold" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    adimyth/retold
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/using/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Using it
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/measured/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What has been measured
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Components, with examples
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Components, with examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-system-component-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. System component map
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-memory-record" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Memory record
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-memory-type-and-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Memory type and lifecycle
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Scope
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-principal-grants-and-enforcement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Principal, grants, and enforcement
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-source-and-evidence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Source and evidence
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-current-fact-keys-conflicts-supersession-and-reinforcement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Current-fact keys, conflicts, supersession, and reinforcement
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-entities-aliases-and-record-links" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Entities, aliases, and record links
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-embeddings-and-the-vector-index" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Embeddings and the vector index
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-full-text-search-fts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Full-text search (FTS)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-retrieval-channels-and-ranking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Retrieval channels and ranking
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11. Retrieval channels and ranking">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#reciprocal-rank-fusion-rrf" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reciprocal Rank Fusion (RRF)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#result-control-after-rrf" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Result control after RRF
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-query-rewriting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Query rewriting
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13-ingestion-sessions-and-audit-trail" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13. Ingestion, sessions, and audit trail
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#14-memory-tools-and-framework-adapters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        14. Memory tools and framework adapters
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#15-prompts-and-instructions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        15. Prompts and instructions
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent-memory-hld/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    High-level design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent-memory-lld/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Low-level design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../utility-aware-memory-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Utility-aware memory architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design-contributions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What is distinctive
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Evidence
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Evidence
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../acceptance-report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Acceptance report (v1)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../usefulness-gate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Utility-aware experiments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../next-phases/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background writes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/runtime/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Runtime and host
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/ingest/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Session hooks and extraction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/retrieve/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retrieval
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Utility-aware policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/adapters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Adapters
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-system-component-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. System component map
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-memory-record" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Memory record
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-memory-type-and-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Memory type and lifecycle
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Scope
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-principal-grants-and-enforcement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Principal, grants, and enforcement
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-source-and-evidence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Source and evidence
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-current-fact-keys-conflicts-supersession-and-reinforcement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Current-fact keys, conflicts, supersession, and reinforcement
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-entities-aliases-and-record-links" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Entities, aliases, and record links
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-embeddings-and-the-vector-index" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Embeddings and the vector index
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-full-text-search-fts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Full-text search (FTS)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-retrieval-channels-and-ranking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Retrieval channels and ranking
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11. Retrieval channels and ranking">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#reciprocal-rank-fusion-rrf" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reciprocal Rank Fusion (RRF)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#result-control-after-rrf" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Result control after RRF
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-query-rewriting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Query rewriting
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13-ingestion-sessions-and-audit-trail" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13. Ingestion, sessions, and audit trail
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#14-memory-tools-and-framework-adapters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        14. Memory tools and framework adapters
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#15-prompts-and-instructions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        15. Prompts and instructions
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/adimyth/retold/edit/main/docs/components.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="agent-memory-system-components">Agent Memory System Components<a class="headerlink" href="#agent-memory-system-components" title="Permanent link">&para;</a></h1>
+<p>This guide explains the runtime components with concrete examples. Read the component map first to see how a search or write moves through the system. The <a href="../agent-memory-hld/">high-level design</a> defines the architecture; the <a href="../agent-memory-lld/">low-level design</a> defines the schemas and implementation contracts.</p>
+<h2 id="1-system-component-map">1. System component map<a class="headerlink" href="#1-system-component-map" title="Permanent link">&para;</a></h2>
+<p>Retold has one canonical store and three retrieval channels. The vector index and FTS5 index are derived search structures, not separate sources of truth.</p>
+<div class="highlight"><pre><span></span><code>Agent framework
+  -&gt; Adapter -&gt; tool handler -&gt; policy and session buffer
+  -&gt; Ingestor -&gt; SQLite store -&gt; FTS5 index, entity links, vector index
+  -&gt; Retriever -&gt; dense search + lexical FTS5 search + entity search -&gt; RRF -&gt; tool result
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Owns</th>
+<th>Reads</th>
+<th>Writes or returns</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Framework adapter</td>
+<td>Framework integration and current-run identity.</td>
+<td>Framework run state and current turns.</td>
+<td>Derives <code>Principal</code>, records session hooks, registers tools, and adds search context.</td>
+</tr>
+<tr>
+<td>Tool handlers</td>
+<td>Framework-neutral entry points for the five memory tools.</td>
+<td>Validated tool input and <code>Principal</code>.</td>
+<td>Calls the policy, ingestor, or retriever and returns tool-safe results.</td>
+</tr>
+<tr>
+<td>Policy service</td>
+<td>Scope access, source authority, lifecycle, and evidence rules.</td>
+<td>Grants, principal, source kind, record state, and session turns.</td>
+<td>Eligible scopes, write decisions, statuses, and evidence checks.</td>
+</tr>
+<tr>
+<td>Session buffer and extractor</td>
+<td>The transcript needed for evidence and durable session memory.</td>
+<td>User, assistant, and tool-result turns.</td>
+<td>Numbered turns, extracted candidates, and one session summary.</td>
+</tr>
+<tr>
+<td>Ingestor</td>
+<td>The write path and current-fact decisions.</td>
+<td>A tool request or extractor candidate, policy results, entities, and nearby records.</td>
+<td>A new, reinforced, superseding, conflicting, or rejected record.</td>
+</tr>
+<tr>
+<td>SQLite store</td>
+<td>Canonical records, entities, grants, sessions, events, and logs.</td>
+<td>Queries from all runtime services.</td>
+<td>Transactional durable state and eligible record IDs.</td>
+</tr>
+<tr>
+<td>FTS5 lexical index</td>
+<td>Exact-word and identifier retrieval.</td>
+<td><code>content</code>, <code>subject</code>, and linked entity aliases from a record.</td>
+<td>BM25-ranked lexical candidate IDs, term-match counts, and scores.</td>
+</tr>
+<tr>
+<td>Vector index</td>
+<td>Semantic similarity retrieval in process memory.</td>
+<td>Compatible embedding rows and an eligible record-ID set.</td>
+<td>Cosine-ranked dense candidate IDs and scores.</td>
+</tr>
+<tr>
+<td>Entity resolver</td>
+<td>Exact, scope-aware entity and alias lookup.</td>
+<td>Entity mentions, aliases, grants, and scopes.</td>
+<td>Entity IDs and entity-ranked candidate records, or an ambiguity error.</td>
+</tr>
+<tr>
+<td>Retriever</td>
+<td>The search pipeline and result explanation.</td>
+<td>Search request, eligible IDs, three candidate channels, and configuration.</td>
+<td>Fused, gated, deduplicated, budgeted results plus <code>search_log</code>.</td>
+</tr>
+<tr>
+<td>Audit and search log</td>
+<td>Why the system changed or returned a result.</td>
+<td>Ingestor and retriever decisions and timers.</td>
+<td>Append-only events and one complete search trace per request.</td>
+</tr>
+<tr>
+<td>Activation service and profile assembler</td>
+<td>Which records are ambient, and the bounded profile a session starts with.</td>
+<td>Committed semantic records about the principal, host-verified evidence, the category policy, the review queue.</td>
+<td>Audited promote, conditional, or review decisions; one immutable <code>ProfileBlock</code> per session; the content-free category inventory.</td>
+</tr>
+<tr>
+<td>Utility-aware orchestrator</td>
+<td>The host-issued memory decision: gap planning, gap-driven retrieval, draft-relative admission, fail-closed regeneration.</td>
+<td>The turn, the draft, the profile, the inventory, a gap policy, an admission policy, the bundle registry.</td>
+<td>One <code>TurnMemoryDecision</code> per turn, persisted with its disposition and timings; the regenerated answer only when a bundle with a recorded fitness result admitted records.</td>
+</tr>
+<tr>
+<td>Operations</td>
+<td>Maintenance that the runtime never does on its own.</td>
+<td>The store.</td>
+<td>Expiry, transcript retention, erasure with compaction, re-embedding with floor-recalibration refusal, snapshots, due-review flagging.</td>
+</tr>
+</tbody>
+</table>
+<p>The store owns the durable record and entity state. The ingestor updates the store, FTS5 row, entity links, and vector index as one write operation. At search time, the retriever applies the same eligible-ID set to dense, lexical, and entity channels before RRF combines their rankings.</p>
+<h2 id="2-memory-record">2. Memory record<a class="headerlink" href="#2-memory-record" title="Permanent link">&para;</a></h2>
+<p>A memory record is one durable item an agent may retrieve in a later session. Its metadata tells the retrieval service whether the caller may access it, whether it remains current, and why the service can trust it.</p>
+<div class="highlight"><pre><span></span><code>id: mem_01J9K4D0S6H2V8P3X7M5Q1R9T
+type: semantic
+version: 1
+content: "Aditya prefers concise technical explanations."
+subject_entity_id: ent_person_aditya
+attribute: explanation_style
+subject: ent_person_aditya/explanation_style
+scope_kind: user
+scope_id: aditya
+source_kind: user_statement
+source_ref: session:sess_42&lt;turn:7&gt;
+creator_agent_id: research-agent
+evidence: "Keep answers concise."
+created_at: 2026-09-03T12:00:00Z
+event_at: 2026-09-03T12:00:00Z
+expires_at: null
+confidence: 0.95
+status: confirmed
+supersedes_id: null
+reinforcements: 0
+last_reinforced_at: null
+tags: ["communication"]
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Question</th>
+<th>Fields that answer it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>What does the memory say?</td>
+<td><code>content</code>, <code>type</code>, <code>tags</code></td>
+</tr>
+<tr>
+<td>Which current claim does it represent?</td>
+<td><code>subject_entity_id</code> and <code>attribute</code>; <code>subject</code> is their derived display and FTS value.</td>
+</tr>
+<tr>
+<td>Which bucket owns it?</td>
+<td><code>scope_kind</code>, <code>scope_id</code></td>
+</tr>
+<tr>
+<td>Who supplied it, and what supports it?</td>
+<td><code>source_kind</code>, <code>source_ref</code>, <code>creator_agent_id</code>, <code>evidence</code></td>
+</tr>
+<tr>
+<td>When does it apply?</td>
+<td><code>created_at</code>, <code>event_at</code>, <code>expires_at</code></td>
+</tr>
+<tr>
+<td>What is its current state?</td>
+<td><code>confidence</code>, <code>status</code>, <code>supersedes_id</code>, <code>reinforcements</code>, <code>last_reinforced_at</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="3-memory-type-and-lifecycle">3. Memory type and lifecycle<a class="headerlink" href="#3-memory-type-and-lifecycle" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Use it for</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Semantic</td>
+<td>Durable facts and preferences</td>
+<td>“The project uses Conventional Commits.”</td>
+</tr>
+<tr>
+<td>Episodic</td>
+<td>A dated experience, outcome, or decision</td>
+<td>“On 2026-08-12, vector-only retrieval missed exact error messages.”</td>
+</tr>
+<tr>
+<td>Procedural</td>
+<td>A reusable method or workflow</td>
+<td>“Run the benchmark with a warm embedder, then record per-stage timings.”</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+<th>Record and index handling</th>
+<th>Default retrieval behaviour</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>provisional</code></td>
+<td>An agent inference or an unresolved lower-trust conflict.</td>
+<td>Record and indexes remain active.</td>
+<td>Eligible.</td>
+</tr>
+<tr>
+<td><code>confirmed</code></td>
+<td>Source or reinforcement meets the confirmation policy.</td>
+<td>Record and indexes remain active.</td>
+<td>Eligible.</td>
+</tr>
+<tr>
+<td><code>superseded</code></td>
+<td>A newer record replaced this current claim.</td>
+<td>Record and indexes remain so history can be searched on request.</td>
+<td>Excluded unless the caller asks for history.</td>
+</tr>
+<tr>
+<td><code>expired</code></td>
+<td>Its expiry date passed.</td>
+<td>Record and indexes remain so history can be inspected or reactivated. The eligibility filter blocks it from normal search.</td>
+<td>Excluded.</td>
+</tr>
+<tr>
+<td><code>deleted</code></td>
+<td>The user requested removal.</td>
+<td>The row remains as an audit tombstone; the service removes its FTS row and marks its RAM vector entry dead. A controlled erase path removes stored content and embeddings.</td>
+<td>Excluded.</td>
+</tr>
+</tbody>
+</table>
+<p>Semantic and procedural records describe current knowledge. Episodic records preserve history and carry <code>event_at</code>, so the retriever can reduce the rank of old episodes for a non-time-bounded query.</p>
+<h2 id="4-scope">4. Scope<a class="headerlink" href="#4-scope" title="Permanent link">&para;</a></h2>
+<p>Scope is the ownership boundary on a memory record. It answers: “Where does this memory belong?”</p>
+<table>
+<thead>
+<tr>
+<th>Scope</th>
+<th>Example</th>
+<th>Use it for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Agent</td>
+<td><code>agent:researcher/aditya</code></td>
+<td>Private working knowledge for one agent-user pair. A plain <code>agent:researcher</code> scope requires a grant.</td>
+</tr>
+<tr>
+<td>User</td>
+<td><code>user:aditya</code></td>
+<td>Preferences and facts about one user.</td>
+</tr>
+<tr>
+<td>Project</td>
+<td><code>project:agentic-memory-system</code></td>
+<td>Shared decisions, conventions, and findings for one project.</td>
+</tr>
+<tr>
+<td>Organization</td>
+<td><code>org:acme</code></td>
+<td>Knowledge shared across an organization.</td>
+</tr>
+</tbody>
+</table>
+<p>For example, a commit convention belongs in project scope:</p>
+<div class="highlight"><pre><span></span><code>content: "Commit messages follow Conventional Commits."
+scope_kind: project
+scope_id: agentic-memory-system
+subject_entity_id: ent_project_agentic_memory_system
+attribute: commit_convention
+subject: ent_project_agentic_memory_system/commit_convention
+</code></pre></div>
+<p>The same text in <code>user:aditya</code> scope would represent a personal preference, rather than a rule that project contributors must follow.</p>
+<h2 id="5-principal-grants-and-enforcement">5. Principal, grants, and enforcement<a class="headerlink" href="#5-principal-grants-and-enforcement" title="Permanent link">&para;</a></h2>
+<p>A principal identifies the caller of a memory tool.</p>
+<div class="highlight"><pre><span></span><code>agent_id: implementation-agent
+user_id: aditya
+project_id: agentic-memory-system
+session_id: sess_42
+</code></pre></div>
+<p>A grant gives that agent access to one scope.</p>
+<div class="highlight"><pre><span></span><code>agent_id: implementation-agent
+scope_kind: project
+scope_id: agentic-memory-system
+can_read: true
+can_write: false
+</code></pre></div>
+<p>The agent may search project memory but cannot change it. Scope describes ownership. A grant describes permission.</p>
+<p>The service enforces grants and scopes before it ranks records:</p>
+<ol>
+<li>The framework adapter derives the principal from the current agent run.</li>
+<li>The policy service resolves the agent’s readable or writable scopes. The implicit scope is <code>agent:&lt;agent_id&gt;/&lt;user_id&gt;</code>, private to that principal pair. Agent and user IDs cannot contain <code>/</code>, which keeps that encoded scope unique. User, project, organization, and plain agent scopes require an explicit grant from the host. The host refuses grants on private agent scopes, and policy ignores a direct-store private grant when its encoded user does not match the current principal.</li>
+<li><code>memory_search</code> runs an indexed SQL filter for readable scopes, lifecycle state, expiry, type, and time range. It produces the eligible record IDs.</li>
+<li>Dense search receives those IDs and builds its position mask while holding the index lock. FTS and entity search intersect their hits with the same eligible IDs. The retriever also drops any fused candidate outside that set. No candidate generator can return an out-of-scope record.</li>
+<li><code>memory_write</code> checks that the requested scope appears in the caller’s writable scopes before it creates a record. A failed check returns <code>scope_not_writable</code>.</li>
+</ol>
+<p>A grant for <code>user:aditya</code> is valid only when the current principal is <code>user:aditya</code>. Project and organization scope support deliberate sharing across users.</p>
+<h2 id="6-source-and-evidence">6. Source and evidence<a class="headerlink" href="#6-source-and-evidence" title="Permanent link">&para;</a></h2>
+<p>Source identifies where a memory came from. Evidence preserves the supporting material.</p>
+<div class="highlight"><pre><span></span><code>source_kind: tool_result
+source_ref: tool:github-commit-abc123
+evidence: "docs(memory): add component guide"
+creator_agent_id: implementation-agent
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Source kind</th>
+<th style="text-align: right;">Source rank</th>
+<th style="text-align: right;">Initial confidence</th>
+<th>Initial status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>user_statement</code></td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">0.95</td>
+<td>Confirmed</td>
+</tr>
+<tr>
+<td><code>system</code></td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">0.90</td>
+<td>Confirmed</td>
+</tr>
+<tr>
+<td><code>tool_result</code></td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">0.85</td>
+<td>Confirmed</td>
+</tr>
+<tr>
+<td><code>session_summary</code></td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">0.80</td>
+<td>Confirmed</td>
+</tr>
+<tr>
+<td><code>agent_inference</code></td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0.60</td>
+<td>Provisional</td>
+</tr>
+</tbody>
+</table>
+<p>An agent inference expires after the provisional time-to-live unless later evidence reinforces it. <code>confidence</code> records lifecycle state, but current retrieval does not use it to rank, gate, or render a result.</p>
+<p>A user or tool claim needs two checks. Its evidence must appear verbatim in the cited turn, and the evidence must entail the stored content at or above <code>ingestion.evidence.entail_floor</code>. A failed entailment check downgrades the claim to <code>agent_inference</code> and records the score and note in the audit event.</p>
+<h2 id="7-current-fact-keys-conflicts-supersession-and-reinforcement">7. Current-fact keys, conflicts, supersession, and reinforcement<a class="headerlink" href="#7-current-fact-keys-conflicts-supersession-and-reinforcement" title="Permanent link">&para;</a></h2>
+<p><code>subject_entity_id</code> and <code>attribute</code> identify the current claim a non-episodic record represents. <code>subject</code> is the derived form <code>&lt;entity_id&gt;/&lt;attribute&gt;</code>, used for display and FTS indexing.</p>
+<div class="highlight"><pre><span></span><code>ent_person_aditya/explanation_style
+ent_project_agentic_memory_system/commit_convention
+</code></pre></div>
+<p>Consider these records in the same user scope:</p>
+<div class="highlight"><pre><span></span><code>Old record
+subject_entity_id: ent_person_aditya
+attribute: explanation_style
+subject: ent_person_aditya/explanation_style
+content: "Aditya prefers concise technical explanations."
+source_kind: user_statement
+status: confirmed
+
+New candidate
+subject_entity_id: ent_person_aditya
+attribute: explanation_style
+subject: ent_person_aditya/explanation_style
+content: "Aditya prefers detailed architecture explanations."
+source_kind: agent_inference
+</code></pre></div>
+<p>Both records attempt to answer the same current question: “What explanation style does Aditya prefer?” The ingestion service handles the relationship as follows:</p>
+<table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>System action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>The content has the same meaning.</td>
+<td>Reinforce the old record. The service does not insert a duplicate.</td>
+</tr>
+<tr>
+<td>The new source has an equal or higher source rank.</td>
+<td>Insert the new record, set <code>supersedes_id</code> to the old record ID, and mark the old record <code>superseded</code>.</td>
+</tr>
+<tr>
+<td>The new source has a lower source rank and conflicts with the old record.</td>
+<td>Store the candidate as <code>provisional</code>, link both records in <code>record_conflicts</code>, and keep the confirmed record as the normal search result.</td>
+</tr>
+</tbody>
+</table>
+<p>Supersession preserves the previous fact for audit and historical inspection. Normal retrieval excludes the older record. <code>memory_get</code> and <code>include_history</code> can retrieve it.</p>
+<p>In the example above, the final state is unambiguous: the user statement has source rank 4, and the agent inference has source rank 1. The old record remains <code>confirmed</code> and appears in default search. The candidate remains <code>provisional</code>, receives a conflict link to the old record, and remains visible through <code>memory_get</code> for inspection. It expires after the provisional time-to-live unless later evidence reinforces or confirms it.</p>
+<p>Reinforcement means later evidence supports the same memory. The service increments <code>reinforcements</code>, raises confidence up to <code>0.99</code>, refreshes the provisional expiry date, and confirms a provisional record after the configured number of reinforcements.</p>
+<p>The service also scans active records about the same entity for equivalent attribute names. If a candidate labelled <code>answer_style</code> contradicts an existing <code>explanation_style</code> record, the judge treats those labels as one current fact. The authoritative survivor keeps the existing attribute, and the audit event records <code>attribute_aliased_from: answer_style</code>. The scan is capped by <code>ingestion.max_entity_attributes</code>; the event records <code>attribute_scan_truncated</code> if it reaches that cap.</p>
+<p>Episodic records never supersede one another. “Vector-only retrieval missed exact error messages on Tuesday” and “FTS improved error lookup on Friday” describe separate events worth retaining.</p>
+<h2 id="8-entities-aliases-and-record-links">8. Entities, aliases, and record links<a class="headerlink" href="#8-entities-aliases-and-record-links" title="Permanent link">&para;</a></h2>
+<p>An entity represents a named subject such as a person, project, repository, product, or organization. An alias gives that entity alternate names.</p>
+<p>The entity rows define the names:</p>
+<table>
+<thead>
+<tr>
+<th>Entity ID</th>
+<th>Kind</th>
+<th>Canonical name</th>
+<th>Aliases</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ent_project_memory</code></td>
+<td>Project</td>
+<td><code>agentic-memory-system</code></td>
+<td><code>agent-memory-system</code>, <code>memory system</code></td>
+</tr>
+<tr>
+<td><code>ent_repo_cli</code></td>
+<td>Repository</td>
+<td><code>agent-memory-cli</code></td>
+<td><code>memory CLI</code></td>
+</tr>
+</tbody>
+</table>
+<p>The memory row holds the statement:</p>
+<table>
+<thead>
+<tr>
+<th>Memory ID</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>mem_01J9K4D0S6H2V8P3X7M5Q1R9T</code></td>
+<td>“The project uses Conventional Commits.”</td>
+</tr>
+</tbody>
+</table>
+<p>The <code>record_entities</code> join table links that memory to the two entity rows:</p>
+<table>
+<thead>
+<tr>
+<th>Record ID</th>
+<th>Entity ID</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>mem_01J9K4D0S6H2V8P3X7M5Q1R9T</code></td>
+<td><code>ent_project_memory</code></td>
+<td><code>about</code></td>
+</tr>
+<tr>
+<td><code>mem_01J9K4D0S6H2V8P3X7M5Q1R9T</code></td>
+<td><code>ent_repo_cli</code></td>
+<td><code>mentions</code></td>
+</tr>
+</tbody>
+</table>
+<p>The <code>about</code> link says that the memory’s main topic is the project. The <code>mentions</code> link says that the memory also refers to the command-line repository.</p>
+<p>If an agent searches for <code>memory system</code>, alias lookup resolves that phrase to <code>ent_project_memory</code>. The service then reads <code>record_entities</code>, finds <code>mem_01J9K4D0S6H2V8P3X7M5Q1R9T</code>, and adds that memory to entity-search candidates. A search for the command-line repository can also find this memory through its <code>mentions</code> link, subject to scope and other retrieval filters.</p>
+<p>The service creates a provisional entity for an unknown name. It leaves an ambiguous name unmerged for review, rather than guessing that two similarly named things are the same entity.</p>
+<h2 id="9-embeddings-and-the-vector-index">9. Embeddings and the vector index<a class="headerlink" href="#9-embeddings-and-the-vector-index" title="Permanent link">&para;</a></h2>
+<p>An embedding is a numeric representation of a record’s meaning. BGE-M3 produces a 1,024-number vector for each record.</p>
+<p>The SQLite <code>embeddings</code> table stores that vector on disk:</p>
+<div class="highlight"><pre><span></span><code>record_id: mem_01J9K4D0S6H2V8P3X7M5Q1R9T
+model: BAAI/bge-m3
+version: 1
+dims: 1024
+vector: [0.012, -0.084, ...]
+</code></pre></div>
+<p>The vector index lives in process memory. On boot, the service scans compatible embedding rows from SQLite and recreates the index.</p>
+<table>
+<thead>
+<tr>
+<th>In-memory structure</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ids</code></td>
+<td>Maps each matrix row to a memory record ID.</td>
+</tr>
+<tr>
+<td><code>matrix</code></td>
+<td>Holds one normalized embedding per row.</td>
+</tr>
+<tr>
+<td><code>pos</code></td>
+<td>Maps a record ID back to its matrix row.</td>
+</tr>
+<tr>
+<td><code>live</code></td>
+<td>Marks deleted records unavailable without rebuilding the matrix during that process run.</td>
+</tr>
+</tbody>
+</table>
+<p>The current design targets and benchmarks a store of up to 50,000 records, rather than enforcing a hard maximum. A 1,024-dimension <code>float32</code> vector occupies 4 KiB, so 50,000 vectors occupy about 200 MB before Python and index overhead. The current estimate for a full SQLite scan and index rebuild at that size is about one second, or about 0.02 ms per record on average. That is an estimate, not a measurement. The benchmark must report cold-start and warm-start p50 and p95 times at several store sizes.</p>
+<p>For a search, the embedder turns the query into a vector. The index calculates cosine similarity between that query vector and the eligible memory vectors, then returns the highest-scoring record IDs. The current design uses exact search over the in-memory matrix rather than approximate nearest-neighbor search.</p>
+<p>SQLite remains the durable source of truth. The RAM index is a rebuildable search accelerator.</p>
+<h2 id="10-full-text-search-fts">10. Full-text search (FTS)<a class="headerlink" href="#10-full-text-search-fts" title="Permanent link">&para;</a></h2>
+<p>FTS5 is the lexical retrieval component. It is a SQLite virtual table called <code>records_fts</code>, not a separate search service. It answers queries where exact terms matter more than semantic similarity: error text, identifiers, commands, attribute names, and entity aliases.</p>
+<table>
+<thead>
+<tr>
+<th>Indexed field</th>
+<th>Source</th>
+<th>Why FTS indexes it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>record_id</code></td>
+<td>The canonical memory record ID.</td>
+<td>Maps an FTS match back to the record. FTS does not tokenize this field.</td>
+</tr>
+<tr>
+<td><code>content</code></td>
+<td><code>records.content</code>.</td>
+<td>Finds exact words and phrases in the memory text.</td>
+</tr>
+<tr>
+<td><code>subject</code></td>
+<td>Derived <code>records.subject</code>.</td>
+<td>Finds attribute keys such as <code>ent_project_agentic_memory_system/commit_convention</code>.</td>
+</tr>
+<tr>
+<td><code>aliases</code></td>
+<td>Linked entity aliases, joined into one string at write time.</td>
+<td>Lets a name query find a record even when its content uses a pronoun or a canonical name.</td>
+</tr>
+</tbody>
+</table>
+<p>The ingestor creates or replaces the FTS row in the same transaction that writes a memory record and its entity links. <code>memory_forget</code> removes the FTS row because deleted records must not appear in lexical results. FTS5 remains rebuildable from canonical records and entity links.</p>
+<p>SQLite FTS5 builds an inverted word index over <code>content</code>, <code>subject</code>, and entity <code>aliases</code>.</p>
+<div class="highlight"><pre><span></span><code>Query: "OAuth refresh failure"
+
+Matches:
+- content: "The OAuth refresh token expired after one hour."
+- subject: "ent_product_auth_service/oauth_refresh"
+- aliases: "auth", "OAuth service"
+</code></pre></div>
+<p>The lexical generator runs these steps for each search query:</p>
+<ol>
+<li>It detects identifiers from raw whitespace tokens, then tokenizes with FTS5's <code>unicode61</code> rules.</li>
+<li>It removes a frequency-based English stopword list and terms shorter than two characters, but keeps identifiers and proper nouns.</li>
+<li>It joins the remaining terms with <code>OR</code> and runs <code>bm25(records_fts, 0.0, 1.0, 2.0, 3.0)</code>. The leading <code>0.0</code> skips the unindexed <code>record_id</code> column. The remaining weights favor <code>aliases</code> over <code>subject</code>, and <code>subject</code> over <code>content</code>.</li>
+<li>It joins FTS5 to a temporary table of eligible record IDs before applying <code>per_generator_k</code>, so inaccessible high-ranking rows cannot crowd out results.</li>
+<li>It returns each record's BM25 rank and score, plus the exact matched terms from the query that gives it the best coverage. Each term says whether it is an identifier or an entity alias.</li>
+</ol>
+<p>FTS ranks literal-word matches with BM25. It complements vector search, which works better when the query paraphrases a memory rather than repeating its terms.</p>
+<p>The alias text is denormalized into each FTS row. When an alias changes or two entities merge, the ingestor must rewrite every affected row so lexical search does not use stale alias text.</p>
+<h2 id="11-retrieval-channels-and-ranking">11. Retrieval channels and ranking<a class="headerlink" href="#11-retrieval-channels-and-ranking" title="Permanent link">&para;</a></h2>
+<p>The retrieval service runs three candidate generators after it applies scope, grant, lifecycle, type, and time filters.</p>
+<table>
+<thead>
+<tr>
+<th>Channel</th>
+<th>Input</th>
+<th>Strength</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Dense</td>
+<td>Query embedding against the vector index</td>
+<td>Finds semantic similarity.</td>
+</tr>
+<tr>
+<td>Lexical</td>
+<td>Query terms against FTS5</td>
+<td>Finds exact words and identifiers.</td>
+</tr>
+<tr>
+<td>Entity</td>
+<td>Entity and alias lookup</td>
+<td>Finds memories about a known named subject.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="reciprocal-rank-fusion-rrf">Reciprocal Rank Fusion (RRF)<a class="headerlink" href="#reciprocal-rank-fusion-rrf" title="Permanent link">&para;</a></h3>
+<p>The three channels use incompatible scores. Cosine similarity and BM25 values have different scales, and entity lookup has no comparable numeric score. RRF combines ranking positions instead of raw scores.</p>
+<p>For a query about commit rules, two channels return these lists:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">Rank</th>
+<th>Lexical search</th>
+<th>Dense search</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">1</td>
+<td>Memory A</td>
+<td>Memory C</td>
+</tr>
+<tr>
+<td style="text-align: right;">2</td>
+<td>Memory B</td>
+<td>Memory A</td>
+</tr>
+<tr>
+<td style="text-align: right;">3</td>
+<td>Memory C</td>
+<td>Memory D</td>
+</tr>
+</tbody>
+</table>
+<p>The current configuration uses <code>rrf_k = 60</code>. For each list where a record appears, the service adds <code>1 / (60 + rank)</code> to that record’s fused score.</p>
+<table>
+<thead>
+<tr>
+<th>Memory</th>
+<th>Calculation</th>
+<th style="text-align: right;">Fused score</th>
+<th style="text-align: right;">Final rank</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A</td>
+<td><code>1/61 + 1/62</code></td>
+<td style="text-align: right;">0.03252</td>
+<td style="text-align: right;">1</td>
+</tr>
+<tr>
+<td>C</td>
+<td><code>1/63 + 1/61</code></td>
+<td style="text-align: right;">0.03227</td>
+<td style="text-align: right;">2</td>
+</tr>
+<tr>
+<td>B</td>
+<td><code>1/62</code></td>
+<td style="text-align: right;">0.01613</td>
+<td style="text-align: right;">3</td>
+</tr>
+<tr>
+<td>D</td>
+<td><code>1/63</code></td>
+<td style="text-align: right;">0.01587</td>
+<td style="text-align: right;">4</td>
+</tr>
+</tbody>
+</table>
+<p>Memory A ranks first because both channels found it near the top. Memory C has the best dense rank but a lower lexical rank, so it follows A. The entity channel uses the same calculation when it returns a record. A record found by all three channels receives three contributions.</p>
+<h3 id="result-control-after-rrf">Result control after RRF<a class="headerlink" href="#result-control-after-rrf" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Stage</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Episodic freshness</td>
+<td>Reduces the score of an old episodic record. Semantic and procedural records keep their score.</td>
+</tr>
+<tr>
+<td>Relevance gate</td>
+<td>Removes weak dense-only or lexical-only matches. An entity match passes the gate.</td>
+</tr>
+<tr>
+<td>Duplicate collapse</td>
+<td>Keeps the higher-ranked record when two surviving records have near-identical embeddings.</td>
+</tr>
+<tr>
+<td>Optional reranker</td>
+<td>Uses <code>bge-reranker-v2-m3</code> to score the survivors against the query, after the RRF floors or in place of them, with a stage timeout that falls back to the RRF order. Off: measured in both placements, it cost recall on the blind splits, as recorded in <a href="../usefulness-gate/">usefulness-gate.md</a>.</td>
+</tr>
+<tr>
+<td>Token budget</td>
+<td>Selects whole records that fit the tool-result budget.</td>
+</tr>
+</tbody>
+</table>
+<p>The response includes an explanation for each returned record:</p>
+<div class="highlight"><pre><span></span><code>matched: dense 0.71 (rank 2), lexical 3/3 terms (rank 1)
+fused rank: 1
+gate: passed dense threshold
+</code></pre></div>
+<p>The service writes this reasoning and per-stage timings to <code>search_log</code> for inspection and evaluation.</p>
+<h2 id="12-query-rewriting">12. Query rewriting<a class="headerlink" href="#12-query-rewriting" title="Permanent link">&para;</a></h2>
+<p>The serving agent does not rewrite its own query. It sends a raw request to <code>memory_search</code>.</p>
+<div class="highlight"><pre><span></span><code>Agent request: "what does he prefer?"
+Adapter context: "Aditya asked for concise technical explanations."
+Retrieval query: "Aditya's preferred explanation style"
+</code></pre></div>
+<p><code>QueryRewriter</code> is the interface for this step. <code>HostedLLMQueryRewriter</code> is the initial implementation of that interface. It calls the configured hosted model, <code>claude-haiku-4-5-20251001</code>, through a structured-output request. <code>NoRewriter</code> is another implementation: it returns the agent’s raw query unchanged while rewriting remains disabled.</p>
+<p>When rewriting is enabled, the framework adapter adds the latest user and assistant turns to <code>SearchRequest.context</code>. <code>HostedLLMQueryRewriter</code> combines that context with the raw request and returns a clearer search phrase. The retriever sends that phrase to dense and lexical search.</p>
+<p>The initial configuration keeps rewriting off because the model call adds 300 to 800 ms to the retrieval path. The service uses the raw query if the call times out or fails, then records <code>rewrite_status: failed</code> in <code>search_log</code>.</p>
+<h2 id="13-ingestion-sessions-and-audit-trail">13. Ingestion, sessions, and audit trail<a class="headerlink" href="#13-ingestion-sessions-and-audit-trail" title="Permanent link">&para;</a></h2>
+<p>An agent can call <code>memory_write</code> during a session. The request checks writable scope and evidence, resolves entity links, checks duplicates and conflicts, creates an embedding, writes SQLite rows, updates indexes, and writes an audit event. The agent waits for that tool result.</p>
+<p>The adapter stores user, assistant, and tool turns in <code>session_turns</code>. The extractor runs once after the session ends. It reads the complete transcript, proposes evidence-backed candidate records, and writes one episodic session summary.</p>
+<p>The append-only <code>events</code> table records memory changes. <code>search_log</code> records retrieval decisions. Together, those tables show who changed a memory, which source supported it, and why retrieval returned or rejected it.</p>
+<h2 id="14-memory-tools-and-framework-adapters">14. Memory tools and framework adapters<a class="headerlink" href="#14-memory-tools-and-framework-adapters" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Agent action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>memory_search</code></td>
+<td>Find relevant, authorized memories.</td>
+</tr>
+<tr>
+<td><code>memory_get</code></td>
+<td>Inspect complete records, including conflicts and supersession history.</td>
+</tr>
+<tr>
+<td><code>memory_write</code></td>
+<td>Create a memory with source and evidence.</td>
+</tr>
+<tr>
+<td><code>memory_revise</code></td>
+<td>Confirm, supersede, expire, or merge an entity.</td>
+</tr>
+<tr>
+<td><code>memory_forget</code></td>
+<td>Mark a memory deleted with a reason.</td>
+</tr>
+</tbody>
+</table>
+<p>An adapter integrates those tools with an agent framework. It registers the tool schemas, derives the principal, records session hooks, and attaches current-turn context to each search. The memory contract remains independent of the agent framework and model provider. <code>retold/adapters/deepagents.py</code> is the first adapter: tools that read the principal from the run configuration at call time and one middleware for turn capture, host-issued recall, and the utility-aware wrap around answer-producing model calls; <code>retold/adapters/crewai.py</code> is the second: tools with generated pydantic argument models, step callbacks for turns, and an LLM proxy that carries the same policy. <code>retold/adapters/base.py</code> holds what every adapter shares.</p>
+<h2 id="15-prompts-and-instructions">15. Prompts and instructions<a class="headerlink" href="#15-prompts-and-instructions" title="Permanent link">&para;</a></h2>
+<p>Three runtime components turn transcript text into a decision by calling a hosted model: session extraction, candidate review, and query rewriting. Each needs a natural-language prompt that tells the model how to reason, plus a schema that tells it how to answer.</p>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Config that names the model</th>
+<th>Code location</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Session extraction</td>
+<td><code>ingestion.extraction_model</code></td>
+<td><code>ingest/extractor.py</code>, <code>StructuredLLMExtractor</code>, prompt <code>ingest/prompts/extract_v1.md</code></td>
+<td>Built. <code>ExtractionRunner</code> in <code>ingest/extraction.py</code> claims the session, validates, reviews, revalidates, and writes through the ingestor. <code>FakeExtractor</code> serves the tests.</td>
+</tr>
+<tr>
+<td>Candidate review</td>
+<td><code>ingestion.review_model</code></td>
+<td><code>ingest/reviewer.py</code>, <code>StructuredLLMReviewer</code>, prompt <code>ingest/prompts/review_v1.md</code></td>
+<td>Built. A revision may only narrow content, attribute, temporal metadata, or confidence; <code>TableReviewer</code> serves the tests.</td>
+</tr>
+<tr>
+<td>Query rewriting</td>
+<td><code>retrieval.rewrite.model</code></td>
+<td><code>retrieve/rewrite.py</code>, <code>HostedLLMQueryRewriter</code>, prompt <code>retrieve/prompts/rewrite_v1.md</code></td>
+<td>Built, off by default. A rewrite that introduces a name absent from the queries and context is refused and the raw queries are used.</td>
+</tr>
+</tbody>
+</table>
+<p>The three prompts are versioned constants; the extraction ones are recorded on every <code>extraction.run</code> event, so a prompt change is tracked the way an embedding-model change is tracked by <code>embeddings.version</code> rather than silently changing behaviour. All three hosted components call the provider-neutral <code>CompletionClient</code> in <code>retold/hosted.py</code>; the official Anthropic and OpenAI SDKs are chosen by model name and imported only when used.</p>
+<p>Prompt text is reasoning guidance, not a tunable, so it lives next to the code that uses it, under <code>ingest/prompts/</code>, and not in <code>config.yaml</code>. The YAML config holds thresholds and model <em>names</em>, values a calibration pass would sweep.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../changelog/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Changelog">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Changelog
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../agent-memory-hld/" class="md-footer__link md-footer__link--next" aria-label="Next: High-level design">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                High-level design
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2026 Aditya Mishra
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.code.copy", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

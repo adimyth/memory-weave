@@ -1,0 +1,2270 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Long-term memory for AI agents that stays quiet until it changes the answer.">
+      
+      
+      
+        <link rel="canonical" href="https://adimyth.in/retold/design-contributions/">
+      
+      
+        <link rel="prev" href="../utility-aware-memory-architecture/">
+      
+      
+        <link rel="next" href="../acceptance-report/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>What is distinctive - Retold</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="black" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#what-is-distinctive-about-this-design" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Retold" class="md-header__button md-logo" aria-label="Retold" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Retold
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              What is distinctive
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="black" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/adimyth/retold" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    adimyth/retold
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../guide/architecture/" class="md-tabs__link">
+          
+  
+  
+  Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../components/" class="md-tabs__link">
+          
+  
+  
+  Design
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../acceptance-report/" class="md-tabs__link">
+          
+  
+  
+  Evidence
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../api/" class="md-tabs__link">
+          
+  
+  
+  API
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Retold" class="md-nav__button md-logo" aria-label="Retold" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Retold
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/adimyth/retold" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    adimyth/retold
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/using/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Using it
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/measured/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What has been measured
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../components/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Components, with examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent-memory-hld/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    High-level design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent-memory-lld/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Low-level design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../utility-aware-memory-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Utility-aware memory architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What is distinctive
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What is distinctive
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-memory-is-split-by-when-it-should-show-up" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Memory is split by when it should show up
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-a-memory-cannot-promote-itself-to-always-on" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. A memory cannot promote itself to always on
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-the-planner-sees-a-catalog-not-the-secrets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. The planner sees a catalog, not the secrets
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. The planner sees a catalog, not the secrets">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#do-other-systems-have-this" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Do other systems have this?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#who-creates-the-inventory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Who creates the inventory?
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-planner-judge-and-admission-are-two-roles-not-three" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Planner, judge, and admission are two roles, not three
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Planner, judge, and admission are two roles, not three">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#turn-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Turn flow
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-useful-means-better-than-the-answer-we-already-have" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Useful means better than the answer we already have
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-candidates-are-judged-as-a-group-and-using-nothing-is-a-valid-win" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Candidates are judged as a group, and using nothing is a valid win
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-no-memory-used-is-not-one-event" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. “No memory used” is not one event
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-prompts-models-and-settings-are-one-versioned-product" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Prompts, models, and settings are one versioned product
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Prompts, models, and settings are one versioned product">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#one-combination-that-passed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One combination that passed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-to-tell-whether-a-combination-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How to tell whether a combination works
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-models-are-not-interchangeable-even-if-the-apis-are" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Models are not interchangeable, even if the APIs are
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-if-anything-goes-wrong-keep-the-baseline-answer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. If anything goes wrong, keep the baseline answer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-the-research-idea-became-a-control-system-you-can-actually-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. The research idea became a control system you can actually run
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-what-retold-did-differently-from-rums-and-trace-memory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. What Retold did differently from RUMS and TRACE-Memory
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Evidence
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Evidence
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../acceptance-report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Acceptance report (v1)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../usefulness-gate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Utility-aware experiments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../next-phases/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background writes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/runtime/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Runtime and host
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/ingest/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Session hooks and extraction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/retrieve/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retrieval
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Utility-aware policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/adapters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Adapters
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-memory-is-split-by-when-it-should-show-up" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Memory is split by when it should show up
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-a-memory-cannot-promote-itself-to-always-on" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. A memory cannot promote itself to always on
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-the-planner-sees-a-catalog-not-the-secrets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. The planner sees a catalog, not the secrets
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. The planner sees a catalog, not the secrets">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#do-other-systems-have-this" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Do other systems have this?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#who-creates-the-inventory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Who creates the inventory?
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-planner-judge-and-admission-are-two-roles-not-three" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Planner, judge, and admission are two roles, not three
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Planner, judge, and admission are two roles, not three">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#turn-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Turn flow
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-useful-means-better-than-the-answer-we-already-have" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Useful means better than the answer we already have
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-candidates-are-judged-as-a-group-and-using-nothing-is-a-valid-win" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Candidates are judged as a group, and using nothing is a valid win
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-no-memory-used-is-not-one-event" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. “No memory used” is not one event
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-prompts-models-and-settings-are-one-versioned-product" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Prompts, models, and settings are one versioned product
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Prompts, models, and settings are one versioned product">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#one-combination-that-passed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One combination that passed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-to-tell-whether-a-combination-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How to tell whether a combination works
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-models-are-not-interchangeable-even-if-the-apis-are" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Models are not interchangeable, even if the APIs are
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-if-anything-goes-wrong-keep-the-baseline-answer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. If anything goes wrong, keep the baseline answer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-the-research-idea-became-a-control-system-you-can-actually-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. The research idea became a control system you can actually run
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-what-retold-did-differently-from-rums-and-trace-memory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. What Retold did differently from RUMS and TRACE-Memory
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/adimyth/retold/edit/main/docs/design-contributions.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="what-is-distinctive-about-this-design">What is distinctive about this design<a class="headerlink" href="#what-is-distinctive-about-this-design" title="Permanent link">&para;</a></h1>
+<p>A plain-language account of the design choices that look distinctive relative to RUMS and TRACE-Memory. The authoritative specification is <a href="../utility-aware-memory-architecture/">utility-aware-memory-architecture.md</a>. Experiment numbers live in <a href="../usefulness-gate/">usefulness-gate.md</a>.</p>
+<p>These are design contributions that appear distinctive relative to those two papers. Calling them academically novel would require a broader systematic literature and prior-art review.</p>
+<p>The strongest claim is therefore not “we invented utility-aware memory.” Both RUMS and TRACE-Memory clearly precede that claim, and they are not the same idea as each other either. The defensible contribution is a governed, provider-neutral architecture for deploying utility-aware memory, with separate ambient activation, content-free gap conditioning, draft-relative joint admission, and bundle-level safety validation.</p>
+<h2 id="1-memory-is-split-by-when-it-should-show-up">1. Memory is split by when it should show up<a class="headerlink" href="#1-memory-is-split-by-when-it-should-show-up" title="Permanent link">&para;</a></h2>
+<p>Most memory systems treat every stored fact the same: retrieve it if it looks relevant.</p>
+<p>Retold does not. It has two kinds of memory:</p>
+<ul>
+<li><strong>Ambient</strong> — standing facts that should quietly shape many answers. Example: “I write tests in pytest” or “reply in English.” You should not have to re-prove that every turn.</li>
+<li><strong>Conditional</strong> — facts that are only worth injecting if they actually help this turn. Example: “Rohan left Nimbus in April.” That only matters when Rohan or Nimbus is relevant.</li>
+</ul>
+<p>RUMS and TRACE-Memory both ask a form of “does this memory help the answer?” That is a good question for one-off facts. It is a bad question for style. The experiments showed that: when language and style preferences had to pass the same “prove you are useful this turn” gate, they almost never made it in. The planner never asked for them, because nobody says “how should you answer?”</p>
+<p>The split is the fix: some memory is always on; some memory has to earn its way in.</p>
+<h2 id="2-a-memory-cannot-promote-itself-to-always-on">2. A memory cannot promote itself to always on<a class="headerlink" href="#2-a-memory-cannot-promote-itself-to-always-on" title="Permanent link">&para;</a></h2>
+<p>Ambient is powerful. If a record sits in the profile every turn, a wrong promotion leaks into everything.</p>
+<p>So the system does not let a model say “this is ambient” and make it so. Promotion has rules:</p>
+<ul>
+<li>Find the user’s own words in the transcript, not a paraphrase the model invented.</li>
+<li>Standing defaults (“I always…”, “by default…”) can become ambient.</li>
+<li>Scoped ones (“for SQL queries…”) stay conditional.</li>
+<li>Temporary ones (“just for this PR…”) never become ambient.</li>
+<li>Ambiguous cases go to a human review queue (<code>retold reviews list</code> / <code>reviews resolve</code>). The record stays conditional until a person resolves it.</li>
+<li>High classifier confidence is not enough by itself. Confidence can send an unclear case to review; it cannot vote a record into the always-on profile.</li>
+</ul>
+<p>That is a state change with a gate, not retrieval. Retrieval is “find this fact.” This is “change how this fact is allowed to behave from now on.”</p>
+<h2 id="3-the-planner-sees-a-catalog-not-the-secrets">3. The planner sees a catalog, not the secrets<a class="headerlink" href="#3-the-planner-sees-a-catalog-not-the-secrets" title="Permanent link">&para;</a></h2>
+<p>Before retrieval, a planner decides: “Does this question need private memory at all?”</p>
+<p>If you show the planner the actual stored facts, you have already leaked them. If you show it nothing, it only notices questions that sound personal (“my”, “our”, “we”). The experiments hit that: organisation-specific questions with no possessive pronouns were skipped.</p>
+<p>The inventory is a table of contents without the pages: “this user has facts in: people, decisions, on-call, code style.” The planner can think “this sounds like an org-decision question, and we do store decisions” without seeing the decision itself.</p>
+<p>TRACE-Memory already has “ask for missing user-specific info.” The extra piece here is the prior question: how does the planner know what kinds of private info might exist, without being shown that info?</p>
+<h3 id="do-other-systems-have-this">Do other systems have this?<a class="headerlink" href="#do-other-systems-have-this" title="Permanent link">&para;</a></h3>
+<p>Several systems have something that <em>looks</em> like a table of contents. None of them is a content-free category inventory used to decide whether to search.</p>
+<table>
+<thead>
+<tr>
+<th>System</th>
+<th>What the model can see before it reads a memory</th>
+<th>What leaks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Letta (MemFS)</td>
+<td>The file tree under <code>system/</code> is in the prompt every turn. The agent then reads files on demand.</td>
+<td>File names. <code>Rohan.md</code> already says there is a person named Rohan.</td>
+</tr>
+<tr>
+<td>Claude Code, Hermes, OpenClaw</td>
+<td>A hot slice of markdown files, or the agent can list the memory directory.</td>
+<td>File names and whatever sits in the hot slice.</td>
+</tr>
+<tr>
+<td>LangMem</td>
+<td>Namespace folder paths such as <code>users/aditya/prefs</code>. Search returns the JSON values.</td>
+<td>Paths if the host or agent lists them; values on search.</td>
+</tr>
+<tr>
+<td>ChatGPT / Claude chat</td>
+<td>The profile paragraph itself, every turn.</td>
+<td>The facts, not a catalog of them.</td>
+</tr>
+<tr>
+<td>Mem0, Zep, AgentCore</td>
+<td>Nothing catalog-like. Search returns the records.</td>
+<td>The hits.</td>
+</tr>
+</tbody>
+</table>
+<p>A directory listing is a table of contents of <em>artifacts</em>. Retold’s inventory is a table of contents of <em>fact kinds</em>: <code>people and their roles</code>, <code>runtime and version constraints</code>, <code>document and repository locations</code>. No file names, no sentences, no values.</p>
+<p>That is the difference that matters for the planner. “We store version constraints” tells it that “What Node version is staging on?” might need a lookup. It does not tell it that Node is pinned to 20.</p>
+<h3 id="who-creates-the-inventory">Who creates the inventory?<a class="headerlink" href="#who-creates-the-inventory" title="Permanent link">&para;</a></h3>
+<p>Not the planner, and not as a separate “write a table of contents” step at turn time.</p>
+<ol>
+<li>When a record is written, the <strong>category classifier</strong> assigns it a <code>retrieval_category</code> from a fixed taxonomy (<code>time_zone</code>, <code>people</code>, <code>constraints</code>, and so on).</li>
+<li>The store keeps that label on the record.</li>
+<li>At turn time, <code>inventory()</code> asks the store for the distinct categories of the principal’s <strong>conditional</strong> records and maps them to human labels. Record text never enters that list.</li>
+</ol>
+<p>The classifier labels each page. The inventory is the unique chapter titles. Changing the classifier or the taxonomy changes the catalog the planner sees, which is why both are part of the versioned bundle.</p>
+<h2 id="4-planner-judge-and-admission-are-two-roles-not-three">4. Planner, judge, and admission are two roles, not three<a class="headerlink" href="#4-planner-judge-and-admission-are-two-roles-not-three" title="Permanent link">&para;</a></h2>
+<p>There is no separate “admisser.” The <strong>judge is the admission policy</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>Role</th>
+<th>Code name</th>
+<th>Question it answers</th>
+<th>What it sees</th>
+<th>What it must not see</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Planner</strong></td>
+<td><code>GapPolicy</code></td>
+<td>“Might this turn need private facts at all? If so, what should we search for?”</td>
+<td>The user message, public context, ambient profile, category inventory</td>
+<td>The stored fact text</td>
+</tr>
+<tr>
+<td><strong>Retriever</strong></td>
+<td>existing hybrid search</td>
+<td>“Which conditional records match those search queries?”</td>
+<td>The gap queries</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>Judge</strong></td>
+<td><code>AdmissionPolicy</code></td>
+<td>“Would any of these records improve the draft we already have?”</td>
+<td>The request, public context, ambient profile, baseline draft, candidate records</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p>A fourth model, the <strong>category classifier</strong>, runs at write time. It is not on the turn path.</p>
+<p>They felt similar because both planner and judge are hosted LLM calls that can return empty. They are opposite filters. The planner decides whether to look; the judge decides whether looking found anything worth using.</p>
+<h3 id="turn-flow">Turn flow<a class="headerlink" href="#turn-flow" title="Permanent link">&para;</a></h3>
+<pre class="mermaid"><code>flowchart TD
+    start[Session start] --&gt; profile[Assemble ambient profile]
+    profile --&gt; turn[User turn]
+    turn --&gt; draft[Serving model writes a baseline draft]
+    turn --&gt; planner[Planner returns 0 to 3 gap queries]
+    draft --&gt; join{Gaps?}
+    planner --&gt; join
+    join --&gt;|none| baseline1[Return the draft]
+    join --&gt;|some| retrieve[Retrieve with the gap queries]
+    retrieve --&gt; hits{Conditional candidates?}
+    hits --&gt;|none| baseline2[Return the draft]
+    hits --&gt;|some| judge[Judge the candidates against the draft]
+    judge --&gt; admit{Anything admitted?}
+    admit --&gt;|none| baseline3[Return the draft]
+    admit --&gt;|yes| regen[Regenerate once with only those records]</code></pre>
+<p>Walkthrough for “What Node version is staging on?”</p>
+<ol>
+<li>Session start already put style and language preferences into the ambient profile. They are in the baseline. They are not candidates.</li>
+<li>The serving model writes a generic draft from public knowledge plus that profile.</li>
+<li>In parallel, the planner sees the inventory containing <code>runtime and version constraints</code> and emits a gap such as “which Node version this org is pinned to.” It still has not seen the pin.</li>
+<li>The retriever searches on that gap query, not on the raw turn, and returns a small candidate set.</li>
+<li>The judge compares those candidates with the generic draft. If the pin would change the answer, it admits that record. If the draft is already sufficient, it admits nothing.</li>
+<li>Only then does the serving model write the user-visible answer, and only with the admitted facts.</li>
+</ol>
+<p>If the planner stays silent, if search misses, if the judge rejects, or if a timeout or budget fires, the user still gets the baseline draft. Those four outcomes look the same from outside and are logged as different events.</p>
+<h2 id="5-useful-means-better-than-the-answer-we-already-have">5. Useful means better than the answer we already have<a class="headerlink" href="#5-useful-means-better-than-the-answer-we-already-have" title="Permanent link">&para;</a></h2>
+<p>Relevance is “this fact is about the topic.” Utility is “this fact would change the draft.”</p>
+<p>The judge sees:</p>
+<ul>
+<li>the user’s question</li>
+<li>public context</li>
+<li>the always-on (ambient) profile</li>
+<li>the draft the model would already give</li>
+<li>a small set of candidate memories</li>
+</ul>
+<p>Then it asks: would any of these candidates improve that specific draft?</p>
+<p>That makes redundancy real. A fact can be on-topic and still useless, because the baseline answer is already good enough. TRACE-Memory has the closest research form of this: admit evidence only if it improves the response beyond public context. Retold’s version is a runtime judge that looks at the actual draft, without needing TRACE-Memory’s trained admission model.</p>
+<h2 id="6-candidates-are-judged-as-a-group-and-using-nothing-is-a-valid-win">6. Candidates are judged as a group, and using nothing is a valid win<a class="headerlink" href="#6-candidates-are-judged-as-a-group-and-using-nothing-is-a-valid-win" title="Permanent link">&para;</a></h2>
+<p>The judge does not score each memory in isolation and take the winners. It looks at the set together and can say:</p>
+<ul>
+<li>this one</li>
+<li>these two together</li>
+<li>none of them</li>
+</ul>
+<p>Why the set matters: two records can be complementary. Independently, each looks weak. Together they complete the answer. Independent scoring would drop both.</p>
+<p>Why “none” matters: not injecting memory is often the correct outcome on an ordinary turn. It is not a retrieval failure. The system is allowed to withhold.</p>
+<p>TRACE-Memory also allows compact subsets and the empty set. What is distinctive here is wiring that into draft-relative judgment, the existing retriever, budgets, and failure isolation — not inventing the empty action itself.</p>
+<h2 id="7-no-memory-used-is-not-one-event">7. “No memory used” is not one event<a class="headerlink" href="#7-no-memory-used-is-not-one-event" title="Permanent link">&para;</a></h2>
+<p>From the outside, many turns look identical: the user got an answer with no extra memory injected.</p>
+<p>Internally those can be six different things:</p>
+<table>
+<thead>
+<tr>
+<th>Cause</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Planner silence</td>
+<td>The planner never asked for memory</td>
+</tr>
+<tr>
+<td>Retrieval miss</td>
+<td>It asked, but search found nothing</td>
+</tr>
+<tr>
+<td>Judge rejection</td>
+<td>Search found candidates; the judge said they would not help</td>
+</tr>
+<tr>
+<td>Policy failure</td>
+<td>Something in the policy path broke</td>
+</tr>
+<tr>
+<td>Budget withholding</td>
+<td>Time or cost budget cut the path short</td>
+</tr>
+<tr>
+<td>Successful admission</td>
+<td>Memory was used</td>
+</tr>
+</tbody>
+</table>
+<p>That logging is why early “zero injection” results were interpretable. They were all planner silence. The judge had never even been reached on ordinary turns, so judge precision on those turns had not yet been measured. Without stage labels, it would have looked as if the whole system were conservative. It wasn’t: one stage was never firing.</p>
+<h2 id="8-prompts-models-and-settings-are-one-versioned-product">8. Prompts, models, and settings are one versioned product<a class="headerlink" href="#8-prompts-models-and-settings-are-one-versioned-product" title="Permanent link">&para;</a></h2>
+<p>A memory system is not just code. It is a bundle: which models, which prompts, which category taxonomy, how inventory is built, how retrieval is configured, what the budgets are.</p>
+<p>Change any piece and you have a new configuration. That new hash:</p>
+<ul>
+<li>invalidates the old fitness score</li>
+<li>must re-run the fitness suite against the committed scenario sets</li>
+<li>must pass shadow evaluation before it serves live traffic</li>
+</ul>
+<p>You would not ship model weights because someone edited a YAML file by hand. This treats prompts and routing the same way: they are release artifacts, not informal knobs.</p>
+<h3 id="one-combination-that-passed">One combination that passed<a class="headerlink" href="#one-combination-that-passed" title="Permanent link">&para;</a></h3>
+<p>This is the combination that passed the fifth-split fitness bar, then the later suite, and is recorded as <code>benchmarks/bundles/bundle-2026-09-08-a.json</code>. It is a measured snapshot, not a claim that nearby swaps will behave the same.</p>
+<table>
+<thead>
+<tr>
+<th>Piece</th>
+<th>What passed</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Planner</td>
+<td><code>gpt-4o</code> with the inventory-aware gap prompt (<code>gap-v3</code> in the Phase 0 runner; <code>gap-v3c</code> in the served orchestrator, which adds a structured category on each gap)</td>
+</tr>
+<tr>
+<td>Judge</td>
+<td><code>gpt-5.4</code> with the decision-impact admission prompt (<code>admission-v3</code>)</td>
+</tr>
+<tr>
+<td>Serving / drafts</td>
+<td><code>gpt-5.6-luna</code> in the Phase 0 runs</td>
+</tr>
+<tr>
+<td>Classifier</td>
+<td><code>gpt-4o</code> / <code>category-v2</code>, with deterministic form rules on top</td>
+</tr>
+<tr>
+<td>Taxonomy</td>
+<td><code>activation-v2-frozen</code></td>
+</tr>
+<tr>
+<td>Inventory</td>
+<td>store-generated category labels (<code>inventory-v1</code>)</td>
+</tr>
+<tr>
+<td>Retrieval</td>
+<td>real hybrid retriever on the later splits</td>
+</tr>
+</tbody>
+</table>
+<p><code>gpt-4o</code> is the hosted planner that passed. It is still a full hosted chat model. An 8B open-weight model also passed the planner role, which is the actually cheaper planner option that was measured. Do not read “planner can be <code>gpt-4o</code>” as “the planner is inexpensive.”</p>
+<p>Tried and rejected on the same tests: <code>gpt-5-nano</code> as planner or judge; <code>gpt-4o</code> as judge on the full measurement; a gap-anchored judge; style and language preferences left conditional.</p>
+<p>Tweaking any row in the table is a new combination. It needs a fresh pass on the fitness bar before it is treated as supported. Nearby models and prompt edits have already failed that bar while looking interchangeable on easier splits.</p>
+<h3 id="how-to-tell-whether-a-combination-works">How to tell whether a combination works<a class="headerlink" href="#how-to-tell-whether-a-combination-works" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Live run against the committed fifth-split scenario, with the combination that passed as the default.</span>
+<span class="nv">HF_HUB_OFFLINE</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>--extra<span class="w"> </span>live<span class="w"> </span>--extra<span class="w"> </span>local-models<span class="w"> </span>python<span class="w"> </span>benchmarks/evaluate_combination.py<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--gap-model<span class="w"> </span>gpt-4o<span class="w"> </span>--admission-model<span class="w"> </span>gpt-5.4
+
+<span class="c1"># Score a saved phase0 result without calling models.</span>
+uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>benchmarks/evaluate_combination.py<span class="w"> </span>--from-result<span class="w"> </span>benchmarks/results/phase0/&lt;file&gt;.json
+</code></pre></div>
+<p>The script prints <code>PASS</code> or <code>FAIL</code> per threshold (ordinary injection, explicit recall, implicit recall, unsafe admissions, and promotion checks when activation is real) and a final <code>COMBINATION PASS</code> or <code>COMBINATION FAIL</code>. It exits 1 on failure. Those thresholds are the fifth-split bar: ordinary injection at most 5%, explicit recall at least 90%, implicit recall at least 75%, nothing unsafe, and when activation is real every eligible preference promoted, nothing unsafe promoted, scoped preferences kept conditional.</p>
+<h2 id="9-models-are-not-interchangeable-even-if-the-apis-are">9. Models are not interchangeable, even if the APIs are<a class="headerlink" href="#9-models-are-not-interchangeable-even-if-the-apis-are" title="Permanent link">&para;</a></h2>
+<p>The code can talk to multiple providers. That does not mean any model can sit in any role.</p>
+<p>The measurements said:</p>
+<ul>
+<li>the planner role passed on <code>gpt-4o</code> and on an 8B open-weight model run locally</li>
+<li>a model that finds the right memories can still be an unsafe judge (several admitted a misleading record)</li>
+<li>“provider-neutral” is about interfaces, not “swap GPT for anyone and keep the same safety”</li>
+</ul>
+<p>The architecture is asymmetric on purpose: planner and judge are different jobs, certified separately, as measured bundles.</p>
+<h2 id="10-if-anything-goes-wrong-keep-the-baseline-answer">10. If anything goes wrong, keep the baseline answer<a class="headerlink" href="#10-if-anything-goes-wrong-keep-the-baseline-answer" title="Permanent link">&para;</a></h2>
+<p>Conditional memory is optional. The answer the model would have given without it is the safe default.</p>
+<p>If gap planning fails, retrieval times out, the judge output cannot be parsed, or the budget is exceeded: do not inject. Serve the baseline.</p>
+<p>The new subsystem can fail without poisoning the response. Conditional memory has to earn the right to change what the user sees. Withholding is the defined failure mode, not a crash and not a guessed injection.</p>
+<h2 id="11-the-research-idea-became-a-control-system-you-can-actually-run">11. The research idea became a control system you can actually run<a class="headerlink" href="#11-the-research-idea-became-a-control-system-you-can-actually-run" title="Permanent link">&para;</a></h2>
+<p>RUMS and TRACE-Memory are different papers in the same family: do not inject memory because it is relevant; inject it only if it changes the answer. They operationalize that family differently, and Retold operationalizes a third serving shape around TRACE-Memory’s two stages. See the table below.</p>
+<p>What was built around those ideas is the operational machinery the experiments showed was actually needed:</p>
+<ul>
+<li>ambient vs conditional</li>
+<li>audited promotion</li>
+<li>content-free inventories</li>
+<li>draft-relative joint admission</li>
+<li>shadow isolation (try a policy without serving it)</li>
+<li>stage-specific diagnostics</li>
+<li>bundle certification</li>
+<li>kill switches</li>
+<li>review backlog</li>
+<li>fail-closed (withhold) semantics</li>
+</ul>
+<h2 id="12-what-retold-did-differently-from-rums-and-trace-memory">12. What Retold did differently from RUMS and TRACE-Memory<a class="headerlink" href="#12-what-retold-did-differently-from-rums-and-trace-memory" title="Permanent link">&para;</a></h2>
+<p>RUMS and TRACE-Memory are not the same idea. Both refuse “retrieve by similarity and inject the hits.” After that they diverge.</p>
+<p>RUMS asks: given memories we already have, which subset reduces the model’s uncertainty about its next response? That is entropy reduction over a candidate set, and it needs access to the model’s logits.</p>
+<p>TRACE-Memory asks: given the question and public context, what user-specific information is missing, retrieve for those gaps, then admit evidence only if it improves the answer beyond the public-only path. That is two stages, missing-information retrieval plus incremental response utility, and its training needs logprobs even though inference can be text-only.</p>
+<p>Retold is closer to TRACE-Memory’s two-stage serving shape than to RUMS’s entropy selection. It does not use RUMS entropy as a production signal, and it does not use TRACE-Memory’s trained query and admission policies. It uses a prompted planner plus a prompted draft-relative judge, then adds activation, inventory, and the control plane the experiments required.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>RUMS</th>
+<th>TRACE-Memory</th>
+<th>Retold</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Core idea</td>
+<td>Select already-known user memories by how much they reduce response entropy</td>
+<td>Generate public-conditioned information gaps, retrieve against them, then admit evidence only if it improves the answer beyond public context</td>
+<td>Two-stage serving like TRACE-Memory (planner then judge), with draft-relative helpfulness rather than entropy or trained likelihood, plus ambient versus conditional activation</td>
+</tr>
+<tr>
+<td>Needs logits / trained policies</td>
+<td>Yes, logits at selection time</td>
+<td>Training needs logprobs; inference can be text-only</td>
+<td>No. Prompted runtime judge against an actual draft</td>
+</tr>
+<tr>
+<td>Ambient vs conditional</td>
+<td>No</td>
+<td>No</td>
+<td>Yes. Style stays always-on; facts must earn the turn</td>
+</tr>
+<tr>
+<td>Planner input</td>
+<td>The memories themselves, scored</td>
+<td>Gap queries from the question and public context</td>
+<td>Gap queries plus a content-free category inventory</td>
+</tr>
+<tr>
+<td>Empty set</td>
+<td>Allowed</td>
+<td>Allowed</td>
+<td>Allowed, and the log says why: planner silence, miss, judge, budget, or failure</td>
+</tr>
+<tr>
+<td>If the policy breaks</td>
+<td>Not specified as a serving containment model</td>
+<td>Not specified as a serving containment model</td>
+<td>Return the baseline. Conditional memory never gets the benefit of the doubt</td>
+</tr>
+</tbody>
+</table>
+<p>Cite both papers. Retold did not invent “admit memory only if it improves the answer.” What it adds is a governed way to run a TRACE-like two-stage path on hosted models, with ambient activation and a content-free inventory, and to refuse a bundle that has not passed the fitness bar.</p>
+<h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
+<ul>
+<li><em>Response-Aware User Memory Selection for LLM Personalization</em> (RUMS). ICML 2026. <a href="https://arxiv.org/abs/2604.14473">https://arxiv.org/abs/2604.14473</a></li>
+<li><em>TRACE-Memory: Public-Conditioned Retrieval and Utility-Aware Evidence Admission for Personalized Generation.</em> 2026. <a href="https://arxiv.org/abs/2608.08446">https://arxiv.org/abs/2608.08446</a></li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../utility-aware-memory-architecture/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Utility-aware memory architecture">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Utility-aware memory architecture
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../acceptance-report/" class="md-footer__link md-footer__link--next" aria-label="Next: Acceptance report (v1)">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Acceptance report (v1)
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2026 Aditya Mishra
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.code.copy", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
