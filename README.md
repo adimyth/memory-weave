@@ -51,7 +51,7 @@ Retold is distributed through GitHub Releases while its PyPI trusted publisher i
 python -m pip install "retold[local-models] @ https://github.com/adimyth/retold/releases/download/v1.1.1/retold-1.1.1-py3-none-any.whl"
 ```
 
-The first write downloads BGE-M3 and an NLI evidence model. They occupy about 6 GB in the Hugging Face cache, so allow several minutes for the initial download. With both models cached, the complete example took 19 seconds on the development Apple Silicon Mac; later calls in the same process are faster.
+The first write downloads BGE-M3 and an NLI evidence model. They occupy about 6 GB in the Hugging Face cache, so allow several minutes for the initial download. With both models cached, the complete example took 19 seconds on the development Apple Silicon Mac. Later calls in the same process are faster.
 
 Save this as `quickstart.py` and run `python quickstart.py`:
 
@@ -72,14 +72,15 @@ Recalled 1 memory for "What kind of answers do I prefer?".
 
 [01a08...] semantic · confirmed · user_statement · scope agent:assistant/aditya
 I prefer concise answers.
-matched: dense 0.82 (rank 1), lexical 2/3 (rank 1); passed dense 0.82 ≥ 0.45 (semantic)
+matched: dense 0.82 (rank 1), lexical 2/3 (rank 1)
+gate: passed dense 0.82 ≥ 0.45 (semantic)
 ```
 
 The executable version lives at [`examples/quickstart.py`](https://github.com/adimyth/retold/blob/main/examples/quickstart.py). It needs no API key. `memory.remember` records the supplied quote as a trusted user turn and sends the claim through the same evidence, lifecycle, indexing, and retrieval policies used by the framework adapters.
 
 When you omit `attribute`, Retold derives a stable private key from the claim. A rephrased statement still reinforces the earlier record and a contradicting one still supersedes it, because the ingestor compares new claims with the existing records about the same subject. Supply an attribute such as `answer_style` when you want to name that subject yourself.
 
-The quote has to support the claim. "Aditya prefers concise answers." backed by "I prefer concise answers." is fine, because Retold knows who is speaking. A claim the quote does not support raises `UnsupportedEvidenceError` instead of being stored as a guess that expires in thirty days; pass `allow_inference=True` when a tentative record is what you want.
+The quote has to support the claim. "Aditya prefers concise answers." backed by "I prefer concise answers." is fine, because Retold knows who is speaking. A claim the quote does not support raises `UnsupportedEvidenceError` instead of being stored as a guess that expires in thirty days. Pass `allow_inference=True` when a tentative record is what you want.
 
 ## Add Retold to an agent
 
@@ -114,7 +115,7 @@ Retold separates who requests a search from how retrieved records enter an answe
 | `tool_only` | The agent receives the five memory tools and calls them when its task needs memory. | Default |
 | `utility_aware` | The host drafts an answer, retrieves only for a specific missing fact, and admits records only when they would change the draft. | Opt-in |
 
-The utility-aware path needs host-supplied model clients and `supported_bundle()` from `retold.policy.reference`. A store serves the bundle only after recording a passing fitness result; otherwise the path runs in shadow mode. Planner, provider, judge, timeout, and latency-budget failures all serve the original draft and record the reason.
+The utility-aware path needs host-supplied model clients and `supported_bundle()` from `retold.policy.reference`. A store serves the bundle only after recording a passing fitness result. Otherwise, the path runs in shadow mode. Planner, provider, judge, timeout, and latency-budget failures all serve the original draft and record the reason.
 
 ![Utility-aware memory path: draft first, retrieve only for specific missing context, and revise only with admitted records](docs/assets/utility-aware-path.svg)
 
@@ -130,7 +131,7 @@ The utility-aware path needs host-supplied model clients and `supported_bundle()
 8. **Revise once when useful context exists.** The model receives only the admitted records and regenerates the answer once. Rejected candidates remain excluded.
 9. **Serve the answer.** The final result is either the original memory-free draft or one revision informed by useful, authorized memory.
 
-The default quick start does not invoke a hosted provider. Call `worker = memory.finish(extract=True)` when you want the facade to run background transcript extraction; Retold checks the provider dependency and API key before ending the session. Keep Retold open until `worker.join()` completes if the process is about to exit.
+The default quick start does not invoke a hosted provider. Call `worker = memory.finish(extract=True)` when you want the facade to run background transcript extraction. Retold checks the provider dependency and API key before ending the session. Keep Retold open until `worker.join()` completes if the process is about to exit.
 
 ## Security without setup ceremony
 
@@ -199,7 +200,7 @@ One validated YAML file controls retrieval floors, result and token budgets, emb
 
 ## License
 
-MIT. Commits follow [Conventional Commits](https://www.conventionalcommits.org/); after cloning, run `git config core.hooksPath .githooks`.
+Retold is available under the [MIT License](LICENSE).
 
 [^1]: The latency measurements use warm local search with a real embedder on the 1,000-record fixture and a fixed 25 ms embedding cost on the 50,000-record fixture. See [the acceptance report](docs/acceptance-report.md).
 [^2]: The similarity table comes from one fixed twelve-turn conversation replayed three times through a hosted model in `hybrid` mode. It describes 36 host-issued searches with one embedder and measures the dense channel's highest score rather than the complete retrieval gate. See [the benchmark record](https://github.com/adimyth/retold/blob/main/benchmarks/README.md).
