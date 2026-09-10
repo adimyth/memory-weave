@@ -93,6 +93,9 @@ class WriteRequest:
     valid_from: datetime | None = None
     valid_until: datetime | None = None
     review_at: datetime | None = None
+    # True refuses a direct claim the evidence check would downgrade, writing nothing, instead of storing
+    # the provisional inference; the facade sets it unless the caller allows inference.
+    require_supported_evidence: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -228,6 +231,12 @@ class Ingestor:
 
         evidence, entailment_score = self._validate_evidence(principal, request, timer)
         source_kind = evidence.source_kind
+        if (
+            request.require_supported_evidence
+            and request.source_kind != "agent_inference"
+            and source_kind == "agent_inference"
+        ):
+            return self._result(None, None, "unsupported_evidence", evidence.note, timer)
         source_ref = (
             session_turn_source_ref(principal.session_id, evidence.turn)
             if evidence.found and principal.session_id is not None and evidence.turn is not None

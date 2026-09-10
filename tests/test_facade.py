@@ -230,6 +230,13 @@ def test_unsupported_evidence_raises_unless_inference_is_allowed(tmp_path: Path)
     with retold.session(user_id="aditya") as memory:
         with pytest.raises(UnsupportedEvidenceError, match="allow_inference"):
             memory.remember("Aditya is allergic to peanuts.", evidence="I prefer concise answers.")
+        # The refusal happened before anything was persisted: no record in any status, no write event.
+        scope = private_scope("assistant", "aditya")
+        assert retold.store.records_in_scope(scope, statuses=["provisional", "confirmed"]) == []
+        written_events = retold.store.connection.execute(
+            "SELECT COUNT(*) FROM events WHERE kind LIKE 'record.%'"
+        ).fetchone()[0]
+        assert written_events == 0
         accepted = memory.remember(
             "Aditya is allergic to peanuts.", evidence="I prefer concise answers.", allow_inference=True
         )
@@ -253,3 +260,93 @@ def test_a_claim_naming_the_user_is_judged_as_the_user(tmp_path: Path) -> None:
     assert written.source_kind == "user_statement"
     record = retold.store.get_record(written.record_id)
     assert record is not None and record.status == "confirmed" and record.source_kind == "user_statement"
+
+
+def _counts(store: Store) -> dict[str, int]:
+    tables = ("records", "embeddings", "record_entities", "entities", "records_fts", "record_conflicts")
+    counts = {table: store.connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0] for table in tables}
+    counts["record_events"] = store.connection.execute(
+        "SELECT COUNT(*) FROM events WHERE kind LIKE 'record.%'"
+    ).fetchone()[0]
+    return counts
+
+
+def test_a_refused_write_leaves_no_residue_and_repeating_it_is_side_effect_free(tmp_path: Path) -> None:
+    from retold import UnsupportedEvidenceError
+
+    retold, _ = _retold(tmp_path)
+    judge = retold.runtime.judge
+    assert isinstance(judge, FakeJudge)
+    judge.set_entailment("I prefer concise answers.", "Aditya is allergic to peanuts.", 0.0)
+    judge.set_entailment("I prefer concise answers.", "The user is allergic to peanuts.", 0.0)
+
+    with retold.session(user_id="aditya") as memory:
+        before = _counts(retold.store)
+        for _ in range(2):
+            with pytest.raises(UnsupportedEvidenceError):
+                memory.remember("Aditya is allergic to peanuts.", evidence="I prefer concise answers.")
+            assert _counts(retold.store) == before, "a refused write must leave the store as it found it"
+        accepted = memory.remember(
+            "Aditya is allergic to peanuts.", evidence="I prefer concise answers.", allow_inference=True
+        )
+        after = _counts(retold.store)
+
+    assert after["records"] == before["records"] + 1 and after["embeddings"] == before["embeddings"] + 1
+    record = retold.store.get_record(accepted.record_id)
+    assert record is not None and record.status == "provisional" and record.expires_at is not None
+    assert accepted.note == "evidence does not support claim"
+
+
+def test_tool_result_claims_follow_the_same_contract(tmp_path: Path) -> None:
+    from retold import UnsupportedEvidenceError
+
+    retold, _ = _retold(tmp_path)
+    judge = retold.runtime.judge
+    assert isinstance(judge, FakeJudge)
+    judge.set_entailment("Deploy finished with exit code 1.", "The deploy succeeded.", 0.0)
+
+    with retold.session(user_id="aditya") as memory:
+        before = _counts(retold.store)
+        with pytest.raises(UnsupportedEvidenceError):
+            memory.remember(
+                "The deploy succeeded.", evidence="Deploy finished with exit code 1.", source_kind="tool_result"
+            )
+        assert _counts(retold.store) == before
+        supported = memory.remember(
+            "The deploy at 14:02 succeeded.",
+            evidence="Deploy finished at 14:02 with exit code 0.",
+            source_kind="tool_result",
+        )
+
+    record = retold.store.get_record(supported.record_id)
+    assert record is not None and record.source_kind == "tool_result" and record.status == "confirmed"
+
+
+def test_low_level_writes_still_downgrade_and_persist(tmp_path: Path) -> None:
+    from retold.ingest import WriteRequest
+    from retold.models import EntityMention
+
+    retold, _ = _retold(tmp_path)
+    judge = retold.runtime.judge
+    assert isinstance(judge, FakeJudge)
+    judge.set_entailment("I prefer concise answers.", "Aditya is allergic to peanuts.", 0.0)
+    judge.set_entailment("I prefer concise answers.", "The user is allergic to peanuts.", 0.0)
+    memory = retold.session(user_id="aditya", session_id="low-level")
+    memory.principal = retold.runtime.hooks.on_turn(memory.principal, "user", "I prefer concise answers.")
+
+    result = retold.runtime.ingestor.write(
+        memory.principal,
+        WriteRequest(
+            type="semantic",
+            content="Aditya is allergic to peanuts.",
+            source_kind="user_statement",
+            evidence="I prefer concise answers.",
+            attribute="allergy",
+            scope=private_scope("assistant", "aditya"),
+            entities=[EntityMention(kind="person", text="aditya", role="about")],
+        ),
+    )
+
+    assert result.outcome == "created" and result.source_kind == "agent_inference"
+    assert result.note == "evidence does not support claim"
+    memory.finish()

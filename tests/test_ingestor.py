@@ -962,3 +962,26 @@ def test_temporary_statement_coexists_with_a_standing_preference_instead_of_supe
     judge.set_verdict(standing, later_standing, "contradicts")
     third = ingestor.write(_PRINCIPAL, _request(later_standing, attribute="reply_language"))
     assert third.outcome.startswith("superseded:")
+
+
+def test_require_supported_evidence_refuses_a_downgraded_claim_without_writing(
+    store: Store, buffer: SessionBuffer, config: RetoldConfig
+) -> None:
+    content = "Aditya uses Vim."
+    evidence = "I prefer concise technical explanations."
+    judge = FakeJudge(entailments={(evidence, content): 0.20, (evidence, "The user uses Vim."): 0.20})
+    request = _request(content, evidence=evidence)
+    from dataclasses import replace as _replace
+
+    result = _ingestor(store, buffer, config, judge).write(
+        _PRINCIPAL, _replace(request, require_supported_evidence=True)
+    )
+
+    assert result.outcome == "unsupported_evidence"
+    assert result.record_id is None and result.source_kind is None
+    assert result.note == "evidence does not support claim"
+    assert store.connection.execute("SELECT COUNT(*) FROM records").fetchone()[0] == 0
+    assert store.connection.execute("SELECT COUNT(*) FROM events WHERE kind LIKE 'record.%'").fetchone()[0] == 0
+    # The same write without the flag still stores the provisional inference, as the tool path does.
+    stored = _ingestor(store, buffer, config, judge).write(_PRINCIPAL, request)
+    assert stored.outcome == "created" and stored.source_kind == "agent_inference"

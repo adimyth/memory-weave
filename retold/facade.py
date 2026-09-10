@@ -145,16 +145,17 @@ class MemorySession:
             event_at=event_at,
             entities=[EntityMention(kind="person", text=self.principal.user_id, role="about")],
             tags=list(tags or []),
+            require_supported_evidence=not allow_inference,
         )
         try:
             result = self._runtime.ingestor.write(self.principal, request)
         except (ImportError, OSError, LocalModelUnavailable) as error:
             raise _local_model_failure(error) from error
+        if result.outcome == "unsupported_evidence":
+            # Nothing was written: the ingestor refused the claim before persisting anything.
+            raise UnsupportedEvidenceError(content, evidence, result.note)
         if result.record_id is None:
             raise ValueError(result.note or f"Retold did not write the memory: {result.outcome}.")
-        downgraded = source_kind != "agent_inference" and result.source_kind == "agent_inference"
-        if downgraded and not allow_inference:
-            raise UnsupportedEvidenceError(content, evidence, result.note)
         return result
 
     def search(
