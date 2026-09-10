@@ -35,9 +35,9 @@ The utility-aware path was then evaluated on two blind scenario splits:
 | Recalled implicit needs | 7 of 8 | 6 of 7 |
 
 > [!IMPORTANT]
-> **Retold stayed quiet without forgetting what mattered.** Across the two blind splits, it injected memory on only 1 of 40 ordinary turns while recalling 19 of 20 explicit stored facts and 13 of 15 implicit memory needs. It admitted no placebo, misleading, private, or unsafe record. A separate shadow run through the real orchestrator injected memory on 0 of 20 ordinary turns.
+> **Retold stayed quiet without forgetting what mattered.** Across the two blind splits, it injected memory on only 1 of 40 ordinary turns while recalling 19 of 20 explicit stored facts and 13 of 15 implicit memory needs. It admitted no placebo, misleading, private, or unsafe record. A separate shadow run through the real orchestrator injected memory on 0 of 20 ordinary turns.[^3]
 
-These are controlled offline evaluations, not production traffic. The [acceptance report](docs/acceptance-report.md) and [experiment record](docs/usefulness-gate.md) link every claim to its run, fixtures, and acceptance criteria.
+The [acceptance report](docs/acceptance-report.md) and [experiment record](docs/usefulness-gate.md) link every claim to its run, fixtures, and acceptance criteria.
 
 The utility-aware host path runs the initial draft and missing-context planner concurrently. The planner sees content-free categories rather than records. Retold searches only when the planner names a missing fact, then a judge compares the candidates with the draft. The host revises once when at least one record would correct, complete, or personalize the answer.
 
@@ -203,3 +203,4 @@ MIT. Commits follow [Conventional Commits](https://www.conventionalcommits.org/)
 
 [^1]: The latency measurements use warm local search with a real embedder on the 1,000-record fixture and a fixed 25 ms embedding cost on the 50,000-record fixture. See [the acceptance report](docs/acceptance-report.md).
 [^2]: The similarity table comes from one fixed twelve-turn conversation replayed three times through a hosted model in `hybrid` mode. It describes 36 host-issued searches with one embedder and measures the dense channel's highest score rather than the complete retrieval gate. See [the benchmark record](https://github.com/adimyth/retold/blob/main/benchmarks/README.md).
+[^3]: The blind splits are controlled offline evaluations rather than production traffic. The shadow result ran through the real orchestrator against a scripted scenario set.
