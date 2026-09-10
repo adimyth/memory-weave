@@ -432,6 +432,7 @@ def test_reviewer_narrowed_claim_is_entailment_checked_before_it_is_written(worl
     original = _good_candidates()[0]
     narrowed = replace(original, content="Aditya prefers explanations in Rust.")
     world.judge.set_entailment(original.evidence, narrowed.content, 0.1)
+    world.judge.set_entailment(original.evidence, "The user prefers explanations in Rust.", 0.1)
     reviewer = TableReviewer({C_STYLE: ReviewDecision("revise", "narrow", narrowed)})
 
     result = world.runner(FakeExtractor(_output([original])), reviewer).extract_session(_SESSION_ID, _PRINCIPAL)

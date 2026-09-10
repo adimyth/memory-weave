@@ -2,6 +2,21 @@
 
 All notable changes to Retold. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.1.0] - 2026-09-10
+
+### Added
+
+- `Retold.open` and private `MemorySession` facade APIs for evidence-backed write and explained recall without constructing principals, scopes, grants, runtimes, or hooks. `remember` raises `UnsupportedEvidenceError` rather than silently storing an expiring inference when the quote does not support a direct claim; `allow_inference=True` accepts one deliberately.
+- The evidence check now understands that a first-person quote supports a claim that names the speaker: the principal's name and aliases are read as "the user" before the NLI judge scores the claim. A labelled calibration set of 40 quote and claim pairs runs against the real judge in the integration suite.
+- `LocalModelUnavailable` names the one failure an install fixes; other runtime errors keep their own message. Session end returns the extraction `Thread` so a short-lived host can join it.
+- A real local-model quick start, complete Deep Agents and CrewAI examples, and isolation and lifecycle coverage for the facade.
+
+### Changed
+
+- Reordered the README around installation, first success, agent integration, memory modes, and security. It now distinguishes local and hosted dependencies and documents the current SQLite and evaluation boundaries.
+- GitHub Release wheels are the documented installation path until PyPI trusted publishing is available.
+- Session-end hooks and adapters return their extraction worker so short-lived hosts can wait before closing the store.
+
 ## [1.0.1] - 2026-09-09
 
 The first release under the Retold name, with the closure work a v1 needed: four runtime defects fixed, the
@@ -53,5 +68,6 @@ Tagged as `v1.0.0` under the name Memory Weave; never published to PyPI.
 - Deep Agents and CrewAI adapters that pass one shared contract suite.
 - The operator surface: expiry, retention, erasure, re-embedding, snapshots, review queue, metrics with rollback thresholds, and the bundle registry.
 
+[1.1.0]: https://github.com/adimyth/retold/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/adimyth/retold/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/adimyth/retold/releases/tag/v1.0.0

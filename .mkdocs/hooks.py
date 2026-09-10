@@ -1,6 +1,7 @@
 """Rewrite links to the README and changelog when their content is included in the documentation site.
 
-The site exposes those root files through pages under ``docs/``. Rewriting their relative links to site paths lets MkDocs resolve and validate them after inclusion.
+The site exposes those root files through pages under ``docs/``. Rewriting their relative links to site paths lets
+MkDocs resolve and validate them after inclusion.
 """
 
 from __future__ import annotations

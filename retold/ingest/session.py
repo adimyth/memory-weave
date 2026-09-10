@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import threading
 from collections.abc import Callable
 from dataclasses import replace
 from datetime import datetime, timedelta
@@ -48,7 +49,7 @@ class SessionBuffer:
         self._cache.pop(session_id, None)
 
 
-SessionEndCallback = Callable[[str, Principal], object]
+SessionEndCallback = Callable[[str, Principal], threading.Thread]
 
 
 class SessionHooks:
@@ -115,16 +116,17 @@ class SessionHooks:
         self._buffer.append_turn(Turn(session_id, number, role, content, current))
         return principal
 
-    def on_session_end(self, principal: Principal, *, at: datetime | None = None) -> None:
-        """Mark the session complete and hand it to the extraction callback exactly once."""
+    def on_session_end(self, principal: Principal, *, at: datetime | None = None) -> threading.Thread | None:
+        """Mark the session complete and return the extraction thread the callback started, if any."""
 
         session_id = _session_id(principal)
         session = self._store.get_session(session_id)
         if session is None or session.ended_at is not None:
-            return
+            return None
         self._store.end_session(session_id, at or self._current_time())
         if self._on_end is not None:
-            self._on_end(session_id, principal)
+            return self._on_end(session_id, principal)
+        return None
 
     def _is_idle(self, session_id: str, last_at: datetime, current: datetime) -> bool:
         session = self._store.get_session(session_id)

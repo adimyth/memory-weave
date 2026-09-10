@@ -151,11 +151,12 @@ class DeepAgentsMemoryAdapter:
             session_id = self._sessions.get(thread_id, thread_id)
         return replace(principal, session_id=session_id)
 
-    def end_session(self, run_context: Any) -> None:
+    def end_session(self, run_context: Any) -> threading.Thread | None:
         principal = self.principal_from_run(run_context)
-        self._hooks.on_session_end(principal)
+        worker = self._hooks.on_session_end(principal)
         if principal.session_id is not None:
             self._profiles.forget(principal.session_id)
+        return worker
 
     # -- tools ------------------------------------------------------------------------------------------
 

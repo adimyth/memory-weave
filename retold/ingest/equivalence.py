@@ -9,6 +9,7 @@ from typing import Any, Literal, Protocol
 import numpy as np
 
 from retold.config import EquivalenceConfig
+from retold.errors import LocalModelUnavailable
 
 EquivalenceVerdict = Literal["same", "contradicts", "distinct"]
 
@@ -169,8 +170,11 @@ def _cross_encoder_factory(model_name: str) -> Callable[[], Any]:
         try:
             from sentence_transformers import CrossEncoder
         except ImportError as exc:
-            message = "NLI judging requires sentence-transformers. Install it with: uv sync --extra local-models"
-            raise RuntimeError(message) from exc
+            message = (
+                "NLI judging requires sentence-transformers. Install the local-models extra using the GitHub "
+                "release command in the Retold README."
+            )
+            raise LocalModelUnavailable(message) from exc
         return CrossEncoder(model_name)
 
     return load

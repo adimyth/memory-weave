@@ -225,3 +225,41 @@ def test_evidence_matches_when_the_writer_wraps_the_quotation_in_quote_marks(
     assert wrapped.turn == plain.turn
     assert typographic.found is True
     assert altered.found is False
+
+
+def test_neutralise_principal_rewrites_names_aliases_and_possessives_only() -> None:
+    from retold.ingest.evidence import neutralise_principal
+
+    names = ["Aditya Mishra", "aditya", "Adi"]
+    assert neutralise_principal("Aditya prefers concise answers.", names) == "The user prefers concise answers."
+    assert neutralise_principal("Aditya's editor is Vim.", names) == "The user's editor is Vim."
+    assert neutralise_principal("Ask Aditya Mishra or Adi.", names) == "Ask the user or the user."
+    assert neutralise_principal("Priya prefers tea.", names) is None
+    assert neutralise_principal("Aditi prefers tea.", names) is None, "no partial-word matches"
+
+
+def test_quote_is_first_person_only_for_the_speaker_talking_about_themselves() -> None:
+    from retold.ingest.evidence import quote_is_first_person
+
+    assert quote_is_first_person("I prefer concise answers.")
+    assert quote_is_first_person("My manager Rohan works in Berlin.")
+    assert quote_is_first_person("Please send it to me.")
+    assert not quote_is_first_person("Priya prefers tea.")
+    assert not quote_is_first_person("Deploy finished at 14:02 with exit code 0.")
+
+
+def test_principal_names_ignores_one_character_aliases(tmp_path) -> None:
+    from retold.host import MemoryHost
+    from retold.ingest.evidence import principal_names
+    from retold.models import Principal
+    from retold.store import Store
+
+    store = Store(tmp_path / "memory.sqlite")
+    MemoryHost(store).provision_user("aditya", aliases=("Aditya Mishra", "A", "Adi"))
+
+    names = principal_names(store, Principal("assistant", "aditya", "s", None))
+
+    assert "a" not in names and "A" not in names
+    assert names[0] == "aditya mishra" or names[0] == "Aditya Mishra"
+    assert "adi" in names or "Adi" in names
+    store.close()

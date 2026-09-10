@@ -3,6 +3,8 @@
 from importlib.metadata import PackageNotFoundError, version
 
 from .config import ConfigError, RetoldConfig, load_config
+from .errors import LocalModelUnavailable, UnsupportedEvidenceError
+from .facade import MemorySearchResult, MemorySession, Retold, RetoldSetupError
 from .host import MemoryHost
 from .models import (
     Candidate,
@@ -45,9 +47,14 @@ __all__ = [
     "ExtractionContext",
     "ExtractionOutput",
     "GeneratorHit",
+    "LocalModelUnavailable",
     "MemoryHost",
+    "MemorySearchResult",
+    "MemorySession",
     "MemoryRuntime",
     "RetoldConfig",
+    "Retold",
+    "RetoldSetupError",
     "Principal",
     "Record",
     "Resolution",
@@ -59,6 +66,7 @@ __all__ = [
     "SessionSummary",
     "Store",
     "Turn",
+    "UnsupportedEvidenceError",
     "build_runtime",
     "load_config",
 ]

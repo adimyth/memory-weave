@@ -12,6 +12,7 @@ from typing import Any, Protocol
 import numpy as np
 
 from retold.config import EmbeddingConfig
+from retold.errors import LocalModelUnavailable
 from retold.util import normalize_vector
 
 
@@ -201,8 +202,11 @@ def _sentence_transformer_factory(model_name: str, device: str) -> Callable[[], 
         try:
             from sentence_transformers import SentenceTransformer
         except ImportError as exc:
-            message = "BGE-M3 support requires sentence-transformers. Install it with: uv sync --extra local-models"
-            raise RuntimeError(message) from exc
+            message = (
+                "BGE-M3 support requires sentence-transformers. Install the local-models extra using the GitHub "
+                "release command in the Retold README."
+            )
+            raise LocalModelUnavailable(message) from exc
         if device == "auto":
             return SentenceTransformer(model_name)
         return SentenceTransformer(model_name, device=device)

@@ -8,6 +8,7 @@ from dataclasses import dataclass, replace
 from typing import Any, Literal, Protocol
 
 from retold.config import RerankerConfig, RerankFailure, RetoldConfig
+from retold.errors import LocalModelUnavailable
 from retold.models import Candidate, Record
 
 RerankStatus = Literal["disabled", "applied", "timeout", "failed"]
@@ -204,8 +205,11 @@ def _cross_encoder_factory(model_name: str) -> Callable[[], Any]:
         try:
             from sentence_transformers import CrossEncoder
         except ImportError as exc:
-            message = "Reranking requires sentence-transformers. Install it with: uv sync --extra local-models"
-            raise RuntimeError(message) from exc
+            message = (
+                "Reranking requires sentence-transformers. Install the local-models extra using the GitHub "
+                "release command in the Retold README."
+            )
+            raise LocalModelUnavailable(message) from exc
         return CrossEncoder(model_name)
 
     return load

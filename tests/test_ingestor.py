@@ -245,7 +245,7 @@ def test_non_entailing_evidence_downgrades_a_direct_claim_and_records_its_score(
 ) -> None:
     content = "Aditya uses Vim."
     evidence = "I prefer concise technical explanations."
-    judge = FakeJudge(entailments={(evidence, content): 0.20})
+    judge = FakeJudge(entailments={(evidence, content): 0.20, (evidence, "The user uses Vim."): 0.20})
 
     result = _ingestor(store, buffer, config, judge).write(_PRINCIPAL, _request(content, evidence=evidence))
 

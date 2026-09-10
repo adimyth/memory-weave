@@ -49,7 +49,13 @@ from .entities import (
     resolve_entities,
 )
 from .equivalence import EquivalenceJudge
-from .evidence import session_turn_source_ref, validate_evidence
+from .evidence import (
+    neutralise_principal,
+    principal_names,
+    quote_is_first_person,
+    session_turn_source_ref,
+    validate_evidence,
+)
 from .session import SessionBuffer
 
 _TOOL_SOURCE_KINDS: frozenset[SourceKind] = frozenset({"user_statement", "tool_result", "agent_inference"})
@@ -110,6 +116,8 @@ class WriteResult:
     note: str | None
     timings_ms: dict[str, float]
     candidates: list[EntityAmbiguityCandidate] = field(default_factory=list)
+    # The source kind the write was recorded with after the evidence check, or None when nothing was written.
+    source_kind: EvidenceSourceKind | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -286,6 +294,7 @@ class Ingestor:
             persisted.outcome,
             persisted.note,
             timer,
+            source_kind=source_kind,
         )
 
     def revise(
@@ -389,7 +398,9 @@ class Ingestor:
         timer.mark("transaction")
         self._vector_index.upsert(revision.id, vector, index_version=self._store.record_index_version(revision.id))
         timer.mark("index_update")
-        return self._result(revision.id, revision.status, "superseded", check.note, timer)
+        return self._result(
+            revision.id, revision.status, "superseded", check.note, timer, source_kind=check.source_kind
+        )
 
     def _persist_new_record(self, record: Record, vector: np.ndarray, roles: Mapping[str, EntityRole]) -> None:
         """Write one record with its embedding, lexical row, and entity links inside the caller's transaction."""
@@ -456,7 +467,17 @@ class Ingestor:
             entailment_score = self._judge.entails(request.evidence, request.content)
             if not 0.0 <= entailment_score <= 1.0:
                 raise ValueError("Evidence entailment scores must be between 0 and 1.")
-            if entailment_score < self._config.ingestion.evidence.entail_floor:
+            floor = self._config.ingestion.evidence.entail_floor
+            if (
+                entailment_score < floor
+                and evidence.source_kind == "user_statement"
+                and quote_is_first_person(request.evidence)
+            ):
+                # The user is speaking about themselves, so a claim that names them is the same claim.
+                neutral = neutralise_principal(request.content, principal_names(self._store, principal))
+                if neutral is not None:
+                    entailment_score = max(entailment_score, self._judge.entails(request.evidence, neutral))
+            if entailment_score < floor:
                 evidence = replace(
                     evidence,
                     source_kind="agent_inference",
@@ -965,8 +986,11 @@ class Ingestor:
         timer: Timer,
         *,
         candidates: list[EntityAmbiguityCandidate] | None = None,
+        source_kind: EvidenceSourceKind | None = None,
     ) -> WriteResult:
-        return WriteResult(record_id, status, outcome, note, self._complete_timings(timer), candidates or [])
+        return WriteResult(
+            record_id, status, outcome, note, self._complete_timings(timer), candidates or [], source_kind
+        )
 
     def _complete_timings(self, timer: Timer) -> dict[str, float]:
         marked = timer.as_dict()

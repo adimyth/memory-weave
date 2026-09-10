@@ -8,6 +8,7 @@ that starts making those decisions has stopped being an adapter.
 from __future__ import annotations
 
 import json
+import threading
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Literal, Protocol, cast
@@ -32,8 +33,8 @@ class Adapter(Protocol):
     def principal_from_run(self, run_context: Any) -> Principal:
         """Derive the principal from trusted host configuration; never from model output."""
 
-    def end_session(self, run_context: Any) -> None:
-        """Close the session and schedule extraction exactly once."""
+    def end_session(self, run_context: Any) -> threading.Thread | None:
+        """Close the session and return the extraction thread it started, when extraction is configured."""
 
 
 @dataclass(frozen=True, slots=True)

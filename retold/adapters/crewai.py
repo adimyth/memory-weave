@@ -196,11 +196,12 @@ class CrewAIMemoryAdapter:
             return
         self._record("assistant", raw)
 
-    def end_session(self, run_context: Any = None) -> None:
+    def end_session(self, run_context: Any = None) -> threading.Thread | None:
         del run_context
-        self._hooks.on_session_end(self.principal)
+        worker = self._hooks.on_session_end(self.principal)
         if self.principal.session_id is not None:
             self._profiles.forget(self.principal.session_id)
+        return worker
 
     # -- tools ------------------------------------------------------------------------------------------
 
