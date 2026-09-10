@@ -7,7 +7,7 @@ Retold stores durable facts, decisions, and experiences in SQLite. Local embeddi
 ## Try it
 
 ```bash
-python -m pip install "retold[local-models] @ https://github.com/adimyth/retold/releases/download/v1.1.0/retold-1.1.0-py3-none-any.whl"
+python -m pip install "retold[local-models] @ https://github.com/adimyth/retold/releases/download/v1.1.1/retold-1.1.1-py3-none-any.whl"
 ```
 
 ```python

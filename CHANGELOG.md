@@ -2,6 +2,12 @@
 
 All notable changes to Retold. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.1.1] - 2026-09-10
+
+### Fixed
+
+- `MemorySession.remember` refused an unsupported claim only after the ingestor had stored it as a provisional inference. The refusal now happens inside the ingestor before anything is persisted: `WriteRequest.require_supported_evidence` returns the outcome `unsupported_evidence` with no record, embedding, entity link, or event written, and the facade sets it unless `allow_inference=True`. Low-level writes without the flag behave as before.
+
 ## [1.1.0] - 2026-09-10
 
 ### Added
@@ -68,6 +74,7 @@ Tagged as `v1.0.0` under the name Memory Weave; never published to PyPI.
 - Deep Agents and CrewAI adapters that pass one shared contract suite.
 - The operator surface: expiry, retention, erasure, re-embedding, snapshots, review queue, metrics with rollback thresholds, and the bundle registry.
 
+[1.1.1]: https://github.com/adimyth/retold/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/adimyth/retold/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/adimyth/retold/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/adimyth/retold/releases/tag/v1.0.0

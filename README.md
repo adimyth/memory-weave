@@ -45,7 +45,7 @@ The design builds on [RUMS](https://arxiv.org/abs/2604.14473) and [TRACE-Memory]
 Retold is distributed through GitHub Releases while its PyPI trusted publisher is being configured. Python 3.12 or 3.13 is required.
 
 ```bash
-python -m pip install "retold[local-models] @ https://github.com/adimyth/retold/releases/download/v1.1.0/retold-1.1.0-py3-none-any.whl"
+python -m pip install "retold[local-models] @ https://github.com/adimyth/retold/releases/download/v1.1.1/retold-1.1.1-py3-none-any.whl"
 ```
 
 The first write downloads BGE-M3 and an NLI evidence model. They occupy about 6 GB in the Hugging Face cache, so allow several minutes for the initial download. With both models cached, the complete example took 19 seconds on the development Apple Silicon Mac; later calls in the same process are faster.
@@ -85,7 +85,7 @@ The adapters register the memory tools, derive identity from trusted run configu
 ### Deep Agents
 
 ```bash
-python -m pip install "retold[local-models,live,deepagents] @ https://github.com/adimyth/retold/releases/download/v1.1.0/retold-1.1.0-py3-none-any.whl"
+python -m pip install "retold[local-models,live,deepagents] @ https://github.com/adimyth/retold/releases/download/v1.1.1/retold-1.1.1-py3-none-any.whl"
 export ANTHROPIC_API_KEY="your-key"
 ```
 
@@ -94,7 +94,7 @@ export ANTHROPIC_API_KEY="your-key"
 ### CrewAI
 
 ```bash
-python -m pip install "retold[local-models,live,crewai] @ https://github.com/adimyth/retold/releases/download/v1.1.0/retold-1.1.0-py3-none-any.whl"
+python -m pip install "retold[local-models,live,crewai] @ https://github.com/adimyth/retold/releases/download/v1.1.1/retold-1.1.1-py3-none-any.whl"
 export ANTHROPIC_API_KEY="your-key"
 ```
 
