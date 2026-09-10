@@ -70,6 +70,7 @@ models/
 benchmarks/results/
 
 # Editors and IDEs
+.cursor/
 .vscode/
 .idea/
 *.swp
