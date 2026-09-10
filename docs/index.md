@@ -7,7 +7,7 @@ Retold stores durable facts, decisions, and experiences in SQLite. Local embeddi
 ## Try it
 
 ```bash
-python -m pip install "retold[local-models] @ https://github.com/adimyth/retold/releases/download/v1.2.0/retold-1.2.0-py3-none-any.whl"
+python -m pip install "retold[local-models] @ https://github.com/adimyth/retold/releases/download/v1.2.1/retold-1.2.1-py3-none-any.whl"
 ```
 
 ```python
@@ -15,7 +15,11 @@ from retold import Retold
 
 with Retold.open("memory.sqlite", profile="lite") as retold:
     with retold.session(user_id="aditya") as memory:
-        memory.remember("I prefer concise answers.", evidence="I prefer concise answers.")
+        memory.remember(
+            "I prefer concise answers.",
+            evidence="I prefer concise answers.",
+            attribute="answer_style",
+        )
         print(memory.search("What kind of answers do I prefer?").text)
 ```
 

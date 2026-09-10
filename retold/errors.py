@@ -12,6 +12,23 @@ class LocalModelUnavailable(RuntimeError):
     """
 
 
+class EmbeddingProfileMismatch(RuntimeError):
+    """The store contains vectors produced by a different embedding profile."""
+
+    def __init__(
+        self,
+        configured: tuple[str, str, int],
+        stored: list[tuple[str, str, int]],
+    ) -> None:
+        configured_label = f"{configured[0]}/{configured[1]} ({configured[2]} dimensions)"
+        stored_label = ", ".join(f"{model}/{version} ({dims} dimensions)" for model, version, dims in stored)
+        super().__init__(
+            f"The store contains embeddings from {stored_label}, but Retold is configured for {configured_label}. "
+            "Recalibrate the retrieval floors, then run `retold reembed` with the new model configuration before "
+            "opening this store."
+        )
+
+
 class UnsupportedEvidenceError(ValueError):
     """The quote does not support the claim, so the write would be stored as an expiring inference.
 

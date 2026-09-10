@@ -68,7 +68,12 @@ class Retold:
         else:
             raise ValueError("profile must be 'standard' or 'lite'.")
         store = Store(path)
-        return cls(build_runtime(resolved, store), owns_store=True)
+        try:
+            runtime = build_runtime(resolved, store)
+        except Exception:
+            store.close()
+            raise
+        return cls(runtime, owns_store=True)
 
     def session(
         self,

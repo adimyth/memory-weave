@@ -48,7 +48,7 @@ The design builds on [RUMS](https://arxiv.org/abs/2604.14473) and [TRACE-Memory]
 Retold is distributed through GitHub Releases while its PyPI trusted publisher is being configured. Python 3.12 or 3.13 is required.
 
 ```bash
-python -m pip install "retold[local-models] @ https://github.com/adimyth/retold/releases/download/v1.2.0/retold-1.2.0-py3-none-any.whl"
+python -m pip install "retold[local-models] @ https://github.com/adimyth/retold/releases/download/v1.2.1/retold-1.2.1-py3-none-any.whl"
 ```
 
 The quick start uses Retold's `lite` profile: the 87 MB MiniLM embedder and a 552 MB NLI evidence model. Allow time for the one-time download on the first write. With both models cached, the first write in a new process took 3.7 seconds on the development Apple Silicon Mac, the following search took 8 ms, and a repeated cached search took 1 ms.[^4]
@@ -60,7 +60,11 @@ from retold import Retold
 
 with Retold.open("memory.sqlite", profile="lite") as retold:
     with retold.session(user_id="aditya") as memory:
-        memory.remember("I prefer concise answers.", evidence="I prefer concise answers.")
+        memory.remember(
+            "I prefer concise answers.",
+            evidence="I prefer concise answers.",
+            attribute="answer_style",
+        )
         result = memory.search("What kind of answers do I prefer?")
         print(result.text)
 ```
@@ -70,15 +74,14 @@ The result includes the stored claim and the reason it passed retrieval:
 ```text
 Recalled 1 memory for "What kind of answers do I prefer?".
 
-[01a08...] semantic · confirmed · user_statement · scope agent:assistant/aditya
+[01a08...] semantic · confirmed · user_statement · event 2026-09-10 · scope agent:assistant/aditya
 I prefer concise answers.
-matched: dense 0.53 (rank 1), lexical 2/3 (rank 1)
-gate: passed dense 0.53 ≥ 0.32 (semantic)
+matched: dense 0.53 (rank 1), lexical 2/3 (rank 1); fused rank 1; passed dense 0.53 ≥ 0.32 (semantic)
 ```
 
 The executable version lives at [`examples/quickstart.py`](https://github.com/adimyth/retold/blob/main/examples/quickstart.py). It needs no API key. `memory.remember` records the supplied quote as a trusted user turn and sends the claim through the same evidence, lifecycle, indexing, and retrieval policies used by the framework adapters.
 
-When you omit `attribute`, Retold derives a stable private key from the claim. A rephrased statement still reinforces the earlier record and a contradicting one still supersedes it, because the ingestor compares new claims with the existing records about the same subject. Supply an attribute such as `answer_style` when you want to name that subject yourself.
+`attribute="answer_style"` identifies the current fact that this memory describes. A later statement with the same attribute reinforces or supersedes this record according to its evidence, time, and source authority. When you omit `attribute`, Retold derives a content-specific private key. That is convenient for standalone memories, but rephrased or contradicting claims are not guaranteed to resolve to the same current fact. Use an explicit attribute for preferences and other facts that can change.
 
 The quote has to support the claim. "Aditya prefers concise answers." backed by "I prefer concise answers." is fine, because Retold knows who is speaking. A claim the quote does not support raises `UnsupportedEvidenceError` instead of being stored as a guess that expires in thirty days. Pass `allow_inference=True` when a tentative record is what you want.
 
@@ -112,7 +115,7 @@ The adapters register the memory tools, derive identity from trusted run configu
 ### Deep Agents
 
 ```bash
-python -m pip install "retold[local-models,live,deepagents] @ https://github.com/adimyth/retold/releases/download/v1.2.0/retold-1.2.0-py3-none-any.whl"
+python -m pip install "retold[local-models,live,deepagents] @ https://github.com/adimyth/retold/releases/download/v1.2.1/retold-1.2.1-py3-none-any.whl"
 export ANTHROPIC_API_KEY="your-key"
 ```
 
@@ -121,7 +124,7 @@ export ANTHROPIC_API_KEY="your-key"
 ### CrewAI
 
 ```bash
-python -m pip install "retold[local-models,live,crewai] @ https://github.com/adimyth/retold/releases/download/v1.2.0/retold-1.2.0-py3-none-any.whl"
+python -m pip install "retold[local-models,live,crewai] @ https://github.com/adimyth/retold/releases/download/v1.2.1/retold-1.2.1-py3-none-any.whl"
 export ANTHROPIC_API_KEY="your-key"
 ```
 
@@ -132,7 +135,7 @@ Both live examples grant one agent access to the user's shared scope. The framew
 ### OpenAI
 
 ```bash
-python -m pip install "retold[local-models,live,crewai] @ https://github.com/adimyth/retold/releases/download/v1.2.0/retold-1.2.0-py3-none-any.whl"
+python -m pip install "retold[local-models,live,crewai] @ https://github.com/adimyth/retold/releases/download/v1.2.1/retold-1.2.1-py3-none-any.whl"
 export OPENAI_API_KEY="your-key"
 # From a source checkout
 python examples/openai_live.py
@@ -220,8 +223,8 @@ Current boundaries:
 
 - Retold is a Python library backed by SQLite, not a hosted service or distributed database.
 - Python 3.12 and 3.13 are supported.
-- The `lite` profile uses about 640 MB of local model files. The standard BGE-M3 profile uses about 6 GB.
-- Background extraction and utility-aware operation require configured Anthropic or OpenAI clients.
+- The `lite` profile uses about 640 MB of local model files. The standard BGE-M3 profile uses about 2.8 GB.
+- Background extraction and model-backed utility-aware policies require configured Anthropic or OpenAI clients. The deterministic utility-aware example uses local scripted policies and needs no API key.
 - Utility-aware results come from controlled offline evaluation. Production users should begin in shadow mode and inspect their decision logs.
 
 ### Before production

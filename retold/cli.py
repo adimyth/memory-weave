@@ -320,7 +320,7 @@ def _reembed(store: Store, config: RetoldConfig, operations: Operations, args: a
         config.embedding, model=args.model, version=args.version, dims=args.dims or config.embedding.dims
     )
     target = replace(config, embedding=embedding)
-    components = runtime.build_runtime(target, store)
+    components = runtime.build_runtime(target, store, allow_embedding_mismatch=True)
     count = Operations(store, target, actor=args.actor).reembed(components.embedder)
     print(f"re-embedded {count} record(s) with {args.model}/{args.version}")
     return 0

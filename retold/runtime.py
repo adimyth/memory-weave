@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from retold.config import RetoldConfig
+from retold.errors import EmbeddingProfileMismatch
 from retold.hosted import completion_client_for
 from retold.index.embedder import BgeM3Embedder, Embedder
 from retold.index.reranker import Reranker, reranker_from_config
@@ -64,12 +65,18 @@ def build_runtime(
     reviewer: CandidateReviewer | None = None,
     activation: ActivationService | None = None,
     current_time: Callable[[], datetime] = now,
+    allow_embedding_mismatch: bool = False,
 ) -> MemoryRuntime:
     """Wire the components for ``config`` over ``store``; any argument given replaces the configured piece.
 
     Hosted pieces are created lazily by their own classes, so building a runtime makes no model call and
     loads no local model until the first write, search, or extraction.
     """
+
+    configured_profile = (config.embedding.model, config.embedding.version, config.embedding.dims)
+    stored_profiles = store.embedding_profiles()
+    if not allow_embedding_mismatch and any(profile != configured_profile for profile in stored_profiles):
+        raise EmbeddingProfileMismatch(configured_profile, stored_profiles)
 
     embedder = embedder or BgeM3Embedder(config.embedding)
     judge = judge or NLICrossEncoderJudge(config.ingestion.equivalence)

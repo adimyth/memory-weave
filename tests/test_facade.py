@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from dataclasses import replace
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
 
-from retold import MemorySession, Retold, RetoldSetupError
+from retold import EmbeddingProfileMismatch, MemorySession, Retold, RetoldSetupError
 from retold.config import EmbeddingConfig, IngestionConfig, RetoldConfig
 from retold.index.embedder import FakeEmbedder
 from retold.ingest import FakeExtractor, FakeJudge, TableReviewer
@@ -68,6 +69,28 @@ def test_supplied_session_id_attribute_and_typed_explained_search(tmp_path: Path
     assert result.items[0].record.content == content
     assert content in result.text
     assert result.items[0].explanation.summary in result.text
+
+
+def test_explicit_attribute_supersedes_a_changed_current_fact(tmp_path: Path) -> None:
+    retold, _ = _retold(tmp_path)
+    judge = retold.runtime.judge
+    assert isinstance(judge, FakeJudge)
+    concise = "I prefer concise answers."
+    detailed = "I prefer long, detailed answers."
+    judge.set_verdict(concise, detailed, "contradicts")
+
+    with retold.session(user_id="aditya") as memory:
+        first = memory.remember(concise, evidence=concise, attribute="answer_style", event_at=_NOW)
+        second = memory.remember(
+            detailed,
+            evidence=detailed,
+            attribute="answer_style",
+            event_at=_NOW + timedelta(minutes=1),
+        )
+
+    assert first.record_id is not None
+    assert second.outcome == f"superseded:{first.record_id}"
+    assert retold.store.get_record(first.record_id).status == "superseded"  # type: ignore[union-attr]
 
 
 def test_empty_search_has_a_stable_explanation(tmp_path: Path) -> None:
@@ -168,6 +191,39 @@ def test_open_lite_refuses_a_second_configuration_source(tmp_path: Path) -> None
 def test_open_rejects_an_unknown_profile(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="standard.*lite"):
         Retold.open(tmp_path / "memory.sqlite", profile="small")  # type: ignore[arg-type]
+
+
+def test_runtime_refuses_embeddings_from_a_different_profile(tmp_path: Path) -> None:
+    retold, _ = _retold(tmp_path)
+    with retold.session(user_id="aditya") as memory:
+        memory.remember(
+            "I prefer concise answers.",
+            evidence="I prefer concise answers.",
+            attribute="answer_style",
+        )
+    changed = replace(_CONFIG, embedding=replace(_CONFIG.embedding, model="another-embedder", dims=16))
+
+    with pytest.raises(EmbeddingProfileMismatch, match="retold reembed"):
+        build_runtime(changed, retold.store)
+
+
+def test_open_closes_the_store_after_an_embedding_profile_mismatch(tmp_path: Path) -> None:
+    path = tmp_path / "memory.sqlite"
+    retold, _ = _retold(tmp_path)
+    with retold.session(user_id="aditya") as memory:
+        memory.remember(
+            "I prefer concise answers.",
+            evidence="I prefer concise answers.",
+            attribute="answer_style",
+        )
+    retold.store.close()
+
+    changed = replace(_CONFIG, embedding=replace(_CONFIG.embedding, model="another-embedder", dims=16))
+    with pytest.raises(EmbeddingProfileMismatch):
+        Retold.open(path, config=changed)
+
+    reopened = Store(path)
+    reopened.close()
 
 
 def test_local_model_failure_explains_the_install_and_network_requirements(

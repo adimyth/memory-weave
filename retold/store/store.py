@@ -736,6 +736,14 @@ class Store:
         ).fetchone()
         return cast(int, row["count"])
 
+    def embedding_profiles(self) -> list[tuple[str, str, int]]:
+        """Return every embedding model, version, and dimension tuple present in the store."""
+
+        rows = self.connection.execute(
+            "SELECT DISTINCT model, version, dims FROM embeddings ORDER BY model, version, dims"
+        ).fetchall()
+        return [(cast(str, row["model"]), cast(str, row["version"]), cast(int, row["dims"])) for row in rows]
+
     def records_version(self) -> int:
         """Return the monotonic version changed by record and embedding writes."""
 

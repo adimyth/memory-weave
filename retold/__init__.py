@@ -3,7 +3,7 @@
 from importlib.metadata import PackageNotFoundError, version
 
 from .config import ConfigError, RetoldConfig, load_config
-from .errors import LocalModelUnavailable, UnsupportedEvidenceError
+from .errors import EmbeddingProfileMismatch, LocalModelUnavailable, UnsupportedEvidenceError
 from .facade import MemorySearchResult, MemorySession, Retold, RetoldSetupError
 from .host import MemoryHost
 from .models import (
@@ -41,6 +41,7 @@ __all__ = [
     "Candidate",
     "CandidateRecord",
     "ConfigError",
+    "EmbeddingProfileMismatch",
     "Entity",
     "EntityMention",
     "EvidenceCheck",

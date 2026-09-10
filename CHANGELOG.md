@@ -2,6 +2,14 @@
 
 All notable changes to Retold. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.2.1] - 2026-09-10
+
+### Fixed
+
+- Runtime construction now refuses to open a store whose existing embeddings use another model, version, or dimension. The explicit `retold reembed` operation remains the migration path.
+- The quick start names its changing preference with `attribute="answer_style"`, and the README now describes the content-specific fallback accurately.
+- The README output matches the executable quick start, distinguishes deterministic and model-backed utility policies, and gives the clean standard-profile download as about 2.8 GB.
+
 ## [1.2.0] - 2026-09-10
 
 ### Added
@@ -12,7 +20,7 @@ All notable changes to Retold. The format follows [Keep a Changelog](https://kee
 
 ### Changed
 
-- The primary quick start now downloads about 640 MB of local models instead of about 6 GB and reports measured cold-process and warm-search timings.
+- The primary quick start now downloads about 640 MB of local models instead of about 2.8 GB.
 
 ## [1.1.1] - 2026-09-10
 
@@ -86,6 +94,7 @@ Tagged as `v1.0.0` under the name Memory Weave; never published to PyPI.
 - Deep Agents and CrewAI adapters that pass one shared contract suite.
 - The operator surface: expiry, retention, erasure, re-embedding, snapshots, review queue, metrics with rollback thresholds, and the bundle registry.
 
+[1.2.1]: https://github.com/adimyth/retold/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/adimyth/retold/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/adimyth/retold/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/adimyth/retold/compare/v1.0.1...v1.1.0
