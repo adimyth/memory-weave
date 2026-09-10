@@ -1,8 +1,6 @@
-"""MkDocs hooks: rewrite links that point outside ``docs/`` at the pages that include those files.
+"""Rewrite links to the README and changelog when their content is included in the documentation site.
 
-The README, the changelog, and the design documents link to files at the repository root. On the site each
-of those files is included by a page under ``docs/``, so the links are rewritten to site-absolute paths,
-which ``validation.links.absolute_links: relative_to_docs`` then resolves and checks.
+The site exposes those root files through pages under ``docs/``. Rewriting their relative links to site paths lets MkDocs resolve and validate them after inclusion.
 """
 
 from __future__ import annotations
@@ -11,8 +9,6 @@ import re
 from typing import Any
 
 _REWRITES = (
-    (re.compile(r"\]\((?:\.\./)*BENCHMARK_HANDOFF\.md"), "](/benchmark-handoff.md"),
-    (re.compile(r"\]\((?:\.\./)*benchmarks/README\.md"), "](/benchmarks.md"),
     (re.compile(r"\]\((?:\.\./)*CHANGELOG\.md"), "](/changelog.md"),
     (re.compile(r"\]\((?:\.\./)+README\.md"), "](/index.md"),
 )

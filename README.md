@@ -199,7 +199,7 @@ All of it is in the [acceptance report](docs/acceptance-report.md) and the [expe
 
 **Design:** [Components](docs/components.md) · [High-level design](docs/agent-memory-hld.md) · [Low-level design](docs/agent-memory-lld.md) · [Utility-aware architecture](docs/utility-aware-memory-architecture.md) · [What is distinctive](docs/design-contributions.md)
 
-**Evidence:** [Acceptance report](docs/acceptance-report.md) · [Utility-aware experiments](docs/usefulness-gate.md) · [Benchmark handoff](BENCHMARK_HANDOFF.md) · [Experiments](benchmarks/README.md)
+**Evidence:** [Acceptance report](docs/acceptance-report.md) · [Utility-aware experiments](docs/usefulness-gate.md) · [Experiments](benchmarks/README.md)
 
 ## License
 

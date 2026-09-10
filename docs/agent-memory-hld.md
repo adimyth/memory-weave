@@ -278,7 +278,7 @@ Targets on a laptop, single process, store of up to 50K records.
 
 The in-memory vector matrix and same-process SQLite FTS5 queries are what make these numbers possible. A network hop to a separate vector database would consume much of the budget on its own.
 
-These were design targets. Phase 15 measured them on a laptop with the real embedder and judge: warm `memory_search` p50 23 ms and p95 28 ms on a 1K-record fixture, and p50 74 ms and p95 78 ms on a 50K-record store with a fixed 25 ms embedding cost; `memory_write` p50 26 ms, p95 471 ms when the write reaches the NLI judge; the first search after opening a store 2.6 s, which is the model load. The full table is in the repository's `BENCHMARK_HANDOFF.md` and [acceptance-report.md](acceptance-report.md).
+These were design targets. Phase 15 measured them on a laptop with the real embedder and judge: warm `memory_search` p50 23 ms and p95 28 ms on a 1K-record fixture, and p50 74 ms and p95 78 ms on a 50K-record store with a fixed 25 ms embedding cost; `memory_write` p50 26 ms, p95 471 ms when the write reaches the NLI judge; the first search after opening a store 2.6 s, which is the model load. The final measurements are in [acceptance-report.md](acceptance-report.md), and the repository's `benchmarks/README.md` explains how to reproduce them.
 
 ### Per-stage benchmark instrumentation
 
