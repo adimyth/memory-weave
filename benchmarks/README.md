@@ -9,6 +9,17 @@ run's model wrapper and add the retired prompt versions and the sweep knobs. A m
 a measurement of installed code, and `tests/test_reference_policies.py` pins the rebuilt bundle against
 `bundles/bundle-2026-09-08-a.json`.
 
+## Embedding profile calibration
+
+`calibrate_embedding.py` rebuilds the labelled 1,074-record fixture with the requested Sentence Transformers model, sweeps dense floors by memory type, and runs all 100 labelled queries through the complete hybrid retrieval pipeline. It writes only to a temporary database.
+
+```bash
+HF_HUB_OFFLINE=1 uv run --extra local-models python benchmarks/calibrate_embedding.py \
+  --model sentence-transformers/all-MiniLM-L6-v2 --dims 384
+```
+
+On 10 September 2026, MiniLM returned the expected record for 49 of 50 relevant queries and returned nothing for all 50 irrelevant queries. The same rebuilt-fixture run with BGE-M3 returned the expected record for 48 of 50 relevant queries and returned nothing for 46 of 50 irrelevant queries. The calibrated MiniLM dense floors are 0.32 for semantic records, 0.46 for episodic records, and 0.30 for procedural records.
+
 ## The vertical slice
 
 One fixed twelve-turn conversation replayed through a real serving model and the five memory tools, three

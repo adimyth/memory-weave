@@ -7,19 +7,19 @@ Retold stores durable facts, decisions, and experiences in SQLite. Local embeddi
 ## Try it
 
 ```bash
-python -m pip install "retold[local-models] @ https://github.com/adimyth/retold/releases/download/v1.1.1/retold-1.1.1-py3-none-any.whl"
+python -m pip install "retold[local-models] @ https://github.com/adimyth/retold/releases/download/v1.2.0/retold-1.2.0-py3-none-any.whl"
 ```
 
 ```python
 from retold import Retold
 
-with Retold.open("memory.sqlite") as retold:
+with Retold.open("memory.sqlite", profile="lite") as retold:
     with retold.session(user_id="aditya") as memory:
         memory.remember("I prefer concise answers.", evidence="I prefer concise answers.")
         print(memory.search("What kind of answers do I prefer?").text)
 ```
 
-The first run downloads about 6 GB of local model files, so allow several minutes. It needs no API key. Start with the [usage guide](guide/using.md), then read the [architecture](guide/architecture.md) or [API reference](api/index.md) when you need the lower-level controls.
+The first run downloads about 640 MB of local model files. It needs no API key. Start with the [usage guide](guide/using.md), then read the [architecture](guide/architecture.md) or [API reference](api/index.md) when you need the lower-level controls.
 
 ## What Retold protects
 

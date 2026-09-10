@@ -1,6 +1,6 @@
 # Configuration
 
-`Retold.open("memory.sqlite")` uses the measured local retrieval defaults. Pass a `RetoldConfig` or the path to a YAML file through `config=` when an application needs different models, budgets, lifecycle settings, or trigger behavior.
+`Retold.open("memory.sqlite")` uses the measured BGE-M3 retrieval defaults. Use `profile="lite"` for the calibrated MiniLM profile. Pass a `RetoldConfig` or the path to a YAML file through `config=` when an application needs different models, budgets, lifecycle settings, or trigger behavior.
 
 ```python
 from retold import Retold

@@ -27,6 +27,7 @@ from .models import (
     SessionSummary,
     Turn,
 )
+from .profiles import lite_config
 from .runtime import MemoryRuntime, build_runtime
 from .store import Store
 
@@ -69,4 +70,5 @@ __all__ = [
     "UnsupportedEvidenceError",
     "build_runtime",
     "load_config",
+    "lite_config",
 ]

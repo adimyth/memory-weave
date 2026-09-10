@@ -17,6 +17,7 @@ from retold.errors import LocalModelUnavailable, UnsupportedEvidenceError
 from retold.ingest import WriteRequest, WriteResult
 from retold.models import EntityMention, MemoryType, Principal, SearchRequest, SearchResult, TurnRole
 from retold.policy import private_scope
+from retold.profiles import lite_config
 from retold.runtime import MemoryRuntime, build_runtime
 from retold.store import Store
 from retold.tools import render_search
@@ -49,10 +50,23 @@ class Retold:
         self._closed = False
 
     @classmethod
-    def open(cls, path: str | Path, *, config: RetoldConfig | str | Path | None = None) -> Retold:
+    def open(
+        cls,
+        path: str | Path,
+        *,
+        config: RetoldConfig | str | Path | None = None,
+        profile: Literal["standard", "lite"] = "standard",
+    ) -> Retold:
         """Open a SQLite store and build a runtime with default or supplied configuration."""
 
-        resolved = config if isinstance(config, RetoldConfig) else load_config(config)
+        if profile == "lite":
+            if config is not None:
+                raise ValueError("profile='lite' cannot be combined with config. Start from lite_config() instead.")
+            resolved = lite_config()
+        elif profile == "standard":
+            resolved = config if isinstance(config, RetoldConfig) else load_config(config)
+        else:
+            raise ValueError("profile must be 'standard' or 'lite'.")
         store = Store(path)
         return cls(build_runtime(resolved, store), owns_store=True)
 

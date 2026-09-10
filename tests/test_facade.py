@@ -151,6 +151,25 @@ def test_open_owns_and_closes_its_store(tmp_path: Path) -> None:
         retold.session(user_id="aditya")
 
 
+def test_open_lite_uses_the_calibrated_minilm_profile(tmp_path: Path) -> None:
+    retold = Retold.open(tmp_path / "memory.sqlite", profile="lite")
+
+    assert retold.runtime.config.embedding.model == "sentence-transformers/all-MiniLM-L6-v2"
+    assert retold.runtime.config.embedding.dims == 384
+    assert retold.runtime.config.retrieval.gate.dense_floor.semantic == 0.32
+    retold.close()
+
+
+def test_open_lite_refuses_a_second_configuration_source(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="cannot be combined"):
+        Retold.open(tmp_path / "memory.sqlite", profile="lite", config=_CONFIG)
+
+
+def test_open_rejects_an_unknown_profile(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="standard.*lite"):
+        Retold.open(tmp_path / "memory.sqlite", profile="small")  # type: ignore[arg-type]
+
+
 def test_local_model_failure_explains_the_install_and_network_requirements(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

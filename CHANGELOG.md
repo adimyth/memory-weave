@@ -2,6 +2,18 @@
 
 All notable changes to Retold. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.2.0] - 2026-09-10
+
+### Added
+
+- A calibrated `lite` profile using `all-MiniLM-L6-v2`, available through `Retold.open(..., profile="lite")` and `lite_config()`.
+- A reproducible embedding calibration command, a deterministic utility-aware quick start, and a complete OpenAI and CrewAI example.
+- README guidance for production readiness, SQLite deployment boundaries, and planned storage and model work.
+
+### Changed
+
+- The primary quick start now downloads about 640 MB of local models instead of about 6 GB and reports measured cold-process and warm-search timings.
+
 ## [1.1.1] - 2026-09-10
 
 ### Fixed
@@ -74,6 +86,7 @@ Tagged as `v1.0.0` under the name Memory Weave; never published to PyPI.
 - Deep Agents and CrewAI adapters that pass one shared contract suite.
 - The operator surface: expiry, retention, erasure, re-embedding, snapshots, review queue, metrics with rollback thresholds, and the bundle registry.
 
+[1.2.0]: https://github.com/adimyth/retold/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/adimyth/retold/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/adimyth/retold/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/adimyth/retold/compare/v1.0.0...v1.0.1

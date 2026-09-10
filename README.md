@@ -48,17 +48,17 @@ The design builds on [RUMS](https://arxiv.org/abs/2604.14473) and [TRACE-Memory]
 Retold is distributed through GitHub Releases while its PyPI trusted publisher is being configured. Python 3.12 or 3.13 is required.
 
 ```bash
-python -m pip install "retold[local-models] @ https://github.com/adimyth/retold/releases/download/v1.1.1/retold-1.1.1-py3-none-any.whl"
+python -m pip install "retold[local-models] @ https://github.com/adimyth/retold/releases/download/v1.2.0/retold-1.2.0-py3-none-any.whl"
 ```
 
-The first write downloads BGE-M3 and an NLI evidence model. They occupy about 6 GB in the Hugging Face cache, so allow several minutes for the initial download. With both models cached, the complete example took 19 seconds on the development Apple Silicon Mac. Later calls in the same process are faster.
+The quick start uses Retold's `lite` profile: the 87 MB MiniLM embedder and a 552 MB NLI evidence model. Allow time for the one-time download on the first write. With both models cached, the first write in a new process took 3.7 seconds on the development Apple Silicon Mac, the following search took 8 ms, and a repeated cached search took 1 ms.[^4]
 
 Save this as `quickstart.py` and run `python quickstart.py`:
 
 ```python
 from retold import Retold
 
-with Retold.open("memory.sqlite") as retold:
+with Retold.open("memory.sqlite", profile="lite") as retold:
     with retold.session(user_id="aditya") as memory:
         memory.remember("I prefer concise answers.", evidence="I prefer concise answers.")
         result = memory.search("What kind of answers do I prefer?")
@@ -72,8 +72,8 @@ Recalled 1 memory for "What kind of answers do I prefer?".
 
 [01a08...] semantic · confirmed · user_statement · scope agent:assistant/aditya
 I prefer concise answers.
-matched: dense 0.82 (rank 1), lexical 2/3 (rank 1)
-gate: passed dense 0.82 ≥ 0.45 (semantic)
+matched: dense 0.53 (rank 1), lexical 2/3 (rank 1)
+gate: passed dense 0.53 ≥ 0.32 (semantic)
 ```
 
 The executable version lives at [`examples/quickstart.py`](https://github.com/adimyth/retold/blob/main/examples/quickstart.py). It needs no API key. `memory.remember` records the supplied quote as a trusted user turn and sends the claim through the same evidence, lifecycle, indexing, and retrieval policies used by the framework adapters.
@@ -82,6 +82,29 @@ When you omit `attribute`, Retold derives a stable private key from the claim. A
 
 The quote has to support the claim. "Aditya prefers concise answers." backed by "I prefer concise answers." is fine, because Retold knows who is speaking. A claim the quote does not support raises `UnsupportedEvidenceError` instead of being stored as a guess that expires in thirty days. Pass `allow_inference=True` when a tentative record is what you want.
 
+### See Retold decide
+
+The local quick start proves storage and explained recall. The utility-aware example exercises the decision that distinguishes Retold: use a stored preference when it changes an answer, and skip retrieval when the answer needs no private context.
+
+```bash
+# From a source checkout
+python examples/utility_aware_quickstart.py
+```
+
+```text
+question: Give me a code example that reads a JSON file.
+decision: regenerated
+memory used: 1
+answer: Here is a Python example, using your saved preference.
+
+question: What is dependency injection?
+decision: baseline_no_gaps
+memory used: 0
+answer: Dependency injection supplies dependencies from outside an object.
+```
+
+[`examples/utility_aware_quickstart.py`](https://github.com/adimyth/retold/blob/main/examples/utility_aware_quickstart.py) uses real MiniLM retrieval with deterministic planner and admission policies, so it runs without an API key and produces the same decisions on every run. A production host supplies model-backed policies and evaluates that bundle in shadow mode before serving it.
+
 ## Add Retold to an agent
 
 The adapters register the memory tools, derive identity from trusted run configuration, capture turns, and schedule transcript extraction when the host ends a session.
@@ -89,7 +112,7 @@ The adapters register the memory tools, derive identity from trusted run configu
 ### Deep Agents
 
 ```bash
-python -m pip install "retold[local-models,live,deepagents] @ https://github.com/adimyth/retold/releases/download/v1.1.1/retold-1.1.1-py3-none-any.whl"
+python -m pip install "retold[local-models,live,deepagents] @ https://github.com/adimyth/retold/releases/download/v1.2.0/retold-1.2.0-py3-none-any.whl"
 export ANTHROPIC_API_KEY="your-key"
 ```
 
@@ -98,13 +121,24 @@ export ANTHROPIC_API_KEY="your-key"
 ### CrewAI
 
 ```bash
-python -m pip install "retold[local-models,live,crewai] @ https://github.com/adimyth/retold/releases/download/v1.1.1/retold-1.1.1-py3-none-any.whl"
+python -m pip install "retold[local-models,live,crewai] @ https://github.com/adimyth/retold/releases/download/v1.2.0/retold-1.2.0-py3-none-any.whl"
 export ANTHROPIC_API_KEY="your-key"
 ```
 
 [`examples/crewai_live.py`](https://github.com/adimyth/retold/blob/main/examples/crewai_live.py) contains the complete integration. Download it or run `python examples/crewai_live.py` from a source checkout. [`examples/crewai_demo.py`](https://github.com/adimyth/retold/blob/main/examples/crewai_demo.py) is the deterministic simulation.
 
 Both live examples grant one agent access to the user's shared scope. The framework-neutral quick start needs no grant because it writes to the implicit private scope for that agent and user.
+
+### OpenAI
+
+```bash
+python -m pip install "retold[local-models,live,crewai] @ https://github.com/adimyth/retold/releases/download/v1.2.0/retold-1.2.0-py3-none-any.whl"
+export OPENAI_API_KEY="your-key"
+# From a source checkout
+python examples/openai_live.py
+```
+
+[`examples/openai_live.py`](https://github.com/adimyth/retold/blob/main/examples/openai_live.py) is a complete CrewAI integration using OpenAI for the agent, background extraction, and candidate review. Embeddings, retrieval, and evidence checks remain local. Retold also exposes provider-neutral completion, planner, admission, embedding, and evidence protocols for applications that supply another provider.
 
 ## Choose how memory is used
 
@@ -170,7 +204,7 @@ A direct user statement or tool result starts confirmed. An agent inference star
 `memory_search` uses one pipeline regardless of caller:
 
 1. Filter by scope, grant, lifecycle, type, and time.
-2. Generate candidates from BGE-M3 embeddings, SQLite FTS5 BM25, and exact entity aliases.
+2. Generate candidates from the configured embedding model, SQLite FTS5 BM25, and exact entity aliases.
 3. Fuse the channels by reciprocal rank and decay old episodic records.
 4. Gate each candidate against its own evidence.
 5. Remove near-duplicates and fit results within a token budget.
@@ -186,9 +220,19 @@ Current boundaries:
 
 - Retold is a Python library backed by SQLite, not a hosted service or distributed database.
 - Python 3.12 and 3.13 are supported.
-- Real retrieval and evidence checks require about 6 GB of local model files.
+- The `lite` profile uses about 640 MB of local model files. The standard BGE-M3 profile uses about 6 GB.
 - Background extraction and utility-aware operation require configured Anthropic or OpenAI clients.
 - Utility-aware results come from controlled offline evaluation. Production users should begin in shadow mode and inspect their decision logs.
+
+### Before production
+
+- Choose one database per application and environment. Use separate databases for customers that require independent backups, deletion, or contractual isolation.
+- Pin the Retold version, model IDs, embedding dimensions, and calibrated retrieval floors.
+- Start utility-aware operation in shadow mode, inspect its decisions on application traffic, and approve only the bundle you measured.
+- Configure SQLite backups, retention, user erasure, and restoration tests.
+- Monitor search decisions, policy failures, background extraction, write contention, and latency.
+- Recalibrate retrieval and re-embed stored records before changing the embedding model.
+- Test provider timeouts and verify that the host serves the memory-free draft when a utility-aware stage fails.
 
 ## Configuration and deeper documentation
 
@@ -198,6 +242,13 @@ One validated YAML file controls retrieval floors, result and token budgets, emb
 - **Understand the system:** [Architecture](https://adimyth.in/retold/guide/architecture/), [components](docs/components.md), and [low-level design](docs/agent-memory-lld.md)
 - **Inspect the evidence:** [Acceptance report](docs/acceptance-report.md), [utility-aware experiments](docs/usefulness-gate.md), and [benchmark fixtures](https://github.com/adimyth/retold/blob/main/benchmarks/README.md)
 
+## Next steps
+
+- Validate utility-aware decisions on traffic from a consuming application.
+- Add a PostgreSQL-backed deployment option for applications that cannot share a local SQLite file.
+- Calibrate more lightweight and hosted embedding profiles.
+- Add tested provider examples beyond the built-in Anthropic and OpenAI clients.
+
 ## License
 
 Retold is available under the [MIT License](LICENSE).
@@ -205,3 +256,4 @@ Retold is available under the [MIT License](LICENSE).
 [^1]: The latency measurements use warm local search with a real embedder on the 1,000-record fixture and a fixed 25 ms embedding cost on the 50,000-record fixture. See [the acceptance report](docs/acceptance-report.md).
 [^2]: The similarity table comes from one fixed twelve-turn conversation replayed three times through a hosted model in `hybrid` mode. It describes 36 host-issued searches with one embedder and measures the dense channel's highest score rather than the complete retrieval gate. See [the benchmark record](https://github.com/adimyth/retold/blob/main/benchmarks/README.md).
 [^3]: The blind splits are controlled offline evaluations rather than production traffic. The shadow result ran through the real orchestrator against a scripted scenario set.
+[^4]: MiniLM returned the expected record for 49 of 50 relevant queries and returned nothing for all 50 irrelevant queries on Retold's labelled 1,074-record fixture. BGE-M3 returned the expected record for 48 of 50 relevant queries and returned nothing for 46 of 50 irrelevant queries in the same full-pipeline run. The calibration script rebuilds each fixture with the selected model before testing it.
