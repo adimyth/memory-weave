@@ -26,7 +26,7 @@ On one scripted conversation, the highest similarity scores overlapped:[^2]
 | Ordinary, no memory needed | 0.44 | 0.56 | **0.63** |
 | Memory genuinely applies | 0.50 | 0.57 | 0.62 |
 
-Two blind splits of the utility-aware path:
+The utility-aware path was then evaluated on two blind scenario splits:
 
 | | Blind split 1 | Blind split 2 |
 | --- | :-: | :-: |
@@ -34,7 +34,10 @@ Two blind splits of the utility-aware path:
 | Recalled explicit stored facts | 10 of 10 | 9 of 10 |
 | Recalled implicit needs | 7 of 8 | 6 of 7 |
 
-A shadow run through the real orchestrator injected on 0 of 20 ordinary turns. The [acceptance report](docs/acceptance-report.md) and [experiment record](docs/usefulness-gate.md) link each claim to its run.
+> [!IMPORTANT]
+> **Retold stayed quiet without forgetting what mattered.** Across the two blind splits, it injected memory on only 1 of 40 ordinary turns while recalling 19 of 20 explicit stored facts and 13 of 15 implicit memory needs. It admitted no placebo, misleading, private, or unsafe record. A separate shadow run through the real orchestrator injected memory on 0 of 20 ordinary turns.
+
+These are controlled offline evaluations, not production traffic. The [acceptance report](docs/acceptance-report.md) and [experiment record](docs/usefulness-gate.md) link every claim to its run, fixtures, and acceptance criteria.
 
 The utility-aware host path runs the initial draft and missing-context planner concurrently. The planner sees content-free categories rather than records. Retold searches only when the planner names a missing fact, then a judge compares the candidates with the draft. The host revises once when at least one record would correct, complete, or personalize the answer.
 
@@ -114,6 +117,18 @@ Retold separates who requests a search from how retrieved records enter an answe
 The utility-aware path needs host-supplied model clients and `supported_bundle()` from `retold.policy.reference`. A store serves the bundle only after recording a passing fitness result; otherwise the path runs in shadow mode. Planner, provider, judge, timeout, and latency-budget failures all serve the original draft and record the reason.
 
 ![Utility-aware memory path: draft first, retrieve only for specific missing context, and revise only with admitted records](docs/assets/utility-aware-path.svg)
+
+### How the decision works
+
+1. **Receive the user turn.** The host receives the user query along with public context, such as the current conversation and system instructions.
+2. **Draft an answer without conditional memory.** The model produces a usable first draft before Retold retrieves any stored records. This draft is the safe fallback.
+3. **Check whether stored context is needed.** In parallel with drafting, the planner checks whether the answer may require a previous decision, user preference, project fact, or other specific memory. It sees only the kinds of memory available, not the records themselves.
+4. **Keep the original draft when memory is unnecessary.** Ordinary questions stop here. Retold performs no search, adds no conditional memory to the model context, and introduces no retrieval latency beyond the planner running alongside the draft.
+5. **Search for the missing context.** When memory may help, Retold searches specifically for the missing information. Before ranking candidates, it filters records by the caller's grants, scope, lifecycle state, type, and time constraints.
+6. **Judge whether the retrieved context would change the draft.** Finding a related record is not enough. The admission judge compares each candidate with the existing draft and asks whether it would materially correct, complete, or personalize the answer.
+7. **Keep the original draft when nothing is useful.** Retrieved but unnecessary records are rejected and never reach the answering model.
+8. **Revise once when useful context exists.** The model receives only the admitted records and regenerates the answer once. Rejected candidates remain excluded.
+9. **Serve the answer.** The final result is either the original memory-free draft or one revision informed by useful, authorized memory.
 
 The default quick start does not invoke a hosted provider. Call `worker = memory.finish(extract=True)` when you want the facade to run background transcript extraction; Retold checks the provider dependency and API key before ending the session. Keep Retold open until `worker.join()` completes if the process is about to exit.
 
