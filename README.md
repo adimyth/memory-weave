@@ -15,7 +15,7 @@ Retold exposes five tools as plain JSON schemas, so any agent framework can regi
 
 ## Decide before you retrieve
 
-Every memory layer retrieves by similarity and injects the top results. Similarity answers "is this record about the same subject as the turn?". It cannot answer "does this turn need remembered state?", and the two come apart on exactly the turns that matter: the store holds "use Python for code examples" and the user asks "tabs or spaces in Python?". Related, and irrelevant.
+Every memory layer retrieves by similarity and injects the top results. Similarity answers ***"is this record about the same subject as the turn?"*** It cannot answer ***"does this turn need remembered state?"***, and the two come apart on exactly the turns that matter: the store holds "use Python for code examples" and the user asks "tabs or spaces in Python?". Related, and irrelevant.
 
 Measured on a scripted conversation, the best similarity score per turn looked like this:[^1]
 
@@ -82,7 +82,9 @@ MemoryHost(store).grant("assistant", Scope(kind="user", id="aditya"), read=True,
 runtime = build_runtime(load_config(), store)
 ```
 
-Hand the runtime to an adapter and the framework does the rest: tools registered, identity taken from the run, turns captured, extraction scheduled at session end.
+#### Integrating with Deep Agents or CrewAI
+
+Hand the runtime to an adapter and the framework does the rest: tools registered, identity taken from the run, turns captured, extraction scheduled at session end. The CrewAI adapter takes the same runtime; see the [guide](https://adimyth.in/retold/guide/using/).
 
 ```python
 from deepagents import create_deep_agent
@@ -97,7 +99,9 @@ agent.invoke({"messages": [...]}, {"configurable": {"thread_id": "s1", "agent_id
 
 The grant is the one deliberate step: isolation is enforced by scope and grant before anything is ranked, so an agent reads nothing it was not given.
 
-**Without an adapter.** The runtime works on its own. `runtime.handlers` is the five tools as Python calls, `runtime.hooks` records the session, and `runtime.handlers.tool_schemas(principal)` gives any framework the schemas to register.
+#### Integrating with any other framework
+
+The runtime works on its own. `runtime.handlers` is the five tools as Python calls, `runtime.hooks` records the session, and `runtime.handlers.tool_schemas(principal)` gives any framework the schemas to register.
 
 ```python
 from retold import Principal
