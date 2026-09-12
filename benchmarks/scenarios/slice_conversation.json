@@ -7,6 +7,9 @@
      "text": "User prefers concise technical answers with a short rationale."},
     {"id": "A2", "kind": "ambient_eligible", "ambient_truth": true, "recorded": "2026-09-06", "about_user": true,
      "text": "User wants code examples in Python unless another language is requested."},
+    {"id": "A3", "kind": "ambient_eligible", "ambient_truth": true, "recorded": "2026-09-06", "about_user": true,
+     "attribute": "code_style",
+     "text": "User wants Python code examples to use camelCase function names, a dataclass when defining a class, a docstring on every function, and type annotations on inputs and outputs."},
     {"id": "F1", "kind": "conditional", "recorded": "2026-09-06", "about_user": true, "attribute": "working_timezone",
      "text": "User's working time zone is Asia/Kolkata."},
     {"id": "A1b", "kind": "ambient_eligible", "ambient_truth": true, "recorded": "2026-09-06", "about_user": true, "attribute": "response_style",
@@ -19,7 +22,8 @@
      "text": "Priya asked the team to keep the deployment checklist in the repository."}
   ],
   "turns": [
-    {"id": "T7", "class": "implicit_need", "text": "Show me a small Python example that parses this configuration file.", "expected": ["A2"], "reference": "The example is written in Python."},
+    {"id": "T7a", "class": "implicit_need", "text": "How do I parse this configuration file?", "expected": ["A2", "A3"], "reference": "The example is written in Python, and follows the stored Python style."},
+    {"id": "T7", "class": "implicit_need", "text": "Show me a small Python example that parses this configuration file.", "expected": ["A3"], "reference": "Function names are camelCase, the class is a dataclass, every function has a docstring, and inputs and outputs carry type annotations."},
     {"id": "T8", "class": "explicit_fact", "text": "What time zone should you use when suggesting a meeting for me?", "expected": ["F1"], "reference": "Asia/Kolkata (IST)."},
     {"id": "T9", "class": "ordinary", "text": "Should I use tabs or spaces in Python?", "expected": [], "reference": null},
     {"id": "T10", "class": "ordinary", "text": "How often should a deployment checklist be reviewed?", "expected": [], "reference": null},
