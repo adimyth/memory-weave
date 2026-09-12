@@ -103,6 +103,7 @@ def main(argv: list[str] | None = None) -> int:
             admission_policy=admission,
             bundle=bundle,
             retrieval_config=rr.config,
+            switches=KillSwitches(regeneration=True),
         )
         print("FAIL: an unapproved bundle was allowed to serve")
         return 1
